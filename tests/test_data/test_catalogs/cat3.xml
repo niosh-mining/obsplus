@@ -1,0 +1,676 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:iris="http://service.iris.edu/fdsnws/event/1/" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns:xsi="http://www.w3.org/2000/10/XMLSchema-instance" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:service.iris.edu/fdsnws/event/1/query">
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192232">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553442</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611393</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="215">
+        <text>MARIANA ISLANDS REGION</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553442" iris:contributorEventId="us10006jzi" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T14:04:50.280000Z</value>
+        </time>
+        <latitude>
+          <value>20.2772</value>
+        </latitude>
+        <longitude>
+          <value>147.3988</value>
+        </longitude>
+        <depth>
+          <value>27400.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553440" iris:contributorEventId="10006jzi" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jzi" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T14:04:50.000000Z</value>
+        </time>
+        <latitude>
+          <value>20.2772</value>
+        </latitude>
+        <longitude>
+          <value>147.3988</value>
+        </longitude>
+        <depth>
+          <value>27300.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611391">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553440</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611393">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553442</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192229">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553435</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611386</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="160">
+        <text>OFF E. COAST OF N. ISLAND, N.Z.</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553435" iris:contributorEventId="us10006jyx" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T13:30:23.500000Z</value>
+        </time>
+        <latitude>
+          <value>-37.5434</value>
+        </latitude>
+        <longitude>
+          <value>179.236</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553434" iris:contributorEventId="10006jyx" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jyx" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T13:30:24.000000Z</value>
+        </time>
+        <latitude>
+          <value>-37.5434</value>
+        </latitude>
+        <longitude>
+          <value>179.236</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611385">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553434</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611386">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553435</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192223">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553452</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611376</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="499">
+        <text>OKLAHOMA</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553452" iris:contributorEventId="us10006jxs" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T12:02:44.560000Z</value>
+        </time>
+        <latitude>
+          <value>36.4307</value>
+        </latitude>
+        <longitude>
+          <value>-96.931</value>
+        </longitude>
+        <depth>
+          <value>4500.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553425" iris:contributorEventId="us10006jxs" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T12:02:44.790000Z</value>
+        </time>
+        <latitude>
+          <value>36.4286</value>
+        </latitude>
+        <longitude>
+          <value>-96.9233</value>
+        </longitude>
+        <depth>
+          <value>6600.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553424" iris:contributorEventId="10006jxs" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jxs" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T12:02:45.000000Z</value>
+        </time>
+        <latitude>
+          <value>36.4286</value>
+        </latitude>
+        <longitude>
+          <value>-96.9233</value>
+        </longitude>
+        <depth>
+          <value>6500.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611376">
+        <mag>
+          <value>5.6</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553425</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611405">
+        <mag>
+          <value>5.6</value>
+        </mag>
+        <type>MWB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553452</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611403">
+        <mag>
+          <value>5.6</value>
+        </mag>
+        <type>MWR</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553452</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611375">
+        <mag>
+          <value>5.6</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553424</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611404">
+        <mag>
+          <value>5.7</value>
+        </mag>
+        <type>MWW</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553452</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192220">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553420</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611371</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="685">
+        <text>EASTER ISLAND REGION</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553420" iris:contributorEventId="us10006jxm" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T10:59:22.560000Z</value>
+        </time>
+        <latitude>
+          <value>-28.0631</value>
+        </latitude>
+        <longitude>
+          <value>-112.0756</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553419" iris:contributorEventId="10006jxm" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jxm" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T10:59:23.000000Z</value>
+        </time>
+        <latitude>
+          <value>-28.0631</value>
+        </latitude>
+        <longitude>
+          <value>-112.0756</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611371">
+        <mag>
+          <value>5.1</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553420</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611370">
+        <mag>
+          <value>5.1</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553419</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192211">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553403</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611351</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="428">
+        <text>SOUTHWEST INDIAN RIDGE</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553403" iris:contributorEventId="us10006jwr" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T08:18:40.290000Z</value>
+        </time>
+        <latitude>
+          <value>-29.2253</value>
+        </latitude>
+        <longitude>
+          <value>61.0256</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553402" iris:contributorEventId="10006jwr" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jwr" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T08:18:40.000000Z</value>
+        </time>
+        <latitude>
+          <value>-29.2253</value>
+        </latitude>
+        <longitude>
+          <value>61.0256</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611350">
+        <mag>
+          <value>5.1</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553402</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611351">
+        <mag>
+          <value>5.1</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553403</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192209">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553399</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611346</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="639">
+        <text>JAN MAYEN ISLAND REGION</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553399" iris:contributorEventId="us10006jwi" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T06:55:37.230000Z</value>
+        </time>
+        <latitude>
+          <value>71.0312</value>
+        </latitude>
+        <longitude>
+          <value>-7.4974</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553398" iris:contributorEventId="10006jwi" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jwi" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T06:55:37.000000Z</value>
+        </time>
+        <latitude>
+          <value>71.0312</value>
+        </latitude>
+        <longitude>
+          <value>-7.4974</value>
+        </longitude>
+        <depth>
+          <value>10000.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611345">
+        <mag>
+          <value>5.0</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553398</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611346">
+        <mag>
+          <value>5.0</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553399</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192201">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553377</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611312</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="160">
+        <text>OFF E. COAST OF N. ISLAND, N.Z.</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553377" iris:contributorEventId="us10006jvp" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T04:58:36.950000Z</value>
+        </time>
+        <latitude>
+          <value>-37.2521</value>
+        </latitude>
+        <longitude>
+          <value>179.0424</value>
+        </longitude>
+        <depth>
+          <value>12200.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553376" iris:contributorEventId="10006jvp" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jvp" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T04:58:37.000000Z</value>
+        </time>
+        <latitude>
+          <value>-37.2521</value>
+        </latitude>
+        <longitude>
+          <value>179.0423</value>
+        </longitude>
+        <depth>
+          <value>12100.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611311">
+        <mag>
+          <value>5.4</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553376</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611312">
+        <mag>
+          <value>5.4</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553377</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192198">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553371</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611303</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="160">
+        <text>OFF E. COAST OF N. ISLAND, N.Z.</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553371" iris:contributorEventId="us10006jvi" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T04:30:15.950000Z</value>
+        </time>
+        <latitude>
+          <value>-37.5632</value>
+        </latitude>
+        <longitude>
+          <value>178.7072</value>
+        </longitude>
+        <depth>
+          <value>31200.0</value>
+        </depth>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553370" iris:contributorEventId="10006jvi" iris:contributor="NEIC ALERT" iris:contributorOriginId="10006jvi" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T04:30:16.000000Z</value>
+        </time>
+        <latitude>
+          <value>-37.5632</value>
+        </latitude>
+        <longitude>
+          <value>178.7072</value>
+        </longitude>
+        <depth>
+          <value>31100.0</value>
+        </depth>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611303">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553371</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611302">
+        <mag>
+          <value>5.3</value>
+        </mag>
+        <type>MB</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553370</originID>
+        <creationInfo>
+          <author>NEIC</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+    <event publicID="smi:service.iris.edu/fdsnws/event/1/query?eventid=5192191">
+      <preferredOriginID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553364</preferredOriginID>
+      <preferredMagnitudeID>smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611293</preferredMagnitudeID>
+      <type>earthquake</type>
+      <description iris:FEcode="34">
+        <text>OFF COAST OF NORTHERN CALIFORNIA</text>
+        <type>Flinn-Engdahl region</type>
+      </description>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553364" iris:contributorEventId="us10006jv5" iris:contributor="NEIC COMCAT" iris:contributorOriginId="product.xml" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T03:27:55.350000Z</value>
+        </time>
+        <latitude>
+          <value>40.4213</value>
+        </latitude>
+        <longitude>
+          <value>-125.651</value>
+        </longitude>
+        <depth>
+          <value>2200.0</value>
+        </depth>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553363" iris:contributorEventId="72689331" iris:contributor="NEIC ALERT" iris:contributorOriginId="72689331" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T03:27:55.000000Z</value>
+        </time>
+        <latitude>
+          <value>40.4213</value>
+        </latitude>
+        <longitude>
+          <value>-125.651</value>
+        </longitude>
+        <depth>
+          <value>2100.0</value>
+        </depth>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </origin>
+      <origin publicID="smi:service.iris.edu/fdsnws/event/1/query?originid=11553360" iris:contributorEventId="72689331" iris:contributor="NEIC ALERT" iris:contributorOriginId="72689331" iris:catalog="NEIC PDE">
+        <time>
+          <value>2016-09-03T03:27:55.000000Z</value>
+        </time>
+        <latitude>
+          <value>40.4213</value>
+        </latitude>
+        <longitude>
+          <value>-125.651</value>
+        </longitude>
+        <depth>
+          <value>2100.0</value>
+        </depth>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </origin>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611289">
+        <mag>
+          <value>5.2</value>
+        </mag>
+        <type>ML</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553360</originID>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611293">
+        <mag>
+          <value>5.58</value>
+        </mag>
+        <type>MW</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553364</originID>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611296">
+        <mag>
+          <value>5.58</value>
+        </mag>
+        <type>MW</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553364</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611292">
+        <mag>
+          <value>5.6</value>
+        </mag>
+        <type>MO</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553363</originID>
+        <creationInfo>
+          <author>NC</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611295">
+        <mag>
+          <value>5.7</value>
+        </mag>
+        <type>MWP</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553364</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:service.iris.edu/fdsnws/event/1/query?magnitudeid=18611294">
+        <mag>
+          <value>5.7</value>
+        </mag>
+        <type>MI</type>
+        <originID>smi:service.iris.edu/fdsnws/event/1/query?originid=11553364</originID>
+        <creationInfo>
+          <author>US</author>
+        </creationInfo>
+      </magnitude>
+    </event>
+  </eventParameters>
+</q:quakeml>

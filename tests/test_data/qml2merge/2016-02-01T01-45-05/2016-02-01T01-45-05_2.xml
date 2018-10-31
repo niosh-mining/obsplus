@@ -1,0 +1,177 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:local/23abbdc9-e810-457b-9c4b-6805a1c56a43">
+    <event publicID="smi:local/2016-02-01T01-45-05">
+      <preferredOriginID>smi:local/94627d2d-2ee3-42e0-afea-ab9be1ef857a</preferredOriginID>
+      <description>
+        <text>LM</text>
+      </description>
+      <origin publicID="smi:local/94627d2d-2ee3-42e0-afea-ab9be1ef857a">
+        <time>
+          <value>2009-11-01T06:15:20.100000Z</value>
+        </time>
+        <latitude>
+          <value>54.618283895952814</value>
+          <uncertainty>1.2</uncertainty>
+        </latitude>
+        <longitude>
+          <value>-85.71376163102123</value>
+          <uncertainty>1.6</uncertainty>
+        </longitude>
+        <depth>
+          <value>0.0</value>
+          <uncertainty>3.5</uncertainty>
+        </depth>
+        <quality>
+          <associatedPhaseCount>8</associatedPhaseCount>
+          <standardError>0.0</standardError>
+          <azimuthalGap>130.0</azimuthalGap>
+        </quality>
+        <creationInfo>
+          <agencyID>BOB</agencyID>
+          <author>SB</author>
+          <creationTime>2009-12-28T13:59:00.000000Z</creationTime>
+        </creationInfo>
+        <originUncertainty>
+          <horizontalUncertainty>1.2</horizontalUncertainty>
+        </originUncertainty>
+        <arrival publicID="smi:local/e5897b33-a620-4f4d-b7dc-ca20ddfcebff">
+          <pickID>smi:local/b36e25c3-00fd-409c-92d4-7a6f3ac2584a</pickID>
+          <phase>P</phase>
+          <azimuth>226.0</azimuth>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/9d3c8161-537a-4473-8c51-0c6e750bdc3c">
+          <pickID>smi:local/d20c07bc-2971-4833-8c64-7c0d36381276</pickID>
+          <phase>P</phase>
+          <azimuth>255.0</azimuth>
+          <timeResidual>-0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/8cbfcc52-ab6b-4323-89bc-d0d67ef11eb8">
+          <pickID>smi:local/08bbe9a3-d72f-4805-97ae-f1e465f90807</pickID>
+          <phase>P</phase>
+          <azimuth>212.0</azimuth>
+          <timeResidual>-0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a8e1136f-40fd-407a-a2bb-61e3bef35951">
+          <pickID>smi:local/94263917-1707-4338-9448-72d6ba33700e</pickID>
+          <phase>P</phase>
+          <azimuth>240.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/51a2c793-8c30-45bc-925c-550caba75da6">
+          <pickID>smi:local/c1242509-71c1-4b9f-8183-3e1a89c05eb6</pickID>
+          <phase>P</phase>
+          <azimuth>101.0</azimuth>
+          <timeResidual>-0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/dd979798-2aa3-4656-8931-94f12eae5fa8">
+          <pickID>smi:local/c71def6d-3fca-4fa2-be24-f0b7b35c2eaa</pickID>
+          <phase>P</phase>
+          <azimuth>331.0</azimuth>
+          <timeResidual>0.04</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3e0952ee-7012-43b2-8090-071d1bd7713d">
+          <pickID>smi:local/58b12dfe-a333-42e6-ae9a-adc485a5601a</pickID>
+          <phase>P</phase>
+          <azimuth>293.0</azimuth>
+          <timeResidual>-0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/41764ff5-5475-4793-be3e-34a8494dda2f">
+          <pickID>smi:local/f53a4ff0-8671-4301-80bc-24ad509720b1</pickID>
+          <phase>P</phase>
+          <azimuth>169.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+      </origin>
+      <pick publicID="smi:local/b36e25c3-00fd-409c-92d4-7a6f3ac2584a">
+        <time>
+          <value>2009-11-01T06:15:20.340000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSGH"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/d20c07bc-2971-4833-8c64-7c0d36381276">
+        <time>
+          <value>2009-11-01T06:15:20.370000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="WTP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/08bbe9a3-d72f-4805-97ae-f1e465f90807">
+        <time>
+          <value>2009-11-01T06:15:20.400000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSS"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/94263917-1707-4338-9448-72d6ba33700e">
+        <time>
+          <value>2009-11-01T06:15:20.550000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/c1242509-71c1-4b9f-8183-3e1a89c05eb6">
+        <time>
+          <value>2009-11-01T06:15:20.540000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/c71def6d-3fca-4fa2-be24-f0b7b35c2eaa">
+        <time>
+          <value>2009-11-01T06:15:20.620000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSN"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/58b12dfe-a333-42e6-ae9a-adc485a5601a">
+        <time>
+          <value>2009-11-01T06:15:20.650000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/f53a4ff0-8671-4301-80bc-24ad509720b1">
+        <time>
+          <value>2009-11-01T06:15:20.820000Z</value>
+        </time>
+        <waveformID channelCode="BHZ" locationCode="" networkCode="UK" stationCode="PSRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+    </event>
+  </eventParameters>
+</q:quakeml>

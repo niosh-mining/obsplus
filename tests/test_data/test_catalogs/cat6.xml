@@ -1,0 +1,1841 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:local/0fc9dadc-a073-4ba8-8dc6-8425a3b847e9">
+    <event publicID="smi:local/2016-12-13T17-00-09">
+      <preferredOriginID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</preferredOriginID>
+      <preferredMagnitudeID>smi:local/eb8647ab-d3d3-4f32-945b-af0a230c5d57</preferredMagnitudeID>
+      <description>
+        <text>LR</text>
+      </description>
+      <comment id="smi:local/8bad3879-8ee9-4b57-84b0-120c12ee29a2">
+        <text>OLDACT:REG 16-12-13 12:00 OP:PYTH STATUS:               ID:20161213170009</text>
+      </comment>
+      <comment id="smi:local/8d4294a8-3e4d-435b-8dbd-cca8981dde6f">
+        <text>OLDACT:NEW 16-12-13 17:13 OP:EW   STATUS:               ID:20161213170009</text>
+      </comment>
+      <comment id="smi:local/1645cc00-a9e5-4383-a4de-033c9e5fd124">
+        <text>BINDERID: 6971</text>
+      </comment>
+      <comment id="smi:local/e98648ed-096a-4d84-979e-95b0b71d7b9e">
+        <text>VERSIONID: 2</text>
+      </comment>
+      <comment id="smi:local/9e0b76f7-0dd7-489f-ad6b-a52c05170ef4">
+        <text>CHANNELID: WTPM.ELZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/3eedfc53-2319-4ae3-a9df-c03d8cb61118">
+        <text>CHANNELID: LFSW.ELZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/399e751b-0428-46f6-ab98-a2064b0ae548">
+        <text>CHANNELID: LFS.ELZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/e3850297-49fd-47de-a72b-10e713eee283">
+        <text>CHANNELID: LFGH.HNZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/f2c503da-5034-4a9c-a299-bce50cbe6326">
+        <text>CHANNELID: LFW.HHZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/a2f0c1be-42f7-48ae-be9e-a38438669e78">
+        <text>CHANNELID: LFN.HHZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/a485f7b5-f300-448a-a042-10fea6050a9c">
+        <text>CHANNELID: LFE.HHZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/5a89cf64-ccfb-4432-8813-5d969e8ff4c2">
+        <text>CHANNELID: LFNE.HHZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/b7ca7edc-0091-49df-9b93-bb30fde007c8">
+        <text>CHANNELID: LFRP.HHZ.LF.--</text>
+      </comment>
+      <comment id="smi:local/c67357b7-aa90-4aa7-b956-0b825b7929e9">
+        <text>CHANNELID: MKMT.EHZ.MB.--</text>
+      </comment>
+      <origin publicID="smi:local/0cdd5350-2ad7-4501-882f-b9b0b35ed482">
+        <time>
+          <value>2016-12-13T17:00:09.600000Z</value>
+        </time>
+        <latitude>
+          <value>47.483</value>
+          <uncertainty>0.32</uncertainty>
+        </latitude>
+        <longitude>
+          <value>-115.792</value>
+          <uncertainty>0.32</uncertainty>
+        </longitude>
+        <depth>
+          <value>0.27</value>
+          <uncertainty>0.66</uncertainty>
+        </depth>
+        <quality>
+          <associatedPhaseCount>11</associatedPhaseCount>
+          <standardError>0.04</standardError>
+          <azimuthalGap>63.0</azimuthalGap>
+        </quality>
+        <creationInfo>
+          <agencyID>SMR</agencyID>
+          <author>DC</author>
+          <creationTime>2016-12-14T08:42:00.000000Z</creationTime>
+        </creationInfo>
+        <originUncertainty>
+          <horizontalUncertainty>0.32</horizontalUncertainty>
+        </originUncertainty>
+        <arrival publicID="smi:local/9eaede3a-7f9c-4769-9af4-64a0e78a4ba4">
+          <pickID>smi:local/3d993c96-f5d5-49b6-942d-993be1ebf522</pickID>
+          <phase>P</phase>
+          <azimuth>108.0</azimuth>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/dbcceb05-85b1-4042-bece-c0350857a550">
+          <pickID>smi:local/793567ec-08f6-4078-a6d1-9ed95522852a</pickID>
+          <phase>P</phase>
+          <azimuth>262.0</azimuth>
+          <timeResidual>-0.04</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/5fb5417c-1a5e-4da1-9314-1a68ade7072c">
+          <pickID>smi:local/1731d634-5b0d-458a-9251-7aaf940c866d</pickID>
+          <phase>P</phase>
+          <azimuth>181.0</azimuth>
+          <timeResidual>-0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/ad705b0e-a1b1-4a47-8363-23b54aff2f5d">
+          <pickID>smi:local/da9d0ef6-f8d8-4cf4-ab0e-699d68392c53</pickID>
+          <phase>P</phase>
+          <azimuth>232.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/5bbd27f3-5fdb-412a-9e95-59c3d8aef349">
+          <pickID>smi:local/df72ca56-a6db-4463-9558-13fa79484a54</pickID>
+          <phase>P</phase>
+          <azimuth>348.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/80d3e30b-443d-4b16-9eeb-8d412aefccc3">
+          <pickID>smi:local/06563ed6-9a8b-4142-94f2-f361c1a4e5ad</pickID>
+          <phase>P</phase>
+          <azimuth>302.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/0fa3d3c3-b0de-4179-b2bf-634bc2cef522">
+          <pickID>smi:local/ed6bc02f-4bf1-4cca-b360-edbd08280768</pickID>
+          <phase>P</phase>
+          <azimuth>96.0</azimuth>
+          <timeResidual>-0.06</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/ea7f2a9c-f8db-4c14-8fee-522fa7c3a3e8">
+          <pickID>smi:local/94becf76-764e-4651-b37d-9e6200c1bf5b</pickID>
+          <phase>S</phase>
+          <azimuth>96.0</azimuth>
+          <timeResidual>0.6</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3d30b594-c753-4df6-8437-0fce9d8584c5">
+          <pickID>smi:local/8e1a1f8a-f5fd-49ae-9d68-05b4b2dde1a3</pickID>
+          <phase>S</phase>
+          <azimuth>96.0</azimuth>
+          <timeResidual>0.8</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/07c37ec5-5dc2-4a6d-ac75-380798cab9c0">
+          <pickID>smi:local/85767e6a-6029-4667-b19b-3d22786cee6e</pickID>
+          <phase>P</phase>
+          <azimuth>51.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/c846e9fe-fbf0-4ec4-98a1-92f451973ed6">
+          <pickID>smi:local/c9708586-7e16-460b-866c-615a0d2858a3</pickID>
+          <phase>P</phase>
+          <azimuth>158.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/92ead07d-70d9-43b2-a357-dcf57a656bfb">
+          <pickID>smi:local/4fb93046-4fa0-46ef-8435-3c2e673235e4</pickID>
+          <phase>S</phase>
+          <azimuth>158.0</azimuth>
+          <timeResidual>2.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3f09ee8f-58aa-453b-993d-b35452ea64f3">
+          <pickID>smi:local/aeb310ba-db82-4cb0-8e42-3d69f14ff32f</pickID>
+          <phase>S</phase>
+          <azimuth>158.0</azimuth>
+          <timeResidual>2.1</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a62ea374-ec3b-4cd1-b688-49aa747bd09a">
+          <pickID>smi:local/2a393bdb-0447-478f-9d72-67949cc565ef</pickID>
+          <phase>P</phase>
+          <azimuth>263.0</azimuth>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/5a50c913-de11-4922-aa27-7a1d09b77950">
+          <pickID>smi:local/77c37de3-a407-4e47-8672-60b1ccbffe88</pickID>
+          <phase>P</phase>
+          <azimuth>129.0</azimuth>
+          <timeResidual>-0.35</timeResidual>
+          <timeWeight>0.5</timeWeight>
+        </arrival>
+      </origin>
+      <origin publicID="smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7">
+        <time>
+          <value>2016-12-13T17:00:09.290000Z</value>
+        </time>
+        <latitude>
+          <value>47.48233333333334</value>
+        </latitude>
+        <longitude>
+          <value>-115.79066666666667</value>
+        </longitude>
+        <depth>
+          <value>1.1</value>
+          <uncertainty>500.0</uncertainty>
+        </depth>
+        <methodID>smi:local/pypoinverse_0.0.2/LocateHypoInverse_0.0.0</methodID>
+        <quality>
+          <associatedPhaseCount>15</associatedPhaseCount>
+          <standardError>0.03</standardError>
+          <azimuthalGap>64.0</azimuthalGap>
+          <minimumDistance>0.0</minimumDistance>
+        </quality>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.490682Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+        <originUncertainty>
+          <horizontalUncertainty>290.0</horizontalUncertainty>
+        </originUncertainty>
+        <arrival publicID="smi:local/fbc5a3de-7757-40cf-aabf-4aec34718940">
+          <pickID>smi:local/3d993c96-f5d5-49b6-942d-993be1ebf522</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>112.0</azimuth>
+          <distance>0.3</distance>
+          <timeResidual>-0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/4528939d-dce4-4ee9-8e0e-8c08b1551b09">
+          <pickID>smi:local/793567ec-08f6-4078-a6d1-9ed95522852a</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>266.0</azimuth>
+          <distance>0.6</distance>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/0eeb0195-f873-41a0-b90e-2223fdbd925e">
+          <pickID>smi:local/1731d634-5b0d-458a-9251-7aaf940c866d</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>189.0</azimuth>
+          <distance>0.9</distance>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/e1854fe5-bcc3-4c76-97f9-fc720f96a93a">
+          <pickID>smi:local/da9d0ef6-f8d8-4cf4-ab0e-699d68392c53</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>235.0</azimuth>
+          <distance>1.5</distance>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/9c5387cf-9383-420e-b739-3e6730d1647b">
+          <pickID>smi:local/df72ca56-a6db-4463-9558-13fa79484a54</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>345.0</azimuth>
+          <distance>2.0</distance>
+          <timeResidual>0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/addea879-2105-44b4-87bc-e4bc75248fd2">
+          <pickID>smi:local/06563ed6-9a8b-4142-94f2-f361c1a4e5ad</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>301.0</azimuth>
+          <distance>2.3</distance>
+          <timeResidual>-0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/f841a5f7-2d6e-40b4-80c3-d3f11105c340">
+          <pickID>smi:local/94becf76-764e-4651-b37d-9e6200c1bf5b</pickID>
+          <phase>S</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>96.0</azimuth>
+          <distance>2.5</distance>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/1ddb4c28-0009-46df-92ce-7fd46a94701b">
+          <pickID>smi:local/8e1a1f8a-f5fd-49ae-9d68-05b4b2dde1a3</pickID>
+          <phase>S</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>96.0</azimuth>
+          <distance>2.5</distance>
+          <timeResidual>-0.01</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3b94e042-0c5c-4d4c-8533-6aa57e16dbc0">
+          <pickID>smi:local/ed6bc02f-4bf1-4cca-b360-edbd08280768</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>96.0</azimuth>
+          <distance>2.5</distance>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/77bb6db2-0ea5-48a5-af9c-bbd04dd0bc7f">
+          <pickID>smi:local/85767e6a-6029-4667-b19b-3d22786cee6e</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>49.0</azimuth>
+          <distance>2.9</distance>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/e2f44c76-d833-46b8-9faf-ff82905cd027">
+          <pickID>smi:local/aeb310ba-db82-4cb0-8e42-3d69f14ff32f</pickID>
+          <phase>S</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>160.0</azimuth>
+          <distance>3.5</distance>
+          <timeResidual>0.06</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/2f390f7a-db00-4f8a-946b-c8879ab4532b">
+          <pickID>smi:local/4fb93046-4fa0-46ef-8435-3c2e673235e4</pickID>
+          <phase>S</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>160.0</azimuth>
+          <distance>3.5</distance>
+          <timeResidual>0.05</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/4acb864c-fa4b-4459-bb2e-9f477f555b23">
+          <pickID>smi:local/c9708586-7e16-460b-866c-615a0d2858a3</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>160.0</azimuth>
+          <distance>3.5</distance>
+          <timeResidual>0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/6678de78-345f-4647-8427-dd721736d329">
+          <pickID>smi:local/2a393bdb-0447-478f-9d72-67949cc565ef</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>263.0</azimuth>
+          <distance>12.7</distance>
+          <timeResidual>-0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/8f25869a-5695-48a8-b5da-69cb58b4db78">
+          <pickID>smi:local/77c37de3-a407-4e47-8672-60b1ccbffe88</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.0</timeCorrection>
+          <azimuth>129.0</azimuth>
+          <distance>66.3</distance>
+          <timeResidual>-0.09</timeResidual>
+          <timeWeight>0.5</timeWeight>
+        </arrival>
+      </origin>
+      <magnitude publicID="smi:local/9a7d6b61-3133-4a63-91f4-00e35e8e8868">
+        <mag>
+          <value>1.9</value>
+        </mag>
+        <type>ML</type>
+        <creationInfo>
+          <agencyID>SMR</agencyID>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/f0377b36-1ff4-48d9-8a6c-b669b8060238">
+        <mag>
+          <value>1.3</value>
+        </mag>
+        <type>MC</type>
+        <creationInfo>
+          <agencyID>SMR</agencyID>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/eb8647ab-d3d3-4f32-945b-af0a230c5d57">
+        <mag>
+          <value>1.5718503009560536</value>
+          <uncertainty>0.3729419825671789</uncertainty>
+          <confidenceLevel>95.0</confidenceLevel>
+        </mag>
+        <type>ML</type>
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <stationCount>16</stationCount>
+        <azimuthalGap>65.22640875338931</azimuthalGap>
+        <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>reviewed</evaluationStatus>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/89609e1d-0e96-427e-8f08-100a6345b9be</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/01d4b7a6-b62f-4d53-97cb-2b21b55b828d</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/6f93e295-f269-4781-a1cb-c34a1933d281</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/b9f340dd-028b-4767-b1d5-4140515f9ce7</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/a3af3400-1959-401f-b03e-55464d6dbf05</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/da9f27a5-7fb0-4ef7-ba1f-366785a239a2</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/e5003400-7a3b-48e3-9198-9496d2efe0c3</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/6ae932e1-e8b0-4d42-af69-72a2fafce4ba</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/4116ec75-ff16-4392-adc3-30bd5cf15c69</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/52973081-1c8a-42b6-998c-cc0fc8af52f4</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/dc3ea187-c6fa-4711-bece-4705e41929a8</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/c80447c1-afbd-413d-9eaf-e01700b9c262</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/5430f2db-0f9c-4ddf-8a6f-e052aa850baa</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/a7e3edc2-9ae5-4fe9-8c7f-fb2cd20789ed</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/345c449e-a5f5-4f6b-a4f9-1b089f7e139c</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/55fd65b8-bb8f-4add-bd5c-607190205acb</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <comment id="smi:local/1c7dc172-1f01-4cbe-8862-4a686752432c">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.508954Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509596Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/90a2356f-5d8c-4779-b2b0-4a92d3da5542">
+        <mag>
+          <value>1.8089989148922392</value>
+          <uncertainty>0.21526290368254308</uncertainty>
+          <confidenceLevel>95.0</confidenceLevel>
+        </mag>
+        <type>MW</type>
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <stationCount>10</stationCount>
+        <azimuthalGap>101.87651981041401</azimuthalGap>
+        <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>reviewed</evaluationStatus>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/da4af8fb-7d8b-43ef-9fa7-e3f7355cb911</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/78d7e088-4b15-4564-a769-9227465d96c7</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/a08d8712-9f85-41b6-96db-a80049ead87b</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/e0c1b3f9-abd3-41d7-b157-8630a7222090</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/ea17c53d-4124-4ca1-9697-6c7945fc9ac9</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/4d53e0d9-a7e9-4c02-8534-5fe8c991e088</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/4ba893de-4c78-4275-9d73-84aa4c6a2fe0</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/206b036a-28ec-41b6-90ab-5967e48ad329</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/efa1150b-9291-4adf-bf1a-e81a830761ad</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/0f45fdfa-ccce-4a6e-863b-1531290c45a5</stationMagnitudeID>
+          <weight>1.0</weight>
+        </stationMagnitudeContribution>
+        <comment id="smi:local/f5237140-a73f-49ee-ad31-d26c22990f7f">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.540294Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/7ff2bc6a-3730-4bbc-aa30-dbd1ca4c46b2">
+          <text>Seismic Moment: 650880247817.456 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.540405Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/934bcae9-616e-4198-9f69-3325cd718eed">
+          <text>Moment Uncertainty: 341420607222.007 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.540504Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541116Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </magnitude>
+      <stationMagnitude publicID="smi:local/89609e1d-0e96-427e-8f08-100a6345b9be">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.7835400679659155</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/2a7fe2e7-d079-4412-9c83-66330e3961c0</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HNE" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <comment id="smi:local/f7118b10-a70c-4bfc-8797-53cdc4d3b43f">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.493247Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509620Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/01d4b7a6-b62f-4d53-97cb-2b21b55b828d">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.4570946314584075</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/80f1f0fa-cf6b-4b5b-a9d8-fdb9f324def0</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HNN" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <comment id="smi:local/05e155c6-d2a7-4863-b8e8-ca379beea064">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.493702Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509638Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/6f93e295-f269-4781-a1cb-c34a1933d281">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.7474031418503868</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/80652d79-aac4-48a3-bbe6-2cf140779d32</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <comment id="smi:local/8b34acd3-eb4a-4632-8434-4a457b6f4a23">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.494132Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509655Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/b9f340dd-028b-4767-b1d5-4140515f9ce7">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8807131510849096</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/0bb0c853-16aa-4534-9506-c10899e69ab9</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <comment id="smi:local/a378002c-f2de-4d7b-9dce-64dd3c7353a4">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.494540Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509671Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/a3af3400-1959-401f-b03e-55464d6dbf05">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.6992879897154687</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/61254415-bacd-4033-ab04-d47e95d61eec</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFS"></waveformID>
+        <comment id="smi:local/e4931fd3-54d1-4373-a837-6801b6f7f13d">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.494953Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509688Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/da9f27a5-7fb0-4ef7-ba1f-366785a239a2">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.1989083183888747</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/d37ee9ae-d63f-46e7-99ea-ad6c2d0a9c77</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <comment id="smi:local/58d9f0e1-a48f-4c97-bd78-b0603685b0e3">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.495374Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509705Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/e5003400-7a3b-48e3-9198-9496d2efe0c3">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.6968591950398721</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/4984b7bb-cc7f-4bf1-8ae4-0e019b50008f</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <comment id="smi:local/59e7f34e-23d0-4211-9127-619d7c1ed612">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.495784Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509721Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/6ae932e1-e8b0-4d42-af69-72a2fafce4ba">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.5736691665443918</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/5a0be7aa-544e-4331-857d-385d9da8da7b</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <comment id="smi:local/68b44fc8-ba22-49d0-aae9-0977ce44650b">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.496200Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509737Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/4116ec75-ff16-4392-adc3-30bd5cf15c69">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.1881572639125886</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/bb4c6745-894d-440b-ba60-c48131bfc204</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <comment id="smi:local/44aec311-0a2f-4eab-aaeb-4002e6c5a258">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.496603Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509753Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/52973081-1c8a-42b6-998c-cc0fc8af52f4">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.1955925313902154</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/eab83357-dc9a-4b2a-9bf8-03e79354e2dd</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <comment id="smi:local/edb07f54-71ad-4120-82ae-4184267cd63e">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.497038Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509770Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/dc3ea187-c6fa-4711-bece-4705e41929a8">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.201125935459404</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/a2938242-fb2f-48d4-a1cb-8991510b4794</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <comment id="smi:local/0dbb7e0e-3016-4d60-9a49-aded0100ce76">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.497443Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509786Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/c80447c1-afbd-413d-9eaf-e01700b9c262">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.07666133691876</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/65243fd4-160b-476e-aee7-9df2c20fb427</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFE"></waveformID>
+        <comment id="smi:local/66d0ba98-0413-40a3-a66c-187fcc843d4b">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.497863Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509802Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/5430f2db-0f9c-4ddf-8a6f-e052aa850baa">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.7050944413323808</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/bea044c5-7f83-4404-8529-d4b45fa04c0e</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <comment id="smi:local/e33b451c-0744-47d2-a626-89a0a759c04c">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.498301Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509819Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/a7e3edc2-9ae5-4fe9-8c7f-fb2cd20789ed">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8122497497195984</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/7409c7c5-3e54-4eb0-b75b-23fd5344a4cb</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <comment id="smi:local/a27102a1-e72a-4ee6-93df-660b91e75715">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.498715Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509835Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/345c449e-a5f5-4f6b-a4f9-1b089f7e139c">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.4225300881603418</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/1960ad56-e2c4-4dc9-9d84-f37382bd410d</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <comment id="smi:local/e5ceb142-220f-4a30-9113-86055cb1bf45">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.499123Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509851Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/55fd65b8-bb8f-4add-bd5c-607190205acb">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.5700314353677154</value>
+        </mag>
+        <type>ML</type>
+        <amplitudeID>smi:local/73d69adb-8194-4e72-8dc6-be1535b32ad9</amplitudeID>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <comment id="smi:local/72f9aca5-6789-4f74-b80b-953988ba2a3d">
+          <text>Automatic local magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.499520Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:28.509867Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/da4af8fb-7d8b-43ef-9fa7-e3f7355cb911">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.9099610575332577</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFN"></waveformID>
+        <comment id="smi:local/f0af4593-3517-48f5-80d3-b356180368a5">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.887564Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/ccfb3832-da99-4d3b-a676-5bfc28e6b017">
+          <text>Seismic Moment: 922447347322.155 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.887724Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/fe224304-4ca4-4a67-9cd2-e7d267338416">
+          <text>Moment Uncertainty: 3348.252 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.887837Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541156Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/78d7e088-4b15-4564-a769-9227465d96c7">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.807974219910232</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFW"></waveformID>
+        <comment id="smi:local/04e8c44f-53e7-4a02-a892-fde07f381047">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.962476Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/576b3bb8-3bd2-491b-a39b-e124c3731e21">
+          <text>Seismic Moment: 648576680882.104 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.962594Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/e5a7d174-5c34-4967-a151-ca1efeab535f">
+          <text>Moment Uncertainty: 1438.310 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:28.962692Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541180Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/a08d8712-9f85-41b6-96db-a80049ead87b">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8172697144732894</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <comment id="smi:local/ef6aa8d9-a915-433e-8ceb-54705eaaac43">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.042693Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/ef86b33d-054f-40ce-a231-d27d06d0074c">
+          <text>Seismic Moment: 669737430664.054 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.042870Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/a4a05dbe-ef00-4398-b4e3-a35995d3d990">
+          <text>Moment Uncertainty: 1951.294 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.043030Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541202Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/e0c1b3f9-abd3-41d7-b157-8630a7222090">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.5975771709012982</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <comment id="smi:local/9f6b92e2-79a8-4080-a174-9b4cd1e7a246">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.126520Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/12adcb82-e2e6-448d-b45c-8effe457ca7a">
+          <text>Seismic Moment: 313592564243.463 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.126638Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/a40eb36d-e91e-4c76-b8db-81f9857cc783">
+          <text>Moment Uncertainty: 910.132 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.126747Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541224Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/ea17c53d-4124-4ca1-9697-6c7945fc9ac9">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.593736011209696</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <comment id="smi:local/ed125fbe-79f8-494b-be1b-817ed0aa8df5">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.178211Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/64399ddd-a1d7-4ae1-8d90-be8ababb4753">
+          <text>Seismic Moment: 309459640595.449 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.178322Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/8def3da5-4983-4d29-8aeb-63d65a325be8">
+          <text>Moment Uncertainty: 903.427 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.178421Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541245Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/4d53e0d9-a7e9-4c02-8534-5fe8c991e088">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.681867573349559</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFNE"></waveformID>
+        <comment id="smi:local/2c070cc0-dac1-4c5f-9f84-4120768676da">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.247040Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/0bac2a57-6a9e-4ff3-87fc-c377ba934579">
+          <text>Seismic Moment: 419567036240.953 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.247152Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/fa394e37-82e1-41ac-a095-fdb51508f2a3">
+          <text>Moment Uncertainty: 700.778 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.247253Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541267Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/4ba893de-4c78-4275-9d73-84aa4c6a2fe0">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8651160231281403</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <comment id="smi:local/5979112c-5302-4799-bac6-ea867bcb4dc9">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.315149Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/e94a832f-b1d6-43bc-9e9c-cceba260801c">
+          <text>Seismic Moment: 790085396645.159 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.315264Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/902e3bca-1957-427c-a2ce-ff8415b75b2e">
+          <text>Moment Uncertainty: 2535.617 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.315364Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541288Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/206b036a-28ec-41b6-90ab-5967e48ad329">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8100236098742464</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHN" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <comment id="smi:local/91e1bf6b-33ee-4274-bdf8-a1fb5dadd9f0">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.382568Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/ec15e6c4-35c1-4ad7-89ec-02e5a72a82f1">
+          <text>Seismic Moment: 653183814752.808 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.382681Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/cce0b2fa-757d-4ce0-a34b-af0da7865790">
+          <text>Moment Uncertainty: 3387.324 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.382781Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541310Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/efa1150b-9291-4adf-bf1a-e81a830761ad">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.8124743215910244</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHE" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <comment id="smi:local/6303e680-efda-48e0-ab65-08acd3e2765f">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.450369Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/53ff93f3-9387-45c3-b01f-ceeadfe9d3a8">
+          <text>Seismic Moment: 658736127489.515 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.450482Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/d0573d56-a479-4715-976b-841b114b5ff8">
+          <text>Moment Uncertainty: 3465.118 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.450583Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541332Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <stationMagnitude publicID="smi:local/0f45fdfa-ccce-4a6e-863b-1531290c45a5">
+        <originID>smi:local/d64d6e7e-6da0-4d37-9270-d4d3ad3f35e7</originID>
+        <mag>
+          <value>1.0507075497447549</value>
+        </mag>
+        <type>MW</type>
+        <methodID>smi:local/magpy_version0.0.0</methodID>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="PUL"></waveformID>
+        <comment id="smi:local/0ed811d1-c9d1-4aec-a069-060172ee8d91">
+          <text>Automatic moment magnitude calculation using the preferred origin.</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.520813Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/2db78d38-ac27-4d47-a6f4-50f4b41061f7">
+          <text>Seismic Moment: 47430895539.870 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.520929Z</creationTime>
+          </creationInfo>
+        </comment>
+        <comment id="smi:local/acc0857a-7371-43af-86f6-bbf9237a1bbb">
+          <text>Moment Uncertainty: 1.772 N-m</text>
+          <creationInfo>
+            <agencyID>NIOSH</agencyID>
+            <author>swave</author>
+            <creationTime>2016-12-27T23:53:29.521028Z</creationTime>
+          </creationInfo>
+        </comment>
+        <creationInfo>
+          <agencyID>NIOSH</agencyID>
+          <author>swave</author>
+          <creationTime>2016-12-27T23:53:29.541353Z</creationTime>
+          <version>0.0.0</version>
+        </creationInfo>
+      </stationMagnitude>
+      <pick publicID="smi:local/3d993c96-f5d5-49b6-942d-993be1ebf522">
+        <time>
+          <value>2016-12-13T17:00:09.830000Z</value>
+        </time>
+        <waveformID channelCode="HNZ" locationCode="--" networkCode="LF" stationCode="LFGH"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/793567ec-08f6-4078-a6d1-9ed95522852a">
+        <time>
+          <value>2016-12-13T17:00:09.770000Z</value>
+        </time>
+        <waveformID channelCode="ELZ" locationCode="--" networkCode="LF" stationCode="WTPM"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/1731d634-5b0d-458a-9251-7aaf940c866d">
+        <time>
+          <value>2016-12-13T17:00:09.830000Z</value>
+        </time>
+        <waveformID channelCode="ELZ" locationCode="--" networkCode="LF" stationCode="LFS"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/da9d0ef6-f8d8-4cf4-ab0e-699d68392c53">
+        <time>
+          <value>2016-12-13T17:00:09.950000Z</value>
+        </time>
+        <waveformID channelCode="ELZ" locationCode="--" networkCode="LF" stationCode="LFSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/df72ca56-a6db-4463-9558-13fa79484a54">
+        <time>
+          <value>2016-12-13T17:00:10.070000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFN"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/06563ed6-9a8b-4142-94f2-f361c1a4e5ad">
+        <time>
+          <value>2016-12-13T17:00:10.080000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/ed6bc02f-4bf1-4cca-b360-edbd08280768">
+        <time>
+          <value>2016-12-13T17:00:10.040000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/94becf76-764e-4651-b37d-9e6200c1bf5b">
+        <time>
+          <value>2016-12-13T17:00:10.450000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/8e1a1f8a-f5fd-49ae-9d68-05b4b2dde1a3">
+        <time>
+          <value>2016-12-13T17:00:10.470000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="--" networkCode="LF" stationCode="LFE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/85767e6a-6029-4667-b19b-3d22786cee6e">
+        <time>
+          <value>2016-12-13T17:00:10.200000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFNE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/c9708586-7e16-460b-866c-615a0d2858a3">
+        <time>
+          <value>2016-12-13T17:00:10.270000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/4fb93046-4fa0-46ef-8435-3c2e673235e4">
+        <time>
+          <value>2016-12-13T17:00:10.820000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/aeb310ba-db82-4cb0-8e42-3d69f14ff32f">
+        <time>
+          <value>2016-12-13T17:00:10.830000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="--" networkCode="LF" stationCode="LFRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2a393bdb-0447-478f-9d72-67949cc565ef">
+        <time>
+          <value>2016-12-13T17:00:11.760000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="LF" stationCode="PUL"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/77c37de3-a407-4e47-8672-60b1ccbffe88">
+        <time>
+          <value>2016-12-13T17:00:20.800000Z</value>
+        </time>
+        <waveformID channelCode="EHZ" locationCode="--" networkCode="MB" stationCode="MKMT"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/8beb5cda-e7a0-4336-beb5-626b60c2beb2">
+        <time>
+          <value>2016-12-13T17:00:10.240000Z</value>
+        </time>
+        <waveformID channelCode="HNE" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/9e80d42a-2787-4208-9911-d8ffec37dd39">
+        <time>
+          <value>2016-12-13T17:00:10.360000Z</value>
+        </time>
+        <waveformID channelCode="HNN" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/d03c6808-7d91-431b-a2df-3e3b6ee6ea05">
+        <time>
+          <value>2016-12-13T17:00:10.130000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/369dcaeb-ca1e-431d-be7c-c6be35321140">
+        <time>
+          <value>2016-12-13T17:00:10.230000Z</value>
+        </time>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/95365693-6e68-4cf2-9744-94518c561243">
+        <time>
+          <value>2016-12-13T17:00:10.240000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFS"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2c5992b1-091d-4e61-bcab-a8fd12fd2818">
+        <time>
+          <value>2016-12-13T17:00:10.560000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/8682abfe-3e1e-438e-bcd2-f14f962b9674">
+        <time>
+          <value>2016-12-13T17:00:10.810000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/49ff0c3a-a9ef-4334-a80b-1017dbe78bef">
+        <time>
+          <value>2016-12-13T17:00:10.540000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/eaa497a4-44fd-4a40-8a76-69aa3e5e266e">
+        <time>
+          <value>2016-12-13T17:00:10.730000Z</value>
+        </time>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/e54ac425-b519-4711-a7a9-2c0254f74367">
+        <time>
+          <value>2016-12-13T17:00:11.050000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/3d22af28-80af-4f5d-9feb-2eac43fba91b">
+        <time>
+          <value>2016-12-13T17:00:11.060000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/07681cc0-6a7b-4161-b0eb-fdfadb76b4a3">
+        <time>
+          <value>2016-12-13T17:00:10.480000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2d3a4bde-d92e-43de-90e8-f796f14f303f">
+        <time>
+          <value>2016-12-13T17:00:10.860000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/0b9c9ea0-da82-4282-bc05-8ff11b86343e">
+        <time>
+          <value>2016-12-13T17:00:10.880000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/054e2b36-0411-47d9-84cd-6b8d2ab4dbff">
+        <time>
+          <value>2016-12-13T17:00:10.870000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/b294109c-039a-46df-a1b9-b2921e43a656">
+        <time>
+          <value>2016-12-13T17:00:11.010000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <amplitude publicID="smi:local/2a7fe2e7-d079-4412-9c83-66330e3961c0">
+        <genericAmplitude>
+          <value>5.0104e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.06</value>
+        </period>
+        <pickID>smi:local/8beb5cda-e7a0-4336-beb5-626b60c2beb2</pickID>
+        <waveformID channelCode="HNE" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/80f1f0fa-cf6b-4b5b-a9d8-fdb9f324def0">
+        <genericAmplitude>
+          <value>2.3628000000000005e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/9e80d42a-2787-4208-9911-d8ffec37dd39</pickID>
+        <waveformID channelCode="HNN" locationCode="" networkCode="LF" stationCode="LFGH"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/80652d79-aac4-48a3-bbe6-2cf140779d32">
+        <genericAmplitude>
+          <value>5.219e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/d03c6808-7d91-431b-a2df-3e3b6ee6ea05</pickID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/0bb0c853-16aa-4534-9506-c10899e69ab9">
+        <genericAmplitude>
+          <value>7.0941e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/369dcaeb-ca1e-431d-be7c-c6be35321140</pickID>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="WTPM"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/61254415-bacd-4033-ab04-d47e95d61eec">
+        <genericAmplitude>
+          <value>4.0031e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.08</value>
+        </period>
+        <pickID>smi:local/95365693-6e68-4cf2-9744-94518c561243</pickID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFS"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/d37ee9ae-d63f-46e7-99ea-ad6c2d0a9c77">
+        <genericAmplitude>
+          <value>6.615e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.06</value>
+        </period>
+        <pickID>smi:local/2c5992b1-091d-4e61-bcab-a8fd12fd2818</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/4984b7bb-cc7f-4bf1-8ae4-0e019b50008f">
+        <genericAmplitude>
+          <value>2.082e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.16</value>
+        </period>
+        <pickID>smi:local/8682abfe-3e1e-438e-bcd2-f14f962b9674</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFN"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/5a0be7aa-544e-4331-857d-385d9da8da7b">
+        <genericAmplitude>
+          <value>2.1581e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.12</value>
+        </period>
+        <pickID>smi:local/49ff0c3a-a9ef-4334-a80b-1017dbe78bef</pickID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/bb4c6745-894d-440b-ba60-c48131bfc204">
+        <genericAmplitude>
+          <value>8.883e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.09</value>
+        </period>
+        <pickID>smi:local/eaa497a4-44fd-4a40-8a76-69aa3e5e266e</pickID>
+        <waveformID channelCode="ENN" locationCode="" networkCode="LF" stationCode="LFSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/eab83357-dc9a-4b2a-9bf8-03e79354e2dd">
+        <genericAmplitude>
+          <value>6.005e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.06</value>
+        </period>
+        <pickID>smi:local/e54ac425-b519-4711-a7a9-2c0254f74367</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/a2938242-fb2f-48d4-a1cb-8991510b4794">
+        <genericAmplitude>
+          <value>6.082000000000001e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.1</value>
+        </period>
+        <pickID>smi:local/3d22af28-80af-4f5d-9feb-2eac43fba91b</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/65243fd4-160b-476e-aee7-9df2c20fb427">
+        <genericAmplitude>
+          <value>4.4810000000000005e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/07681cc0-6a7b-4161-b0eb-fdfadb76b4a3</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/bea044c5-7f83-4404-8529-d4b45fa04c0e">
+        <genericAmplitude>
+          <value>1.6388e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/2d3a4bde-d92e-43de-90e8-f796f14f303f</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/7409c7c5-3e54-4eb0-b75b-23fd5344a4cb">
+        <genericAmplitude>
+          <value>2.0974e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/0b9c9ea0-da82-4282-bc05-8ff11b86343e</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFNE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/1960ad56-e2c4-4dc9-9d84-f37382bd410d">
+        <genericAmplitude>
+          <value>7.262000000000001e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.04</value>
+        </period>
+        <pickID>smi:local/054e2b36-0411-47d9-84cd-6b8d2ab4dbff</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/73d69adb-8194-4e72-8dc6-be1535b32ad9">
+        <genericAmplitude>
+          <value>1.0199e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.09</value>
+        </period>
+        <pickID>smi:local/b294109c-039a-46df-a1b9-b2921e43a656</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="LF" stationCode="LFRP"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+    </event>
+  </eventParameters>
+</q:quakeml>

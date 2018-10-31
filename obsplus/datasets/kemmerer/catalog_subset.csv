@@ -1,0 +1,3 @@
+time,latitude,longitude,depth,magnitude,associated_phase_count,azimuthal_gap,event_description,event_id,horizontal_uncertainty,local_magnitude,magnitude_type,moment_magnitude,p_phase_count,s_phase_count,standard_error,stations,used_phase_count,vertical_uncertainty
+1238607418.0,41.6824,-110.6313,2.0984,2.52,,,,smi:local/042f78e9-6089-4ed8-8f9b-47c2189a1c75,,2.52,ML,,0,0,,,,
+1238773167.0,41.814,-110.6435,1.8643,2.34,,,,smi:local/16459ce7-69ff-4fe0-8639-a980b47498bb,,2.34,ML,,0,0,,,,

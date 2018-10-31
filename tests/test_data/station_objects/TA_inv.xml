@@ -1,0 +1,371 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<FDSNStationXML schemaVersion="1.0" xmlns="http://www.fdsn.org/xml/station/1">
+  <Source>IRIS-DMC</Source>
+  <Sender>IRIS-DMC</Sender>
+  <Module>ObsPy 1.0.2</Module>
+  <ModuleURI>https://www.obspy.org</ModuleURI>
+  <Created>2016-12-13T21:55:37+00:00</Created>
+  <Network code="TA" endDate="2500-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2003-01-01T00:00:00+00:00">
+    <Description>USArray Transportable Array (NSF EarthScope Project)</Description>
+    <TotalNumberStations>1808</TotalNumberStations>
+    <SelectedNumberStations>1</SelectedNumberStations>
+    <Station code="M11A" endDate="2008-08-11T23:59:59+00:00" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+      <Latitude unit="DEGREES">41.4311</Latitude>
+      <Longitude unit="DEGREES">-115.7912</Longitude>
+      <Elevation>1849.0</Elevation>
+      <Site>
+        <Name>Holland Ranch, North Fork, NV, USA</Name>
+      </Site>
+      <CreationDate>2006-05-06T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>60</TotalNumberChannels>
+      <SelectedNumberChannels>3</SelectedNumberChannels>
+      <Channel code="VHE" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">104.2</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHN" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">14.2</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHZ" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">0.0</Azimuth>
+        <Dip unit="DEGREES">-90.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+    </Station>
+  </Network>
+  <Network code="TA" endDate="2500-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2003-01-01T00:00:00+00:00">
+    <Description>USArray Transportable Array (NSF EarthScope Project)</Description>
+    <TotalNumberStations>1808</TotalNumberStations>
+    <SelectedNumberStations>1</SelectedNumberStations>
+    <Station code="M11A" endDate="2008-08-11T23:59:59+00:00" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+      <Latitude unit="DEGREES">41.4311</Latitude>
+      <Longitude unit="DEGREES">-115.7912</Longitude>
+      <Elevation>1849.0</Elevation>
+      <Site>
+        <Name>Holland Ranch, North Fork, NV, USA</Name>
+      </Site>
+      <CreationDate>2006-05-06T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>60</TotalNumberChannels>
+      <SelectedNumberChannels>3</SelectedNumberChannels>
+      <Channel code="VHE" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">104.2</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHN" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">14.2</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHZ" endDate="2007-05-10T00:44:59+00:00" locationCode="" restrictedStatus="open" startDate="2006-05-06T00:00:00+00:00">
+        <Comment>
+          <Value>50516 0100000B65254A7D</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.4311</Latitude>
+        <Longitude unit="DEGREES">-115.7912</Longitude>
+        <Elevation>1849.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">0.0</Azimuth>
+        <Dip unit="DEGREES">-90.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+    </Station>
+  </Network>
+  <Network code="TA" endDate="2500-12-31T23:59:59+00:00" restrictedStatus="open" startDate="2003-01-01T00:00:00+00:00">
+    <Description>USArray Transportable Array (NSF EarthScope Project)</Description>
+    <TotalNumberStations>1808</TotalNumberStations>
+    <SelectedNumberStations>1</SelectedNumberStations>
+    <Station code="M14A" endDate="2008-08-21T23:59:59+00:00" restrictedStatus="open" startDate="2007-02-10T00:00:00+00:00">
+      <Latitude unit="DEGREES">41.503</Latitude>
+      <Longitude unit="DEGREES">-113.3471</Longitude>
+      <Elevation>1318.0</Elevation>
+      <Site>
+        <Name>Sheep Mountain BLM, Rosette, UT, USA</Name>
+      </Site>
+      <CreationDate>2007-02-10T00:00:00+00:00</CreationDate>
+      <TotalNumberChannels>30</TotalNumberChannels>
+      <SelectedNumberChannels>3</SelectedNumberChannels>
+      <Channel code="VHE" endDate="2008-08-21T19:17:09+00:00" locationCode="" restrictedStatus="open" startDate="2007-02-10T00:00:00+00:00">
+        <Comment>
+          <Value>40640 010000044D9DCD50</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.503</Latitude>
+        <Longitude unit="DEGREES">-113.3471</Longitude>
+        <Elevation>1318.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">95.9</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHN" endDate="2008-08-21T19:17:09+00:00" locationCode="" restrictedStatus="open" startDate="2007-02-10T00:00:00+00:00">
+        <Comment>
+          <Value>40640 010000044D9DCD50</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.503</Latitude>
+        <Longitude unit="DEGREES">-113.3471</Longitude>
+        <Elevation>1318.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">5.9</Azimuth>
+        <Dip unit="DEGREES">0.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+      <Channel code="VHZ" endDate="2008-08-21T19:17:09+00:00" locationCode="" restrictedStatus="open" startDate="2007-02-10T00:00:00+00:00">
+        <Comment>
+          <Value>40640 010000044D9DCD50</Value>
+        </Comment>
+        <Latitude unit="DEGREES">41.503</Latitude>
+        <Longitude unit="DEGREES">-113.3471</Longitude>
+        <Elevation>1318.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth unit="DEGREES">0.0</Azimuth>
+        <Dip unit="DEGREES">-90.0</Dip>
+        <Type>GEOPHYSICAL</Type>
+        <SampleRate unit="SAMPLES/S">0.1</SampleRate>
+        <ClockDrift unit="SECONDS/SAMPLE">0.1</ClockDrift>
+        <CalibrationUnits>
+          <Name>V</Name>
+          <Description>emf in volts</Description>
+        </CalibrationUnits>
+        <Sensor>
+          <Description>Streckeisen STS-2 G3/Quanterra 330 Linear Phase Co</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>515260000.0</Value>
+            <Frequency>0.01</Frequency>
+            <InputUnits>
+              <Name>M/S</Name>
+              <Description>velocity in meters per second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>COUNTS</Name>
+              <Description>digital counts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+        </Response>
+      </Channel>
+    </Station>
+  </Network>
+</FDSNStationXML>

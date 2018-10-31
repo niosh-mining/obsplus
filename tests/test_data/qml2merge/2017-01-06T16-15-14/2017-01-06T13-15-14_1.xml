@@ -1,0 +1,767 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:local/4e5a02ec-9cd2-41dd-afd6-6f6b19441217">
+    <event publicID="smi:local/b4018c12-ca8d-429d-953a-96e2b45e9d7d">
+      <preferredOriginID>smi:local/aead4b42-e9f5-432b-80b7-6967dcc73fef</preferredOriginID>
+      <preferredMagnitudeID>smi:local/ec111a70-ad05-4752-bdac-08e17a76ca1f</preferredMagnitudeID>
+      <description>
+        <text>LR</text>
+      </description>
+      <origin publicID="smi:local/aead4b42-e9f5-432b-80b7-6967dcc73fef">
+        <time>
+          <value>2010-10-07T17:45:14.400000Z</value>
+        </time>
+        <latitude>
+          <value>54.619148102003194</value>
+          <uncertainty>0.9</uncertainty>
+        </latitude>
+        <longitude>
+          <value>-85.71805855260982</value>
+          <uncertainty>1.3</uncertainty>
+        </longitude>
+        <depth>
+          <value>1.1</value>
+          <uncertainty>1.1</uncertainty>
+        </depth>
+        <quality>
+          <associatedPhaseCount>12</associatedPhaseCount>
+          <standardError>0.1</standardError>
+          <azimuthalGap>50.0</azimuthalGap>
+        </quality>
+        <creationInfo>
+          <agencyID>BOB</agencyID>
+          <author>DC</author>
+          <creationTime>2010-10-07T14:23:00.000000Z</creationTime>
+        </creationInfo>
+        <originUncertainty>
+          <horizontalUncertainty>0.9</horizontalUncertainty>
+        </originUncertainty>
+        <arrival publicID="smi:local/9570b78a-978c-4905-955b-9b67a5654cda">
+          <pickID>smi:local/4a0f4b21-4af6-4642-9a47-67a9980371ac</pickID>
+          <phase>P</phase>
+          <azimuth>157.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/8bd6d7ab-2b18-4021-9a31-58a65a83ab15">
+          <pickID>smi:local/b27e9316-85af-4fe9-8e90-c03f1eabf494</pickID>
+          <phase>S</phase>
+          <azimuth>157.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/713118a5-9ea7-43b5-8659-fd875587d172">
+          <pickID>smi:local/379b42f6-f2c6-4a55-a041-69f84ec15ab1</pickID>
+          <phase>S</phase>
+          <azimuth>157.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/08d97057-169f-4559-b92f-0c48ef4bf8ce">
+          <pickID>smi:local/4f56cb31-03de-4e3d-81fb-4ef61bbf75a9</pickID>
+          <phase>P</phase>
+          <azimuth>102.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/fdbb912b-0ac6-4777-9e9a-cfe98ed3fa13">
+          <pickID>smi:local/a138d505-c047-4bd6-ba01-10c01e17572d</pickID>
+          <phase>P</phase>
+          <azimuth>161.0</azimuth>
+          <timeResidual>-0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/cabe876d-7be9-48dc-81ed-1e811c835ce2">
+          <pickID>smi:local/b22f5403-e800-49cb-b24f-5de5ee47fdc8</pickID>
+          <phase>P</phase>
+          <azimuth>161.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/6e24ed39-fa9a-453a-98bc-233b32d6194e">
+          <pickID>smi:local/bf154568-cbc1-4a71-85c3-fe56d63b9602</pickID>
+          <phase>S</phase>
+          <azimuth>161.0</azimuth>
+          <timeResidual>-0.27</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/f258f48a-235b-4de1-9847-62874f15b516">
+          <pickID>smi:local/47f952f3-62cd-4ac4-b16a-2be950d369e3</pickID>
+          <phase>P</phase>
+          <azimuth>339.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a992024f-4c88-49fb-8dc1-e912cefd5f73">
+          <pickID>smi:local/5e9b2f4e-6f9c-41e3-ac99-9068f76377cc</pickID>
+          <phase>P</phase>
+          <azimuth>52.0</azimuth>
+          <timeResidual>0.16</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a972f058-2d27-4e5b-8a25-82704d0b13e7">
+          <pickID>smi:local/dcb54c7d-0af4-404f-b04e-d3adbd05825f</pickID>
+          <phase>S</phase>
+          <azimuth>52.0</azimuth>
+          <timeResidual>0.33</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/bbb0889d-cdaa-4905-aa13-3ca8cc7afabe">
+          <pickID>smi:local/97dc9e18-052d-43e9-aa57-407a999a504e</pickID>
+          <phase>S</phase>
+          <azimuth>52.0</azimuth>
+          <timeResidual>0.32</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/19dfd346-e413-4728-a482-54975bf39cfc">
+          <pickID>smi:local/d5b760ce-3ad9-44dd-9264-02123e6fe60a</pickID>
+          <phase>P</phase>
+          <azimuth>164.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/b8f9bc8e-5b2a-4835-b846-02e5a1b61577">
+          <pickID>smi:local/4be4fe4d-4276-40dd-9cc4-c423b937f5d6</pickID>
+          <phase>S</phase>
+          <azimuth>164.0</azimuth>
+          <timeResidual>0.15</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3f7b3021-a3b0-4ac3-ab63-75e8642b7faa">
+          <pickID>smi:local/d7e9c33f-f1d5-4a0a-8c86-067bfb369ad1</pickID>
+          <phase>S</phase>
+          <azimuth>164.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/6086d8a1-4cf9-4fdc-abba-1aa7686251dc">
+          <pickID>smi:local/b7906729-4e1b-4d51-b1a4-1125ac68cc37</pickID>
+          <phase>P</phase>
+          <azimuth>193.0</azimuth>
+          <timeResidual>-0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/3a58c5be-e5e3-442f-9793-55b00f61c2bf">
+          <pickID>smi:local/8e2931cb-dab3-4697-976d-037a35ff3f00</pickID>
+          <phase>P</phase>
+          <azimuth>231.0</azimuth>
+          <timeResidual>0.0</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a76f3c63-f0cd-47a2-8143-aa766294bac2">
+          <pickID>smi:local/aed1cba0-c6a4-4c7c-b000-def6839d29c6</pickID>
+          <phase>S</phase>
+          <azimuth>231.0</azimuth>
+          <timeResidual>0.1</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/dfe1adba-b524-4434-903a-d4f0026ba243">
+          <pickID>smi:local/6b3fda2a-0b7d-4d04-a97e-042a27e6e593</pickID>
+          <phase>S</phase>
+          <azimuth>231.0</azimuth>
+          <timeResidual>0.09</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/b249ab10-389e-45dc-8b62-b6df962360cb">
+          <pickID>smi:local/2999e890-f338-4a93-8ddf-4b6fb100a28a</pickID>
+          <phase>P</phase>
+          <azimuth>293.0</azimuth>
+          <timeResidual>0.01</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/26acd096-4cb0-45e8-92e9-5c9eb6171804">
+          <pickID>smi:local/8012c4c5-ae80-4ad3-bab2-1ab2ce94ac7a</pickID>
+          <phase>S</phase>
+          <azimuth>293.0</azimuth>
+          <timeResidual>0.03</timeResidual>
+          <timeWeight>0.25</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/b9dc4c56-b01d-4fa8-b06f-bcceabb695c1">
+          <pickID>smi:local/92635b95-e109-4454-88d4-50dfc4a71d1f</pickID>
+          <phase>S</phase>
+          <azimuth>293.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/d95f6766-faee-4bfc-939b-db970674d65d">
+          <pickID>smi:local/0da998ae-1266-4704-bc5a-3b23a0a0a0e0</pickID>
+          <phase>P</phase>
+          <azimuth>129.0</azimuth>
+          <timeResidual>-0.21</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/a8b65f9d-09cc-43df-b595-2a35b59d2083">
+          <pickID>smi:local/2c9b65ed-7244-45c9-9655-035d51b767ec</pickID>
+          <phase>P</phase>
+          <azimuth>9.0</azimuth>
+          <timeResidual>-0.16</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+        <arrival publicID="smi:local/db2f7966-a381-481d-ad87-e2b34d0d0f45">
+          <pickID>smi:local/c00a7626-76bc-423f-972f-c758b47294a1</pickID>
+          <phase>P</phase>
+          <azimuth>262.0</azimuth>
+          <timeResidual>0.02</timeResidual>
+          <timeWeight>1.0</timeWeight>
+        </arrival>
+      </origin>
+      <magnitude publicID="smi:local/ec111a70-ad05-4752-bdac-08e17a76ca1f">
+        <mag>
+          <value>2.0</value>
+        </mag>
+        <type>ML</type>
+        <creationInfo>
+          <agencyID>BOB</agencyID>
+        </creationInfo>
+      </magnitude>
+      <magnitude publicID="smi:local/9fd37a79-06b7-4867-b08e-3e5427a7a0fd">
+        <mag>
+          <value>1.8</value>
+        </mag>
+        <type>MC</type>
+        <creationInfo>
+          <agencyID>BOB</agencyID>
+        </creationInfo>
+      </magnitude>
+      <pick publicID="smi:local/4a0f4b21-4af6-4642-9a47-67a9980371ac">
+        <time>
+          <value>2010-10-07T17:45:14.840000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="ADIT"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/b27e9316-85af-4fe9-8e90-c03f1eabf494">
+        <time>
+          <value>2010-10-07T17:45:15.120000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="ADIT"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/379b42f6-f2c6-4a55-a041-69f84ec15ab1">
+        <time>
+          <value>2010-10-07T17:45:15.120000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="ADIT"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/4f56cb31-03de-4e3d-81fb-4ef61bbf75a9">
+        <time>
+          <value>2010-10-07T17:45:15.010000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="PSE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/82e9ce76-b0df-4c6c-95f5-02b4d09df796">
+        <time>
+          <value>2010-10-07T17:45:15.770000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/92789271-22a3-4f5e-8a94-6dff7762ae2c">
+        <time>
+          <value>2010-10-07T17:45:15.900000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/a138d505-c047-4bd6-ba01-10c01e17572d">
+        <time>
+          <value>2010-10-07T17:45:14.790000Z</value>
+        </time>
+        <waveformID channelCode="HLZ" locationCode="" networkCode="PS" stationCode="PSGH"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/f5f3a91e-39a2-454e-92b9-1ef3b23da60c">
+        <time>
+          <value>2010-10-07T17:45:15.450000Z</value>
+        </time>
+        <waveformID channelCode="HNN" locationCode="" networkCode="PS" stationCode="PSGH"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/b22f5403-e800-49cb-b24f-5de5ee47fdc8">
+        <time>
+          <value>2010-10-07T17:45:14.800000Z</value>
+        </time>
+        <waveformID channelCode="HNE" locationCode="--" networkCode="PS" stationCode="PSGH"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>positive</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/bf154568-cbc1-4a71-85c3-fe56d63b9602">
+        <time>
+          <value>2010-10-07T17:45:14.820000Z</value>
+        </time>
+        <waveformID channelCode="HNE" locationCode="--" networkCode="PS" stationCode="PSGH"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/47f952f3-62cd-4ac4-b16a-2be950d369e3">
+        <time>
+          <value>2010-10-07T17:45:15.000000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="PSN"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/1d583239-59a1-4f01-a8fe-4994957baf76">
+        <time>
+          <value>2010-10-07T17:45:15.510000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSN"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/44d93245-999a-4ece-8d02-560dc1442366">
+        <time>
+          <value>2010-10-07T17:45:15.610000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSN"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/5e9b2f4e-6f9c-41e3-ac99-9068f76377cc">
+        <time>
+          <value>2010-10-07T17:45:15.180000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="PSNE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/dcb54c7d-0af4-404f-b04e-d3adbd05825f">
+        <time>
+          <value>2010-10-07T17:45:15.770000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSNE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/97dc9e18-052d-43e9-aa57-407a999a504e">
+        <time>
+          <value>2010-10-07T17:45:15.760000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSNE"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2f0d7f3e-ed59-4e60-ac5a-cc92274633be">
+        <time>
+          <value>2010-10-07T17:45:15.860000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSNE"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/d5b760ce-3ad9-44dd-9264-02123e6fe60a">
+        <time>
+          <value>2010-10-07T17:45:15.240000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="PSRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/4be4fe4d-4276-40dd-9cc4-c423b937f5d6">
+        <time>
+          <value>2010-10-07T17:45:15.810000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/302772c2-eaed-4462-bd1f-38031fdfe350">
+        <time>
+          <value>2010-10-07T17:45:15.890000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSRP"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/d7e9c33f-f1d5-4a0a-8c86-067bfb369ad1">
+        <time>
+          <value>2010-10-07T17:45:15.800000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSRP"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/b7906729-4e1b-4d51-b1a4-1125ac68cc37">
+        <time>
+          <value>2010-10-07T17:45:14.800000Z</value>
+        </time>
+        <waveformID channelCode="ELZ" locationCode="" networkCode="PS" stationCode="PSS"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/f7f4ed10-c9e3-47b4-bc67-168db4c83467">
+        <time>
+          <value>2010-10-07T17:45:15.170000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="PS" stationCode="PSS"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/8e2931cb-dab3-4697-976d-037a35ff3f00">
+        <time>
+          <value>2010-10-07T17:45:14.900000Z</value>
+        </time>
+        <waveformID channelCode="ELZ" locationCode="" networkCode="PS" stationCode="PSSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/aed1cba0-c6a4-4c7c-b000-def6839d29c6">
+        <time>
+          <value>2010-10-07T17:45:15.300000Z</value>
+        </time>
+        <waveformID channelCode="ENN" locationCode="--" networkCode="PS" stationCode="PSSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/5f2247cf-eae3-4716-9026-98bbe955ea24">
+        <time>
+          <value>2010-10-07T17:45:15.640000Z</value>
+        </time>
+        <waveformID channelCode="ENN" locationCode="--" networkCode="PS" stationCode="PSSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/6b3fda2a-0b7d-4d04-a97e-042a27e6e593">
+        <time>
+          <value>2010-10-07T17:45:15.290000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="PS" stationCode="PSSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/aa5d78b7-5636-451f-bbc7-b05c7c44822e">
+        <time>
+          <value>2010-10-07T17:45:16.180000Z</value>
+        </time>
+        <waveformID channelCode="ENE" locationCode="" networkCode="PS" stationCode="PSSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2999e890-f338-4a93-8ddf-4b6fb100a28a">
+        <time>
+          <value>2010-10-07T17:45:15.000000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="PSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/8012c4c5-ae80-4ad3-bab2-1ab2ce94ac7a">
+        <time>
+          <value>2010-10-07T17:45:15.420000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/29d1ecc9-a923-478d-a6dc-8fa809a353f1">
+        <time>
+          <value>2010-10-07T17:45:15.910000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/92635b95-e109-4454-88d4-50dfc4a71d1f">
+        <time>
+          <value>2010-10-07T17:45:15.410000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>S</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/59c0d8d4-7bf5-42da-8902-bd37d9bae337">
+        <time>
+          <value>2010-10-07T17:45:15.440000Z</value>
+        </time>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/0da998ae-1266-4704-bc5a-3b23a0a0a0e0">
+        <time>
+          <value>2010-10-07T17:45:25.800000Z</value>
+        </time>
+        <waveformID channelCode="EHZ" locationCode="--" networkCode="MB" stationCode="MKMT"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/2c9b65ed-7244-45c9-9655-035d51b767ec">
+        <time>
+          <value>2010-10-07T17:45:23.630000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="PS" stationCode="NOX"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/f2deff74-f347-4d02-a49a-ebd51466ba9e">
+        <time>
+          <value>2010-10-07T17:45:30.720000Z</value>
+        </time>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="NOX"></waveformID>
+        <onset>questionable</onset>
+        <phaseHint>IAML</phaseHint>
+        <polarity>undecidable</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <pick publicID="smi:local/c00a7626-76bc-423f-972f-c758b47294a1">
+        <time>
+          <value>2010-10-07T17:45:16.670000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="" networkCode="PS" stationCode="PUL"></waveformID>
+        <onset>impulsive</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>negative</polarity>
+        <evaluationMode>automatic</evaluationMode>
+      </pick>
+      <amplitude publicID="smi:local/839b8439-1d88-47e1-a9f3-fbe9d51c9a86">
+        <genericAmplitude>
+          <value>1.003e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.08</value>
+        </period>
+        <pickID>smi:local/82e9ce76-b0df-4c6c-95f5-02b4d09df796</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/e188e3d3-622d-48a5-9b03-3fc71e913e87">
+        <genericAmplitude>
+          <value>5.366000000000001e-07</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/92789271-22a3-4f5e-8a94-6dff7762ae2c</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/5b31eec3-32e3-4339-a6f8-38b54f92dedd">
+        <genericAmplitude>
+          <value>4.8142000000000004e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.1</value>
+        </period>
+        <pickID>smi:local/f5f3a91e-39a2-454e-92b9-1ef3b23da60c</pickID>
+        <waveformID channelCode="HNN" locationCode="" networkCode="PS" stationCode="PSGH"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/af2fcf08-0410-4990-a60d-dc7ff8ec983f">
+        <genericAmplitude>
+          <value>2.1713000000000003e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.09</value>
+        </period>
+        <pickID>smi:local/1d583239-59a1-4f01-a8fe-4994957baf76</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSN"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/f521fea4-f84c-493b-b630-149d6443f254">
+        <genericAmplitude>
+          <value>2.2258000000000004e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.09</value>
+        </period>
+        <pickID>smi:local/44d93245-999a-4ece-8d02-560dc1442366</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSN"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/6d3f833b-6565-4477-a8c5-537df9173ebe">
+        <genericAmplitude>
+          <value>2.6951000000000003e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/2f0d7f3e-ed59-4e60-ac5a-cc92274633be</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSNE"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/d853ef91-9870-4669-a4f5-cde71ebe1dac">
+        <genericAmplitude>
+          <value>1.257e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.05</value>
+        </period>
+        <pickID>smi:local/302772c2-eaed-4462-bd1f-38031fdfe350</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSRP"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/ea412b74-3566-4e97-9098-f182b2267946">
+        <genericAmplitude>
+          <value>8.3223e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.07</value>
+        </period>
+        <pickID>smi:local/f7f4ed10-c9e3-47b4-bc67-168db4c83467</pickID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="PS" stationCode="PSS"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/de4d6bf9-c146-4ef6-8ace-6954e0fa9d95">
+        <genericAmplitude>
+          <value>9.880500000000001e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.15</value>
+        </period>
+        <pickID>smi:local/5f2247cf-eae3-4716-9026-98bbe955ea24</pickID>
+        <waveformID channelCode="ENN" locationCode="--" networkCode="PS" stationCode="PSSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/2fff8ce8-135d-48a6-bbfb-5b9135d057c6">
+        <genericAmplitude>
+          <value>4.2692e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.2</value>
+        </period>
+        <pickID>smi:local/aa5d78b7-5636-451f-bbc7-b05c7c44822e</pickID>
+        <waveformID channelCode="ENE" locationCode="" networkCode="PS" stationCode="PSSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/d22fe80e-6660-45c4-b319-cefa085795fc">
+        <genericAmplitude>
+          <value>1.3144e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.08</value>
+        </period>
+        <pickID>smi:local/29d1ecc9-a923-478d-a6dc-8fa809a353f1</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/bdfd9216-48dd-47dd-afcd-28e4b38da588">
+        <genericAmplitude>
+          <value>1.6169000000000001e-06</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.08</value>
+        </period>
+        <pickID>smi:local/59c0d8d4-7bf5-42da-8902-bd37d9bae337</pickID>
+        <waveformID channelCode="HHE" locationCode="" networkCode="PS" stationCode="PSW"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+      <amplitude publicID="smi:local/23eb71ba-63b6-40cb-89bb-8f2bacb9d34d">
+        <genericAmplitude>
+          <value>1.2300000000000001e-08</value>
+        </genericAmplitude>
+        <unit>m</unit>
+        <period>
+          <value>0.14</value>
+        </period>
+        <pickID>smi:local/f2deff74-f347-4d02-a49a-ebd51466ba9e</pickID>
+        <waveformID channelCode="HHN" locationCode="" networkCode="PS" stationCode="NOX"></waveformID>
+        <filterID>smi:local/Wood_Anderson_Simulation</filterID>
+        <magnitudeHint>ML</magnitudeHint>
+      </amplitude>
+    </event>
+  </eventParameters>
+</q:quakeml>

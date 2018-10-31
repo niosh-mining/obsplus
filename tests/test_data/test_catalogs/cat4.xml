@@ -1,0 +1,253 @@
+<?xml version='1.0' encoding='utf-8'?>
+<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
+  <eventParameters publicID="smi:local/06beb835-4876-4dad-92f4-9a949f6ff845">
+    <event publicID="smi:local/7fc65097-882e-4593-8235-9aff5493e254">
+      <preferredOriginID>smi:local/First</preferredOriginID>
+      <preferredMagnitudeID>smi:local/36841170-f007-4a22-8c80-783f4ac089e6</preferredMagnitudeID>
+      <preferredFocalMechanismID>smi:local/ed0d51a9-a1f2-41f6-8061-c6ae5c41c86f</preferredFocalMechanismID>
+      <type>mining explosion</type>
+      <description>
+        <text>some text about the EQ</text>
+        <type>earthquake name</type>
+      </description>
+      <origin publicID="smi:local/First">
+        <time>
+          <value>2016-05-04T12:00:00.000000Z</value>
+          <uncertainty>0.01</uncertainty>
+        </time>
+        <latitude>
+          <value>47.48589325</value>
+          <uncertainty>0.021</uncertainty>
+        </latitude>
+        <longitude>
+          <value>-111.12525</value>
+          <uncertainty>0.02</uncertainty>
+        </longitude>
+        <depth>
+          <value>2.123</value>
+          <uncertainty>1.22</uncertainty>
+        </depth>
+        <depthType>from location</depthType>
+        <timeFixed>false</timeFixed>
+        <epicenterFixed>false</epicenterFixed>
+        <referenceSystemID>smi:local/f57cb5d0-a301-40a3-be1c-0b91dfa3ea3c</referenceSystemID>
+        <methodID>smi:local/c054c3c8-8fb5-476b-8c38-bc43139f9273</methodID>
+        <earthModelID>smi:local/1170c8dc-16ab-44fc-85dd-a2af6648394e</earthModelID>
+        <compositeTime>
+          <year>
+            <value>2016</value>
+            <uncertainty>0</uncertainty>
+          </year>
+          <month>
+            <value>5</value>
+            <uncertainty>0</uncertainty>
+          </month>
+          <day>
+            <value>4</value>
+            <uncertainty>0</uncertainty>
+          </day>
+          <hour>
+            <value>0</value>
+            <uncertainty>0</uncertainty>
+          </hour>
+          <minute>
+            <value>0</value>
+            <uncertainty>0</uncertainty>
+          </minute>
+          <second>
+            <value>0.0</value>
+            <uncertainty>0.01</uncertainty>
+          </second>
+        </compositeTime>
+        <quality>
+          <usedPhaseCount>1</usedPhaseCount>
+          <associatedStationCount>1</associatedStationCount>
+          <usedStationCount>1</usedStationCount>
+          <depthPhaseCount>1</depthPhaseCount>
+          <standardError>0.02</standardError>
+          <azimuthalGap>0.12</azimuthalGap>
+          <groundTruthLevel>GT0</groundTruthLevel>
+        </quality>
+        <type>hypocenter</type>
+        <region>US</region>
+        <evaluationMode>manual</evaluationMode>
+        <evaluationStatus>final</evaluationStatus>
+        <originUncertainty>
+          <preferredDescription>uncertainty ellipse</preferredDescription>
+          <horizontalUncertainty>1.2</horizontalUncertainty>
+          <minHorizontalUncertainty>0.12</minHorizontalUncertainty>
+          <maxHorizontalUncertainty>2.2</maxHorizontalUncertainty>
+          <confidenceEllipsoid>
+            <semiMajorAxisLength>12.0</semiMajorAxisLength>
+            <semiMinorAxisLength>12.0</semiMinorAxisLength>
+            <majorAxisPlunge>12.0</majorAxisPlunge>
+            <majorAxisRotation>12.0</majorAxisRotation>
+          </confidenceEllipsoid>
+        </originUncertainty>
+        <arrival publicID="smi:local/Ar1">
+          <pickID>smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864</pickID>
+          <phase>P</phase>
+          <timeCorrection>0.2</timeCorrection>
+          <azimuth>12.0</azimuth>
+          <distance>10.0</distance>
+          <takeoffAngle>
+            <value>15.0</value>
+            <uncertainty>10.2</uncertainty>
+          </takeoffAngle>
+          <timeResidual>0.02</timeResidual>
+          <horizontalSlownessResidual>12.2</horizontalSlownessResidual>
+          <backazimuthResidual>12.2</backazimuthResidual>
+          <timeWeight>0.23</timeWeight>
+          <horizontalSlownessWeight>12.0</horizontalSlownessWeight>
+          <backazimuthWeight>12.0</backazimuthWeight>
+          <earthModelID>smi:local/0f89d61a-259f-4d7d-a250-534623696121</earthModelID>
+        </arrival>
+      </origin>
+      <magnitude publicID="smi:local/36841170-f007-4a22-8c80-783f4ac089e6">
+        <mag>
+          <value>5.5</value>
+          <uncertainty>0.01</uncertainty>
+        </mag>
+        <type>Mw</type>
+        <originID>smi:local/First</originID>
+        <stationCount>1</stationCount>
+        <stationMagnitudeContribution>
+          <stationMagnitudeID>smi:local/576d78f7-910b-434b-8d4e-cd328e476a04</stationMagnitudeID>
+        </stationMagnitudeContribution>
+      </magnitude>
+      <stationMagnitude publicID="smi:local/576d78f7-910b-434b-8d4e-cd328e476a04">
+        <originID>smi:local/None</originID>
+        <mag>
+          <value>2.24</value>
+        </mag>
+      </stationMagnitude>
+      <pick publicID="smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864">
+        <time>
+          <value>2016-05-04T12:00:01.000000Z</value>
+        </time>
+        <waveformID channelCode="HHZ" locationCode="--" networkCode="UU" stationCode="FOO"></waveformID>
+        <filterID>smi:local/77cd41ec-1afe-45c5-bb71-416c136fd05d</filterID>
+        <methodID>smi:local/84db1abe-39bc-44f5-a1bd-aa4f3cbe3ce1</methodID>
+        <horizontalSlowness>
+          <value>12.0</value>
+          <uncertainty>12.0</uncertainty>
+        </horizontalSlowness>
+        <backazimuth>
+          <value>122.1</value>
+        </backazimuth>
+        <slownessMethodID>smi:local/slow</slownessMethodID>
+        <onset>emergent</onset>
+        <phaseHint>P</phaseHint>
+        <polarity>positive</polarity>
+        <evaluationMode>manual</evaluationMode>
+        <evaluationStatus>final</evaluationStatus>
+        <comment id="smi:local/1f5c13ae-e32b-4b7f-ba33-c8f23618b1bc">
+          <text/>
+        </comment>
+        <comment id="smi:local/f0df75b9-2598-4ccf-b23e-21a8a3af8bcf">
+          <text/>
+        </comment>
+        <comment id="smi:local/d49ec84f-d1d6-4ced-adb3-88068199864d">
+          <text/>
+        </comment>
+        <creationInfo>
+          <author>Indago</author>
+          <creationTime>2018-03-21T16:41:58.445322Z</creationTime>
+          <version>10.10</version>
+        </creationInfo>
+      </pick>
+      <amplitude publicID="smi:local/7f93a304-c07b-448f-a85f-64ec6e55c32a">
+        <genericAmplitude>
+          <value>0.0012</value>
+        </genericAmplitude>
+        <type>A</type>
+        <unit>m</unit>
+        <period>
+          <value>1.0</value>
+        </period>
+        <timeWindow>
+          <reference>2016-05-04T12:00:00.000000Z</reference>
+          <begin>1.2</begin>
+          <end>2.2</end>
+        </timeWindow>
+        <pickID>smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864</pickID>
+      </amplitude>
+      <focalMechanism publicID="smi:local/ed0d51a9-a1f2-41f6-8061-c6ae5c41c86f">
+        <azimuthalGap>12.0</azimuthalGap>
+        <stationPolarityCount>12</stationPolarityCount>
+        <misfit>0.12</misfit>
+        <stationDistributionRatio>0.12</stationDistributionRatio>
+        <nodalPlanes preferredPlane="2">
+          <nodalPlane1>
+            <strike>
+              <value>12.0</value>
+            </strike>
+            <dip>
+              <value>2.0</value>
+            </dip>
+            <rake>
+              <value>12.0</value>
+            </rake>
+          </nodalPlane1>
+          <nodalPlane2>
+            <strike>
+              <value>12.0</value>
+            </strike>
+            <dip>
+              <value>2.0</value>
+            </dip>
+            <rake>
+              <value>12.0</value>
+            </rake>
+          </nodalPlane2>
+        </nodalPlanes>
+        <momentTensor publicID="smi:local/de49c6af-bf8e-4113-900b-366750b139e4">
+          <dataUsed>
+            <waveType>body waves</waveType>
+            <stationCount>12</stationCount>
+            <componentCount>12</componentCount>
+            <shortestPeriod>1.0</shortestPeriod>
+            <longestPeriod>20.0</longestPeriod>
+          </dataUsed>
+          <scalarMoment>
+            <value>12213.0</value>
+          </scalarMoment>
+          <tensor>
+            <Mrr>
+              <value>12.0</value>
+              <uncertainty>0.01</uncertainty>
+            </Mrr>
+            <Mtt>
+              <value>12.0</value>
+            </Mtt>
+            <Mpp>
+              <value>12.0</value>
+            </Mpp>
+            <Mrt>
+              <value>12.0</value>
+            </Mrt>
+            <Mrp>
+              <value>12.0</value>
+            </Mrp>
+            <Mtp>
+              <value>12.0</value>
+            </Mtp>
+          </tensor>
+          <variance>12.23</variance>
+          <varianceReduction>98.0</varianceReduction>
+          <doubleCouple>0.22</doubleCouple>
+          <clvd>0.55</clvd>
+          <iso>0.33</iso>
+          <sourceTimeFunction>
+            <type>triangle</type>
+            <duration>0.12</duration>
+            <riseTime>0.33</riseTime>
+            <decayTime>0.23</decayTime>
+          </sourceTimeFunction>
+          <methodID>smi:local/d3512394-93a4-4d3c-a215-76966a980e3c</methodID>
+          <inversionType>general</inversionType>
+        </momentTensor>
+      </focalMechanism>
+    </event>
+  </eventParameters>
+</q:quakeml>
