@@ -1,4 +1,5 @@
-.. image:: https://imgur.com/a/eOXflxB
+.. image:: https://imgur.com/a/eOXflxB.jpg
+
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
 |Build Status| |Coverage| |Doc Status| |Version Status|
