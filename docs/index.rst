@@ -1,5 +1,5 @@
-Obsplus
-*******
+.. image:: images/obsplus.png
+
 "A Pandas-Centric ObsPy Expansion Pack"
 
 `Overview and Introduction <notebooks/intro.ipynb>`_
@@ -13,4 +13,3 @@ Obsplus
 :ref:`modindex`
 
 :ref:`search`
-
