@@ -1,6 +1,4 @@
-=======
-ObsPlus
-=======
+.. image:: https://imgur.com/a/eOXflxB
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
 |Build Status| |Coverage| |Doc Status| |Version Status|
@@ -13,7 +11,6 @@ License_ (LGPLv3.0+)
 
 ObsPlus was developed at the National Institute for Occupational Safety and Health (NIOSH).
 As such, the disclaimer_ applies.
-
 
 .. _disclaimer: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
