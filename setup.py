@@ -97,7 +97,7 @@ setup(
     long_description=readme,
     author="Derrick Chambers",
     author_email="djachambeador@gmail.com",
-    url="https://bitbucket.org/smrd/obsplus",
+    url="https://github.com/niosh-mining/obsplus",
     packages=find_packages("obsplus"),
     package_dir={"obsplus": "obsplus"},
     include_package_data=True,
