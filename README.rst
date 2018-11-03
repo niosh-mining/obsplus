@@ -3,7 +3,7 @@
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
 |Build Status| |Coverage| |Doc Status| |Version Status|
-|Supported Versions|  |Licence|
+|Supported Versions| |Licence|
 
 Documentation_
 
@@ -27,7 +27,7 @@ As such, the disclaimer_ applies.
 .. |Supported Versions| image:: https://img.shields.io/pypi/pyversions/obsplus.svg
    :target: https://pypi.python.org/pypi/obsplus
 
-.. |Licence| image:: ttps://www.gnu.org/graphics/lgplv3-88x31.png
+.. |Licence| image:: https://www.gnu.org/graphics/lgplv3-88x31.png
    :target: https://www.gnu.org/licenses/lgpl.html
 
 
