@@ -2,7 +2,11 @@
 
 "A Pandas-Centric ObsPy Expansion Pack"
 
-`Overview and Introduction <notebooks/intro.ipynb>`_
+`Introduction <notebooks/intro.ipynb>`_
+
+`Installation <notebooks/installation.ipynb>`_
+
+`Contributing <notebooks/contributing.ipynb>`_
 
 `Quick Reference <quickref/index.rst>`_
 
