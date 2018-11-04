@@ -1,7 +1,14 @@
 language: python
 
-python:
-  - "3.6"
+matrix:
+  include:
+    - os: linux
+      env: PYTHON_VERSION=3.6
+    - os: linux
+      env: PYTHON_VERSION=3.7
+    - os: osx
+      osx_image: xcode8
+      env: PYTHON_VERSION=3.7
 
 install:
   - sudo apt-get update
