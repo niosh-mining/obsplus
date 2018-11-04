@@ -14,7 +14,7 @@ base = Path(str(here).split("obsplus")[0] + "/obsplus")
 black_run = run(["black", str(base)], stdout=PIPE)
 
 # clear notebook outputs (to be nice to git)
-keep_notebooks = {"datasets.ipynb"}
+keep_notebooks = {}  # long running notebooks that should not be cleared
 
 cmd = ["jupyter", "nbconvert", "--ClearOutputPreprocessor.enabled=True", "--inplace"]
 
