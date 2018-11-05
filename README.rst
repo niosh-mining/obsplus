@@ -15,7 +15,7 @@ About_
 
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
-.. _Documentation: https://obsplus.readthedocs.io/en/latest/
+.. _Documentation: https://obsplus.readthedocs.io/en/latest/index.html
 .. _Code: https://github.com/niosh-mining/obsplus
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
 
