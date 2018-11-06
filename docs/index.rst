@@ -1,5 +1,8 @@
 .. image:: images/obsplus.png
 
+ObsPlus
+=======
+
 "A Pandas-Centric ObsPy Expansion Pack"
 
 `Introduction <notebooks/intro.ipynb>`_
