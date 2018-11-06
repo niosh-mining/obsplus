@@ -151,7 +151,7 @@ html_short_title = project
 
 # The name of an image file (relative to this directory) to place at the
 # top of the sidebar.
-html_logo = 'images/obsplus_panda.png'
+html_logo = "images/obsplus_panda.png"
 
 # The name of an image file (within the static path) to use as favicon
 # of the doc.  This file should be a Windows icon file (.ico) being
