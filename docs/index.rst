@@ -6,6 +6,8 @@
 
 `Installation <notebooks/installation.ipynb>`_
 
+`Code <https://github.com/niosh-mining/obsplus>`_
+
 `Contributing <notebooks/contributing.ipynb>`_
 
 `Quick Reference <quickref/index.rst>`_
