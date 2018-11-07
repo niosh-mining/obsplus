@@ -14,12 +14,12 @@ import scipy
 import xarray as xr
 
 import obsplus
-from obsplus.waveforms.xarray.signal import array_irfft, array_rfft
-from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
-from obsplus.waveforms.xarray.utils import get_nslc_df, sel_sid, pad_time
-from obsplus.waveforms.xarray.io import read_pickle
-from obsplus.waveforms.xarray import netcdf2array
 from obsplus import obspy_to_array_dict, obspy_to_array
+from obsplus.waveforms.xarray import netcdf2array
+from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
+from obsplus.waveforms.xarray.io import read_pickle
+from obsplus.waveforms.xarray.signal import array_irfft, array_rfft
+from obsplus.waveforms.xarray.utils import get_nslc_df, sel_sid, pad_time
 
 rand = np.random.RandomState(13)
 
@@ -355,6 +355,24 @@ class TestArray2Dict:
 
     number_of_streams = 10
 
+    def _remove_processing(self, st):
+        """ copy stream and remove processing"""
+        st = st.copy()
+        for tr in st:
+            tr.stats.pop("processing", None)
+        return st
+
+    def equal_without_processing(self, st1, st2):
+        """ Return True if the streams are equal when processing in stats is
+        removed """
+        st1, st2 = self._remove_processing(st1), self._remove_processing(st2)
+        # make sure lengths are the same
+        for tr1, tr2 in zip(st1, st2):
+            min_len = min(len(tr1.data), len(tr2.data))
+            tr1.data = tr1.data[:min_len]
+            tr2.data = tr2.data[:min_len]
+        return st1 == st2
+
     # fixtures
     @pytest.fixture(scope="class")
     def default_array2dict(self, default_array):
@@ -387,14 +405,25 @@ class TestArray2Dict:
         da = default_array2dict
         st2 = da[0].sort()
         # ensure data are the same
-        for tr1, tr2 in zip(st1, st2):
-            assert np.array_equal(tr2.data, tr1.data)
-            # ensure stats are the same
-            stat1 = tr1.stats
-            stat2 = tr2.stats
-            stat1.pop("processing", None)
-            stat2.pop("processing", None)
-            assert stat1 == stat2
+        assert self.equal_without_processing(st1, st2)
+
+    def test_crandall_arrays(self):
+        """ Ensure the crandall canyon arrays can be converted back """
+        # create data arrays from crandall
+        ds = obsplus.load_dataset("crandall")
+        fetcher = ds.get_fetcher()
+        st_dict = dict(fetcher.yield_event_waveforms(10, 50))
+        dars = list(obsplus.obspy_to_array_dict(st_dict).values())
+        assert len(dars), "only expected two sampling rates"
+        # convert each data array back to a stream dict
+        st_dict1 = dars[0].ops.to_stream()
+        st_dict2 = dars[1].ops.to_stream()
+        # create stream dicts and recombine data array dicts
+        for stream_id in set(st_dict1) & set(st_dict2):
+            st1 = st_dict1[stream_id] + st_dict2[stream_id]
+            st2 = st_dict[stream_id]
+            if not self.equal_without_processing(st1, st2):
+                self.equal_without_processing(st1, st2)
 
 
 class TestList2Array:
