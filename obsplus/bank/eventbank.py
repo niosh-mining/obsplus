@@ -260,7 +260,7 @@ class EventBank(_Bank):
         Read events from bank.
 
         Nearly all query parameters supported by obspy.clients.FDSN.Client
-        `get_events` method are supported, with expection of min/max radius.
+        `get_events` method are supported, with exception of min/max radius.
         """
         paths = self.bank_path + self.read_index(columns="path", **kwargs).path
         cats = (obspy.read_events(x) for x in paths)
