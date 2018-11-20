@@ -378,6 +378,11 @@ def get_preferred(event: Event, what: str):
     what: the prefered item to get
         eg, magnitude, origin, focal_mechanism
     """
+    pref_tyoe = {
+        "magnitude": ev.Magnitude,
+        "origin": ev.Origin,
+        "focal_mechanism": ev.FocalMechanism,
+    }
     prefname = "preferred_" + what
     whats = what + "s"
     obj = getattr(event, prefname)()
@@ -396,6 +401,7 @@ def get_preferred(event: Event, what: str):
                 var = (pid.id, whats, str(event))
                 warnings.warn("cannot find %s in %s for event %s" % var)
                 obj = getattr(event, whats)[-1]
+    assert isinstance(obj, pref_tyoe[what]), "wrong type returned"
     return obj
 
 

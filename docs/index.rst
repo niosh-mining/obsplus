@@ -1,8 +1,17 @@
-Obsplus
-*******
+.. image:: images/obsplus.png
+
+ObsPlus
+=======
+
 "A Pandas-Centric ObsPy Expansion Pack"
 
-`Overview and Introduction <notebooks/intro.ipynb>`_
+`Introduction <notebooks/intro.ipynb>`_
+
+`Installation <notebooks/installation.ipynb>`_
+
+`Code <https://github.com/niosh-mining/obsplus>`_
+
+`Contributing <notebooks/contributing.ipynb>`_
 
 `Quick Reference <quickref/index.rst>`_
 
@@ -13,4 +22,3 @@ Obsplus
 :ref:`modindex`
 
 :ref:`search`
-

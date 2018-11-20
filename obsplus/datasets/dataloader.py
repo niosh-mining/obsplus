@@ -2,6 +2,7 @@
 Module for loading, (and downloading) data sets
 """
 import abc
+import copy
 import shutil
 import tempfile
 from functools import lru_cache
@@ -78,10 +79,6 @@ class DataSet(abc.ABC):
 
     def __init__(self, base_path=None):
         """ download and load data into memory. """
-        # if the dataset is already loaded update dict based on that
-        if self.name in self._loaded_datasets and base_path is None:
-            self.__dict__.update(self._loaded_datasets[self.name].__dict__)
-            return
         if base_path:  # overwrite main base path (mainly for testing)
             self.base_path = base_path
         self.path.mkdir(exist_ok=True, parents=True)
@@ -99,9 +96,9 @@ class DataSet(abc.ABC):
             if what not in self.__dict__:
                 setattr(self, what + "_client", self._load(what, path))
         self.data_loaded = True
-        # cache loaded dataset if the default basepath was used
-        if not base_path:
-            self._loaded_datasets[self.name] = self
+        # cache loaded dataset
+        if not base_path and self.name not in self._loaded_datasets:
+            self._loaded_datasets[self.name] = self.copy(deep=True)
 
     def _load(self, what, path):
         client = self._load_funcs[what](path)
@@ -110,6 +107,12 @@ class DataSet(abc.ABC):
             return getattr(client, f"get_{what}s")()
         else:
             return client
+
+    def copy(self, deep=True):
+        """
+        Return a copy of the dataset.
+        """
+        return copy.deepcopy(self) if deep else copy.copy(self)
 
     def get_fetcher(self) -> Fetcher:
         """
@@ -134,7 +137,6 @@ class DataSet(abc.ABC):
                 fi.write(str(self.__doc__))
 
     @classmethod
-    @lru_cache(20)
     def load_dataset(cls, name: str) -> "DataSet":
         """
         Get a loaded dataset.
@@ -152,7 +154,10 @@ class DataSet(abc.ABC):
         if name not in cls.datasets:
             msg = f"{name} is not in the known datasets {list(cls.datasets)}"
             raise ValueError(msg)
-        return cls.datasets[name]()
+        if name in cls._loaded_datasets:
+            return cls._loaded_datasets[name].copy()
+        else:
+            return cls.datasets[name]()
 
     # --- prescribed Paths for data
 

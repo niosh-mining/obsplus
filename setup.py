@@ -3,15 +3,31 @@ Setup script for obsplus
 """
 import glob
 import os
+import shutil
 import stat
+import sys
 from collections import defaultdict
 from os.path import join, exists, isdir
-from pathlib import Path
-import shutil
+
+try:  # not running python 3, will raise an error later on
+    from pathlib import Path
+except ImportError:
+    pass
 
 from setuptools import setup
 from setuptools.command.develop import develop
 
+# define python versions
+
+python_version = (3, 6)  # tuple of major, minor version requirement
+python_version_str = str(python_version[0]) + "." + str(python_version[1])
+
+# produce an error message if the python version is less than required
+if sys.version_info < python_version:
+    msg = "ObsPlus only runs on python version >= %s" % python_version_str
+    raise Exception(msg)
+
+# get path references
 here = Path(__file__).absolute().parent
 version_file = here / "obsplus" / "version.py"
 
@@ -19,6 +35,7 @@ version_file = here / "obsplus" / "version.py"
 with version_file.open() as fi:
     content = fi.read().split("=")[-1].strip()
     __version__ = content.replace('"', "").replace("'", "")
+
 
 # --- get readme
 with open("README.rst") as readme_file:
@@ -97,7 +114,7 @@ setup(
     long_description=readme,
     author="Derrick Chambers",
     author_email="djachambeador@gmail.com",
-    url="https://bitbucket.org/smrd/obsplus",
+    url="https://github.com/niosh-mining/obsplus",
     packages=find_packages("obsplus"),
     package_dir={"obsplus": "obsplus"},
     include_package_data=True,
@@ -106,10 +123,12 @@ setup(
     zip_safe=False,
     keywords="obsplus",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Topic :: Scientific/Engineering",
     ],
     test_suite="tests",
     install_requires=read_requirements(package_req_path),
@@ -117,4 +136,5 @@ setup(
     setup_requires=["pytest-runner>=2.0"],
     extras_require={"docs": read_requirements(doc_req_path)},
     cmdclass={"develop": SetupDev},
+    python_requires=">=%s" % python_version_str,
 )

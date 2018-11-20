@@ -267,7 +267,10 @@ def _array_to_stream(dar, sid):
     stats = dar.attrs["stats"]
     for sub_dar in dar:
         seed_id = str(sub_dar.seed_id.values)
-        stat = stats[sid][seed_id]
+        try:  # if this stream_id doesnt have this channel
+            stat = stats[sid][seed_id]
+        except KeyError:
+            continue
         try:  # update starttimes using starrtime coord
             starttime = float(sub_dar.starttime.values)
         except (AttributeError, ValueError):

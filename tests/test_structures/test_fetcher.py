@@ -44,9 +44,9 @@ def trim_kem_events(fetcher: Fetcher):
 
 @pytest.fixture(scope="session")
 @append_func_name(WAVEFETCHERS)
-def kem_fetcher(kemmerer_dataset):
+def kem_fetcher():
     """ init a waveform fetcher passing a path to a directory as the arg """
-    return kemmerer_dataset.get_fetcher()
+    return obsplus.load_dataset("kemmerer").get_fetcher()
 
 
 @pytest.fixture(scope="session")
@@ -59,8 +59,9 @@ def ta_fetcher(ta_dataset):
 
 @pytest.fixture(scope="session")
 @append_func_name(WAVEFETCHERS)
-def kem_fetcher_with_processor(kemmerer_dataset):
+def kem_fetcher_with_processor():
     """ same as kem fetcher but with a stream_processor """
+    dataset = obsplus.load_dataset("kemmerer")
 
     def processor(st):
         """ simple processor to apply bandpass filter """
@@ -71,9 +72,9 @@ def kem_fetcher_with_processor(kemmerer_dataset):
         return st
 
     wf = Fetcher(
-        waveforms=kemmerer_dataset.waveform_client.get_waveforms(),
-        events=kemmerer_dataset.event_client.get_events(),
-        stations=kemmerer_dataset.station_client.get_stations(),
+        waveforms=dataset.waveform_client.get_waveforms(),
+        events=dataset.event_client.get_events(),
+        stations=dataset.station_client.get_stations(),
         stream_processor=processor,
     )
     return trim_kem_events(wf)
@@ -81,8 +82,9 @@ def kem_fetcher_with_processor(kemmerer_dataset):
 
 @pytest.fixture(scope="session")
 @append_func_name(WAVEFETCHERS)
-def kem_fetcher_limited(kemmerer_dataset):
+def kem_fetcher_limited():
     """ init a fetcher with a subset of the events """
+    kemmerer_dataset = obsplus.load_dataset("kemmerer")
     # load in a subset of the full events dataframe
     event_ids = {
         "smi:local/042f78e9-6089-4ed8-8f9b-47c2189a1c75",
@@ -587,8 +589,7 @@ class TestClientNoGetBulkWaveForms:
     # fixtures
     @pytest.fixture
     def kem_bank_no_bulk(self, kem_archive, monkeypatch):
-        """ """
-        # remove the get_waveforms_bulk from Sbank class
+        """ remove the get_waveforms_bulk from Sbank class """
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
         monkeypatch.delattr(WaveBank, "get_waveforms_by_seed")
         # return a bank
