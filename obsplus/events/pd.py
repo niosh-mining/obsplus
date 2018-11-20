@@ -21,6 +21,7 @@ from obsplus.utils import (
 )
 from obsplus.structures.dfextractor import DataFrameExtractor
 from obsplus.interfaces import BankType, EventClient
+from obsplus.events.utils import get_reference_time
 
 # -------------------- event extractors
 
@@ -272,12 +273,9 @@ def _picks_from_event(event: ev.Event):
     extras = {}
     for event in cat:
         if not len(event.picks):
-            continue
-        min_pick_time = min([p.time for p in picks])
-        # get preferred origins and pick list
-        por = get_preferred(event, "origin")
+            continue  # skip events with no picks
         event_dict = dict(
-            event_id=str(event.resource_id), event_time=por.time or min_pick_time
+            event_id=str(event.resource_id), event_time=get_reference_time(event)
         )
         extras.update({id(p): event_dict for p in event.picks})
 
