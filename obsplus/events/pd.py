@@ -10,8 +10,10 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 
-import obsplus
 from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC
+from obsplus.events.utils import get_reference_time
+from obsplus.interfaces import BankType, EventClient
+from obsplus.structures.dfextractor import DataFrameExtractor
 from obsplus.utils import (
     read_file,
     get_preferred,
@@ -19,9 +21,6 @@ from obsplus.utils import (
     get_instances,
     getattrs,
 )
-from obsplus.structures.dfextractor import DataFrameExtractor
-from obsplus.interfaces import BankType, EventClient
-from obsplus.events.utils import get_reference_time
 
 # -------------------- event extractors
 
