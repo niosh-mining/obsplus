@@ -165,6 +165,32 @@ def get_nslc_df(dar: xr.DataArray):
     return df
 
 
+@ops_method("stack_seed")
+def stack_seed(dar: xr.DataArray, level) -> xr.DataArray:
+    """
+    Stack the DataArray on a defined level.
+
+    Parameters
+    ----------
+    dar
+        An obsplus data array
+    level
+        The seed-level (network, station, location or channel).
+    """
+    # This is super ugly, and much harder than it should be.
+    # get dataframe of seed levels
+    assert level in NSLC
+    df = get_nslc_df(dar)
+    # create multi-index and swap out old seed_id for multi-level
+    ind = pd.MultiIndex.from_arrays((df[level].values, df.index.values),
+                                    names=(level, 'sid'))
+    dar.seed_id.values = ind
+    # unstack, then stack ids together and return
+    out = dar.unstack('seed_id')
+    out = out.stack(ids=('sid', 'stream_id')).transpose('ids', 'network', 'time')
+    return out
+
+
 @ops_method("sel_sid")
 def sel_sid(dar: xr.DataArray, seed_id):
     """

@@ -1200,3 +1200,21 @@ class Test2Netcdf:
         inv1 = default_array_more.attrs["stations"]
         inv2 = output_dar.attrs["stations"]
         assert inv1 == inv2
+
+
+class TestSeedStacking:
+    """ Tests for stacking waveform arrays by seed levels """
+
+    def test_all_level_stacks(self, crandall_data_array):
+        """
+        Test stacking the data array on all supported levels, and that
+        it can be unstacked.
+        """
+        # get a dataframe which splits network, station, location, and chan
+        seed_df = get_nslc_df(crandall_data_array)
+        # iterate each level and stack, then unstack
+        for level in seed_df.columns:
+            dar1 = crandall_data_array.copy()
+            dar2 = dar1.ops.stack_seed(level)
+            assert len(dar2[level]) == len(seed_df[level].unique())
+
