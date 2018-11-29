@@ -1,0 +1,3 @@
+master:
+  - obsplus.waveforms
+    * added stack_seed and unstack_seed methods to obsplus data array accessors
