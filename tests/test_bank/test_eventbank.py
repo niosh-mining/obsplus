@@ -158,6 +158,15 @@ class TestBankBasics:
         # ensure the index was deleted and rewritten
         assert mtime1 < mtime2
 
+    def test_limit_keyword(self, ebank):
+        """ Test that the limit keyword limits results (see #19) """
+        limit = 2
+        cat = ebank.get_events()
+        assert len(cat) > limit
+        cat2 = ebank.get_events(limit=limit)
+        assert len(cat2) == limit
+        assert cat.events[0:limit] == cat2.events
+
 
 class TestReadIndexQueries:
     """ tests to ensure the index can be queried """

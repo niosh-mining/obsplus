@@ -323,11 +323,13 @@ def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
         columns = ""
     else:
         columns = "*"
+    limit = kwargs.pop("limit", None)
     wheres = _make_wheres(kwargs)
-
     sql = f'{cmd.upper()} {columns} FROM "{table_name}"'
     if wheres:
         sql += f" WHERE {wheres}"
+    if limit:
+        sql += f" LIMIT {limit}"
     return sql + ";"
 
 
