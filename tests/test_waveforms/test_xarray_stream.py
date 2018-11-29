@@ -1217,4 +1217,15 @@ class TestSeedStacking:
             dar1 = crandall_data_array.copy()
             dar2 = dar1.ops.stack_seed(level)
             assert len(dar2[level]) == len(seed_df[level].unique())
+            assert (~dar1.isnull()).sum() == (~dar2.isnull()).sum()
+            # unstack, ensure dataarrays are equal and such
+            dar3 = dar2.ops.unstack_seed()
+            assert dar1.shape == dar3.shape
+            assert dar1.dims == dar3.dims
+            # all elements should be equal or null
+            assert ((dar1.values == dar3.values) | dar3.isnull().values).all()
 
+    def test_unstack_not_stacked_dar_rasies(self, default_array):
+        """ unstacking a data array that has not been stacked should raise """
+        with pytest.raises(ValueError):
+            default_array.ops.unstack_seed()

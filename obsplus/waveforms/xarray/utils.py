@@ -177,18 +177,47 @@ def stack_seed(dar: xr.DataArray, level) -> xr.DataArray:
     level
         The seed-level (network, station, location or channel).
     """
+    dar = dar.copy()  # changes some things in place, make a copy
     # This is super ugly, and much harder than it should be.
     # get dataframe of seed levels
     assert level in NSLC
     df = get_nslc_df(dar)
     # create multi-index and swap out old seed_id for multi-level
-    ind = pd.MultiIndex.from_arrays((df[level].values, df.index.values),
-                                    names=(level, 'sid'))
+    ind = pd.MultiIndex.from_arrays(
+        (df[level].values, df.index.values), names=(level, "sid")
+    )
     dar.seed_id.values = ind
-    # unstack, then stack ids together and return
-    out = dar.unstack('seed_id')
-    out = out.stack(ids=('sid', 'stream_id')).transpose('ids', 'network', 'time')
-    return out
+    # unstack, drop nans, then stack ids together
+    out = dar.unstack("seed_id").rename({"sid": "seed_id"})
+    out = out.stack(ids=("seed_id", "stream_id"))
+    return out.dropna(dim="ids", how="all").transpose("ids", level, "time")
+
+
+@ops_method("unstack_seed")
+def unstack_seed(dar: xr.DataArray) -> xr.DataArray:
+    """
+    Unstack the DataArray stacked on a seed level.
+
+    The DataArray should have been created with the functon:
+    `~:func:obsplus.waveforms.xarray.utils.stack_seed`
+
+    Parameters
+    ----------
+    dar
+        An obsplus data array
+    """
+    # This is also super ugly, and much harder than it should be.
+    # find level that should be squished
+    level = set(NSLC) & set(dar.dims)
+    if len(level) != 1:
+        msg = "could not determine how to unstack data array based on seed level"
+        raise ValueError(msg)
+    level = list(level)[0]
+    # stack seed_id with level, remove multi-index
+    stack = ("seed_id", level)
+    dar1 = dar.unstack().stack(sid=stack).dropna(dim="sid", how="all")
+    dar1.sid.values = [x[0] for x in dar1.sid.values]
+    return dar1.rename({"sid": "seed_id"}).transpose(*DIMS)
 
 
 @ops_method("sel_sid")
