@@ -43,6 +43,6 @@ About_
    :alt: Code style: black
 
 .. |Downloads| image:: https://pepy.tech/badge/obsplus
-   :target: https://pepy.tech/badge/obsplus
+   :target: https://pepy.tech/project/obsplus
    :alt: Downloads
 
