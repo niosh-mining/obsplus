@@ -3,7 +3,7 @@
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
 |Build Status| |Coverage| |Doc Status| |Version Status|
-|Supported Versions| |Licence|
+|Supported Versions| |Licence| |Style| |Downloads|
 
 Documentation_
 
@@ -38,4 +38,11 @@ About_
 .. |Version Status| image:: https://img.shields.io/pypi/v/spype.svg
    :target: https://pypi.python.org/pypi/obsplus/
 
+.. |Style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/ambv/black
+   :alt: Code style: black
+
+.. |Downloads| image:: https://pepy.tech/badge/obsplus
+   :target: https://pepy.tech/badge/obsplus
+   :alt: Downloads
 
