@@ -107,6 +107,9 @@ def obspy_to_array(
         A callable that takes a single argument (a stream) and returns a
         stream.
     """
+    # if waveforms is a DataArray already just return it
+    if isinstance(waveform, xr.DataArray):
+        return waveform
     # handle converting waveforms
     if isinstance(waveform, Trace):  # if trace convert to waveforms
         waveform = Stream(traces=[waveform])

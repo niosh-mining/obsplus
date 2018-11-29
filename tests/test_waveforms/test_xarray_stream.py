@@ -244,6 +244,12 @@ class TestStreamDict2DataArray:
         ar = obspy_to_array(st_dict_close_lens)
         assert not ar.isnull().any()
 
+    def test_idempotent(self, st_dict_close_lens):
+        """ ensure the transformation to data array is idempotent """
+        dar = obspy_to_array(st_dict_close_lens)
+        dar2 = obspy_to_array(dar)
+        assert (dar == dar2).all()
+
 
 class TestStream2DataArray:
     """ ensure the stream2dataset function works as expected """

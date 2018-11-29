@@ -120,7 +120,7 @@ DIMS = ("stream_id", "seed_id", "time")
 stream_proc_type = Callable[[Stream], Stream]
 
 # The obspy types for waveform data
-wave_type = Union[Stream, Trace]
+wave_type = Union[Stream, Trace, xr.DataArray]
 
 # waveform request type (args for get_waveforms)
 waveform_request_type = Tuple[str, str, str, str, UTCDateTime, UTCDateTime]
