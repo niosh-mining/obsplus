@@ -2,8 +2,7 @@
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Build Status| |Coverage| |Doc Status| |Version Status|
-|Supported Versions| |Licence| |Style| |Downloads|
+|Build Status| |Coverage| |Doc Status| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
 
 Documentation_
 
