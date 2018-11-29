@@ -166,7 +166,7 @@ class EventBank(_Bank):
         with sql_connection(self.index_path) as con:
             try:
                 return read_table(self._index_node, con, **kwargs).set_index("event_id")
-            except pd.io.sql.DatabaseError:
+            except pd.io.sql.DatabaseError:  # empty or no db, return empty index
                 return pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
 
     @thread_lock_function()
