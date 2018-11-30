@@ -109,6 +109,7 @@ def obspy_to_array(
     """
     # if waveforms is a DataArray already just return it
     if isinstance(waveform, xr.DataArray):
+        assert set(waveform.dims).issuperset(DIMS)
         return waveform
     # handle converting waveforms
     if isinstance(waveform, Trace):  # if trace convert to waveforms
