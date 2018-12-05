@@ -107,6 +107,15 @@ class SetupDev(develop):
         os.chmod(out_path, st.st_mode | stat.S_IEXEC)
 
 
+ENTRY_POINTS = {
+    "obsplus.datasets": [
+        "bingham = obsplus.datasets.bingham",
+        "crandall = obsplus.datasets.crandall",
+        "kemmerer = obsplus.datasets.kemmerer",
+        "ta = obsplus.datasets.ta",
+    ]
+}
+
 setup(
     name="obsplus",
     version=__version__,
@@ -117,6 +126,7 @@ setup(
     url="https://github.com/niosh-mining/obsplus",
     packages=find_packages("obsplus"),
     package_dir={"obsplus": "obsplus"},
+    entry_points=ENTRY_POINTS,
     include_package_data=True,
     data_files=get_package_data_files(),
     license="GNU Lesser General Public License v3.0 or later (LGPLv3.0+)",
