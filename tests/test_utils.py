@@ -1,4 +1,5 @@
 """ tests for wavebank utilities """
+import textwrap
 
 import obspy
 import obspy.core.event as ev
@@ -7,6 +8,7 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
+from obsplus.utils import compose_docstring
 
 append_func_name = pytest.append_func_name
 
@@ -107,3 +109,27 @@ class TestMisc:
         assert ts1 == ts2
         on_none = obsplus.utils.to_timestamp(None, 10)
         assert on_none == ts1 == ts2
+
+    def test_docstring(self):
+        """ Ensure docstrings can be composed with the docstring decorator. """
+        params = textwrap.dedent(
+            """
+        Parameters
+        ----------
+        a: int
+            a
+        b int
+            b
+        """
+        )
+
+        @compose_docstring(params=params)
+        def testfun1():
+            """
+            {params}
+            """
+
+        assert "Parameters" in testfun1.__doc__
+        line = [x for x in testfun1.__doc__.split("\n") if "Parameters" in x][0]
+        base_spaces = line.split("Parameters")[0]
+        assert len(base_spaces) == 12
