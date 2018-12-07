@@ -1,5 +1,5 @@
 """
-Core for bank classes
+Bank ABC
 """
 import os
 import threading
@@ -15,7 +15,10 @@ from obsplus.bank.utils import iter_files
 
 
 class _Bank(ABC):
-    """ define common interfaces for banks """
+    """
+    The abstract base class for ObsPlus' banks. Used to access local
+    archives in a client-like fashion.
+    """
 
     # hdf5 compression defaults
     _complib = "blosc"
