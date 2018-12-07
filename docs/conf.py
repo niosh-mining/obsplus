@@ -291,7 +291,7 @@ texinfo_documents = [
 
 autodoc_default_flags = ["members"]
 autosummary_generate = True
-nbsphinx_timeout = 90
+nbsphinx_timeout = 600
 
 
 def setup(app):
