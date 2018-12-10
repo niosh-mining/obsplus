@@ -39,6 +39,10 @@ sys.path.insert(0, project_root)
 
 import obsplus
 
+# load the datasets used by docs here so notebooks don't have to
+obsplus.load_dataset('crandall')
+obsplus.load_dataset('TA')
+
 # -- General configuration ---------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
