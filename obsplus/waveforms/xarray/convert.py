@@ -107,6 +107,10 @@ def obspy_to_array(
         A callable that takes a single argument (a stream) and returns a
         stream.
     """
+    # if waveforms is a DataArray already just return it
+    if isinstance(waveform, xr.DataArray):
+        assert set(waveform.dims).issuperset(DIMS)
+        return waveform
     # handle converting waveforms
     if isinstance(waveform, Trace):  # if trace convert to waveforms
         waveform = Stream(traces=[waveform])
@@ -267,7 +271,10 @@ def _array_to_stream(dar, sid):
     stats = dar.attrs["stats"]
     for sub_dar in dar:
         seed_id = str(sub_dar.seed_id.values)
-        stat = stats[sid][seed_id]
+        try:  # if this stream_id doesnt have this channel
+            stat = stats[sid][seed_id]
+        except KeyError:
+            continue
         try:  # update starttimes using starrtime coord
             starttime = float(sub_dar.starttime.values)
         except (AttributeError, ValueError):

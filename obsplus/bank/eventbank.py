@@ -19,14 +19,24 @@ import obsplus.events.pd
 from obsplus.bank.core import _Bank
 from obsplus.bank.utils import (
     _IndexCache,
-    summarize_event,
+    _summarize_event,
     sql_connection,
-    read_table,
-    get_tables,
-    drop_rows,
+    _read_table,
+    _get_tables,
+    _drop_rows,
 )
-from obsplus.constants import EVENT_PATH_STRUCTURE, EVENT_NAME_STRUCTURE, EVENT_DTYPES
-from obsplus.utils import try_read_catalog, get_progressbar, thread_lock_function
+from obsplus.constants import (
+    EVENT_PATH_STRUCTURE,
+    EVENT_NAME_STRUCTURE,
+    EVENT_DTYPES,
+    get_events_parameters,
+)
+from obsplus.utils import (
+    try_read_catalog,
+    get_progressbar,
+    thread_lock_function,
+    compose_docstring,
+)
 
 # --- define static types
 
@@ -117,7 +127,7 @@ class EventBank(_Bank):
         """ Return the last modified time stored in the index, else 0.0 """
         with sql_connection(self.index_path) as con:
             try:
-                return read_table(self._time_node, con).loc[0, "time"]
+                return _read_table(self._time_node, con).loc[0, "time"]
             except pd.io.sql.DatabaseError:  # table doesnt exist yet
                 return 0.0
 
@@ -144,19 +154,14 @@ class EventBank(_Bank):
 
     # --- index stuff
 
+    @compose_docstring(get_events_params=get_events_parameters)
     def read_index(self, **kwargs) -> pd.DataFrame:
         """
         Read the index and return a dataframe containing the event info.
 
-        Implements a subset of the FDSN `get_events` method.
-
         Parameters
         ----------
-        kwargs
-
-        Returns
-        -------
-
+        {get_events_params}
         """
 
         if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
@@ -165,8 +170,10 @@ class EventBank(_Bank):
             raise ValueError(msg)
         with sql_connection(self.index_path) as con:
             try:
-                return read_table(self._index_node, con, **kwargs).set_index("event_id")
-            except pd.io.sql.DatabaseError:
+                return _read_table(self._index_node, con, **kwargs).set_index(
+                    "event_id"
+                )
+            except pd.io.sql.DatabaseError:  # empty or no db, return empty index
                 return pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
 
     @thread_lock_function()
@@ -232,10 +239,10 @@ class EventBank(_Bank):
         # populate index store and update metadata
         with sql_connection(self.index_path) as con:
             if indicies_to_update:  # delete rows  that will be re-entered
-                drop_rows(self._index_node, con, event_id=indicies_to_update)
+                _drop_rows(self._index_node, con, event_id=indicies_to_update)
             node = self._index_node
             df.to_sql(node, con, if_exists="append", index_label="event_id")
-            tables = get_tables(con)
+            tables = _get_tables(con)
             if self._meta_node not in tables:
                 meta = self._make_meta_table()
                 meta.to_sql(self._meta_node, con, if_exists="replace")
@@ -255,12 +262,14 @@ class EventBank(_Bank):
 
     # --- read events stuff
 
+    @compose_docstring(get_events_params=get_events_parameters)
     def get_events(self, **kwargs) -> obspy.Catalog:
         """
         Read events from bank.
 
-        Nearly all query parameters supported by obspy.clients.FDSN.Client
-        `get_events` method are supported, with expection of min/max radius.
+        Parameters
+        ----------
+        {get_events_params}
         """
         paths = self.bank_path + self.read_index(columns="path", **kwargs).path
         cats = (obspy.read_events(x) for x in paths)
@@ -293,7 +302,7 @@ class EventBank(_Bank):
                 assert exists(path)
                 event.write(path, self.format)
             else:  # event file does not yet exist
-                path = summarize_event(
+                path = _summarize_event(
                     event,
                     path_struct=self.path_structure,
                     name_struct=self.name_structure,

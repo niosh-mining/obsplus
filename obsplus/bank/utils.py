@@ -66,7 +66,7 @@ def _get_path(info, path, name, path_struct, name_strcut):
     return dict(path=path, filename=out_name)
 
 
-def summarize_wave_file(path, format):
+def _summarize_wave_file(path, format):
     if format == "mseed":
         try:
             return summarize_mseed(path)
@@ -74,7 +74,7 @@ def summarize_wave_file(path, format):
             pass
     # specialized mseed function failed
     out_list = []
-    st = try_read_stream(path, format=format) or try_read_stream(path) or []
+    st = _try_read_stream(path, format=format) or _try_read_stream(path) or []
     for tr in st:
         out = {
             "starttime": tr.stats.starttime.timestamp,
@@ -86,7 +86,7 @@ def summarize_wave_file(path, format):
     return out_list
 
 
-def summarize_trace(
+def _summarize_trace(
     trace: obspy.Trace,
     path: Optional[str] = None,
     name: Optional[str] = None,
@@ -121,7 +121,7 @@ def summarize_trace(
     return out
 
 
-def summarize_event(
+def _summarize_event(
     event: ev.Event,
     path: Optional[str] = None,
     name: Optional[str] = None,
@@ -323,15 +323,17 @@ def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
         columns = ""
     else:
         columns = "*"
+    limit = kwargs.pop("limit", None)
     wheres = _make_wheres(kwargs)
-
     sql = f'{cmd.upper()} {columns} FROM "{table_name}"'
     if wheres:
         sql += f" WHERE {wheres}"
+    if limit:
+        sql += f" LIMIT {limit}"
     return sql + ";"
 
 
-def read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
+def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
     """
     Read a SQLite table.
 
@@ -349,19 +351,19 @@ def read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
     return pd.read_sql(sql, con)
 
 
-def get_tables(con):
+def _get_tables(con):
     """ Return a list of table in sqlite database """
     out = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
     return set(out)
 
 
-def drop_rows(table_name, con, columns=None, **kwargs):
+def _drop_rows(table_name, con, columns=None, **kwargs):
     """ Drop indicies in table """
     sql = _make_sql_command("delete", table_name, columns=columns, **kwargs)
     con.execute(sql)
 
 
-def try_read_stream(stream_path, format=None, **kwargs):
+def _try_read_stream(stream_path, format=None, **kwargs):
     """" Try to read a waveforms from file, if raises return None """
     read = READ_DICT.get(format, obspy.read)
     stt = None

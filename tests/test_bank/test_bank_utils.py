@@ -7,7 +7,7 @@ import tempfile
 import obspy
 import pytest
 
-from obsplus.bank.utils import summarize_trace, summarize_event, try_read_stream
+from obsplus.bank.utils import _summarize_trace, _summarize_event, _try_read_stream
 
 
 @pytest.fixture(scope="module")
@@ -46,7 +46,7 @@ class TestStreamPathStructure:
     @pytest.fixture(scope="class")
     def output(self, struct_string, trace):
         """ init a bank_structure class from the structure strings """
-        return summarize_trace(trace, path_struct=struct_string)
+        return _summarize_trace(trace, path_struct=struct_string)
 
     # general tests
 
@@ -62,7 +62,7 @@ class TestStreamPathStructure:
         struc = "waveforms/{year}/{month}/{day}/{network}/{station}/{channel}"
         tr = obspy.read()[0]
         expected = "waveforms/2009/08/24/BW/RJOB/EHZ/2009-08-24T00-20-03.mseed"
-        assert summarize_trace(tr, path_struct=struc)["path"] == expected
+        assert _summarize_trace(tr, path_struct=struc)["path"] == expected
 
 
 class TestEventPathStructure:
@@ -71,7 +71,7 @@ class TestEventPathStructure:
     def test_basic(self):
         ev = obspy.read_events()[0]
         expected = "2012/04/04/2012-04-04T14-21-42_00041.xml"
-        assert summarize_event(ev)["path"] == expected
+        assert _summarize_event(ev)["path"] == expected
 
 
 #
@@ -104,7 +104,7 @@ class TestReadStream:
     def test_bad_returns_none(self, text_file):
         """ make sure bad file returns None """
         with pytest.warns(UserWarning) as warn:
-            out = try_read_stream(text_file)
+            out = _try_read_stream(text_file)
         assert len(warn)
         expected_str = "obspy failed to read"
         assert any([expected_str in str(w.message) for w in warn])
@@ -112,5 +112,5 @@ class TestReadStream:
 
     def test_try_read_stream(self, stream_file):
         """ make sure the waveforms file can be read in """
-        st = try_read_stream(stream_file)
+        st = _try_read_stream(stream_file)
         assert isinstance(st, obspy.Stream)
