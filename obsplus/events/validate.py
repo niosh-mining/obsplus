@@ -91,7 +91,7 @@ def check_origins(event: Event):
                 assert _none_or_type(at.lower_uncertainty, float)
                 assert _none_or_type(at.upper_uncertainty, float)
                 assert _none_or_type(at.confidence_level, float)
-                
+
 
 def validate_catalog(events: Union[Catalog, Event],) -> Optional[Union[Catalog, Event]]:
     """
@@ -127,22 +127,20 @@ def check_picks(cat: Catalog):
         Obspy catalog to validate
            
     """
+
     def fn(df):
         # No duplicates
         assert not any(df.phase_hint.duplicated())
-        
+
         # Check p before s
         if ps.issubset(df.phase_hint):
-            p_pick = df.loc[df.phase_hint == 'P'].iloc[0]
-            s_pick = df.loc[df.phase_hint == 'S'].iloc[0]
+            p_pick = df.loc[df.phase_hint == "P"].iloc[0]
+            s_pick = df.loc[df.phase_hint == "S"].iloc[0]
             assert p_pick.time < s_pick.time
-            
-    ps = {'P', 'S'}
-    
-    pdf = obsplus.picks_to_df(cat)
-    pdf = pdf.loc[(pdf.evaluation_status != 'rejected') & (pdf.phase_hint.isin(ps))]
-    gb = pdf.groupby(['event_id', 'station'])
-    gb.apply(fn)
-        
 
-        
+    ps = {"P", "S"}
+
+    pdf = obsplus.picks_to_df(cat)
+    pdf = pdf.loc[(pdf.evaluation_status != "rejected") & (pdf.phase_hint.isin(ps))]
+    gb = pdf.groupby(["event_id", "station"])
+    gb.apply(fn)
