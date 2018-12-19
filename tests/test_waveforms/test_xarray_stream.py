@@ -14,12 +14,12 @@ import scipy
 import xarray as xr
 
 import obsplus
-from obsplus.waveforms.xarray.signal import array_irfft, array_rfft
-from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
-from obsplus.waveforms.xarray.utils import get_nslc_df, sel_sid, pad_time
-from obsplus.waveforms.xarray.io import read_pickle
-from obsplus.waveforms.xarray import netcdf2array
 from obsplus import obspy_to_array_dict, obspy_to_array
+from obsplus.waveforms.xarray import netcdf2array
+from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
+from obsplus.waveforms.xarray.io import read_pickle
+from obsplus.waveforms.xarray.signal import array_irfft, array_rfft
+from obsplus.waveforms.xarray.utils import get_nslc_df, sel_sid, pad_time
 
 rand = np.random.RandomState(13)
 
@@ -244,6 +244,12 @@ class TestStreamDict2DataArray:
         ar = obspy_to_array(st_dict_close_lens)
         assert not ar.isnull().any()
 
+    def test_idempotent(self, st_dict_close_lens):
+        """ ensure the transformation to data array is idempotent """
+        dar = obspy_to_array(st_dict_close_lens)
+        dar2 = obspy_to_array(dar)
+        assert (dar == dar2).all()
+
 
 class TestStream2DataArray:
     """ ensure the stream2dataset function works as expected """
@@ -355,6 +361,24 @@ class TestArray2Dict:
 
     number_of_streams = 10
 
+    def _remove_processing(self, st):
+        """ copy stream and remove processing"""
+        st = st.copy()
+        for tr in st:
+            tr.stats.pop("processing", None)
+        return st
+
+    def equal_without_processing(self, st1, st2):
+        """ Return True if the streams are equal when processing in stats is
+        removed """
+        st1, st2 = self._remove_processing(st1), self._remove_processing(st2)
+        # make sure lengths are the same
+        for tr1, tr2 in zip(st1, st2):
+            min_len = min(len(tr1.data), len(tr2.data))
+            tr1.data = tr1.data[:min_len]
+            tr2.data = tr2.data[:min_len]
+        return st1 == st2
+
     # fixtures
     @pytest.fixture(scope="class")
     def default_array2dict(self, default_array):
@@ -387,14 +411,25 @@ class TestArray2Dict:
         da = default_array2dict
         st2 = da[0].sort()
         # ensure data are the same
-        for tr1, tr2 in zip(st1, st2):
-            assert np.array_equal(tr2.data, tr1.data)
-            # ensure stats are the same
-            stat1 = tr1.stats
-            stat2 = tr2.stats
-            stat1.pop("processing", None)
-            stat2.pop("processing", None)
-            assert stat1 == stat2
+        assert self.equal_without_processing(st1, st2)
+
+    def test_crandall_arrays(self):
+        """ Ensure the crandall canyon arrays can be converted back """
+        # create data arrays from crandall
+        ds = obsplus.load_dataset("crandall")
+        fetcher = ds.get_fetcher()
+        st_dict = dict(fetcher.yield_event_waveforms(10, 50))
+        dars = list(obsplus.obspy_to_array_dict(st_dict).values())
+        assert len(dars), "only expected two sampling rates"
+        # convert each data array back to a stream dict
+        st_dict1 = dars[0].ops.to_stream()
+        st_dict2 = dars[1].ops.to_stream()
+        # create stream dicts and recombine data array dicts
+        for stream_id in set(st_dict1) & set(st_dict2):
+            st1 = st_dict1[stream_id] + st_dict2[stream_id]
+            st2 = st_dict[stream_id]
+            if not self.equal_without_processing(st1, st2):
+                self.equal_without_processing(st1, st2)
 
 
 class TestList2Array:
@@ -1171,3 +1206,32 @@ class Test2Netcdf:
         inv1 = default_array_more.attrs["stations"]
         inv2 = output_dar.attrs["stations"]
         assert inv1 == inv2
+
+
+class TestSeedStacking:
+    """ Tests for stacking waveform arrays by seed levels """
+
+    def test_all_level_stacks(self, crandall_data_array):
+        """
+        Test stacking the data array on all supported levels, and that
+        it can be unstacked.
+        """
+        # get a dataframe which splits network, station, location, and chan
+        seed_df = get_nslc_df(crandall_data_array)
+        # iterate each level and stack, then unstack
+        for level in seed_df.columns:
+            dar1 = crandall_data_array.copy()
+            dar2 = dar1.ops.stack_seed(level)
+            assert len(dar2[level]) == len(seed_df[level].unique())
+            assert (~dar1.isnull()).sum() == (~dar2.isnull()).sum()
+            # unstack, ensure dataarrays are equal and such
+            dar3 = dar2.ops.unstack_seed()
+            assert dar1.shape == dar3.shape
+            assert dar1.dims == dar3.dims
+            # all elements should be equal or null
+            assert ((dar1.values == dar3.values) | dar3.isnull().values).all()
+
+    def test_unstack_not_stacked_dar_rasies(self, default_array):
+        """ unstacking a data array that has not been stacked should raise """
+        with pytest.raises(ValueError):
+            default_array.ops.unstack_seed()

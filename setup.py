@@ -3,15 +3,31 @@ Setup script for obsplus
 """
 import glob
 import os
+import shutil
 import stat
+import sys
 from collections import defaultdict
 from os.path import join, exists, isdir
-from pathlib import Path
-import shutil
+
+try:  # not running python 3, will raise an error later on
+    from pathlib import Path
+except ImportError:
+    pass
 
 from setuptools import setup
 from setuptools.command.develop import develop
 
+# define python versions
+
+python_version = (3, 6)  # tuple of major, minor version requirement
+python_version_str = str(python_version[0]) + "." + str(python_version[1])
+
+# produce an error message if the python version is less than required
+if sys.version_info < python_version:
+    msg = "ObsPlus only runs on python version >= %s" % python_version_str
+    raise Exception(msg)
+
+# get path references
 here = Path(__file__).absolute().parent
 version_file = here / "obsplus" / "version.py"
 
@@ -19,6 +35,7 @@ version_file = here / "obsplus" / "version.py"
 with version_file.open() as fi:
     content = fi.read().split("=")[-1].strip()
     __version__ = content.replace('"', "").replace("'", "")
+
 
 # --- get readme
 with open("README.rst") as readme_file:
@@ -90,6 +107,15 @@ class SetupDev(develop):
         os.chmod(out_path, st.st_mode | stat.S_IEXEC)
 
 
+ENTRY_POINTS = {
+    "obsplus.datasets": [
+        "bingham = obsplus.datasets.bingham",
+        "crandall = obsplus.datasets.crandall",
+        "kemmerer = obsplus.datasets.kemmerer",
+        "ta = obsplus.datasets.ta",
+    ]
+}
+
 setup(
     name="obsplus",
     version=__version__,
@@ -100,6 +126,7 @@ setup(
     url="https://github.com/niosh-mining/obsplus",
     packages=find_packages("obsplus"),
     package_dir={"obsplus": "obsplus"},
+    entry_points=ENTRY_POINTS,
     include_package_data=True,
     data_files=get_package_data_files(),
     license="GNU Lesser General Public License v3.0 or later (LGPLv3.0+)",
@@ -119,4 +146,5 @@ setup(
     setup_requires=["pytest-runner>=2.0"],
     extras_require={"docs": read_requirements(doc_req_path)},
     cmdclass={"develop": SetupDev},
+    python_requires=">=%s" % python_version_str,
 )

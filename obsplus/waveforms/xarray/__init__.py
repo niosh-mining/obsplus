@@ -4,7 +4,7 @@ Functionality for working with Xarray for seismology data.
 
 from obsplus.waveforms.xarray.accessor import ops_method, OPS_METHODS
 
-from obsplus.waveforms.xarray.utils import keep_attrs, _add_level
+from obsplus.waveforms.xarray.utils import keep_attrs, _add_level, get_nslc_df
 from obsplus.waveforms.xarray.io import netcdf2array
 
 

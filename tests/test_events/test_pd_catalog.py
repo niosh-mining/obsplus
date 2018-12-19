@@ -305,6 +305,14 @@ class TestReadPhasePicks:
         """ return the outputs from the fixtures """
         return request.getfixturevalue(request.param)
 
+    @pytest.fixture
+    def bingham_cat_only_picks(self, bingham_dataset):
+        """ return bingham catalog with everything but picks removed """
+        events = []
+        for eve in bingham_dataset.event_client.get_events().copy():
+            events.append(ev.Event(picks=eve.picks))
+        return obspy.Catalog(events=events)
+
     # general tests
     def test_type(self, read_picks_output):
         """ make sure a dataframe was returned """
@@ -325,6 +333,11 @@ class TestReadPhasePicks:
         """ ensure not having an origin time returns min of picks per event. """
         df = picks_no_origin
         assert (df.event_time == df.time.min()).all()
+
+    def test_unique_event_time_no_origin(self, bingham_cat_only_picks):
+        """ Ensure events with no origin don't all return the same time. """
+        df = picks_to_df(bingham_cat_only_picks)
+        assert len(df.event_time.unique()) == len(df.event_id.unique())
 
 
 class TestReadKemPicks:

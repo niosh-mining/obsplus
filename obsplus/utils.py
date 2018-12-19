@@ -10,7 +10,9 @@ import os
 import sys
 import threading
 import warnings
+import textwrap
 from functools import singledispatch, wraps
+
 from typing import Union, Sequence, Optional, Any, Callable, Dict, Tuple, Generator, Set
 
 import numpy as np
@@ -362,7 +364,7 @@ def _from_list(input_list):
 @get_reference_time.register(obspy.Catalog)
 def _get_first_event(catalog):
     """ ensure the events is length one, return event """
-    assert len(catalog) == 1, f"{events} has more than one event"
+    assert len(catalog) == 1, f"{catalog} has more than one event"
     return _get_event_origin_time(catalog[0])
 
 
@@ -378,7 +380,7 @@ def get_preferred(event: Event, what: str):
     what: the prefered item to get
         eg, magnitude, origin, focal_mechanism
     """
-    pref_tyoe = {
+    pref_type = {
         "magnitude": ev.Magnitude,
         "origin": ev.Origin,
         "focal_mechanism": ev.FocalMechanism,
@@ -401,7 +403,7 @@ def get_preferred(event: Event, what: str):
                 var = (pid.id, whats, str(event))
                 warnings.warn("cannot find %s in %s for event %s" % var)
                 obj = getattr(event, whats)[-1]
-    assert isinstance(obj, pref_tyoe[what]), "wrong type returned"
+    assert isinstance(obj, pref_type[what]), "wrong type returned"
     return obj
 
 
@@ -546,3 +548,33 @@ def getattrs(obsject, col_set, default_value=np.nan):
             val = default_value
         out[item] = val
     return out
+
+
+def compose_docstring(**kwargs):
+    """
+    Decorator for composing docstrings.
+
+    Provided values found in curly brackets un wrapped functions docstring
+    will be appropriately indented and included in wrapped function's
+    __docs__.
+    """
+
+    def _wrap(func):
+
+        docstring = func.__doc__
+        # iterate each provided value and look for it in the docstring
+        for key, value in kwargs.items():
+            search_value = "{%s}" % key
+            # find all lines that match values
+            lines = [x for x in docstring.split("\n") if search_value in x]
+            for line in lines:
+                # determine number of spaces used before matching character
+                spaces = line.split(search_value)[0]
+                # ensure only spaces preceed search value
+                assert set(spaces) == {" "}
+                new = {key: textwrap.indent(textwrap.dedent(value), spaces)}
+                docstring = docstring.replace(line, line.format(**new))
+        func.__doc__ = docstring
+        return func
+
+    return _wrap
