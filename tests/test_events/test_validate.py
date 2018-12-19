@@ -189,7 +189,25 @@ class TestValidateCatalog:
     def test_works_with_event(self, cat1):
         """ ensure the method can also be called on an event """
         validate_catalog(cat1[0])
-
+        
+    def test_s_before_p(self, cat1):
+        """ ensure raise if any s picks are before p picks """
+        cat = cat1.copy()
+        # Set s time before p time
+        # pick[3] is a s pick and pick[2] is a p pick
+        cat[0].picks[3].time = cat[0].picks[2].time - 60
+        with pytest.raises(AssertionError):
+            obsplus.events.validate.check_picks(cat)
+        
+    def test_duplicate_picks(self, cat1):
+        """ ensure raise if there are more than one p or s pick per station """
+        cat = cat1.copy()
+        # Duplicating p pick at picks[2]
+        pick = cat[0].picks[2]
+        pick.time = pick.time + 60
+        cat[0].picks.append(pick)
+        with pytest.raises(AssertionError):
+            obsplus.events.validate.check_picks(cat)
 
 class TestAddValidator:
     """ ensure validators can be added """
