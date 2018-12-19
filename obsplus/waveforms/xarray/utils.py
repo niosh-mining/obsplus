@@ -178,6 +178,7 @@ def stack_seed(dar: xr.DataArray, level) -> xr.DataArray:
         The seed-level (network, station, location or channel).
     """
     dar = dar.copy()  # changes some things in place, make a copy
+    dim = dar.dims[-1]  # get last dimension (eg time or frequency)
     # This is super ugly, and much harder than it should be.
     # get dataframe of seed levels
     assert level in NSLC
@@ -190,7 +191,7 @@ def stack_seed(dar: xr.DataArray, level) -> xr.DataArray:
     # unstack, drop nans, then stack ids together
     out = dar.unstack("seed_id").rename({"sid": "seed_id"})
     out = out.stack(ids=("seed_id", "stream_id"))
-    return out.dropna(dim="ids", how="all").transpose("ids", level, "time")
+    return out.dropna(dim="ids", how="all").transpose("ids", level, dim)
 
 
 @ops_method("unstack_seed")
@@ -217,7 +218,9 @@ def unstack_seed(dar: xr.DataArray) -> xr.DataArray:
     stack = ("seed_id", level)
     dar1 = dar.unstack().stack(sid=stack).dropna(dim="sid", how="all")
     dar1.sid.values = [x[0] for x in dar1.sid.values]
-    return dar1.rename({"sid": "seed_id"}).transpose(*DIMS)
+    # determine dims to use for transpose
+    dims = list(DIMS[:-1]) + [dar.dims[-1]]
+    return dar1.rename({"sid": "seed_id"}).transpose(*dims)
 
 
 @ops_method("sel_sid")
