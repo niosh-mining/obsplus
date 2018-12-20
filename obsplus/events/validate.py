@@ -5,7 +5,9 @@ from typing import Union, Optional
 
 from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
 from obsplus.utils import yield_obj_parent_attr
+import obsplus
 from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
+from obspy import UTCDateTime
 
 CATALOG_VALIDATORS = []
 
@@ -102,10 +104,6 @@ def validate_catalog(events: Union[Catalog, Event],) -> Optional[Union[Catalog, 
     events
         The events or event to check
 
-    Returns
-    -------
-
-
     """
 
     cat = events if isinstance(events, Catalog) else Catalog(events=[events])
@@ -113,3 +111,36 @@ def validate_catalog(events: Union[Catalog, Event],) -> Optional[Union[Catalog, 
         for func in CATALOG_VALIDATORS:
             func(event)
     return events
+
+
+def check_picks(cat: Catalog):
+    """ 
+    Checks for errors with phase picks
+    
+    This function will check for duplicate picks on each station (i.e. more 
+    than one P or S per station) as well as if there are any S picks before 
+    P picks on each station.
+    
+    Parameters
+    ----------
+    cat
+        Obspy catalog to validate
+           
+    """
+
+    def fn(df):
+        # No duplicates
+        assert not any(df.phase_hint.duplicated())
+
+        # Check p before s
+        if ps.issubset(df.phase_hint):
+            p_pick = df.loc[df.phase_hint == "P"].iloc[0]
+            s_pick = df.loc[df.phase_hint == "S"].iloc[0]
+            assert p_pick.time < s_pick.time
+
+    ps = {"P", "S"}
+
+    pdf = obsplus.picks_to_df(cat)
+    pdf = pdf.loc[(pdf.evaluation_status != "rejected") & (pdf.phase_hint.isin(ps))]
+    gb = pdf.groupby(["event_id", "station"])
+    gb.apply(fn)
