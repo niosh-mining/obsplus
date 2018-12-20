@@ -1235,3 +1235,13 @@ class TestSeedStacking:
         """ unstacking a data array that has not been stacked should raise """
         with pytest.raises(ValueError):
             default_array.ops.unstack_seed()
+
+    def test_stacking_with_frequencies(self, crandall_data_array):
+        """ ensure stacking can be performed with frequency domain data. """
+        stacked_time = crandall_data_array.ops.stack_seed("station")
+        dar_freq = crandall_data_array.ops.rfft()
+        stacked_freq = dar_freq.ops.stack_seed("station")
+        assert (stacked_freq.ids == stacked_time.ids).all()
+        unstacked_freq = stacked_freq.ops.unstack_seed()
+        # make sure stacking/unstacking is not lossy
+        assert ((dar_freq == unstacked_freq) | dar_freq.isnull()).all()
