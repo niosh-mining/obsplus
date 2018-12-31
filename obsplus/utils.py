@@ -344,7 +344,7 @@ def _get_event_origin_time(event):
     elif event.picks:
         return get_reference_time(event.picks)
     else:
-        msg = "could not get reference time for {event}"
+        msg = f"could not get reference time for {event}"
         raise ValueError(msg)
 
 
