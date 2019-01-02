@@ -10,6 +10,7 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 
+import obsplus
 from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC
 from obsplus.events.utils import get_reference_time
 from obsplus.interfaces import BankType, EventClient
@@ -69,7 +70,7 @@ def _get_update_time(eve):
     return {"updated": max(timestamps) if timestamps else np.NaN}
 
 
-origin_dtypes = {x: float for x in ["latitude", "longitude", "time", "depth"]}
+origin_dtypes = {x: float for x in ["latitude", "longitude", "depth"]}
 
 
 @events_to_df.extractor(dtypes=origin_dtypes)
@@ -77,6 +78,14 @@ def _get_origin_basic(eve):
     """ extract basic info from origin. """
     ori = get_preferred(eve, "origin")
     return getattrs(ori, set(origin_dtypes))
+
+
+@events_to_df.extractor(dtypes={"time": float})
+def _get_time(event):
+    try:
+        return {"time": obsplus.get_reference_time(event)}
+    except ValueError:  # no valid starttime
+        return {"time": np.nan}
 
 
 def _get_used_stations(origin: ev.Origin, pid):

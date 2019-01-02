@@ -209,7 +209,7 @@ def temp_dir():
 @pytest.fixture(scope="session", params=cat_dict.values())
 def test_catalog(request):
     """
-    return a list of test events (in cat_name from) from
+    return a list of test events (as catalogs) from
     quakeml saved on disk
     """
     cat = request.param
