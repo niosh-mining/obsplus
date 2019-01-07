@@ -15,7 +15,6 @@ import obspy.core.event as ev
 from obspy.core.event import Catalog, Event, ResourceIdentifier
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
-from obsplus.interfaces import EventClient
 
 import obsplus
 from obsplus.constants import (
@@ -25,6 +24,7 @@ from obsplus.constants import (
     UTC_KEYS,
     event_clientable_type,
 )
+from obsplus.interfaces import EventClient
 from obsplus.utils import yield_obj_parent_attr, get_reference_time
 
 
@@ -154,6 +154,74 @@ def _bump_version(version):
     elif version is None:
         version = "0.0.0"
     return version
+
+
+def make_origins(
+    events: catalog_or_event, inventory: obspy.Inventory, depth: float = 1.0
+) -> catalog_or_event:
+    """
+    Iterate a catalog or single events and ensure each has an origin.
+
+    If no origins are found for an event, create one with the time set to
+    the earliest pick and the location set to the location of the first hit
+     station. Events are modified in place.
+
+    This may be useful for location codes that need a starting location.
+
+    Parameters
+    ----------
+    events
+        The events to scan and add origins were necessary.
+    inventory
+        An inventory object which contains all the stations referenced in
+        quakeml elements of events.
+    depth
+        The default depth for created origins. Should be in meters. See the
+        obspy docs for Origin or the quakeml standard for more details.
+
+    Returns
+    -------
+    Either a Catalog or Event object (same as input).
+    """
+    # ensure input is an iterable of events
+    cat = [events] if isinstance(events, Event) else events
+    # load inv dataframe and make sure it has a seed_id column
+    df = obsplus.stations_to_df(inventory)
+    df["seed_id"] = (
+        df["network"] + "." + df["station"] + "." + df["location"] + "." + df["channel"]
+    )
+    for event in cat:
+        if not event.origins:  # make new origin
+            assert event.picks, f"{event} has no picks cannot create origin"
+            # get first pick, determine time/station used
+            first_pick = min(event.picks, key=lambda x: x.time.timestamp)
+            seed_id = first_pick.waveform_id.get_seed_string()
+            # find channel corresponding to pick
+            df_chan = df[df["seed_id"] == seed_id]
+            assert len(df_chan), f"{seed_id} not found in inventory"
+            ser = df_chan.iloc[0]
+            # create origin
+            ori = _create_first_pick_origin(first_pick, ser, depth=depth)
+            event.origins.append(ori)
+    return events
+
+
+def _create_first_pick_origin(first_pick, channel_ser, depth):
+    """ Create an origin based on first pick and a channel series. """
+    msg = (
+        "origin fixed to location and time of earliest pick by "
+        f"obsplus version {obsplus.__version__}"
+    )
+    comment = ev.Comment(text=msg)
+    odict = dict(
+        time=first_pick.time,
+        latitude=channel_ser.latitude,
+        longitude=channel_ser.longitude,
+        depth=depth,
+        time_fixed=True,
+        comments=[comment],
+    )
+    return ev.Origin(**odict)
 
 
 def get_event_path(
