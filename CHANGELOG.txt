@@ -2,6 +2,8 @@ master:
   - obsplus.waveforms
     * added stack_seed and unstack_seed methods to obsplus data array
       accessors.
+    * speed up wavebank reads of file segments by passing start/end times
+      to underlying obspy functions.
   - obsplus.events
     * added utility function to create origins based on first hit station if
       an event has only picks.

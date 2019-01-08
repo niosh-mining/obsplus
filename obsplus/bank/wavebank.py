@@ -635,7 +635,12 @@ class WaveBank(_Bank):
         files: pd.Series = (self.bank_path + index.path).unique()
         # iterate the files to read and try to load into waveforms
         stt = obspy.Stream()
-        for st in (_try_read_stream(x, format=self.format) for x in files):
+        kwargs = dict(
+            format=self.format,
+            starttime=obspy.UTCDateTime(starttime) if starttime else None,
+            endtime=obspy.UTCDateTime(endtime) if endtime else None,
+        )
+        for st in (_try_read_stream(x, **kwargs) for x in files):
             if st is not None and len(st):
                 stt += st
         # filter out any traces not in index (this can happen when files hold
