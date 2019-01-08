@@ -9,7 +9,6 @@ from pathlib import Path
 import obspy
 import pytest
 from obspy.core.event import Comment, ResourceIdentifier
-import obspy.core.event as ev
 
 import obsplus
 from obsplus.events import validate
@@ -18,6 +17,7 @@ from obsplus.events.utils import (
     get_event_path,
     duplicate_events,
     catalog_to_directory,
+    make_origins,
 )
 from obsplus.utils import get_instances, get_preferred
 
@@ -312,3 +312,40 @@ class TestCatalogToDirectory:
         catalog_to_directory(str(path), path_out2)
         assert path_out2.exists()
         assert not obsplus.EventBank(path_out2).read_index().empty
+
+
+class TestEnsureOrigin:
+    """ Tests for the ensure origin function. """
+
+    @pytest.fixture(scope="class")
+    def cat_only_picks(self, crandall_dataset):
+        """ Return a catalog with only picks, no origins or magnitudes """
+        cat = crandall_dataset.event_client.get_events().copy()
+        for event in cat:
+            event.preferred_origin_id = None
+            event.preferred_magnitude_id = None
+            event.origins.clear()
+            event.magnitudes.clear()
+        return cat
+
+    @pytest.fixture(scope="class")
+    def cat_added_origins(self, cat_only_picks):
+        """ run ensure_origin on the catalog with only picks and return """
+        # get corresponding inventory
+        ds = obsplus.load_dataset("crandall")
+        inv = ds.station_client.get_stations()
+        return make_origins(events=cat_only_picks, inventory=inv)
+
+    def test_all_events_have_origins(self, cat_added_origins):
+        """ ensure all the events do indeed have origins """
+        for event in cat_added_origins:
+            assert event.origins, f"{event} has no origins"
+
+    def test_origins_have_time_and_location(self, cat_added_origins):
+        """ all added origins should have both times and locations. """
+        for event in cat_added_origins:
+            for origin in event.origins:
+                assert isinstance(origin.time, obspy.UTCDateTime)
+                assert origin.latitude is not None
+                assert origin.longitude is not None
+                assert origin.depth is not None
