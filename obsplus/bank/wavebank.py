@@ -42,6 +42,7 @@ from obsplus.utils import (
     to_timestamp,
     get_progressbar,
     thread_lock_function,
+    get_nslc_series,
 )
 
 # from obsplus.interfaces import WaveformClient
@@ -645,15 +646,7 @@ class WaveBank(_Bank):
                 stt += st
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
-        nslc = set(
-            index.network
-            + "."
-            + index.station
-            + "."
-            + index.location
-            + "."
-            + index.channel
-        )
+        nslc = set(get_nslc_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
         self._polish_stream(stt, starttime, endtime, attach_response)

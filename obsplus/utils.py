@@ -25,7 +25,7 @@ from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
 
-from obsplus.constants import event_time_type
+from obsplus.constants import event_time_type, NSLC
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -578,3 +578,22 @@ def compose_docstring(**kwargs):
         return func
 
     return _wrap
+
+
+def get_nslc_series(df: pd.DataFrame) -> pd.Series:
+    """
+    Create a series of seed_ids from a dataframe with nslc columns.
+
+    Parameters
+    ----------
+    df
+        Any Dataframe that has str columns named:
+            network, station, location, channel
+
+    Returns
+    -------
+    A series of concatenated nslc codes.
+    """
+    assert set(NSLC).issubset(df.columns), f"dataframe must have {NSLC} in columns"
+    net, sta, loc, chan = [df[x].fillna("").astype(str) for x in NSLC]
+    return net + "." + sta + "." + loc + "." + chan

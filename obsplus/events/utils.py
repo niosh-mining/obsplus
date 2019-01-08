@@ -25,7 +25,7 @@ from obsplus.constants import (
     event_clientable_type,
 )
 from obsplus.interfaces import EventClient
-from obsplus.utils import yield_obj_parent_attr, get_reference_time
+from obsplus.utils import yield_obj_parent_attr, get_reference_time, get_nslc_series
 
 
 def duplicate_events(
@@ -187,9 +187,7 @@ def make_origins(
     cat = [events] if isinstance(events, Event) else events
     # load inv dataframe and make sure it has a seed_id column
     df = obsplus.stations_to_df(inventory)
-    df["seed_id"] = (
-        df["network"] + "." + df["station"] + "." + df["location"] + "." + df["channel"]
-    )
+    nslc_series = get_nslc_series(df)
     for event in cat:
         if not event.origins:  # make new origin
             assert event.picks, f"{event} has no picks cannot create origin"
@@ -197,7 +195,7 @@ def make_origins(
             first_pick = min(event.picks, key=lambda x: x.time.timestamp)
             seed_id = first_pick.waveform_id.get_seed_string()
             # find channel corresponding to pick
-            df_chan = df[df["seed_id"] == seed_id]
+            df_chan = df[nslc_series == seed_id]
             assert len(df_chan), f"{seed_id} not found in inventory"
             ser = df_chan.iloc[0]
             # create origin
