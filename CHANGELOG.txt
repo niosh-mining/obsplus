@@ -5,6 +5,8 @@ master:
   - obsplus.waveforms
     * Added stack_seed and unstack_seed methods to obsplus data array
       accessors (see #27).
+    * Added function for creating SDS archives from existing archives
+      (see #35).
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
