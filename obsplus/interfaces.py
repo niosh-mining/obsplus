@@ -51,7 +51,7 @@ class StationClient(ABC, _MethodChecker):
 
 
 class BankType(ABC, _MethodChecker):
-    """ an object that looks like an event bank """
+    """ an object that looks like a bank """
 
     required_methods = {"read_index"}
 

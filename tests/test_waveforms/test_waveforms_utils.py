@@ -139,13 +139,23 @@ class TestStream2Contiguous:
 class TestArchiveToSDS:
     """ Tests for converting archives to SDS. """
 
+    stream_process_count = 0
+    dataset_name = "kemmerer"  # dataset used for testing
+
+    def stream_processor(self, st):
+        self.stream_process_count += 1
+        return st
+
     @pytest.fixture(scope="class")
     def converted_archive(self, tmp_path_factory):
         """ Convert a dataset archive to a SDS archive. """
         out = tmp_path_factory.mktemp("new_sds")
-        ds = obsplus.load_dataset("kemmerer")
+        ds = obsplus.load_dataset(self.dataset_name)
         wf_path = ds.waveform_path
-        archive_to_sds(wf_path, out)
+        archive_to_sds(wf_path, out, stream_processor=self.stream_processor)
+        # Because fixtures run in different context then tests this we
+        # need to test that the stream processor ran here.
+        assert self.stream_process_count
         return out
 
     @pytest.fixture(scope="class")
@@ -155,15 +165,23 @@ class TestArchiveToSDS:
         wb.update_index()
         return wb
 
+    @pytest.fixture(scope="class")
+    def old_wavebank(self):
+        """ get the wavebank of the archive before converting to sds """
+        ds = obsplus.load_dataset(self.dataset_name)
+        bank = ds.waveform_client
+        assert isinstance(bank, obsplus.WaveBank)
+        return bank
+
     def test_path_exists(self, converted_archive):
         """ ensure the path to the new SDS exists """
         path = Path(converted_archive)
         assert path.exists()
 
-    def test_directory_not_empty(self, sds_wavebank):
+    def test_directory_not_empty(self, sds_wavebank, old_wavebank):
         """ ensure the same date range is found in the new archive """
         sds_index = sds_wavebank.read_index()
-        old_index = obsplus.load_dataset("kemmerer").waveform_client.read_index()
+        old_index = old_wavebank.read_index()
         # start times and endtimes for old and new should be the same
         group_old = old_index.groupby(list(NSLC))
         group_sds = sds_index.groupby(list(NSLC))
