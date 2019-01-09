@@ -1,10 +1,17 @@
+"""
+Tests for waveform utilities.
+"""
 import copy
 import inspect
+from pathlib import Path
 
 import numpy as np
 import obspy
 import pytest
-from obsplus.waveforms.utils import trim_event_stream, stream2contiguous
+
+import obsplus
+from obsplus.constants import NSLC
+from obsplus.waveforms.utils import trim_event_stream, stream2contiguous, archive_to_sds
 
 
 class TestTrimEventStream:
@@ -127,3 +134,44 @@ class TestStream2Contiguous:
         assert len(slist) == 2
         for st_out in slist:
             assert not len(st_out.get_gaps())
+
+
+class TestArchiveToSDS:
+    """ Tests for converting archives to SDS. """
+
+    @pytest.fixture(scope="class")
+    def converted_archive(self, tmp_path_factory):
+        """ Convert a dataset archive to a SDS archive. """
+        out = tmp_path_factory.mktemp("new_sds")
+        ds = obsplus.load_dataset("kemmerer")
+        wf_path = ds.waveform_path
+        archive_to_sds(wf_path, out)
+        return out
+
+    @pytest.fixture(scope="class")
+    def sds_wavebank(self, converted_archive):
+        """ Create a new WaveBank on the converted archive. """
+        wb = obsplus.WaveBank(converted_archive)
+        wb.update_index()
+        return wb
+
+    def test_path_exists(self, converted_archive):
+        """ ensure the path to the new SDS exists """
+        path = Path(converted_archive)
+        assert path.exists()
+
+    def test_directory_not_empty(self, sds_wavebank):
+        """ ensure the same date range is found in the new archive """
+        sds_index = sds_wavebank.read_index()
+        old_index = obsplus.load_dataset("kemmerer").waveform_client.read_index()
+        # start times and endtimes for old and new should be the same
+        group_old = old_index.groupby(list(NSLC))
+        group_sds = sds_index.groupby(list(NSLC))
+        # ensure starttimes are the same
+        old_start = group_old.starttime.min()
+        sds_start = group_sds.starttime.min()
+        assert (old_start == sds_start).all()
+        # ensure endtimes are the same
+        old_end = group_old.endtime.max()
+        sds_end = group_sds.endtime.max()
+        assert (old_end == sds_end).all()
