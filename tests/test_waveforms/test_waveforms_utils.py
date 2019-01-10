@@ -193,3 +193,12 @@ class TestArchiveToSDS:
         old_end = group_old.endtime.max()
         sds_end = group_sds.endtime.max()
         assert (old_end == sds_end).all()
+
+    def test_each_file_one_trace(self, sds_wavebank):
+        """ ensure each file in the sds has exactly one channel """
+        index = sds_wavebank.read_index()
+        for fi in index.path.unique():
+            base = Path(sds_wavebank.bank_path) / fi[1:]
+            st = obspy.read(str(base))
+            assert len({tr.id for tr in st}) == 1
+

@@ -239,7 +239,7 @@ def archive_to_sds(
             st_sub = st.select(**nslc_dict)
             nslc_dict["type_code"] = type_code
             path = _get_sds_filename(st_sub, sds_path, **dict(nslc_dict))
-            st.write(str(path), "mseed")
+            st_sub.write(str(path), "mseed")
 
 
 def _get_sds_filename(st, base_path, **kwargs):
