@@ -12,6 +12,7 @@ from typing import Optional, Sequence
 
 import obspy
 import obspy.core.event as ev
+import numpy as np
 import pandas as pd
 
 from obsplus.constants import (
@@ -278,9 +279,10 @@ def _make_wheres(queries):
     if "eventid" in kwargs:
         kwargs["event_id"] = kwargs["eventid"]
         kwargs.pop("eventid")
-    if "event_id" in kwargs:  # ensure event_id is a str
+    if "event_id" in kwargs:
         val = kwargs.pop("event_id")
-        if isinstance(val, (Sequence, set)) and not isinstance(val, str):
+        seq_types = (Sequence, set, np.ndarray)
+        if isinstance(val, seq_types) and not isinstance(val, str):
             kwargs["event_id"] = [str(x) for x in val]
         else:
             kwargs["event_id"] = str(val)

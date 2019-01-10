@@ -3,6 +3,7 @@ Tests for utils for events submodule
 """
 import glob
 import os
+import warnings
 from os.path import join
 from pathlib import Path
 
@@ -302,9 +303,11 @@ class TestCatalogToDirectory:
         path = Path(tmpdir) / "events.xml"
         path_out1 = path.parent / "catalog_dir1"
         path_out2 = path.parent / "catalog_dir2"
-        cat.write(str(path), "quakeml")
+        # a slightly invalid uri is used, just ignore
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cat.write(str(path), "quakeml")
         # test works with a Path instance
-
         catalog_to_directory(path, path_out1)
         assert path_out1.exists()
         assert not obsplus.EventBank(path_out1).read_index().empty

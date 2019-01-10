@@ -3,6 +3,7 @@ Class for interacting with events on a filesystem.
 """
 
 import time
+import warnings
 from functools import reduce
 from operator import add
 from os.path import exists
@@ -247,8 +248,10 @@ class EventBank(_Bank):
                 meta = self._make_meta_table()
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
-            df_time = pd.DataFrame(time.time(), index=[0], columns=["time"])
-            df_time.to_sql(self._time_node, con, if_exists="replace", index=False)
+            with warnings.catch_warnings():  # ignore pandas collection warning
+                warnings.simplefilter("ignore")
+                dft = pd.DataFrame(time.time(), index=[0], columns=["time"])
+                dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
 
