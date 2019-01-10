@@ -201,4 +201,3 @@ class TestArchiveToSDS:
             base = Path(sds_wavebank.bank_path) / fi[1:]
             st = obspy.read(str(base))
             assert len({tr.id for tr in st}) == 1
-
