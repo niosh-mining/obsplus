@@ -236,9 +236,8 @@ def archive_to_sds(
         for st in bank.yield_waveforms(**ykwargs):
             if stream_processor:  # apply stream processor if needed.
                 st = stream_processor(st)
-            st_sub = st.select(**nslc_dict)
-            path = _get_sds_filename(st_sub, sds_path, type_code, **nslc_dict)
-            st_sub.write(str(path), "mseed")
+            path = _get_sds_filename(st, sds_path, type_code, **nslc_dict)
+            st.write(str(path), "mseed")
 
 
 def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
@@ -247,9 +246,7 @@ def _get_sds_filename(st, base_path, type_code, network, station, location, chan
 
     # add year and julday to formatting dict
     year, julday = "%04d" % time.year, "%03d" % time.julday
-    filename = (
-        f"{network}.{station}.{location}.{channel}.{type_code}.{year}.{julday}"
-    )
+    filename = f"{network}.{station}.{location}.{channel}.{type_code}.{year}.{julday}"
     spath = f"{year}/{network}/{station}/{channel}.{type_code}"
     path = base_path / spath
     path.mkdir(parents=True, exist_ok=True)
