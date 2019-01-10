@@ -30,7 +30,7 @@ from obsplus.waveforms.utils import get_waveform_client
 from obsplus.utils import make_time_chunks, register_func, get_reference_time
 
 EventStream = namedtuple("EventStream", "event_id stream")
-far_out_time = UTCDateTime("2200-01-01").timestamp
+far_out_time = UTCDateTime("2525-01-01").timestamp
 
 
 # ---------------------- Wavefetcher constructor stuff
@@ -153,9 +153,9 @@ class Fetcher:
         """
         try:
             self.waveform_client = get_waveform_client(waveforms)
-        except TypeError:  # if the waveform client is already define keep it
+        except TypeError:  # if the waveform client is already defined keep it
             self.waveform_client = getattr(self, "waveform_client", None)
-        self.waveform_df = None  # TODO figure this out
+        self.waveform_df = None  # TODO figure out how to get waveform df?
 
     def set_events(self, events: fetcher_event_type):
         """
@@ -199,7 +199,11 @@ class Fetcher:
             try:
                 self.station_df = stations_to_df(self.event_client)
             except TypeError:
-                self.station_df = None
+                # if no events try waveform client
+                try:
+                    self.station_df = stations_to_df(self.waveform_client)
+                except TypeError:
+                    self.station_df = None
 
     # ------------------------ continuous data fetching methods
 
@@ -432,8 +436,9 @@ class Fetcher:
         return copy.deepcopy(self)
 
     def _get_bulk_wf(self, *args, **kwargs):
-        """ get the wave forms using the client, apply processor if it is
-        defined """
+        """
+        get the wave forms using the client, apply processor if it is defined
+        """
         out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
         if callable(self.stream_processor):
             return self.stream_processor(out) or out

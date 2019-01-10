@@ -128,7 +128,7 @@ class EventBank(_Bank):
         with sql_connection(self.index_path) as con:
             try:
                 return _read_table(self._time_node, con).loc[0, "time"]
-            except pd.io.sql.DatabaseError:  # table doesnt exist yet
+            except (pd.io.sql.DatabaseError, KeyError):  # table is empty
                 return 0.0
 
     @property

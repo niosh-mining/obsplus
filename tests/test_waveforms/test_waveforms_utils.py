@@ -1,10 +1,17 @@
+"""
+Tests for waveform utilities.
+"""
 import copy
 import inspect
+from pathlib import Path
 
 import numpy as np
 import obspy
 import pytest
-from obsplus.waveforms.utils import trim_event_stream, stream2contiguous
+
+import obsplus
+from obsplus.constants import NSLC
+from obsplus.waveforms.utils import trim_event_stream, stream2contiguous, archive_to_sds
 
 
 class TestTrimEventStream:
@@ -127,3 +134,70 @@ class TestStream2Contiguous:
         assert len(slist) == 2
         for st_out in slist:
             assert not len(st_out.get_gaps())
+
+
+class TestArchiveToSDS:
+    """ Tests for converting archives to SDS. """
+
+    stream_process_count = 0
+    dataset_name = "kemmerer"  # dataset used for testing
+
+    def stream_processor(self, st):
+        self.stream_process_count += 1
+        return st
+
+    @pytest.fixture(scope="class")
+    def converted_archive(self, tmp_path_factory):
+        """ Convert a dataset archive to a SDS archive. """
+        out = tmp_path_factory.mktemp("new_sds")
+        ds = obsplus.load_dataset(self.dataset_name)
+        wf_path = ds.waveform_path
+        archive_to_sds(wf_path, out, stream_processor=self.stream_processor)
+        # Because fixtures run in different context then tests this we
+        # need to test that the stream processor ran here.
+        assert self.stream_process_count
+        return out
+
+    @pytest.fixture(scope="class")
+    def sds_wavebank(self, converted_archive):
+        """ Create a new WaveBank on the converted archive. """
+        wb = obsplus.WaveBank(converted_archive)
+        wb.update_index()
+        return wb
+
+    @pytest.fixture(scope="class")
+    def old_wavebank(self):
+        """ get the wavebank of the archive before converting to sds """
+        ds = obsplus.load_dataset(self.dataset_name)
+        bank = ds.waveform_client
+        assert isinstance(bank, obsplus.WaveBank)
+        return bank
+
+    def test_path_exists(self, converted_archive):
+        """ ensure the path to the new SDS exists """
+        path = Path(converted_archive)
+        assert path.exists()
+
+    def test_directory_not_empty(self, sds_wavebank, old_wavebank):
+        """ ensure the same date range is found in the new archive """
+        sds_index = sds_wavebank.read_index()
+        old_index = old_wavebank.read_index()
+        # start times and endtimes for old and new should be the same
+        group_old = old_index.groupby(list(NSLC))
+        group_sds = sds_index.groupby(list(NSLC))
+        # ensure starttimes are the same
+        old_start = group_old.starttime.min()
+        sds_start = group_sds.starttime.min()
+        assert (old_start == sds_start).all()
+        # ensure endtimes are the same
+        old_end = group_old.endtime.max()
+        sds_end = group_sds.endtime.max()
+        assert (old_end == sds_end).all()
+
+    def test_each_file_one_trace(self, sds_wavebank):
+        """ ensure each file in the sds has exactly one channel """
+        index = sds_wavebank.read_index()
+        for fi in index.path.unique():
+            base = Path(sds_wavebank.bank_path) / fi[1:]
+            st = obspy.read(str(base))
+            assert len({tr.id for tr in st}) == 1

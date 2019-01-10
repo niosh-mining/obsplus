@@ -4,7 +4,7 @@ Stream utilities
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import obspy
@@ -12,8 +12,9 @@ import pandas as pd
 from obspy import Stream, UTCDateTime
 
 import obsplus
-from obsplus.constants import waveform_clientable_type
+from obsplus.constants import waveform_clientable_type, NSLC
 from obsplus.interfaces import WaveformClient
+from obsplus.utils import get_nslc_series
 
 
 # ---------- trim functions
@@ -180,6 +181,83 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
     for arg in bulk_arg:
         st += self.get_waveforms(*arg)
     return st
+
+
+def archive_to_sds(
+    bank: Union[Path, str, "obsplus.WaveBank"],
+    sds_path: Union[Path, str],
+    starttime: Optional[UTCDateTime] = None,
+    endtime: Optional[UTCDateTime] = None,
+    overlap: float = 30,
+    type_code: str = "D",
+    stream_processor: Optional[callable] = None,
+):
+    """
+    Create a seiscomp data structure archive from a waveform source.
+
+    Parameters
+    ----------
+    bank
+        A wavebank or path to such.
+    sds_path
+        The path for the new sds archive to be created.
+    starttime
+        If not None, the starttime to convert data from bank.
+    endtime
+        If not None, the endtime to convert data from bank.
+    overlap
+        The overlap to use for each file.
+    type_code
+        The str indicating the datatype.
+    stream_processor
+        A callable that will take a single stream as input and return a
+        a single stream. May return and empty stream to skip a stream.
+
+    Notes
+    -----
+    see: https://www.seiscomp3.org/doc/applications/slarchive/SDS.html
+    """
+    sds_path = Path(sds_path)
+    # create a fetcher object for yielding continuous waveforms
+    bank = obsplus.WaveBank(bank)
+    bank.update_index()
+    # get starttime/endtimes
+    index = bank.read_index()
+    ts1 = index.starttime.min() if not starttime else starttime
+    t1 = _nearest_day(ts1)
+    t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
+    nslcs = get_nslc_series(index).unique()
+    # iterate over nslc and get data for selected channel
+    for nslc in nslcs:
+        nslc_dict = {n: v for n, v in zip(NSLC, nslc.split("."))}
+        # yield waveforms in desired chunks
+        ykwargs = dict(starttime=t1, endtime=t2, overlap=overlap, duration=86400)
+        ykwargs.update(nslc_dict)
+        for st in bank.yield_waveforms(**ykwargs):
+            if stream_processor:  # apply stream processor if needed.
+                st = stream_processor(st)
+            path = _get_sds_filename(st, sds_path, type_code, **nslc_dict)
+            st.write(str(path), "mseed")
+
+
+def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
+    """ Given a stream get the expected path for the file. """
+    time = _nearest_day(min([x.stats.starttime for x in st]))
+
+    # add year and julday to formatting dict
+    year, julday = "%04d" % time.year, "%03d" % time.julday
+    filename = f"{network}.{station}.{location}.{channel}.{type_code}.{year}.{julday}"
+    spath = f"{year}/{network}/{station}/{channel}.{type_code}"
+    path = base_path / spath
+    path.mkdir(parents=True, exist_ok=True)
+    return path / filename
+
+
+def _nearest_day(time):
+    """ Round a time down to the nearest day. """
+    ts = obspy.UTCDateTime(time).timestamp
+    ts_day = 3600 * 24
+    return obspy.UTCDateTime(ts - (ts % ts_day))
 
 
 @singledispatch
