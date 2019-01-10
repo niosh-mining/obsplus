@@ -226,31 +226,31 @@ def archive_to_sds(
     ts1 = index.starttime.min() if not starttime else starttime
     t1 = _nearest_day(ts1)
     t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
-    # yield waveforms in desired chunks
-    ykwargs = dict(starttime=t1, endtime=t2, overlap=overlap, duration=86400)
-    for st in bank.yield_waveforms(**ykwargs):
-        if stream_processor:  # apply stream processor if needed.
-            st = stream_processor(st)
-        nslcs = {tr.id for tr in st}
-        for nslc in nslcs:
-            # get a dict of network, station, location, channel
-            nslc_dict = {n: v for n, v in zip(NSLC, nslc.split("."))}
-            # select correct nslc and get expected file path, then save
+    nslcs = get_nslc_series(index).unique()
+    # iterate over nslc and get data for selected channel
+    for nslc in nslcs:
+        nslc_dict = {n: v for n, v in zip(NSLC, nslc.split("."))}
+        # yield waveforms in desired chunks
+        ykwargs = dict(starttime=t1, endtime=t2, overlap=overlap, duration=86400)
+        ykwargs.update(nslc_dict)
+        for st in bank.yield_waveforms(**ykwargs):
+            if stream_processor:  # apply stream processor if needed.
+                st = stream_processor(st)
             st_sub = st.select(**nslc_dict)
-            nslc_dict["type_code"] = type_code
-            path = _get_sds_filename(st_sub, sds_path, **dict(nslc_dict))
+            path = _get_sds_filename(st_sub, sds_path, type_code, **nslc_dict)
             st_sub.write(str(path), "mseed")
 
 
-def _get_sds_filename(st, base_path, **kwargs):
+def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
     """ Given a stream get the expected path for the file. """
     time = _nearest_day(min([x.stats.starttime for x in st]))
+
     # add year and julday to formatting dict
-    kwargs["year"], kwargs["julday"] = "%04d" % time.year, "%03d" % time.julday
+    year, julday = "%04d" % time.year, "%03d" % time.julday
     filename = (
-        "{network}.{station}.{location}.{channel}.{type_code}.{year}" ".{julday}"
-    ).format(**kwargs)
-    spath = "{year}/{network}/{station}/{channel}.{type_code}".format(**kwargs)
+        f"{network}.{station}.{location}.{channel}.{type_code}.{year}.{julday}"
+    )
+    spath = f"{year}/{network}/{station}/{channel}.{type_code}"
     path = base_path / spath
     path.mkdir(parents=True, exist_ok=True)
     return path / filename
