@@ -277,8 +277,6 @@ endtime : float or obspy.UTCDateTime
 
 # The subset of the get_events parameters obsplus currently supports.
 get_events_parameters = """
-Parameters
-----------
 starttime: obspy.UTCDateTime or valid input to such, optional
     Limit to events on or after the specified start time.
 endtime: obspy.UTCDateTime or valid input to such, optional
