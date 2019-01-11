@@ -1,5 +1,7 @@
 """ tests for wavebank utilities """
 import textwrap
+import itertools
+from pathlib import Path
 
 import obspy
 import obspy.core.event as ev
@@ -8,7 +10,8 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.utils import compose_docstring
+from obsplus.utils import compose_docstring, yield_obj_parent_attr
+from obsplus.constants import NSLC, NULL_NSLC_CODES
 
 append_func_name = pytest.append_func_name
 
@@ -91,24 +94,13 @@ class TestIterate:
         """ A single object should be returned in a tuple """
         assert obsplus.utils.iterate(1) == (1,)
 
+    def test_str(self):
+        """ A single string object should be returned as a tuple """
+        assert obsplus.utils.iterate("hey") == ("hey",)
 
-class TestMisc:
-    """ misc tests for small utilities """
 
-    def test_no_std_out(self, capsys):
-        """ ensure print doesn't propagate to std out when suppressed. """
-        with obsplus.utils.no_std_out():
-            print("whisper")
-        # nothing should have made it to stdout to get captured
-        assert not capsys.readouterr().out
-
-    def test_to_timestamp(self):
-        """ ensure things are properly converted to timestamps. """
-        ts1 = obsplus.utils.to_timestamp(10, None)
-        ts2 = obspy.UTCDateTime(10).timestamp
-        assert ts1 == ts2
-        on_none = obsplus.utils.to_timestamp(None, 10)
-        assert on_none == ts1 == ts2
+class TestDocsting:
+    """ tests for obsplus' simple docstring substitution function. """
 
     def test_docstring(self):
         """ Ensure docstrings can be composed with the docstring decorator. """
@@ -133,3 +125,136 @@ class TestMisc:
         line = [x for x in testfun1.__doc__.split("\n") if "Parameters" in x][0]
         base_spaces = line.split("Parameters")[0]
         assert len(base_spaces) == 12
+
+
+class TestReplaceNullNSLCCodes:
+    """ tests for replacing nulish NSLC codes for various objects. """
+
+    @pytest.fixture
+    def null_stream(self,):
+        """ return a stream with various nullish nslc codes. """
+        st = obspy.read()
+        st[0].stats.location = ""
+        st[1].stats.channel = "None"
+        st[2].stats.network = "null"
+        st[0].stats.station = "--"
+        return st
+
+    @pytest.fixture
+    def null_catalog(self):
+        """ create a catalog object, hide some nullish station codes in
+        picks and such """
+
+        def make_wid(net="UU", sta="TMU", loc="01", chan="HHZ"):
+            kwargs = dict(
+                network_code=net, station_code=sta, location_code=loc, channel_code=chan
+            )
+            wid = ev.WaveformStreamID(**kwargs)
+            return wid
+
+        cat = obspy.read_events()
+        ev1 = cat[0]
+        # make a pick
+        picks = []
+        for val in NULL_NSLC_CODES:
+            wid = make_wid(loc=val)
+            picks.append(ev.Pick(waveform_id=wid, time=obspy.UTCDateTime()))
+        ev1.picks.extend(picks)
+        return cat
+
+    @pytest.fixture
+    def null_inventory(self):
+        """ Create an inventory with various levels of nullish chars. """
+        inv = obspy.read_inventory()
+        # change the location codes, all other codes are required
+        inv[0][0][1].location_code = "--"
+        inv[0][0][2].location_code = "None"
+        inv[0][1][1].location_code = "nan"
+        return inv
+
+    def test_stream(self, null_stream):
+        """ ensure all the nullish chars are replaced """
+        st = obsplus.utils.repalce_null_nlsc_codes(null_stream.copy())
+        for tr1, tr2 in zip(null_stream, st):
+            for code in NSLC:
+                code1 = getattr(tr1.stats, code)
+                code2 = getattr(tr2.stats, code)
+                if code1 in NULL_NSLC_CODES:
+                    assert code2 == ""
+                else:
+                    assert code1 == code2
+
+    def test_catalog(self, null_catalog):
+        """ ensure all nullish catalog chars are replaced """
+        cat = obsplus.utils.repalce_null_nlsc_codes(null_catalog.copy())
+        for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):
+            wid = pick.waveform_id
+            assert wid.location_code == ""
+
+    def test_inventory(self, null_inventory):
+        def _valid_code(code):
+            """ return True if the code is valid. """
+            return code not in NULL_NSLC_CODES
+
+        inv = obsplus.utils.repalce_null_nlsc_codes(null_inventory)
+
+        for net in inv:
+            assert _valid_code(net.code)
+            for sta in net:
+                assert _valid_code(sta.code)
+                for chan in sta:
+                    assert _valid_code(chan.code)
+                    assert _valid_code(chan.location_code)
+
+
+class TestMisc:
+    """ misc tests for small utilities """
+
+    @pytest.fixture
+    def apply_test_dir(self, tmpdir):
+        """ create a test directory for applying functions to files. """
+        path = Path(tmpdir)
+        with (path / "first_file.txt").open("w") as fi:
+            fi.write("hey")
+        with (path / "second_file.txt").open("w") as fi:
+            fi.write("ho")
+        return path
+
+    def test_no_std_out(self, capsys):
+        """ ensure print doesn't propagate to std out when suppressed. """
+        with obsplus.utils.no_std_out():
+            print("whisper")
+        # nothing should have made it to stdout to get captured
+        assert not capsys.readouterr().out
+
+    def test_to_timestamp(self):
+        """ ensure things are properly converted to timestamps. """
+        ts1 = obsplus.utils.to_timestamp(10, None)
+        ts2 = obspy.UTCDateTime(10).timestamp
+        assert ts1 == ts2
+        on_none = obsplus.utils.to_timestamp(None, 10)
+        assert on_none == ts1 == ts2
+
+    def test_graceful_progress_fail(self, monkeypatch):
+        """ Ensure a progress bar that cant update returns None """
+        from progressbar import ProgressBar
+
+        def raise_exception():
+            raise Exception
+
+        monkeypatch.setattr(ProgressBar, "start", raise_exception)
+        assert obsplus.utils.get_progressbar(100) is None
+
+    def test_apply_or_skip(self, apply_test_dir):
+        """ test applying a function to all files or skipping """
+        processed_files = []
+
+        def func(path):
+            processed_files.append(path)
+            if "second" in path.name:
+                raise Exception("I dont want seconds")
+            return path
+
+        out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
+        assert len(processed_files) == 2
+        assert len(out) == 1

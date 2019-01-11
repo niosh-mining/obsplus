@@ -7,8 +7,9 @@ import os
 import re
 import sqlite3
 import warnings
+from functools import singledispatch
 from os.path import join
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import obspy
 import obspy.core.event as ev
@@ -23,6 +24,8 @@ from obsplus.constants import (
     EVENT_NAME_STRUCTURE,
 )
 from obsplus.utils import _get_event_origin_time, READ_DICT
+from obspy import Inventory
+
 from .mseed import summarize_mseed
 
 # --- sensible defaults
@@ -383,3 +386,27 @@ def _try_read_stream(stream_path, format=None, **kwargs):
         if stt is not None and len(stt):
             return stt
     return None
+
+
+@singledispatch
+def get_inventory(inventory: Union[str, Inventory]):
+    """
+    Get an stations from stations parameter if path or stations else
+    return None
+
+    Parameters
+    ----------
+    inventory : str, obspy.Inventory, or None
+
+    Returns
+    -------
+    obspy.Inventory or None
+    """
+    assert isinstance(inventory, Inventory) or inventory is None
+    return inventory
+
+
+@get_inventory.register(str)
+def _get_inv_str(inventory):
+    """ if str is provided """
+    return obspy.read_inventory(inventory)

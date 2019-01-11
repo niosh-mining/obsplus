@@ -182,6 +182,10 @@ class TestBankBasics:
         assert path.exists()
         assert len(bank.read_index()) == 3
 
+    def test_index_version(self, ebank):
+        """ ensure the index version returns the obsplus version. """
+        assert ebank._index_version == obsplus.__version__
+
 
 class TestReadIndexQueries:
     """ tests to ensure the index can be queried """

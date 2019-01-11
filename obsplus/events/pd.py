@@ -18,7 +18,7 @@ from obsplus.structures.dfextractor import DataFrameExtractor
 from obsplus.utils import (
     read_file,
     get_preferred,
-    apply_or_skip,
+    apply_to_files_or_skip,
     get_instances,
     getattrs,
 )
@@ -210,7 +210,7 @@ def _str_catalog_to_df(path):
     # if applied to directory, recurse
     path = str(path)  # convert possible path object to str
     if isdir(path):
-        df = pd.concat(list(apply_or_skip(_str_catalog_to_df, path)))
+        df = pd.concat(list(apply_to_files_or_skip(_str_catalog_to_df, path)))
         df.reset_index(drop=True, inplace=True)
         return df
     # else try to read single file

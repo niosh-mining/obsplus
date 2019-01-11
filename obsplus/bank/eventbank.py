@@ -134,11 +134,6 @@ class EventBank(_Bank):
                 return 0.0
 
     @property
-    def index_version(self):
-        """ Return the version of obsplus used to create the index. """
-        return self._read_metadata()["obsplus_version"][0]
-
-    @property
     def _path_structure(self):
         """ return the path structure stored in memory """
         try:
@@ -165,7 +160,7 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        self.assert_bank_path_exists()
+        self.ensure_bank_path_exists()
         if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
             unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
             msg = f"Query parameters {unsupported_options} are not supported"
@@ -260,7 +255,7 @@ class EventBank(_Bank):
 
     def _read_metadata(self):
         """ return the meta table """
-        self.assert_bank_path_exists()
+        self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
             return pd.read_sql(sql, con)
@@ -295,7 +290,7 @@ class EventBank(_Bank):
         catalog
             A Catalog or Event object to put into the database.
         """
-        self.assert_bank_path_exists(create=True)
+        self.ensure_bank_path_exists(create=True)
         events = [catalog] if isinstance(catalog, ev.Event) else catalog
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]

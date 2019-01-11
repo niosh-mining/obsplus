@@ -54,7 +54,6 @@ class _Bank(ABC):
         Not available return None
         """
 
-    #
     @abstractmethod
     def _read_metadata(self) -> pd.DataFrame:
         """ Return a dictionary of metadata. """
@@ -133,7 +132,7 @@ class _Bank(ABC):
         """ Return the version of obsplus used to create index. """
         return self._index_version
 
-    def assert_bank_path_exists(self, create=False):
+    def ensure_bank_path_exists(self, create=False):
         """
         Ensure the bank_path exists else raise an BankDoesNotExistError.
 
