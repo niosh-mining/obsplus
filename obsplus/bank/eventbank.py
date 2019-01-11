@@ -4,7 +4,7 @@ Class for interacting with events on a filesystem.
 
 import time
 import warnings
-from functools import reduce
+from functools import reduce, lru_cache
 from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
@@ -38,6 +38,7 @@ from obsplus.utils import (
     thread_lock_function,
     compose_docstring,
 )
+from obsplus.exceptions import BankDoesNotExistError
 
 # --- define static types
 
@@ -111,7 +112,6 @@ class EventBank(_Bank):
         if isinstance(base_path, EventBank):
             self.__dict__.update(base_path.__dict__)
             return
-        assert Path(base_path).is_dir(), f"{base_path} is not a directory"
         self.bank_path = abspath(base_path)
         self._index = None
         self.format = format
@@ -143,7 +143,7 @@ class EventBank(_Bank):
         """ return the path structure stored in memory """
         try:
             return self._read_metadata()["path_structure"][0]
-        except pd.io.sql.DatabaseError:
+        except (pd.io.sql.DatabaseError, BankDoesNotExistError):
             return None
 
     @property
@@ -151,7 +151,7 @@ class EventBank(_Bank):
         """ return the name structure stored in memory """
         try:
             return self._read_metadata()["name_structure"][0]
-        except pd.io.sql.DatabaseError:
+        except (pd.io.sql.DatabaseError, BankDoesNotExistError):
             return None
 
     # --- index stuff
@@ -165,7 +165,7 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-
+        self.assert_bank_path_exists()
         if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
             unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
             msg = f"Query parameters {unsupported_options} are not supported"
@@ -260,6 +260,7 @@ class EventBank(_Bank):
 
     def _read_metadata(self):
         """ return the meta table """
+        self.assert_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
             return pd.read_sql(sql, con)
@@ -294,6 +295,7 @@ class EventBank(_Bank):
         catalog
             A Catalog or Event object to put into the database.
         """
+        self.assert_bank_path_exists(create=True)
         events = [catalog] if isinstance(catalog, ev.Event) else catalog
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]

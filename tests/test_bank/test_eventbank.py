@@ -171,6 +171,17 @@ class TestBankBasics:
         assert len(cat2) == limit
         assert cat.events[0:limit] == cat2.events
 
+    def test_can_put_to_empty_bank(self, tmpdir):
+        """ An empty bank should be init'able created when an event is
+        put into it """
+        path = Path(tmpdir) / "new_bank"
+        bank = EventBank(path)
+        assert not path.exists()
+        cat = obspy.read_events()
+        bank.put_events(cat)
+        assert path.exists()
+        assert len(bank.read_index()) == 3
+
 
 class TestReadIndexQueries:
     """ tests to ensure the index can be queried """

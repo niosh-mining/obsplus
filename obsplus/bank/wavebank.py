@@ -136,7 +136,6 @@ class WaveBank(_Bank):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
             return
-        assert Path(base_path).is_dir(), f"{base_path} is not a directory"
         self.format = format
         self.ext = ext
         self.bank_path = abspath(base_path)
@@ -262,6 +261,9 @@ class WaveBank(_Bank):
         kwargs
             kwargs are passed to pandas.read_hdf function
         """
+        # ensure the path exists else raise
+        path = self.bank_path
+        assert Path(path).is_dir(), f"{path} is not a directory"
         if starttime is not None and endtime is not None:
             if starttime > endtime:
                 msg = f"starttime cannot be greater than endtime"

@@ -36,7 +36,7 @@ def array2netcdf(
     """
     byte_str = cloudpickle.dumps(dar.attrs)
     old_attrs = dar.attrs
-    dar.attrs = {"attrs": np.fromstring(byte_str, dtype=np.int8)}
+    dar.attrs = {"attrs": np.frombuffer(byte_str, dtype=np.int8)}
     out = dar.to_netcdf(path=path, **kwargs)
     dar.attrs = old_attrs
     return out
