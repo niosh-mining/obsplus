@@ -2,6 +2,9 @@ master:
   - obsplus.bank
     * Speed up wavebank reads of file segments by passing start/end times
       to underlying obspy functions (see #34).
+    * Added better error messages for trying to pull data from banks that do
+      not exist (see #36)
+    * Event bank eventid param can now accept numpy arrays (see 30).
   - obsplus.waveforms
     * Added stack_seed and unstack_seed methods to obsplus data array
       accessors (see #27).
@@ -10,3 +13,6 @@ master:
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
+  - obsplus.utils
+    * Added method for correcting nullish nslc codes (see #37 and #38)
+
