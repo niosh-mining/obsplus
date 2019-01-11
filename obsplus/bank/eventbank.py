@@ -111,6 +111,7 @@ class EventBank(_Bank):
         if isinstance(base_path, EventBank):
             self.__dict__.update(base_path.__dict__)
             return
+        assert Path(base_path).is_dir(), f"{base_path} is not a directory"
         self.bank_path = abspath(base_path)
         self._index = None
         self.format = format

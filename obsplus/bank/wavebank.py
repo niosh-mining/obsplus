@@ -136,6 +136,7 @@ class WaveBank(_Bank):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
             return
+        assert Path(base_path).is_dir(), f"{base_path} is not a directory"
         self.format = format
         self.ext = ext
         self.bank_path = abspath(base_path)
