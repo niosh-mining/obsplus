@@ -114,18 +114,18 @@ def validate_catalog(events: Union[Catalog, Event],) -> Optional[Union[Catalog, 
 
 
 def check_picks(cat: Catalog):
-    """ 
+    """
     Checks for errors with phase picks
-    
-    This function will check for duplicate picks on each station (i.e. more 
-    than one P or S per station) as well as if there are any S picks before 
+
+    This function will check for duplicate picks on each station (i.e. more
+    than one P or S per station) as well as if there are any S picks before
     P picks on each station.
-    
+
     Parameters
     ----------
     cat
         Obspy catalog to validate
-           
+
     """
 
     def fn(df):
