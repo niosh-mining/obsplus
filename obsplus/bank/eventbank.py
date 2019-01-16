@@ -3,7 +3,8 @@ Class for interacting with events on a filesystem.
 """
 
 import time
-from functools import reduce
+import warnings
+from functools import reduce, lru_cache
 from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
@@ -37,6 +38,7 @@ from obsplus.utils import (
     thread_lock_function,
     compose_docstring,
 )
+from obsplus.exceptions import BankDoesNotExistError
 
 # --- define static types
 
@@ -132,16 +134,11 @@ class EventBank(_Bank):
                 return 0.0
 
     @property
-    def index_version(self):
-        """ Return the version of obsplus used to create the index. """
-        return self._read_metadata()["obsplus_version"][0]
-
-    @property
     def _path_structure(self):
         """ return the path structure stored in memory """
         try:
             return self._read_metadata()["path_structure"][0]
-        except pd.io.sql.DatabaseError:
+        except (pd.io.sql.DatabaseError, BankDoesNotExistError):
             return None
 
     @property
@@ -149,7 +146,7 @@ class EventBank(_Bank):
         """ return the name structure stored in memory """
         try:
             return self._read_metadata()["name_structure"][0]
-        except pd.io.sql.DatabaseError:
+        except (pd.io.sql.DatabaseError, BankDoesNotExistError):
             return None
 
     # --- index stuff
@@ -163,7 +160,7 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-
+        self.ensure_bank_path_exists()
         if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
             unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
             msg = f"Query parameters {unsupported_options} are not supported"
@@ -247,8 +244,10 @@ class EventBank(_Bank):
                 meta = self._make_meta_table()
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
-            df_time = pd.DataFrame(time.time(), index=[0], columns=["time"])
-            df_time.to_sql(self._time_node, con, if_exists="replace", index=False)
+            with warnings.catch_warnings():  # ignore pandas collection warning
+                warnings.simplefilter("ignore")
+                dft = pd.DataFrame(time.time(), index=[0], columns=["time"])
+                dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
 
@@ -256,6 +255,7 @@ class EventBank(_Bank):
 
     def _read_metadata(self):
         """ return the meta table """
+        self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
             return pd.read_sql(sql, con)
@@ -290,6 +290,7 @@ class EventBank(_Bank):
         catalog
             A Catalog or Event object to put into the database.
         """
+        self.ensure_bank_path_exists(create=True)
         events = [catalog] if isinstance(catalog, ev.Event) else catalog
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]

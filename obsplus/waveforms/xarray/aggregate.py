@@ -1,6 +1,7 @@
 """
 Aggregation functions for xarray datastructures.
 """
+import warnings
 from typing import Union, Callable, Optional
 
 import numpy as np
@@ -27,8 +28,11 @@ def _get_aggregate_from_xarray(method):
     """ closure for common group aggregations """
 
     def groupby_aggregate(dar: xr.DataArray, level: str, dim: str, **kwargs):
-        group = dar.groupby(level)
-        ar = getattr(group, method)(dim)
+        # ignore mean of empty slice warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            group = dar.groupby(level)
+            ar = getattr(group, method)(dim)
         return ar
 
     return groupby_aggregate
