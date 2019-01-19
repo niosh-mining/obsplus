@@ -1,9 +1,5 @@
 """
-Script to re-make the html docs.
-
-This should be run only on the docs branch. Other branches should run
-the clean_docs script to ensure no notebook output is committed/merged into
-master.
+Script to re-make the html docs and publish to gh-pages.
 """
 from pathlib import Path
 from subprocess import run
@@ -16,7 +12,7 @@ def main():
     # clean out all the old docs
     clean_docs()
     # execute all the notebooks
-    cmd = "jupyter nbconvert --to notebook --execute"
+    cmd = "jupyter nbconvert --to notebook --execute --inplace"
     for note_book_path in doc_path.rglob("*.ipynb"):
         result = run(cmd + f" {note_book_path}", shell=True)
         if result.returncode != 0:

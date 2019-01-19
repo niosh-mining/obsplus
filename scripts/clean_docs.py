@@ -1,5 +1,5 @@
 """
-Script to remove all notebook output from docs, as well as old sphinx outputs.
+T
 """
 import shutil
 from pathlib import Path

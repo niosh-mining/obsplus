@@ -14,11 +14,8 @@
 # serve to show the default.
 
 import datetime
-import shutil
 import sys
 from os.path import dirname, abspath
-from pathlib import Path
-from subprocess import run
 
 year = datetime.datetime.now().year
 
