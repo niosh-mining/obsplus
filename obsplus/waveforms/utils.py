@@ -236,8 +236,9 @@ def archive_to_sds(
         for st in bank.yield_waveforms(**ykwargs):
             if stream_processor:  # apply stream processor if needed.
                 st = stream_processor(st)
-            path = _get_sds_filename(st, sds_path, type_code, **nslc_dict)
-            st.write(str(path), "mseed")
+            if st:
+                path = _get_sds_filename(st, sds_path, type_code, **nslc_dict)
+                st.write(str(path), "mseed")
 
 
 def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
