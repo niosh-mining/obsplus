@@ -1,4 +1,4 @@
-.. image:: docs/images/obsplus.png
+.. image:: https://user-images.githubusercontent.com/11671536/51515070-22241c00-1dc7-11e9-90d5-832f3caa5c70.png
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
