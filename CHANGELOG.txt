@@ -1,4 +1,4 @@
-master:
+obsplus 0.0.1:
   - obsplus.bank
     * Speed up wavebank reads of file segments by passing start/end times
       to underlying obspy functions (see #34).
@@ -15,4 +15,3 @@ master:
       an event has only picks (see #32).
   - obsplus.utils
     * Added method for correcting nullish nslc codes (see #37 and #38)
-
