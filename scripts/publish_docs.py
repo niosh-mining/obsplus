@@ -43,7 +43,7 @@ if __name__ == "__main__":
         # copy all contents of html
         run(f"cp -R {html_path}/* ./", shell=True, check=True)
         # make a commit
-        run("git add -A", shell=True)
+        run("git add -A", shell=True, check=True)
         run(f'git commit -m "{version} docs"', shell=True, check=True)
         run("git push -f origin gh-pages", shell=True, stdout=PIPE, check=True)
     # clean up original repo
