@@ -6,6 +6,7 @@ import os
 import re
 import time
 from collections import defaultdict
+from contextlib import suppress
 from functools import partial, lru_cache, reduce
 from itertools import chain
 from operator import add
@@ -202,8 +203,8 @@ class WaveBank(_Bank):
             updates.append(_summarize_wave_file(fi, format=self.format))
             # if more files are added during update this can raise
             if bar is not None:
-                # with suppress(Exception):
-                bar.update(num)  # ignore; progress bar isn't too important
+                with suppress(Exception):
+                    bar.update(num)  # ignore; progress bar isn't too important
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
         if len(updates):  # flatten list and make df
             self._write_update(list(chain.from_iterable(updates)))
