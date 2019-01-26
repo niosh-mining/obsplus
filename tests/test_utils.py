@@ -224,8 +224,13 @@ class TestMisc:
         """ ensure print doesn't propagate to std out when suppressed. """
         with obsplus.utils.no_std_out():
             print("whisper")
-        # nothing should have made it to stdout to get captured
-        assert not capsys.readouterr().out
+        # nothing should have made it to stdout to get captured. The
+        # output shape seems to be dependent on pytest version (or something).
+        capout = capsys.readouterr()
+        if isinstance(capout, tuple):
+            assert [not x for x in capout]
+        else:
+            assert not capout.out
 
     def test_to_timestamp(self):
         """ ensure things are properly converted to timestamps. """
