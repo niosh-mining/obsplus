@@ -14,8 +14,7 @@ from typing import Union, Optional, Callable, Iterable
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from obspy.core import event as ev
-from obspy.core.event import Catalog, Event, ResourceIdentifier
+from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamID
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
 
@@ -23,6 +22,7 @@ import obsplus
 from obsplus.constants import (
     UTC_FORMATS,
     catalog_or_event,
+    catalog_component,
     EVENT_ATTRS,
     UTC_KEYS,
     event_clientable_type,
@@ -399,6 +399,40 @@ def get_utc_path(
     if create and not os.path.exists(out):  # create dir/subdirs
         os.makedirs(out)
     return out
+
+
+def get_seed_id(obj: catalog_component) -> str:
+    """
+    Get the SCNL associated with a station-specific object
+
+    Parameters
+    ----------
+    obj
+        The object for which to retrieve the SCNL. Can be anything that
+        has a waveform_id attribute or refers to an object with a
+        waveform_id attribute.
+
+    Returns
+    -------
+    str :
+        The SCNL, in the form of a seed string
+    """
+    if isinstance(obj, WaveformStreamID):
+        return obj.get_seed_string()
+    elif hasattr(obj, "waveform_id"):
+        return get_seed_id(obj.waveform_id)
+    elif isinstance(obj, ResourceIdentifier):
+        return get_seed_id(obj.get_referred_object())
+    elif hasattr(obj, "pick_id"):
+        return get_seed_id(obj.pick_id)
+    elif hasattr(obj, "amplitude_id"):
+        return get_seed_id(obj.amplitude_id)
+    elif hasattr(obj, "station_magnitude_id"):
+        return get_seed_id(obj.station_magnitude_id)
+    elif obj is None:  # No SCNL tied to the parent object... what is the best way to handle this, so that there can be some kind of indication as to which object failed?
+        raise AttributeError("unable to fetch SCNL")
+    else:
+        raise TypeError(f"{type(obj)} is not supported for retrieving a seed id")
 
 
 def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:

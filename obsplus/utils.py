@@ -246,12 +246,12 @@ def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
 def register_func(dict, key=None):
     """ decorator to register a function in a list or dict """
 
-    def wraper(func):
+    def wrapper(func):
         dkey = key or func.__name__
         dict[dkey] = func
         return func
 
-    return wraper
+    return wrapper
 
 
 @singledispatch

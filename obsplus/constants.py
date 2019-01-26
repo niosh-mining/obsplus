@@ -23,6 +23,7 @@ import pandas as pd
 import xarray as xr
 from obspy import Stream, Trace, UTCDateTime, Inventory, Catalog
 from obspy.core.event import Event
+from obspy.core.util import AttribDict
 
 from obsplus.interfaces import EventClient, WaveformClient
 
@@ -135,6 +136,26 @@ DISTANCE_DTYES = OrderedDict(
 
 DISTANCE_COLUMNS = tuple(DISTANCE_DTYES)
 
+# columns required for amplitudes <-- I should probably reduce this?
+AMPLITUDE_COLUMNS = (
+    "resource_id",
+    "generic_amplitude",
+    "type",
+    "category",
+    "unit",
+    "method_id",
+    "period",
+    "snr",
+    "time_begin",
+    "time_end",
+    "pick_id",
+    "network",
+    "station",
+    "location",
+    "channel",
+    "mode",
+    "status"
+)
 
 # keys used to identify UTC objects
 UTC_KEYS = ("creation_time", "time", "reference")
@@ -172,8 +193,14 @@ event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
 # a events or event type var
 catalog_or_event = TypeVar("catalog_or_event", Catalog, Event)
 
+
 # trace container (Stream, or any mutable collection)
 trace_sequence = TypeVar("trace_sequence", Stream, MutableSequence[Trace])
+
+
+# a component of a catalog object
+catalog_component = AttribDict
+
 
 # types accepted by DataFetcher for stations info
 inventory_type = Union[Inventory, pd.DataFrame]

@@ -402,6 +402,18 @@ class TestReadKemPicks:
         assert (seed == df["seed_id"]).all()
 
 
+class TestReadAmplitudes:
+    """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+    def test_amplitudes(self):
+        assert False
+
+
+class TestReadKemAmplitudes:
+    """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+    def test_amplitudes(self):
+        assert False
+
+
 class TestGetPreferred:
     def test_bad_preferred_origin(self):
         """ ensure the bad preferred just returns last in list """

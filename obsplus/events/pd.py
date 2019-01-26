@@ -11,7 +11,13 @@ import obspy.core.event as ev
 import pandas as pd
 
 import obsplus
-from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC, PICK_DTYPES
+from obsplus.constants import (
+    EVENT_COLUMNS,
+    PICK_COLUMNS,
+    AMPLITUDE_COLUMNS,
+    NSLC,
+    PICK_DTYPES
+)
 from obsplus.events.utils import get_reference_time
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
@@ -289,6 +295,97 @@ def _pick_extractor(pick):
         base["lower_uncertainty"] = terrors.lower_uncertainty
         base["upper_uncertainty"] = terrors.upper_uncertainty
         base["confidence_level"] = terrors.confidence_level
+    return base
+
+
+# -------------- Amplitudes to dataframe
+
+
+amplitudes_to_df = DataFrameExtractor(
+    ev.Amplitude, AMPLITUDE_COLUMNS, utc_columns=("time_begin", "time_end", "event_time", "scaling_time")
+)
+
+
+@amplitudes_to_df.register(str)
+@amplitudes_to_df.register(Path)
+def _file_to_amplitudes_df(path):
+    path = str(path)
+    try:
+        return amplitudes_to_df(obspy.read_events(path))
+    except TypeError:  # obspy failed to read file, try csv
+        return amplitudes_to_df(pd.read_csv(path))
+
+
+amplitude_attrs = {
+    "resource_id": str,
+    "generic_amplitude": float,
+    "type": str,
+    "category": str,
+    "unit": str,
+    "method_id": str,
+    "period": float,
+    "snr": float,
+    "pick_id": str,
+    "filter_id": str,
+    "scaling_time": str,
+    "magnitude_hint": str,
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "seed_id": str,
+    "evaluation_mode": str,
+    "evaluation_status": str,
+    "creation_time": float,
+    "author": str,
+    "agency_id": str,
+    "event_id": str,
+}
+
+
+@amplitudes_to_df.register(ev.Event)
+@amplitudes_to_df.register(ev.Catalog)
+def _amplitudes_from_event(event: ev.Event):
+    """ return a dataframe of amplitudes from an amplitude list """
+    # ensure we have an iterable and flatten amplitudes
+    cat = [event] if isinstance(event, ev.Event) else event
+    amps = [a for e in cat for a in e.amplitudes]
+    # iterate events and create extras for inject event info to amplitude level
+    extras = {}
+    for event in cat:
+        if not len(event.amplitudes):
+            continue  # skip events with no amplitudes
+        event_dict = dict(
+            event_id=str(event.resource_id), event_time=get_reference_time(event)
+        )
+        extras.update({id(a): event_dict for a in event.amplitudes})
+
+    return amplitudes_to_df(amps, extras=extras)
+
+
+@amplitudes_to_df.register(BankType)
+def _amplitudes_from_event_bank(event_bank):
+    assert isinstance(event_bank, EventClient)
+    return amplitudes_to_df(event_bank.get_events())
+
+
+@amplitudes_to_df.extractor(dtypes=amplitude_attrs)
+def _amplitudes_extractor(amp):
+    # extract attributes that are floats/str
+    overlap = set(amp.__dict__) & set(amplitude_attrs)
+    base = {i: getattr(amp, i) for i in overlap}
+    # get waveform_id stuff (seed_id, network, station, location, channel)
+    seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
+    dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
+    base.update(dd)
+    base["seed_id"] = seed_id
+    # add event into
+
+    # get creation info
+    cio = pick.creation_info or ev.CreationInfo()
+    base["creation_time"] = cio.creation_time
+    base["author"] = cio.author
+    base["agency_id"] = cio.agency_id
     return base
 
 
