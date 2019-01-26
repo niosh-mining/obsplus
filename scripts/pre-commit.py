@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Pre-commit hook for ensuring files have been black formatted.
 """
