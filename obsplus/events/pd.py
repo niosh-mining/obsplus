@@ -302,7 +302,9 @@ def _pick_extractor(pick):
 
 
 amplitudes_to_df = DataFrameExtractor(
-    ev.Amplitude, AMPLITUDE_COLUMNS, utc_columns=("time_begin", "time_end", "event_time", "scaling_time")
+    ev.Amplitude,
+    AMPLITUDE_COLUMNS,
+    utc_columns=("time_begin", "time_end", "event_time", "scaling_time"),
 )
 
 

@@ -154,7 +154,7 @@ AMPLITUDE_COLUMNS = (
     "location",
     "channel",
     "mode",
-    "status"
+    "status",
 )
 
 # keys used to identify UTC objects
@@ -193,14 +193,11 @@ event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
 # a events or event type var
 catalog_or_event = TypeVar("catalog_or_event", Catalog, Event)
 
-
 # trace container (Stream, or any mutable collection)
 trace_sequence = TypeVar("trace_sequence", Stream, MutableSequence[Trace])
 
-
 # a component of a catalog object
 catalog_component = AttribDict
-
 
 # types accepted by DataFetcher for stations info
 inventory_type = Union[Inventory, pd.DataFrame]

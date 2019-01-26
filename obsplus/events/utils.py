@@ -429,7 +429,9 @@ def get_seed_id(obj: catalog_component) -> str:
         return get_seed_id(obj.amplitude_id)
     elif hasattr(obj, "station_magnitude_id"):
         return get_seed_id(obj.station_magnitude_id)
-    elif obj is None:  # No SCNL tied to the parent object... what is the best way to handle this, so that there can be some kind of indication as to which object failed?
+    elif (
+        obj is None
+    ):  # No SCNL tied to the parent object... what is the best way to handle this, so that there can be some kind of indication as to which object failed?
         raise AttributeError("unable to fetch SCNL")
     else:
         raise TypeError(f"{type(obj)} is not supported for retrieving a seed id")

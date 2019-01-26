@@ -404,12 +404,14 @@ class TestReadKemPicks:
 
 class TestReadAmplitudes:
     """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+
     def test_amplitudes(self):
         assert False
 
 
 class TestReadKemAmplitudes:
     """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+
     def test_amplitudes(self):
         assert False
 
