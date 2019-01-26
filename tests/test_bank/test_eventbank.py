@@ -145,6 +145,10 @@ class TestBankBasics:
 
     def test_service_version(self, bing_ebank):
         """ The get_service_version method should return obsplus version """
+        # first delete the old index and re-index, in case it is leftover
+        # from a previous version.
+        os.remove(bing_ebank.index_path)
+        bing_ebank.update_index()
         assert bing_ebank.get_service_version() == obsplus.__version__
 
     def test_min_version_recreates_index(self, ebank_low_version):
