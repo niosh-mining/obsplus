@@ -147,9 +147,9 @@ class TestArchiveToSDS:
         return st
 
     @pytest.fixture(scope="class")
-    def converted_archive(self, tmp_path_factory):
+    def converted_archive(self, tmpdir_factory):
         """ Convert a dataset archive to a SDS archive. """
-        out = tmp_path_factory.mktemp("new_sds")
+        out = tmpdir_factory.mktemp("new_sds")
         ds = obsplus.load_dataset(self.dataset_name)
         wf_path = ds.waveform_path
         archive_to_sds(wf_path, out, stream_processor=self.stream_processor)

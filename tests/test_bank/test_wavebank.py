@@ -13,19 +13,19 @@ from os.path import join
 from pathlib import Path
 
 import numpy as np
+import obsplus
+import obsplus.bank.utils
+import obsplus.bank.wavebank as sbank
 import obspy
 import obspy.clients.fdsn
 import pandas as pd
 import pytest
-from obspy import UTCDateTime as UTC
-
-import obsplus
-import obsplus.bank.utils
-import obsplus.bank.wavebank as sbank
-from obsplus import WaveBank
+from obsplus.bank.wavebank import WaveBank, filter_index
 from obsplus.bank.utils import iter_files
 from obsplus.constants import NSLC
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import make_time_chunks
+from obspy import UTCDateTime as UTC
 
 
 # ----------------------------------- Helper functions
@@ -322,6 +322,30 @@ class TestBankBasics:
         mtime2 = ipath.stat().st_mtime
         # ensure the index was deleted and rewritten
         assert mtime1 < mtime2
+
+    def test_empty_bank_raises(self, tmpdir):
+        """
+        Test that an empty bank can be inited, but that an error is
+        raised when trying to read its index.
+        """
+        path = Path(tmpdir) / "new"
+        bank = WaveBank(path)
+        # test that touching the index/meta data raises
+        with pytest.raises(BankDoesNotExistError):
+            bank.read_index()
+        bank.put_waveforms(obspy.read())
+        assert len(bank.read_index()) == 3
+
+    def test_filter_index(self, crandall_dataset):
+        """ Tests for filtering index with filter index function. """
+        # this is mainly here to test the time filtering, because the bank
+        # operations pass this of to the HDF5 kernel.
+        index = crandall_dataset.waveform_client.read_index(network="UU")
+        t1 = index.starttime.mean()
+        t2 = index.endtime.max()
+        bool_ind = filter_index(index, "UU", "*", "*", "*", start=t1, end=t2)
+        out = index[bool_ind]
+        assert len(out) < len(index)
 
 
 class TestEmptyBank:

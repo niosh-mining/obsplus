@@ -26,6 +26,7 @@ from obsplus.bank.utils import (
     _IndexCache,
     _summarize_wave_file,
     _try_read_stream,
+    get_inventory,
 )
 from obsplus.constants import (
     NSLC,
@@ -38,7 +39,6 @@ from obsplus.constants import (
 from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
-    get_inventory,
     to_timestamp,
     get_progressbar,
     thread_lock_function,
@@ -153,6 +153,7 @@ class WaveBank(_Bank):
         """
         Return the last modified time stored in the index, else None.
         """
+        self.ensure_bank_path_exists()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -261,6 +262,7 @@ class WaveBank(_Bank):
         kwargs
             kwargs are passed to pandas.read_hdf function
         """
+        self.ensure_bank_path_exists()
         if starttime is not None and endtime is not None:
             if starttime > endtime:
                 msg = f"starttime cannot be greater than endtime"
@@ -423,8 +425,8 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, mar.any(axis=0))
             # handle columns that do not need matches
             if not df_no_match.empty:
-                nslc1 = set(_get_nslc(df_no_match))
-                nslc2 = _get_nslc(ind)
+                nslc1 = set(get_nslc_series(df_no_match))
+                nslc2 = get_nslc_series(ind)
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
@@ -598,6 +600,7 @@ class WaveBank(_Bank):
             Name of file, if None it will be determined based on contents
 
         """
+        self.ensure_bank_path_exists(create=True)
         st_dic = defaultdict(lambda: [])
         # iter the waveforms and group by common paths
         for tr in stream:
@@ -679,16 +682,6 @@ class WaveBank(_Bank):
 
 
 # --- auxiliary functions
-
-
-def _get_nslc(df):
-    """ Given a dataframe with columns network, station, location, channel
-    return a series with seed ids. """
-
-    # first replace None or other empty-ish codes with empty str
-    dfs = [df[x].replace({None: "", "--": ""}) for x in NSLC]
-    # concat columns and return (this is ugly but the fastest way to do it)
-    return dfs[0] + "." + dfs[1] + "." + dfs[2] + "." + dfs[3]
 
 
 def filter_index(index, net, sta, loc, chan, start=None, end=None):

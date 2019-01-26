@@ -6,6 +6,7 @@ import os
 
 import obspy
 import obspy.core.event as ev
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -58,9 +59,11 @@ def ebank_with_bad_files(tmpdir):
     catalog_to_directory(cat, path)
     # add stream file
     st = obspy.read()
-    st.write(str(path / "not_and_event.xml"), "mseed")
+    st.write(str(path / "not_an_event.xml"), "mseed")
     bank = EventBank(path)
-    bank.update_index()
+    # should issue warning
+    with pytest.warns(UserWarning):
+        bank.update_index()
     return bank
 
 
@@ -136,7 +139,8 @@ class TestBankBasics:
 
         # remove old index, update with custom bar function
         os.remove(ebank_with_bad_files.index_path)
-        ebank_with_bad_files.update_index(bar=Bar, min_files_for_bar=1)
+        with pytest.warns(UserWarning):
+            ebank_with_bad_files.update_index(bar=Bar, min_files_for_bar=1)
         assert Bar.called
 
     def test_service_version(self, bing_ebank):
@@ -166,6 +170,21 @@ class TestBankBasics:
         cat2 = ebank.get_events(limit=limit)
         assert len(cat2) == limit
         assert cat.events[0:limit] == cat2.events
+
+    def test_can_put_to_empty_bank(self, tmpdir):
+        """ An empty bank should be init'able created when an event is
+        put into it """
+        path = Path(tmpdir) / "new_bank"
+        bank = EventBank(path)
+        assert not path.exists()
+        cat = obspy.read_events()
+        bank.put_events(cat)
+        assert path.exists()
+        assert len(bank.read_index()) == 3
+
+    def test_index_version(self, ebank):
+        """ ensure the index version returns the obsplus version. """
+        assert ebank._index_version == obsplus.__version__
 
 
 class TestReadIndexQueries:
@@ -226,6 +245,15 @@ class TestGetEvents:
         t1 = obspy.UTCDateTime("2010-01-01")
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
         assert cat == catalog.get_events(starttime=t1, endtime=t2)
+
+    def test_issue_30(self, crandall_dataset):
+        """ ensure eventid can accept a numpy array. see #30. """
+        ds = crandall_dataset
+        ebank = obsplus.EventBank(ds.event_path)
+        # get first two indices
+        inds = ebank.read_index().index[0:2]
+        # query with inds as np array
+        assert len(ebank.get_events(eventid=np.array(inds))) == 2
 
 
 class TestPutEvents:

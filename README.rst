@@ -1,8 +1,8 @@
-.. image:: docs/images/obsplus.png
+.. image:: https://user-images.githubusercontent.com/11671536/51515070-22241c00-1dc7-11e9-90d5-832f3caa5c70.png
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Build Status| |Coverage| |Doc Status| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
+|Build Status| |Coverage| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
 
 Documentation_
 
@@ -14,7 +14,7 @@ About_
 
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
-.. _Documentation: https://obsplus.readthedocs.io/en/latest/index.html
+.. _Documentation: https://niosh-mining.github.io/obsplus/
 .. _Code: https://github.com/niosh-mining/obsplus
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
 
@@ -29,10 +29,6 @@ About_
 
 .. |Licence| image:: https://www.gnu.org/graphics/lgplv3-88x31.png
    :target: https://www.gnu.org/licenses/lgpl.html
-
-.. |Doc Status| image:: https://readthedocs.org/projects/obsplus/badge/?version=latest
-   :target: http://obsplus.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
 
 .. |Version Status| image:: https://img.shields.io/pypi/v/spype.svg
    :target: https://pypi.python.org/pypi/obsplus/

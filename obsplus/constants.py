@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, Union, Optional, Mapping, Any, List, Tuple, TypeVar
 from types import MappingProxyType as MapProx
 
+import numpy as np
 import obspy
 import pandas as pd
 import xarray as xr
@@ -172,6 +173,9 @@ xr_type = Union[xr.DataArray, xr.Dataset]
 basic_types = Optional[Union[int, float, str, bool]]
 
 # -------------------------- events validation constants
+
+# null quantities for nslc codes
+NULL_NSLC_CODES = (None, "--", "None", "nan", "null", np.nan)
 
 # parts of the origin that should have float values
 ORIGIN_FLOATS = {"latitude", "longitude", "depth"}

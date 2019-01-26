@@ -11,7 +11,7 @@ import obsplus
 from obsplus.constants import STATION_COLUMNS, NSLC, STATION_DTYPES
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
-from obsplus.utils import apply_or_skip, get_instances
+from obsplus.utils import apply_to_files_or_skip, get_instances
 
 # attributes from channel to extract
 
@@ -55,7 +55,7 @@ def _str_inv_to_df(path):
     path = str(path)
     # if applied to directory, recurse
     if os.path.isdir(path):
-        df = pd.concat(list(apply_or_skip(_str_inv_to_df, path)))
+        df = pd.concat(list(apply_to_files_or_skip(_str_inv_to_df, path)))
         df.reset_index(drop=True, inplace=True)
         return df
     # else try to read single file

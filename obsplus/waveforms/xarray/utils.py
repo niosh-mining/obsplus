@@ -3,6 +3,7 @@ Utilities for working with xarray data structures.
 """
 import copy
 import fnmatch
+import warnings
 
 import functools
 from functools import partial
@@ -120,7 +121,10 @@ def _prepare_trim_output(dar, out, remove_nan):
 
 def _overwrite_group_values(dar: xr.DataArray, func: Callable):
     """ apply function on a data array, set all values to func output """
-    aggregate = func(dar)
+    # a mean of an empty slice can raise a runtime warning here, just ignore
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        aggregate = func(dar)
     dar.values = np.ones_like(dar.values) * aggregate
     return dar
 

@@ -22,7 +22,7 @@ install:
   - pip install -e .
 
 script:
-  - pytest  -v --cov obsplus
+  - pytest  -v --cov obsplus && pytest --nbval docs/
 
 after_success:
   - coveralls
