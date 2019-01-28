@@ -120,7 +120,8 @@ class WaveBank(_Bank):
     buffer = 10.111  # the time before and after the desired times to pull
 
     # dict defining lengths of str columns (after seed spec)
-    min_itemsize = {"path": 79, "station": 5, "network": 2, "location": 2, "channel": 3}
+    # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
+    min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
 
     # ----------------------------- setup stuff
 
@@ -236,12 +237,21 @@ class WaveBank(_Bank):
             else:
                 df.index += nrows
                 store.append(node, df, append=True, **self.hdf_kwargs)
+            # update timestamp
+            store.put(self._time_node, pd.Series(time.time()))
+        self._ensure_meta_table_exists()
+
+    def _ensure_meta_table_exists(self):
+        """
+        If the bank path exists ensure it has a meta table, if not create it.
+        """
+        if not Path(self.index_path).exists():
+            return
+        with pd.HDFStore(self.index_path) as store:
             # add metadata if not in store
             if self._meta_node not in store:
                 meta = self._make_meta_table()
                 store.put(self._meta_node, meta, format="table")
-            # update timestamp
-            store.put(self._time_node, pd.Series(time.time()))
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -283,6 +293,7 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
+        self._ensure_meta_table_exists()
         return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
