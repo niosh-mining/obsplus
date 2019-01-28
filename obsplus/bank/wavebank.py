@@ -120,7 +120,8 @@ class WaveBank(_Bank):
     buffer = 10.111  # the time before and after the desired times to pull
 
     # dict defining lengths of str columns (after seed spec)
-    min_itemsize = {"path": 79, "station": 5, "network": 2, "location": 2, "channel": 3}
+    # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
+    min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
 
     # ----------------------------- setup stuff
 
