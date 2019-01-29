@@ -22,14 +22,14 @@ class TestTrimEventStream:
     def stream_with_short_end(self):
         """ snip off some waveform from the end, return the new waveforms with
         the time the waveform was snipped """
-        st = pytest.waveforms["default"]
+        st = obspy.read()
         t1, t2 = st[0].stats.starttime, st[0].stats.endtime
         new_t2 = t2 - 10
         st[0].trim(endtime=new_t2)
         return st, new_t2
 
     # tests
-    def test_trimed(self, stream_with_short_end):
+    def test_trimmed(self, stream_with_short_end):
         """
         test that the max time on the waveforms is t2
         """
@@ -87,7 +87,7 @@ class TestStream2Contiguous:
     @pytest.fixture(scope="class")
     def one_trace_gap_overlaps_stream(self):
         """ a waveforms a gap on one trace """
-        st = pytest.waveforms["default"]
+        st = obspy.read()
         st1 = st.copy()
         st2 = st.copy()
         t1 = st[0].stats.starttime

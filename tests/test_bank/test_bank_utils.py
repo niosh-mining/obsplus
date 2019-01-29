@@ -44,9 +44,9 @@ class TestStreamPathStructure:
         return request.param
 
     @pytest.fixture(scope="class")
-    def output(self, struct_string, trace):
+    def output(self, struct_string, waveform_cache_first_trace):
         """ init a bank_structure class from the structure strings """
-        return _summarize_trace(trace, path_struct=struct_string)
+        return _summarize_trace(waveform_cache_first_trace, path_struct=struct_string)
 
     # general tests
 

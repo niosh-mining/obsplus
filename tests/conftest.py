@@ -119,6 +119,7 @@ def collect_catalogs():
 
 
 cat_dict = collect_catalogs()
+waveform_cache_obj = ObspyCache('waveforms', obspy.read)
 
 
 # -------------------- collection of test cases
@@ -284,21 +285,45 @@ def bingham_bank_path(tmpdir_factory):
     return str(tmpdir)
 
 
+@pytest.fixture(scope='class', params=waveform_cache_obj.keys)
+def waveform_cache_stream(request):
+    """
+    Return the each stream in the cache
+    """
+    return waveform_cache_obj[request.param]
+
+@pytest.fixture(scope='class')
+def waveform_cache_trace(waveform_cache_stream):
+    """
+    Return the first trace of each test stream
+    """
+    return waveform_cache_stream[0]
+
+
+@pytest.fixture(scope='session')
+def waveform_cache():
+    """
+    Return the waveform cache object for tests to select which waveform
+    should be used by name.
+    """
+    return waveform_cache_obj
+
+
 # --------------- add things to the pytest namespace
 
 
-def pytest_namespace():
-    """ add the expected files to the py.test namespace """
-    odict = {
-        "test_data_path": TEST_DATA_PATH,
-        "test_path": TEST_PATH,
-        "package_path": PKG_PATH,
-        "data_path": TEST_DATA_PATH,
-        "events": cat_dict,
-        "append_func_name": append_func_name,
-        "waveforms": ObspyCache("waveforms", obspy.read),
-    }
-    return odict
+# def pytest_namespace():
+#     """ add the expected files to the py.test namespace """
+#     odict = {
+#         "test_data_path": TEST_DATA_PATH,
+#         "test_path": TEST_PATH,
+#         "package_path": PKG_PATH,
+#         "data_path": TEST_DATA_PATH,
+#         "events": cat_dict,
+#         "append_func_name": append_func_name,
+#         "waveforms": ObspyCache("waveforms", obspy.read),
+#     }
+#     return odict
 
 
 # -------------- configure test runner
