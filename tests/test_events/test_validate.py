@@ -1,22 +1,21 @@
 from os.path import join
 
-import obsplus
-import obsplus.events.validate
 import obspy
 import pytest
-from obsplus import validate_catalog
 from obspy.core.event import ResourceIdentifier
 
-CAT1_PATH = join(pytest.test_data_path, "qml_files", "2017-01-16T01-15-13-8a42f.xml")
+import obsplus
+import obsplus.events.validate
+from obsplus import validate_catalog
 
 
 # ----------------- module level fixtures
 
 
 @pytest.fixture(scope="function")
-def cat1():
+def cat1(event_cache):
     """ return a copy of events 1"""
-    cat = obspy.read_events(CAT1_PATH)
+    cat = event_cache["2017-01-16T01-15-13-8a42f.xml"].copy()
     validate_catalog(cat)
     cat[0].focal_mechanisms.append(obspy.core.event.FocalMechanism())
     return cat

@@ -1,6 +1,5 @@
-""" tests for wavebank utilities """
+""" tests for various utility functions """
 import textwrap
-import itertools
 from pathlib import Path
 
 import obspy
@@ -10,10 +9,18 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.utils import compose_docstring, yield_obj_parent_attr
 from obsplus.constants import NSLC, NULL_NSLC_CODES
+from obsplus.utils import compose_docstring, yield_obj_parent_attr
 
-append_func_name = pytest.append_func_name
+
+def append_func_name(list_obj):
+    """ decorator to append a function name to list_obj """
+
+    def wrap(func):
+        list_obj.append(func.__name__)
+        return func
+
+    return wrap
 
 
 # ------------------------- module level fixtures

@@ -17,9 +17,21 @@ from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS
 from obsplus.datasets.dataloader import base_path
 from obsplus.utils import get_preferred, getattrs
 
+
 # ---------------- helper functions
 
-append_func_name = pytest.append_func_name
+
+def append_func_name(list_obj):
+    """ decorator to append a function name to list_obj """
+
+    def wrap(func):
+        list_obj.append(func.__name__)
+        return func
+
+    return wrap
+
+
+# --------------- tests
 
 
 class TestCat2Df:
@@ -259,11 +271,9 @@ class TestReadPhasePicks:
     cat_name = "2016-04-13T23-51-13.xml"
 
     @pytest.fixture(scope="class")
-    def tcat(self):
+    def tcat(self, catalog_cache):
         """ retad in a events for testing """
-        path = join(pytest.test_data_path, "test_catalogs", self.cat_name)
-        assert os.path.exists(path)
-        return obspy.read_events(path)
+        return catalog_cache[self.cat_name]
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)

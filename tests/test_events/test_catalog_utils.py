@@ -28,29 +28,29 @@ CAT = obspy.read_events()
 # -------------------------- helper functions ----------------------- #
 
 
-def extract_merge_catalogs(merge_directory):
-    """ given a directory with two qmls, read in the qmls and return """
-    files = glob.glob(join(merge_directory, "*"))
-    cat_path1 = [x for x in files if x.endswith("1.xml")]
-    cat_path2 = [x for x in files if x.endswith("2.xml")]
-    cat1 = obspy.read_events(cat_path1[0])
-    cat2 = obspy.read_events(cat_path2[0])
-    validate(cat1)
-    validate(cat2)
-    return cat1, cat2
+# def extract_merge_catalogs(merge_directory):
+#     """ given a directory with two qmls, read in the qmls and return """
+#     files = glob.glob(join(merge_directory, "*"))
+#     cat_path1 = [x for x in files if x.endswith("1.xml")]
+#     cat_path2 = [x for x in files if x.endswith("2.xml")]
+#     cat1 = obspy.read_events(cat_path1[0])
+#     cat2 = obspy.read_events(cat_path2[0])
+#     validate(cat1)
+#     validate(cat2)
+#     return cat1, cat2
 
 
 # -------------------------- Module Fixtures
 
 
-@pytest.fixture(scope="class")
-def ms_catalog():
-    """ return a events of microseismic events """
-    cat = obspy.Catalog()
-    path = Path(pytest.test_data_path) / "qml_files"
-    for qml_path in path.rglob("*.xml"):
-        cat += obspy.read_events(str(qml_path))
-    return cat
+# @pytest.fixture(scope="class")
+# def ms_catalog():
+#     """ return a events of microseismic events """
+#     cat = obspy.Catalog()
+#     path = Path(pytest.test_data_path) / "qml_files"
+#     for qml_path in path.rglob("*.xml"):
+#         cat += obspy.read_events(str(qml_path))
+#     return cat
 
 
 # -------------------------------- tests ------------------------------- #
@@ -68,8 +68,8 @@ class TestDuplicateEvent:
         return duplicate_events(catalog)
 
     @pytest.fixture
-    def duplicated_big_catalog(self):
-        return obsplus.duplicate_events(pytest.cat6)
+    def duplicated_big_catalog(self, catalog_cache):
+        return obsplus.duplicate_events(catalog_cache["cat6"])
 
     def test_return_type(self, duplicated_catalog):
         """ ensure a events was returned """
@@ -101,12 +101,12 @@ class TestDuplicateEvent:
         """ ensure the duplicated events is valid """
         obsplus.validate_catalog(duplicated_big_catalog)
 
-    def test_interconnected_rids(self):
+    def test_interconnected_rids(self, catalog_cache):
         """ Tests for ensuring resource IDs are changed to point to new
         objects. This can get messed up when there are many objects
         that point to resource ids of other objects. EG picks/amplitudes.
         """
-        cat = duplicate_events(pytest.events.interconnected)
+        cat = duplicate_events(catalog_cache["interconnected"])
         # create a dict of pick ids and others that refer to picks
         pids = {str(x.resource_id): x for x in cat[0].picks}
         assert len(cat[0].origins) == 1, "there should be one origin"

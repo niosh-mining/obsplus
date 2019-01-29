@@ -1,6 +1,7 @@
 """
 pytest configuration for obsplus
 """
+import copy
 import glob
 import os
 import shutil
@@ -47,16 +48,6 @@ DATASETS = join(dirname(obsplus.__file__), "datasets")
 # ------------------------------ helper functions
 
 
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
-
-
 class ObspyCache:
     """
     A dict-like class for lazy loading from the test directory
@@ -87,7 +78,10 @@ class ObspyCache:
     def _load_object(self, item):
         if item not in self._objects:
             self._objects[item] = self.load_func(self.keys[item])
-        return self._objects[item].copy()
+        try:
+            return self._objects[item].copy()
+        except AttributeError:
+            return copy.deepcopy(self._objects[item])
 
 
 def collect_catalogs():
@@ -119,7 +113,10 @@ def collect_catalogs():
 
 
 cat_dict = collect_catalogs()
-waveform_cache_obj = ObspyCache('waveforms', obspy.read)
+waveform_cache_obj = ObspyCache("waveforms", obspy.read)
+event_cache_obj = ObspyCache("qml_files", obspy.read_events)
+test_catalog_cache_obj = ObspyCache(CATALOG_DIRECTORY, obspy.read_events)
+station_cache_obj = ObspyCache(INVENTORY_DIRECTORY, obspy.read_inventory)
 
 
 # -------------------- collection of test cases
@@ -285,14 +282,15 @@ def bingham_bank_path(tmpdir_factory):
     return str(tmpdir)
 
 
-@pytest.fixture(scope='class', params=waveform_cache_obj.keys)
+@pytest.fixture(scope="class", params=waveform_cache_obj.keys)
 def waveform_cache_stream(request):
     """
     Return the each stream in the cache
     """
     return waveform_cache_obj[request.param]
 
-@pytest.fixture(scope='class')
+
+@pytest.fixture(scope="class")
 def waveform_cache_trace(waveform_cache_stream):
     """
     Return the first trace of each test stream
@@ -300,7 +298,7 @@ def waveform_cache_trace(waveform_cache_stream):
     return waveform_cache_stream[0]
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def waveform_cache():
     """
     Return the waveform cache object for tests to select which waveform
@@ -309,21 +307,50 @@ def waveform_cache():
     return waveform_cache_obj
 
 
-# --------------- add things to the pytest namespace
+# TODO these next two fixtures are similar, see if they can be merged
 
 
-# def pytest_namespace():
-#     """ add the expected files to the py.test namespace """
-#     odict = {
-#         "test_data_path": TEST_DATA_PATH,
-#         "test_path": TEST_PATH,
-#         "package_path": PKG_PATH,
-#         "data_path": TEST_DATA_PATH,
-#         "events": cat_dict,
-#         "append_func_name": append_func_name,
-#         "waveforms": ObspyCache("waveforms", obspy.read),
-#     }
-#     return odict
+@pytest.fixture(scope="session")
+def event_cache():
+    """
+    Return the event cache (qml) object for tests to select particular
+    quakemls.
+    """
+    return event_cache_obj
+
+
+@pytest.fixture(scope="session")
+def catalog_cache():
+    """ Return a cache from the test_catalogs. """
+    return test_catalog_cache_obj
+
+
+@pytest.fixture(params=glob.glob(join(TEST_DATA_PATH, "qml2merge", "*")))
+def qml_to_merge_paths(request):
+    """
+    Returns a path to each qml2merge directory, which contains two catalogs
+    for merging together.
+    """
+    return request.param
+
+
+@pytest.fixture(scope="class")
+def qml_to_merge_basic():
+    """ Return a path to the basic merge qml dataset. """
+    out = glob.glob(join(TEST_DATA_PATH, "qml2merge", "*2017-01-06T16-15-14"))
+    return out[0]
+
+
+@pytest.fixture(scope="session")
+def station_cache():
+    """ Return the station cache. """
+    return station_cache_obj
+
+
+@pytest.fixture(scope="session", params=station_cache_obj.keys)
+def station_cache_inventory(request):
+    """ Return the test inventories. """
+    return station_cache_obj[request.param]
 
 
 # -------------- configure test runner
