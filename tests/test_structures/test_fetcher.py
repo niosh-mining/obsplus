@@ -20,9 +20,18 @@ from obsplus.utils import make_time_chunks, get_reference_time
 
 WAVEFETCHERS = []
 
+
 # ----------------------------- helper functions
 
-append_func_name = pytest.append_func_name
+
+def append_func_name(list_obj):
+    """ decorator to append a function name to list_obj """
+
+    def wrap(func):
+        list_obj.append(func.__name__)
+        return func
+
+    return wrap
 
 
 def trim_kem_events(fetcher: Fetcher):
@@ -755,7 +764,6 @@ class TestGetEventData:
 
 
 class TestGetContinuousData:
-
     t1 = obspy.UTCDateTime("2009-04-01").timestamp
     t2 = obspy.UTCDateTime("2009-04-01T03-00-00").timestamp
     duration = 1800

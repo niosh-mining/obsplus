@@ -44,10 +44,10 @@ def _change_stats(st, stat_attr, new_values):
 
 
 @pytest.fixture(scope="class")
-def basic_stream_with_gap():
+def basic_stream_with_gap(waveform_cache):
     """ return a waveforms with a 2 second gap in center, return combined
     waveforms with gaps, first chunk, second chunk """
-    st = pytest.waveforms["default"]
+    st = waveform_cache["default"]
     st1 = st.copy()
     st2 = st.copy()
     t1 = st[0].stats.starttime
@@ -70,7 +70,7 @@ def basic_stream_with_gap():
 @pytest.fixture(scope="class")
 def disjointed_stream():
     """ return a waveforms that has parts with no overlaps """
-    st = pytest.waveforms["default"]
+    st = obspy.read()
     st[0].stats.starttime += 3600
     return st
 
@@ -78,15 +78,15 @@ def disjointed_stream():
 @pytest.fixture(scope="class")
 def default_array():
     """ the basic waveforms turned into an array """
-    st = pytest.waveforms["default"]
+    st = obspy.read()
     return obspy_to_array(st)
 
 
 @pytest.fixture(scope="class")
-def stream_dict():
+def stream_dict(waveform_cache):
     """ return a dictionary of streams """
     out = {}
-    st = pytest.waveforms["coincidence_tutorial"]
+    st = waveform_cache["coincidence_tutorial"]
     for var in range(5):
         st = st.copy()
         for tr in st:
@@ -121,10 +121,10 @@ def dar_attached_picks(bingham_dataset, bingham_dar):
     return bingham_dar
 
 
-@pytest.fixture(scope="class", params=list(pytest.waveforms.keys))
-def stream(request):
-    """ each of the streams in test_data/file_paths"""
-    return pytest.waveforms[request.param]
+# @pytest.fixture(scope="class", params=list(pytest.waveforms.keys))
+# def stream(request):
+#     """ each of the streams in test_data/file_paths"""
+#     return pytest.waveforms[request.param]
 
 
 @pytest.fixture(scope="class")

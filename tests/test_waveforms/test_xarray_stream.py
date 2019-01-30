@@ -256,8 +256,8 @@ class TestStream2DataArray:
 
     # fixtures
     @pytest.fixture()
-    def data_array_from_stream(self, stream):
-        return obspy_to_array(stream)
+    def data_array_from_stream(self, waveform_cache_stream):
+        return obspy_to_array(waveform_cache_stream)
 
     @pytest.fixture(scope="class")
     def data_array_from_gappy_stream(self, basic_stream_with_gap):
@@ -265,9 +265,9 @@ class TestStream2DataArray:
         return obspy_to_array(st.merge(method=1), trim_stream=False)
 
     @pytest.fixture(scope="class")
-    def data_array_from_trace_dict(self):
+    def data_array_from_trace_dict(self, waveform_cache):
         """ make a data array from a dict of traces (not streams)"""
-        st = pytest.waveforms["default"]
+        st = waveform_cache["default"]
         out = {}
         for num, tr in enumerate(st):
             tr.stats.channel = st[0].stats.channel
@@ -279,9 +279,9 @@ class TestStream2DataArray:
         """ ensure a dataset was returned """
         assert isinstance(data_array_from_stream, xr.DataArray)
 
-    def test_shape(self, data_array_from_stream, stream):
+    def test_shape(self, data_array_from_stream, waveform_cache_stream):
         """ make sure the dataset matched the req_len of waveforms (plus time) """
-        assert data_array_from_stream.shape[1] == len(stream)
+        assert data_array_from_stream.shape[1] == len(waveform_cache_stream)
 
     def test_attrs(self, data_array_from_stream):
         """ make sure the dataset has the starttime coordinate """
@@ -319,15 +319,11 @@ class TestTrace2DataArray:
     array_fixtures = ["data_array_from_trace"]
 
     # fixtures
-    @pytest.fixture(scope="class", params=pytest.waveforms.keys)
-    def trace(self, request):
-        """ return the first trace of the waveforms for testing """
-        return pytest.waveforms[request.param][0]
-
     @pytest.fixture(scope="class")
-    def data_array_from_trace(self, trace):
+    def data_array_from_trace(self, waveform_cache_trace):
         """ convert the trace to a data array, return data array """
-        return obspy_to_array(trace), trace
+        tr = waveform_cache_trace
+        return obspy_to_array(tr), tr
 
     # tests
     def test_type(self, data_array_from_trace):
@@ -363,9 +359,12 @@ class TestArray2Dict:
 
     def _remove_processing(self, st):
         """ copy stream and remove processing"""
+        from obspy.core.trace import Stats
+
         st = st.copy()
         for tr in st:
-            tr.stats.pop("processing", None)
+            tr.stats = Stats({x: tr.stats[x] for x in Stats.defaults})
+            # tr.stats.pop("processing", None)
         return st
 
     def equal_without_processing(self, st1, st2):
@@ -405,9 +404,9 @@ class TestArray2Dict:
         stream_ids = set(default_array.stream_id.values)
         assert stream_ids == set(default_array2dict)
 
-    def test_streams_equal(self, default_array2dict, default_array):
+    def test_streams_equal(self, default_array2dict, default_array, waveform_cache):
         """ ensure the streams before and after array transform are equal """
-        st1 = pytest.waveforms["default"].sort()
+        st1 = waveform_cache["default"].sort()
         da = default_array2dict
         st2 = da[0].sort()
         # ensure data are the same
@@ -1039,9 +1038,9 @@ class TestArrayFFTAndIFFT:
         """ ensure the extra coord survived """
         assert "extra_coord" in default_array_extra_coord.coords
 
-    def test_default_values(self, default_fft):
+    def test_default_values(self, default_fft, waveform_cache):
         """ ensure performing fft directly on trace returns same result """
-        st = pytest.waveforms["default"]
+        st = waveform_cache["default"]
         for tr in st:
             # ensure the data are the same if fft performed directly along
             # expected axis
