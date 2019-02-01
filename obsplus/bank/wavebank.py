@@ -202,10 +202,9 @@ class WaveBank(_Bank):
         updates = []
         for num, fi in enumerate(self._unindexed_file_iterator()):
             updates.append(_summarize_wave_file(fi, format=self.format))
-            # if more files are added during update this can raise
-            if bar is not None:
-                with suppress(Exception):
-                    bar.update(num)  # ignore; progress bar isn't too important
+            # update bar
+            if bar and num % self._bar_update_interval == 0:
+                bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
         if len(updates):  # flatten list and make df
             self._write_update(list(chain.from_iterable(updates)))

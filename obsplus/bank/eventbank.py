@@ -4,7 +4,8 @@ Class for interacting with events on a filesystem.
 
 import time
 import warnings
-from functools import reduce, lru_cache
+from contextlib import suppress
+from functools import reduce
 from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
@@ -32,13 +33,13 @@ from obsplus.constants import (
     EVENT_DTYPES,
     get_events_parameters,
 )
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import (
     try_read_catalog,
     get_progressbar,
     thread_lock_function,
     compose_docstring,
 )
-from obsplus.exceptions import BankDoesNotExistError
 
 # --- define static types
 
@@ -204,8 +205,8 @@ class EventBank(_Bank):
                 events.append(event)
                 update_time.append(getmtime(fi))
                 paths.append(fi.replace(self.bank_path, ""))
-            # if more files are added during update this can raise
-            if bar is not None:
+            # update progress bar
+            if bar and num % self._bar_update_interval == 0:
                 bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if it exists
         # add new events to database
