@@ -6,7 +6,6 @@ import os
 import re
 import time
 from collections import defaultdict
-from contextlib import suppress
 from functools import partial, lru_cache, reduce
 from itertools import chain
 from operator import add
@@ -45,6 +44,7 @@ from obsplus.utils import (
     thread_lock_function,
     get_nslc_series,
 )
+from obsplus.waveforms.utils import merge_traces
 
 # from obsplus.interfaces import WaveformClient
 
@@ -663,29 +663,25 @@ class WaveBank(_Bank):
         nslc = set(get_nslc_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
-        self._polish_stream(stt, starttime, endtime, attach_response)
+        stt = self._prep_output_stream(stt, starttime, endtime, attach_response)
         return stt
 
-    def _polish_stream(self, st, starttime=None, endtime=None, attach_response=False):
+    def _prep_output_stream(
+        self, st, starttime=None, endtime=None, attach_response=False
+    ) -> obspy.Stream:
         """
-        prepare waveforms object for output by trimming to desired times,
-        merging channels, and attaching responses
+        Prepare waveforms object for output by trimming to desired times,
+        merging channels, and attaching responses.
         """
         if not len(st):
             return st
         starttime = starttime or min([x.stats.starttime for x in st])
         endtime = endtime or max([x.stats.endtime for x in st])
         # trim
-        st.trim(
-            starttime=obspy.UTCDateTime(starttime), endtime=obspy.UTCDateTime(endtime)
-        )
+        st.trim(starttime=UTCDateTime(starttime), endtime=UTCDateTime(endtime))
         if attach_response:
             st.attach_response(self.inventory)
-        try:
-            st.merge(method=1)
-        except Exception:  # cant be more specific, obspy raises Exception
-            pass  # TODO write test for this
-        st.sort()
+        return merge_traces(st, inplace=True).sort()
 
     def get_service_version(self):
         """ Return the version of obsplus """

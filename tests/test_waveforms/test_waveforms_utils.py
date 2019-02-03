@@ -11,7 +11,12 @@ import pytest
 
 import obsplus
 from obsplus.constants import NSLC
-from obsplus.waveforms.utils import trim_event_stream, stream2contiguous, archive_to_sds
+from obsplus.waveforms.utils import (
+    trim_event_stream,
+    stream2contiguous,
+    archive_to_sds,
+    merge_traces,
+)
 
 
 class TestTrimEventStream:
@@ -60,6 +65,50 @@ class TestTrimEventStream:
         assert "seconds long" in str(w[0].message)
         stations = {tr.stats.station for tr in st}
         assert "BOB" not in stations
+
+
+class TestMegeStream:
+    """ Tests for obsplus' style for merging streams together. """
+
+    def test_identical_streams(self):
+        """ ensure passing identical streams performs de-duplication. """
+        st = obspy.read()
+        st2 = obspy.read() + st + obspy.read()
+        st_out = merge_traces(st2)
+        assert st_out == st
+
+    def test_adjacent_traces(self):
+        """ Traces that are one sample away in time should be merged together. """
+        # create stream with traces adjacent in time and merge together
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr1, tr2 in zip(st1, st2):
+            tr2.stats.starttime = tr1.stats.endtime + 1. / tr2.stats.sampling_rate
+        st_in = st1 + st2
+        out = merge_traces(st_in)
+        assert len(out) == 3
+        # should be the same as merge and split
+        assert out == st_in.merge(1).split()
+
+    def test_traces_with_overlap(self):
+        """ Trace with overlap should be merged together. """
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr1, tr2 in zip(st1, st2):
+            tr2.stats.starttime = tr1.stats.starttime + 10
+        st_in = st1 + st2
+        out = merge_traces(st_in)
+        assert out == st_in.merge(1).split()
+
+    def test_traces_with_different_sampling_rates(self):
+        """ traces with different sampling_rates should be left alone. """
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr in st2:
+            tr.stats.sampling_rate = tr.stats.sampling_rate * 2
+        st_in = st1 + st2
+        st_out = merge_traces(st_in)
+        assert st_out == st_in
 
 
 class TestStream2Contiguous:
