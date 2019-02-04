@@ -22,11 +22,11 @@ from obsplus.utils import get_nslc_series
 
 
 def trim_event_stream(
-        stream: Stream,
-        merge: Optional[int] = 1,
-        copy: bool = True,
-        trim_tolerance=None,
-        required_len: Optional[float] = 0.95,
+    stream: Stream,
+    merge: Optional[int] = 1,
+    copy: bool = True,
+    trim_tolerance=None,
+    required_len: Optional[float] = 0.95,
 ):
     """
     Trim the waveforms to a common start time and end time.
@@ -113,7 +113,7 @@ def _make_trace_df(traces):
         {
             "trace": x,
             "nslc": x.id,
-            "sr": np.int(np.round(1. / x.stats.sampling_rate, 9) * 1_000_000_000),
+            "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
             "start": x.stats.starttime._ns,
             "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
         }
@@ -166,10 +166,10 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
         y = np.ones_like(t) * np.NaN
         for tr in gtraces:
             start_ind = np.searchsorted(t, tr.stats.starttime._ns)
-            y[start_ind: start_ind + len(tr.data)] = tr.data
+            y[start_ind : start_ind + len(tr.data)] = tr.data
         gtraces.iloc[0].data = y
         merged_traces.append(gtraces.iloc[0])
-        assert not np.any(np.isnan(y)), 'nan values remaining!'
+        assert not np.any(np.isnan(y)), "nan values remaining!"
     return obspy.Stream(traces=merged_traces)
 
 
@@ -252,13 +252,13 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
 
 
 def archive_to_sds(
-        bank: Union[Path, str, "obsplus.WaveBank"],
-        sds_path: Union[Path, str],
-        starttime: Optional[UTCDateTime] = None,
-        endtime: Optional[UTCDateTime] = None,
-        overlap: float = 30,
-        type_code: str = "D",
-        stream_processor: Optional[callable] = None,
+    bank: Union[Path, str, "obsplus.WaveBank"],
+    sds_path: Union[Path, str],
+    starttime: Optional[UTCDateTime] = None,
+    endtime: Optional[UTCDateTime] = None,
+    overlap: float = 30,
+    type_code: str = "D",
+    stream_processor: Optional[callable] = None,
 ):
     """
     Create a seiscomp data structure archive from a waveform source.

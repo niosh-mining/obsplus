@@ -83,7 +83,7 @@ class TestMegeStream:
         st1 = obspy.read()
         st2 = obspy.read()
         for tr1, tr2 in zip(st1, st2):
-            tr2.stats.starttime = tr1.stats.endtime + 1. / tr2.stats.sampling_rate
+            tr2.stats.starttime = tr1.stats.endtime + 1.0 / tr2.stats.sampling_rate
         st_in = st1 + st2
         out = merge_traces(st_in)
         assert len(out) == 3
