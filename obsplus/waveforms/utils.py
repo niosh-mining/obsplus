@@ -114,7 +114,7 @@ def _make_trace_df(traces):
             "trace": x,
             "nslc": x.id,
             "sr": np.int(np.round(1. / x.stats.sampling_rate, 9) * 1_000_000_000),
-            "start": x.stats.starttime.ns,
+            "start": x.stats.starttime._ns,
             "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
         }
         for x in traces
