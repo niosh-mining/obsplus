@@ -22,11 +22,11 @@ from obsplus.utils import get_nslc_series
 
 
 def trim_event_stream(
-    stream: Stream,
-    merge: Optional[int] = 1,
-    copy: bool = True,
-    trim_tolerance=None,
-    required_len: Optional[float] = 0.95,
+        stream: Stream,
+        merge: Optional[int] = 1,
+        copy: bool = True,
+        trim_tolerance=None,
+        required_len: Optional[float] = 0.95,
 ):
     """
     Trim the waveforms to a common start time and end time.
@@ -115,7 +115,7 @@ def _make_trace_df(traces):
             "nslc": x.id,
             "sr": np.int(np.round(1. / x.stats.sampling_rate, 9) * 1_000_000_000),
             "start": x.stats.starttime.ns,
-            "end": x.stats.endtime.ns,
+            "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
         }
         for x in traces
     ]
@@ -127,29 +127,6 @@ def _make_trace_df(traces):
     con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
     df["merge_group"] = (~(con1 & con2)).cumsum()
     return df
-
-
-def _merge_traces(tr_df):
-    """ merge traces from the groups defined by _make_trace_df,
-     return a single merged trace. """
-    assert len(tr_df.sr.unique()) == 1, "only one sampling rate should exist"
-    sr = tr_df.sr.iloc[0]
-    start = tr_df.start.min()
-    end = tr_df.end.max()
-    traces = tr_df.trace.values
-    # time axis using start and assumed sampling rate, then empty y axis
-    t = np.arange(start, stop=end + sr, step=sr)
-    y = np.ones_like(t) * np.NaN
-    # iterate traces and fill y values
-    for tr in traces:
-        t1 = tr.stats.starttime.ns
-        start_ind = np.searchsorted(t, t1)
-        y[start_ind : start_ind + len(tr.data)] = tr.data
-    assert not np.any(np.isnan(y)), "unmerged values remaining"
-    # create output trace
-    tr_out = traces[0]
-    tr_out.data = y
-    return tr_out
 
 
 def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
@@ -175,8 +152,25 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     if not inplace:
         traces = copy.deepcopy(traces)
     df = _make_trace_df(traces)
-    traces = df.groupby("merge_group").apply(_merge_traces)
-    return obspy.Stream(traces=traces.values.tolist())
+    # get a series of properties by group
+    group = df.groupby("merge_group")
+    t1, t2 = group["start"].min(), group["end"].max()
+    sr = group["sr"].max()
+    gsize = group.size()  # number of traces in each group
+    # use this to avoid pandas groupbys
+    merged_traces = []  # store
+    for gnum in gsize.index:  # any groups w/ more than one trace
+        ind = df.merge_group == gnum
+        gtraces = df.trace[ind]
+        t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
+        y = np.ones_like(t) * np.NaN
+        for tr in gtraces:
+            start_ind = np.searchsorted(t, tr.stats.starttime._ns)
+            y[start_ind: start_ind + len(tr.data)] = tr.data
+        gtraces.iloc[0].data = y
+        merged_traces.append(gtraces.iloc[0])
+        assert not np.any(np.isnan(y)), 'nan values remaining!'
+    return obspy.Stream(traces=merged_traces)
 
 
 def stream2contiguous(stream: Stream):
@@ -258,13 +252,13 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
 
 
 def archive_to_sds(
-    bank: Union[Path, str, "obsplus.WaveBank"],
-    sds_path: Union[Path, str],
-    starttime: Optional[UTCDateTime] = None,
-    endtime: Optional[UTCDateTime] = None,
-    overlap: float = 30,
-    type_code: str = "D",
-    stream_processor: Optional[callable] = None,
+        bank: Union[Path, str, "obsplus.WaveBank"],
+        sds_path: Union[Path, str],
+        starttime: Optional[UTCDateTime] = None,
+        endtime: Optional[UTCDateTime] = None,
+        overlap: float = 30,
+        type_code: str = "D",
+        stream_processor: Optional[callable] = None,
 ):
     """
     Create a seiscomp data structure archive from a waveform source.
