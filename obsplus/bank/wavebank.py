@@ -44,6 +44,7 @@ from obsplus.utils import (
     thread_lock_function,
     get_nslc_series,
 )
+from obsplus.waveforms.utils import merge_traces
 
 # from obsplus.interfaces import WaveformClient
 
@@ -119,7 +120,8 @@ class WaveBank(_Bank):
     buffer = 10.111  # the time before and after the desired times to pull
 
     # dict defining lengths of str columns (after seed spec)
-    min_itemsize = {"path": 79, "station": 5, "network": 2, "location": 2, "channel": 3}
+    # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
+    min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
 
     # ----------------------------- setup stuff
 
@@ -200,10 +202,9 @@ class WaveBank(_Bank):
         updates = []
         for num, fi in enumerate(self._unindexed_file_iterator()):
             updates.append(_summarize_wave_file(fi, format=self.format))
-            # if more files are added during update this can raise
-            if bar is not None:
-                # with suppress(Exception):
-                bar.update(num)  # ignore; progress bar isn't too important
+            # update bar
+            if bar and num % self._bar_update_interval == 0:
+                bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
         if len(updates):  # flatten list and make df
             self._write_update(list(chain.from_iterable(updates)))
@@ -235,12 +236,21 @@ class WaveBank(_Bank):
             else:
                 df.index += nrows
                 store.append(node, df, append=True, **self.hdf_kwargs)
+            # update timestamp
+            store.put(self._time_node, pd.Series(time.time()))
+        self._ensure_meta_table_exists()
+
+    def _ensure_meta_table_exists(self):
+        """
+        If the bank path exists ensure it has a meta table, if not create it.
+        """
+        if not Path(self.index_path).exists():
+            return
+        with pd.HDFStore(self.index_path) as store:
             # add metadata if not in store
             if self._meta_node not in store:
                 meta = self._make_meta_table()
                 store.put(self._meta_node, meta, format="table")
-            # update timestamp
-            store.put(self._time_node, pd.Series(time.time()))
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -282,6 +292,7 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
+        self._ensure_meta_table_exists()
         return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
@@ -652,29 +663,25 @@ class WaveBank(_Bank):
         nslc = set(get_nslc_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
-        self._polish_stream(stt, starttime, endtime, attach_response)
+        stt = self._prep_output_stream(stt, starttime, endtime, attach_response)
         return stt
 
-    def _polish_stream(self, st, starttime=None, endtime=None, attach_response=False):
+    def _prep_output_stream(
+        self, st, starttime=None, endtime=None, attach_response=False
+    ) -> obspy.Stream:
         """
-        prepare waveforms object for output by trimming to desired times,
-        merging channels, and attaching responses
+        Prepare waveforms object for output by trimming to desired times,
+        merging channels, and attaching responses.
         """
         if not len(st):
             return st
         starttime = starttime or min([x.stats.starttime for x in st])
         endtime = endtime or max([x.stats.endtime for x in st])
         # trim
-        st.trim(
-            starttime=obspy.UTCDateTime(starttime), endtime=obspy.UTCDateTime(endtime)
-        )
+        st.trim(starttime=UTCDateTime(starttime), endtime=UTCDateTime(endtime))
         if attach_response:
             st.attach_response(self.inventory)
-        try:
-            st.merge(method=1)
-        except Exception:  # cant be more specific, obspy raises Exception
-            pass  # TODO write test for this
-        st.sort()
+        return merge_traces(st, inplace=True).sort()
 
     def get_service_version(self):
         """ Return the version of obsplus """

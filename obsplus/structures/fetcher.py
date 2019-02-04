@@ -426,8 +426,8 @@ class Fetcher:
         assert (tbefore is not None) and (tafter is not None)
         # get the reference time from the object
         time = get_reference_time(time_arg)
-        t1 = time - time_before
-        t2 = time + time_after
+        t1 = time - tbefore
+        t2 = time + tafter
         return self.get_waveforms(t1, t2, **kwargs)
 
     # ------------------------------- misc

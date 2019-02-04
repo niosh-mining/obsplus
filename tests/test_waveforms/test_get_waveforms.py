@@ -1,13 +1,8 @@
 """
 tests for get waveforms
 """
-from pathlib import Path
-
 import obspy
 import pytest
-
-
-test_data_path = Path(pytest.test_data_path)
 
 
 @pytest.fixture(scope="class")

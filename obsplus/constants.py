@@ -4,7 +4,17 @@ Constants used throughout obsplus
 import concurrent.futures
 from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Union, Optional, Mapping, Any, List, Tuple, TypeVar
+from typing import (
+    Callable,
+    Union,
+    Optional,
+    Mapping,
+    Any,
+    List,
+    Tuple,
+    TypeVar,
+    MutableSequence,
+)
 from types import MappingProxyType as MapProx
 
 import numpy as np
@@ -138,6 +148,9 @@ event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
 
 # a events or event type var
 catalog_or_event = TypeVar("catalog_or_event", Catalog, Event)
+
+# trace container (Stream, or any mutable collection)
+trace_sequence = TypeVar("trace_sequence", Stream, MutableSequence[Trace])
 
 # types accepted by DataFetcher for stations info
 inventory_type = Union[Inventory, pd.DataFrame]

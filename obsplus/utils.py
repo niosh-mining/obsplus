@@ -393,13 +393,26 @@ def get_progressbar(
         The minimum number of updates required to show the bar
     """
 
+    def _new_update(bar):
+        """ A new update function that swallows attribute and index errors """
+        old_update = bar.update
+
+        def update(value=None, force=False, **kwargs):
+            try:
+                old_update(value=value, force=force, **kwargs)
+            except (IndexError, ValueError, AttributeError):
+                pass
+
+        return update
+
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
         bar = ProgressBar(max_value=max_value, *args, **kwargs)
         bar.start()
+        bar.update = _new_update(bar)
         bar.update(1)
-    except Exception:
+    except Exception:  # this can happen when stdout is being redirected
         return None  # something went wrong, return None
     return bar
 

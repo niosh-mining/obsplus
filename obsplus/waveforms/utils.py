@@ -1,6 +1,7 @@
 """
 Stream utilities
 """
+import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
@@ -12,7 +13,7 @@ import pandas as pd
 from obspy import Stream, UTCDateTime
 
 import obsplus
-from obsplus.constants import waveform_clientable_type, NSLC
+from obsplus.constants import waveform_clientable_type, NSLC, trace_sequence
 from obsplus.interfaces import WaveformClient
 from obsplus.utils import get_nslc_series
 
@@ -103,6 +104,73 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
         msg = f"The following waveforms has traces with no overlaps {stream}"
         raise ValueError(msg)
     return stream.trim(starttime=t1, endtime=t2)
+
+
+def _make_trace_df(traces):
+    """ Create a dataframe form a sequence of traces. """
+    # create dataframe of traces and stats (use ns for all time values)
+    data = [
+        {
+            "trace": x,
+            "nslc": x.id,
+            "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
+            "start": x.stats.starttime._ns,
+            "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
+        }
+        for x in traces
+    ]
+    sortby = ["nslc", "sr", "start", "end"]
+    df = pd.DataFrame(data).sort_values(sortby)
+    # create column if trace should be merged into previous trace
+    dfs = df.shift(1)  # shift all value forward one column
+    con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
+    con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
+    df["merge_group"] = (~(con1 & con2)).cumsum()
+    return df
+
+
+def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
+    """
+    An efficient function to merge overlapping data for a stream.
+
+    This function is equivalent to calling merge(1) and split() then returning
+    the resulting trace. This means only traces that have overlaps or adjacent
+    times will be merged, otherwise they will remain separate traces.
+
+    Parameters
+    ----------
+    st
+        The input stream to merge.
+    inplace
+        If True st is modified in place.
+
+    Returns
+    -------
+    A stream with merged traces.
+    """
+    traces = st.traces if isinstance(st, obspy.Stream) else st
+    if not inplace:
+        traces = copy.deepcopy(traces)
+    df = _make_trace_df(traces)
+    # get a series of properties by group
+    group = df.groupby("merge_group")
+    t1, t2 = group["start"].min(), group["end"].max()
+    sr = group["sr"].max()
+    gsize = group.size()  # number of traces in each group
+    # use this to avoid pandas groupbys
+    merged_traces = []  # store
+    for gnum in gsize.index:  # any groups w/ more than one trace
+        ind = df.merge_group == gnum
+        gtraces = df.trace[ind]
+        t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
+        y = np.ones_like(t) * np.NaN
+        for tr in gtraces:
+            start_ind = np.searchsorted(t, tr.stats.starttime._ns)
+            y[start_ind : start_ind + len(tr.data)] = tr.data
+        gtraces.iloc[0].data = y
+        merged_traces.append(gtraces.iloc[0])
+        assert not np.any(np.isnan(y)), "nan values remaining!"
+    return obspy.Stream(traces=merged_traces)
 
 
 def stream2contiguous(stream: Stream):

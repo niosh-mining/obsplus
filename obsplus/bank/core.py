@@ -39,6 +39,7 @@ class _Bank(ABC):
     # the minimum obsplus version. If not met delete index and re-index
     # bump when database schema change.
     _min_version = "0.0.0"
+    _bar_update_interval = 50  # number of files before updating bar
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:

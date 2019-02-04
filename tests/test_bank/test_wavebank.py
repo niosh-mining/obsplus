@@ -49,8 +49,10 @@ def count_calls(instance, bound_method, counter_attr):
 
 def strip_processing(st: obspy.Stream) -> obspy.Stream:
     """ strip out processing from stats """
+    # TODO replace this when ObsPy #2286 gets merged
     for tr in st:
         tr.stats.pop("processing")
+    return st
 
 
 class ArchiveDirectory:
@@ -538,6 +540,22 @@ class TestGetWaveforms:
         bank = bingham_dataset.waveform_client
         return bank.get_waveforms(**self.query3)
 
+    @pytest.fixture
+    def bank49(self, tmpdir):
+        """ setup a WaveBank to test issue #49. """
+        path = Path(tmpdir)
+        # create two traces with a slight gap between the two
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr1, tr2 in zip(st1, st2):
+            tr1.stats.starttime = tr1.stats.endtime + 10
+        # save files to directory, create bank and update
+        st1.write(str(path / "st1.mseed"), "mseed")
+        st2.write(str(path / "st2.mseed"), "mseed")
+        bank = obsplus.WaveBank(path)
+        bank.update_index()
+        return bank
+
     # tests
     def test_attr(self, ta_bank_index):
         """ test that the bank class has the get_waveforms attr """
@@ -589,6 +607,15 @@ class TestGetWaveforms:
                 sequence = self.query3.get(key)
                 if sequence is not None:
                     assert val in sequence
+
+    def test_issue_49(self, bank49):
+        """
+        Ensure traces with masked arrays are not returned by get_waveforms.
+        """
+        st = bank49.get_waveforms()
+        for tr in st:
+            assert not isinstance(tr.data, np.ma.MaskedArray)
+        assert len(st.get_gaps()) == 3
 
 
 class TestUpdateBar:
@@ -988,7 +1015,7 @@ class TestFilesWithMultipleChannels:
 
 
 class TestGetAvailability:
-    """ test that sbank will return an availability dataframe """
+    """ test that WaveBank will return an availability dataframe """
 
     # fixtures
     @pytest.fixture(scope="class")

@@ -11,7 +11,12 @@ import pytest
 
 import obsplus
 from obsplus.constants import NSLC
-from obsplus.waveforms.utils import trim_event_stream, stream2contiguous, archive_to_sds
+from obsplus.waveforms.utils import (
+    trim_event_stream,
+    stream2contiguous,
+    archive_to_sds,
+    merge_traces,
+)
 
 
 class TestTrimEventStream:
@@ -22,14 +27,14 @@ class TestTrimEventStream:
     def stream_with_short_end(self):
         """ snip off some waveform from the end, return the new waveforms with
         the time the waveform was snipped """
-        st = pytest.waveforms["default"]
+        st = obspy.read()
         t1, t2 = st[0].stats.starttime, st[0].stats.endtime
         new_t2 = t2 - 10
         st[0].trim(endtime=new_t2)
         return st, new_t2
 
     # tests
-    def test_trimed(self, stream_with_short_end):
+    def test_trimmed(self, stream_with_short_end):
         """
         test that the max time on the waveforms is t2
         """
@@ -62,6 +67,50 @@ class TestTrimEventStream:
         assert "BOB" not in stations
 
 
+class TestMegeStream:
+    """ Tests for obsplus' style for merging streams together. """
+
+    def test_identical_streams(self):
+        """ ensure passing identical streams performs de-duplication. """
+        st = obspy.read()
+        st2 = obspy.read() + st + obspy.read()
+        st_out = merge_traces(st2)
+        assert st_out == st
+
+    def test_adjacent_traces(self):
+        """ Traces that are one sample away in time should be merged together. """
+        # create stream with traces adjacent in time and merge together
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr1, tr2 in zip(st1, st2):
+            tr2.stats.starttime = tr1.stats.endtime + 1.0 / tr2.stats.sampling_rate
+        st_in = st1 + st2
+        out = merge_traces(st_in)
+        assert len(out) == 3
+        # should be the same as merge and split
+        assert out == st_in.merge(1).split()
+
+    def test_traces_with_overlap(self):
+        """ Trace with overlap should be merged together. """
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr1, tr2 in zip(st1, st2):
+            tr2.stats.starttime = tr1.stats.starttime + 10
+        st_in = st1 + st2
+        out = merge_traces(st_in)
+        assert out == st_in.merge(1).split()
+
+    def test_traces_with_different_sampling_rates(self):
+        """ traces with different sampling_rates should be left alone. """
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr in st2:
+            tr.stats.sampling_rate = tr.stats.sampling_rate * 2
+        st_in = st1 + st2
+        st_out = merge_traces(st_in)
+        assert st_out == st_in
+
+
 class TestStream2Contiguous:
     """ test the stream2contiguous function works """
 
@@ -87,7 +136,7 @@ class TestStream2Contiguous:
     @pytest.fixture(scope="class")
     def one_trace_gap_overlaps_stream(self):
         """ a waveforms a gap on one trace """
-        st = pytest.waveforms["default"]
+        st = obspy.read()
         st1 = st.copy()
         st2 = st.copy()
         t1 = st[0].stats.starttime

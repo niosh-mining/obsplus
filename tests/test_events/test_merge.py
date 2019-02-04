@@ -16,8 +16,6 @@ CAT = obspy.read_events()
 ORIGINS = [ori for eve in CAT for ori in eve.origins]
 MAGNITUDES = [mag for eve in CAT for mag in eve.magnitudes]
 ALLSORTS = ORIGINS + MAGNITUDES
-QMLS2MERGE = glob(join(pytest.test_data_path, "qml2merge", "*"))
-BASICMERGE = [x for x in QMLS2MERGE if x.endswith("2017-01-06T16-15-14")][0]
 
 
 # -------------------------- helper functions ----------------------- #
@@ -38,22 +36,16 @@ def extract_merge_catalogs(merge_directory):
 # --------------------------- module fixtures ----------------------- #
 
 
-@pytest.fixture(scope="class", params=QMLS2MERGE)
-def merge_catalogs(request):
+@pytest.fixture(scope="function")
+def merge_catalogs_function(qml_to_merge_paths):
     """ return a pair of catalogs for merge testing"""
-    return extract_merge_catalogs(request.param)
-
-
-@pytest.fixture(scope="function", params=QMLS2MERGE)
-def merge_catalogs_function(request):
-    """ return a pair of catalogs for merge testing"""
-    return extract_merge_catalogs(request.param)
+    return extract_merge_catalogs(qml_to_merge_paths)
 
 
 @pytest.fixture(scope="class")
-def merge_catalog_basic():
+def merge_catalog_basic(qml_to_merge_basic):
     """ return just the basic events used to test merging"""
-    return extract_merge_catalogs(BASICMERGE)
+    return extract_merge_catalogs(qml_to_merge_basic)
 
 
 # ------------------------------- tests ------------------------------ #
@@ -99,20 +91,20 @@ class TestMergePicks:
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_delete_pick(self):
+    def merge_catalogs_delete_pick(self, qml_to_merge_basic):
         """ delete a pick and amplitude from the new cat_name, merge
          with old """
 
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         cat2[0].picks.pop(0)
         cat2[0].amplitudes.pop(0)
         merge_events(cat1[0], cat2[0])
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_add_pick(self):
+    def merge_catalogs_add_pick(self, qml_to_merge_basic):
         """ add a pick and amplitude to the new cat_name, merge with old """
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         # add new pick
         pick1 = cat2[0].picks[0]
         time = obspy.UTCDateTime.now()
@@ -127,10 +119,10 @@ class TestMergePicks:
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_add_bad_amplitude(self):
+    def merge_catalogs_add_bad_amplitude(self, qml_to_merge_basic):
         """ add an amplitude that has no pick reference. It should not get
          merged into the events """
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         # add new amplitude
         amp = obspy.core.event.Amplitude()
         cat2[0].amplitudes.append(amp)
