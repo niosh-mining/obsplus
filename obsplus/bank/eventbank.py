@@ -279,7 +279,7 @@ class EventBank(_Bank):
         except TypeError:  # empty events
             return obspy.Catalog()
 
-    def put_events(self, catalog: Union[ev.Event, ev.Catalog]):
+    def put_events(self, catalog: Union[ev.Event, ev.Catalog], update_index=True):
         """
         Put an event into the database.
 
@@ -290,6 +290,9 @@ class EventBank(_Bank):
         ----------
         catalog
             A Catalog or Event object to put into the database.
+        update_index
+            Flag to indicate whether or not to update the event index after
+            writing the new events. Default is True.
         """
         self.ensure_bank_path_exists(create=True)
         events = [catalog] if isinstance(catalog, ev.Event) else catalog
@@ -312,6 +315,7 @@ class EventBank(_Bank):
                 ppath = (Path(self.bank_path) / path).absolute()
                 ppath.parent.mkdir(parents=True, exist_ok=True)
                 event.write(str(ppath), self.format)
-        self.update_index()  # parse newly saved files and update index
+        if update_index:
+            self.update_index()  # parse newly saved files and update index
 
     get_event_summary = read_index
