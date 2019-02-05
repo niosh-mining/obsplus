@@ -599,7 +599,7 @@ class WaveBank(_Bank):
 
     # ----------------------- deposit waveforms methods
 
-    def put_waveforms(self, stream: obspy.Stream, name=None):
+    def put_waveforms(self, stream: obspy.Stream, name=None, update_index=True):
         """
         Add the waveforms in a waveforms to the bank.
 
@@ -609,7 +609,9 @@ class WaveBank(_Bank):
             An obspy waveforms object to add to the bank
         name
             Name of file, if None it will be determined based on contents
-
+        update_index
+            Flag to indicate whether or not to update the waveform index
+            after writing the new events. Default is True.
         """
         self.ensure_bank_path_exists(create=True)
         st_dic = defaultdict(lambda: [])
@@ -637,7 +639,7 @@ class WaveBank(_Bank):
             stream.merge(method=1)
             stream.write(path, format="mseed")
         # update the index as the contents have changed
-        if st_dic:
+        if st_dic and update_index:
             self.update_index()
 
     # ------------------------ misc methods
