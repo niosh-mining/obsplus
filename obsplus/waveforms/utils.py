@@ -161,15 +161,17 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     merged_traces = []  # store
     for gnum in gsize.index:  # any groups w/ more than one trace
         ind = df.merge_group == gnum
-        gtraces = df.trace[ind]
+        gtraces = list(df.trace[ind])
         t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
-        y = np.ones_like(t) * np.NaN
+        y = np.empty(np.shape(t), dtype=gtraces[0].data.dtype)
+        has_filled = np.zeros_like(t)
         for tr in gtraces:
             start_ind = np.searchsorted(t, tr.stats.starttime._ns)
             y[start_ind : start_ind + len(tr.data)] = tr.data
-        gtraces.iloc[0].data = y
-        merged_traces.append(gtraces.iloc[0])
-        assert not np.any(np.isnan(y)), "nan values remaining!"
+            has_filled[start_ind : start_ind + len(tr.data)] = 1
+        gtraces[0].data = y
+        merged_traces.append(gtraces[0])
+        assert np.all(has_filled), "some values not filled in!"
     return obspy.Stream(traces=merged_traces)
 
 
