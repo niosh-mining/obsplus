@@ -181,7 +181,7 @@ class TestReplaceNullNSLCCodes:
 
     def test_stream(self, null_stream):
         """ ensure all the nullish chars are replaced """
-        st = obsplus.utils.repalce_null_nlsc_codes(null_stream.copy())
+        st = obsplus.utils.replace_null_nlsc_codes(null_stream.copy())
         for tr1, tr2 in zip(null_stream, st):
             for code in NSLC:
                 code1 = getattr(tr1.stats, code)
@@ -193,7 +193,7 @@ class TestReplaceNullNSLCCodes:
 
     def test_catalog(self, null_catalog):
         """ ensure all nullish catalog chars are replaced """
-        cat = obsplus.utils.repalce_null_nlsc_codes(null_catalog.copy())
+        cat = obsplus.utils.replace_null_nlsc_codes(null_catalog.copy())
         for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):
             wid = pick.waveform_id
             assert wid.location_code == ""
@@ -203,7 +203,7 @@ class TestReplaceNullNSLCCodes:
             """ return True if the code is valid. """
             return code not in NULL_NSLC_CODES
 
-        inv = obsplus.utils.repalce_null_nlsc_codes(null_inventory)
+        inv = obsplus.utils.replace_null_nlsc_codes(null_inventory)
 
         for net in inv:
             assert _valid_code(net.code)

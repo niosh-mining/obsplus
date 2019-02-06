@@ -554,7 +554,7 @@ any_type = TypeVar("any_type")
 
 
 @singledispatch
-def repalce_null_nlsc_codes(
+def replace_null_nlsc_codes(
     obspy_object: any_type, null_codes=NULL_NSLC_CODES, replacement_value=""
 ) -> any_type:
     """
@@ -580,14 +580,14 @@ def repalce_null_nlsc_codes(
     return obspy_object
 
 
-@repalce_null_nlsc_codes.register(obspy.Stream)
+@replace_null_nlsc_codes.register(obspy.Stream)
 def _replace_null_stream(st, null_codes=NULL_NSLC_CODES, replacement_value=""):
     for tr in st:
         _replace_null_trace(tr, null_codes, replacement_value)
     return st
 
 
-@repalce_null_nlsc_codes.register(obspy.Trace)
+@replace_null_nlsc_codes.register(obspy.Trace)
 def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
     for code in NSLC:
         val = getattr(tr.stats, code)
@@ -596,9 +596,9 @@ def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
     return tr
 
 
-@repalce_null_nlsc_codes.register(obspy.Inventory)
-@repalce_null_nlsc_codes.register(Station)
-@repalce_null_nlsc_codes.register(Channel)
+@replace_null_nlsc_codes.register(obspy.Inventory)
+@replace_null_nlsc_codes.register(Station)
+@replace_null_nlsc_codes.register(Channel)
 def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
     for code in ["location_code", "code"]:
         for obj, _, _ in yield_obj_parent_attr(inv, has_attr=code):
