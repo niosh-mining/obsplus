@@ -397,9 +397,9 @@ class TestStreamProcessor:
 
         def stream_processor(st: obspy.Stream) -> obspy.Stream:
             """ select the z component, detrend, and filter a waveforms """
-            # st = st.select(component="Z")
-            # st.detrend("linear")
-            # st.filter("bandpass", freqmin=1, freqmax=10)
+            st = st.select(component="Z")
+            st.detrend("linear")
+            st.filter("bandpass", freqmin=1, freqmax=10)
             return st
 
         new_fetcher.stream_processor = stream_processor
@@ -720,7 +720,6 @@ class TestGetEventData:
         path to tempdir """
         path = os.path.join(temp_dir_path, self.path)
         params = dict(time_before_origin=0, time_after_origin=10, path=path)
-        breakpoint()
         fetcher.download_event_waveforms(**params)
         return temp_dir_path
 

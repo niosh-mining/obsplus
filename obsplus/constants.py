@@ -239,6 +239,27 @@ EVENT_ATTRS = (
     "preferred_focal_mechanism_id",
 )
 
+# Numpy int types
+NUMPY_INT_TYPES = {
+    np.int,
+    np.int32,
+    np.int64,
+    np.uint,
+    np.dtype("int32"),
+    np.dtype("int64"),
+}
+
+# Numpy float types
+NUMPY_FLOAT_TYPES = {
+    np.float32,
+    np.float64,
+    np.float16,
+    np.float128,
+    np.dtype("float32"),
+    np.dtype("float64"),
+    np.dtype("float128"),
+}
+
 # ------------------------ wavefetcher/bank stuff
 
 # the attrs that can be overwritten temporarily

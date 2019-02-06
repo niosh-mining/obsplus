@@ -5,7 +5,7 @@ import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import obspy
@@ -13,7 +13,13 @@ import pandas as pd
 from obspy import Stream, UTCDateTime
 
 import obsplus
-from obsplus.constants import waveform_clientable_type, NSLC, trace_sequence
+from obsplus.constants import (
+    waveform_clientable_type,
+    NSLC,
+    trace_sequence,
+    NUMPY_FLOAT_TYPES,
+    NUMPY_INT_TYPES,
+)
 from obsplus.interfaces import WaveformClient
 from obsplus.utils import get_nslc_series
 
@@ -106,7 +112,7 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     return stream.trim(starttime=t1, endtime=t2)
 
 
-def _make_trace_df(traces):
+def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
     """ Create a dataframe form a sequence of traces. """
     # create dataframe of traces and stats (use ns for all time values)
     data = [
@@ -157,13 +163,17 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     t1, t2 = group["start"].min(), group["end"].max()
     sr = group["sr"].max()
     gsize = group.size()  # number of traces in each group
+    gnum_one = gsize[gsize == 1].index  # groups with 1 trace
+    gnum_gt_one = gsize[gsize > 1].index  # group num with > 1 trace
     # use this to avoid pandas groupbys
-    merged_traces = []  # store
-    for gnum in gsize.index:  # any groups w/ more than one trace
+    merged_traces = df[df["merge_group"].isin(gnum_one)]["trace"].tolist()
+    for gnum in gnum_gt_one:  # any groups w/ more than one trace
         ind = df.merge_group == gnum
         gtraces = list(df.trace[ind])
+        dtype = _get_dtype(gtraces)
+        # create list of time, y values, and marker for when values are filled
         t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
-        y = np.empty(np.shape(t), dtype=gtraces[0].data.dtype)
+        y = np.empty(np.shape(t), dtype=dtype)
         has_filled = np.zeros_like(t)
         for tr in gtraces:
             start_ind = np.searchsorted(t, tr.stats.starttime._ns)
@@ -173,6 +183,19 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
         merged_traces.append(gtraces[0])
         assert np.all(has_filled), "some values not filled in!"
     return obspy.Stream(traces=merged_traces)
+
+
+def _get_dtype(trace_list: List[trace_sequence]) -> np.dtype:
+    """
+    Return the datatype that should be used for the merged trace list.
+    """
+    # Try to determine datatype. Give preference to floats over ints
+    used_types = {x.data.dtype for x in trace_list}
+    float_used = used_types & NUMPY_FLOAT_TYPES
+    int_used = used_types & NUMPY_INT_TYPES
+    # if all else fails assume float32
+    dtype = list(float_used or int_used) or list(np.float64)
+    return dtype[0]
 
 
 def stream2contiguous(stream: Stream):

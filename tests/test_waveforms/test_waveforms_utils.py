@@ -133,7 +133,6 @@ class TestMegeStream:
         for tr in st_out2:
             assert tr.data.dtype == np.int32
         # def test one int one float
-        breakpoint()
         st_out3 = merge_traces(st1 + st3)
         for tr in st_out3:
             assert tr.data.dtype == np.float64
