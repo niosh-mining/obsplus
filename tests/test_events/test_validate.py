@@ -2,12 +2,12 @@ from os.path import join
 
 import obspy
 import pytest
-from obspy.core.event import ResourceIdentifier
+from obspy.core.event import ResourceIdentifier, WaveformStreamID
 
 import obsplus
 import obsplus.events.validate
 from obsplus import validate_catalog
-
+from obsplus.utils import yield_obj_parent_attr
 
 # ----------------- module level fixtures
 
@@ -128,6 +128,13 @@ class TestValidateCatalog:
         cat[0].picks[0].waveform_id = None
         return cat
 
+    @pytest.fixture
+    def cat_nullish_nslc_codes(self, cat1):
+        """ Create several picks with nullish location codes. """
+        cat1[0].picks[0].waveform_id.location = "--"
+        cat1[0].picks[1].waveform_id.location = None
+        return cat1
+
     # tests
     def test_pcat1_cleared_preferreds(self, cat1_cleared_preferreds):
         """ cleared preferreds should be reset to last in list"""
@@ -207,6 +214,12 @@ class TestValidateCatalog:
         cat[0].picks.append(pick)
         with pytest.raises(AssertionError):
             obsplus.events.validate.check_picks(cat)
+
+    def test_nullish_codes_replaced(self, cat_nullish_nslc_codes):
+        """ Nullish location codes should be replace with empty strings. """
+        kwargs = dict(obj=cat_nullish_nslc_codes, cls=WaveformStreamID)
+        for obj, _, _ in yield_obj_parent_attr(**kwargs):
+            assert obj.location_code == ""
 
 
 class TestAddValidator:

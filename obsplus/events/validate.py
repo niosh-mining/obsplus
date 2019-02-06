@@ -3,11 +3,17 @@ Functions for validating obspy events objects
 """
 from typing import Union, Optional
 
-from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
-from obsplus.utils import yield_obj_parent_attr
+from obspy.core.event import (
+    Catalog,
+    Event,
+    ResourceIdentifier,
+    QuantityError,
+    WaveformStreamID,
+)
+
 import obsplus
-from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
-from obspy import UTCDateTime
+from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
+from obsplus.utils import yield_obj_parent_attr, replace_null_nlsc_codes
 
 CATALOG_VALIDATORS = []
 
@@ -91,6 +97,10 @@ def check_origins(event: Event):
                 assert _none_or_type(at.lower_uncertainty, float)
                 assert _none_or_type(at.upper_uncertainty, float)
                 assert _none_or_type(at.confidence_level, float)
+
+
+# register the nullish nslc code replacement
+catalog_validator(replace_null_nlsc_codes)
 
 
 def validate_catalog(events: Union[Catalog, Event],) -> Optional[Union[Catalog, Event]]:
