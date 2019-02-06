@@ -57,12 +57,6 @@ def _temporary_override(func):
             self.set_events(kwargs.pop("events", self.event_client))
             self.set_stations(kwargs.pop("stations", self.station_client))
             self.set_waveforms(kwargs.pop("waveforms", self.waveform_client))
-            # init_kwargs = dict(
-            #     events=kwargs.pop('events', self.event_client),
-            #     waveforms=kwargs.pop('waveforms', self.waveform_client),
-            #     stations=kwargs.pop('stations', self.station_client),
-            # )
-            # self = Fetcher(**init_kwargs)
 
         return func(self, *args, **kwargs)
 

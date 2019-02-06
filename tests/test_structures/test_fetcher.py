@@ -7,6 +7,7 @@ import os
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import obspy
 import pandas as pd
 import pytest
@@ -719,7 +720,6 @@ class TestGetEventData:
         path to tempdir """
         path = os.path.join(temp_dir_path, self.path)
         params = dict(time_before_origin=0, time_after_origin=10, path=path)
-
         fetcher.download_event_waveforms(**params)
         return temp_dir_path
 

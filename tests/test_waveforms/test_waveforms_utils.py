@@ -70,6 +70,14 @@ class TestTrimEventStream:
 class TestMegeStream:
     """ Tests for obsplus' style for merging streams together. """
 
+    def convert_stream_dtype(self, st, dtype):
+        """ Convert datatypes on each trace in the stream. """
+        st = st.copy()
+        for tr in st:
+            tr.data = tr.data.astype(dtype)
+            assert tr.data.dtype == dtype
+        return st
+
     def test_identical_streams(self):
         """ ensure passing identical streams performs de-duplication. """
         st = obspy.read()
@@ -109,6 +117,29 @@ class TestMegeStream:
         st_in = st1 + st2
         st_out = merge_traces(st_in)
         assert st_out == st_in
+
+    def test_array_data_type(self):
+        """ The array datatype should not change. """
+        # test floats
+        st1 = obspy.read()
+        st2 = obspy.read()
+        st_out1 = merge_traces(st1 + st2)
+        for tr1, tr2 in zip(st_out1, st1):
+            assert tr1.data.dtype == tr2.data.dtype
+        # tests ints
+        st3 = self.convert_stream_dtype(st1, np.int32)
+        st4 = self.convert_stream_dtype(st1, np.int32)
+        st_out2 = merge_traces(st3 + st4)
+        for tr in st_out2:
+            assert tr.data.dtype == np.int32
+        # def test one int one float
+        st_out3 = merge_traces(st1 + st3)
+        for tr in st_out3:
+            assert tr.data.dtype == np.float64
+        # ensure order of traces doesn't mater for dtypes
+        st_out4 = merge_traces(st3 + st1)
+        for tr in st_out4:
+            assert tr.data.dtype == np.float64
 
 
 class TestStream2Contiguous:
