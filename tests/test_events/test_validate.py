@@ -131,9 +131,9 @@ class TestValidateCatalog:
     @pytest.fixture
     def cat_nullish_nslc_codes(self, cat1):
         """ Create several picks with nullish location codes. """
-        cat1[0].picks[0].waveform_id.location = "--"
-        cat1[0].picks[1].waveform_id.location = None
-        return cat1
+        cat1[0].picks[0].waveform_id.location_code = "--"
+        cat1[0].picks[1].waveform_id.location_code = None
+        return validate_catalog(cat1)
 
     # tests
     def test_pcat1_cleared_preferreds(self, cat1_cleared_preferreds):

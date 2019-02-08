@@ -232,6 +232,14 @@ class TestReadIndexQueries:
         with pytest.raises(ValueError):
             bing_ebank.read_index(minradius=20)
 
+    def test_no_none_strs(self, bing_ebank):
+        """
+        There shouldn't be any None strings in the df.
+        These should have been replaced with proper None values.
+        """
+        df = bing_ebank.read_index()
+        assert not (df == "None").any().any()
+
 
 class TestGetEvents:
     """ tests for pulling events out of the bank """
