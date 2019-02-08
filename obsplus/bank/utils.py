@@ -182,13 +182,17 @@ class _IndexCache:
         if not len(cached_index):  # query is not cached get it from cache
             where = get_kernel_query(starttime, endtime, buffer=buffer)
             index = self._get_index(where, **kwargs)
+            # replace "None" with None
+            ic = self.bank.index_str
+            index.loc[:, ic] = index.loc[:, ic].replace(["None"], [None])
             self._set_cache(index, starttime, endtime, kwargs)
         else:
             index = cached_index.iloc[0]["cindex"]
         # trim down index
         con1 = index.starttime >= (endtime + buffer)
         con2 = index.endtime <= (starttime - buffer)
-        return index[~(con1 | con2)]
+        df = index[~(con1 | con2)]
+        return df
 
     def _set_cache(self, index, starttime, endtime, kwargs):
         """ cache the current index """
@@ -353,6 +357,7 @@ def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
 
     """
     sql = _make_sql_command("select", table_name, columns=columns, **kwargs)
+    # replace "None" with None
     return pd.read_sql(sql, con)
 
 

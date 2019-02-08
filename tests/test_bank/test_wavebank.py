@@ -432,6 +432,14 @@ class TestGetIndex:
         df = bank.read_index(starttime=utc1, endtime=utc2)
         assert (df.groupby("station").size() == 3).all()
 
+    def test_no_none_strs(self, ta_bank_index):
+        """
+        There shouldn't be any None strings in the df.
+        These should have been replaced with proper None values.
+        """
+        df = ta_bank_index.read_index()
+        assert not (df == "None").any().any()
+
 
 class TestYieldStreams:
     """ tests for yielding streams from the bank """

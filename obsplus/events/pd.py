@@ -35,7 +35,7 @@ def _get_event_description(event):
     """ return a string of the first event description. """
     try:
         return event.event_descriptions[0].text
-    except:
+    except (AttributeError, IndexError, TypeError):
         return None
 
 

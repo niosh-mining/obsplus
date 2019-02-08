@@ -4,7 +4,6 @@ Class for interacting with events on a filesystem.
 
 import time
 import warnings
-from contextlib import suppress
 from functools import reduce
 from operator import add
 from os.path import exists
@@ -47,6 +46,7 @@ from obsplus.utils import (
 COLUMN_TYPES = dict(EVENT_DTYPES)
 COLUMN_TYPES.pop("stations", None)
 COLUMN_TYPES["path"] = str
+STR_COLUMNS = {i for i, v in COLUMN_TYPES.items() if issubclass(v, str)}
 
 # unsupported query options
 
@@ -168,11 +168,13 @@ class EventBank(_Bank):
             raise ValueError(msg)
         with sql_connection(self.index_path) as con:
             try:
-                return _read_table(self._index_node, con, **kwargs).set_index(
-                    "event_id"
-                )
+                df = _read_table(self._index_node, con, **kwargs).set_index("event_id")
             except pd.io.sql.DatabaseError:  # empty or no db, return empty index
-                return pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
+                df = pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
+        # replace "None" with None on str columns
+        str_cols = STR_COLUMNS & set(df.columns)
+        df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [None])
+        return df
 
     @thread_lock_function()
     def update_index(self, bar: Optional = None, min_files_for_bar: int = 100):
