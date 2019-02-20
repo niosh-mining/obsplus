@@ -3,3 +3,4 @@ pytest-cov
 coveralls
 black
 nbval
+twine

@@ -1,115 +1,41 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Sep 22 06:29:04 2016
-
-@author: amy
+General utilities for obsplus.
 """
 import contextlib
-import glob
 import os
 import sys
+import textwrap
 import threading
 import warnings
 from functools import singledispatch, wraps
-from typing import Union, Sequence, Optional, Any, Callable, Dict, Tuple, Generator, Set
+from pathlib import Path
+from typing import (
+    Union,
+    Sequence,
+    Optional,
+    Any,
+    Callable,
+    Dict,
+    Tuple,
+    Generator,
+    Set,
+    TypeVar,
+)
 
 import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy.core.inventory import Station, Channel
+from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
 from obspy.core.event import Event
-from obspy.core.inventory import Inventory
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
 
-from obsplus.constants import event_time_type
-
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
-
-
-# ------------------------------ wavebank stuff
-
-
-@singledispatch
-def get_inventory(inventory: Union[str, Inventory]):
-    """
-    Get an stations from stations parameter if path or stations else
-    return None
-
-    Parameters
-    ----------
-    inventory : str, obspy.Inventory, or None
-
-    Returns
-    -------
-    obspy.Inventory or None
-    """
-    assert isinstance(inventory, Inventory) or inventory is None
-    return inventory
-
-
-@get_inventory.register(str)
-def _get_inv_str(inventory):
-    """ if str is provided """
-    return obspy.read_inventory(inventory)
-
-
-# ---------------------------------- Misc functions
-
-
-def get_instances(
-    obj: object,
-    cls: type = None,
-    is_attr: Optional[str] = None,
-    has_attr: Optional[str] = None,
-) -> list:
-    """
-    Recurse object, return a list of instances of meeting search criteria.
-
-    Parameters
-    ----------
-    obj
-        The object to recurse through attributes of lists, tuples, and other
-        instances.
-    cls
-        Only return instances of cls if not None, else return all instances.
-    is_attr
-        Only return objects stored as attr_name, if None return all.
-    has_attr
-        Only return objects that have attribute has_attr, if None return all.
-    """
-    instance_cache: dict = {}
-
-    def _get_instances(obj, cls, ids=None, attr=None):
-        out = []
-        ids = ids or set()  # id cache to avoid circular references
-        if id(obj) in ids:
-            return []
-        if (id(obj), cls) in instance_cache:
-            return instance_cache[(id(obj), cls)]
-        ids.add(id(obj))
-        if cls is None or isinstance(obj, cls):
-            # filter out built-ins by looking for __dict__ or __slots__
-            not_bultin = hasattr(obj, "__dict__") or hasattr(obj, "__slots__")
-            # check if this object is stored as the desired attribute
-            is_attribute = is_attr is None or attr == is_attr
-            # check if object has desired attribute
-            has_attribute = has_attr is None or hasattr(obj, has_attr)
-            if not_bultin and is_attribute and has_attribute:
-                out.append(obj)
-        if hasattr(obj, "__dict__"):
-            for item, val in obj.__dict__.items():
-                out += _get_instances(val, cls, ids, attr=item)
-        if isinstance(obj, (list, tuple)):
-            for val in obj:
-                out += _get_instances(val, cls, ids, attr=attr)
-        instance_cache[(id(obj), cls)] = out
-        return out
-
-    return _get_instances(obj, cls)
 
 
 def yield_obj_parent_attr(
@@ -174,6 +100,10 @@ def yield_obj_parent_attr(
                 yield from func(val, attr=item, parent=obj)
 
     return func(obj)
+
+
+def get_instances(*args, **kwargs):
+    return [x[0] for x in yield_obj_parent_attr(*args, **kwargs)]
 
 
 def make_time_chunks(
@@ -342,7 +272,7 @@ def _get_event_origin_time(event):
     elif event.picks:
         return get_reference_time(event.picks)
     else:
-        msg = "could not get reference time for {event}"
+        msg = f"could not get reference time for {event}"
         raise ValueError(msg)
 
 
@@ -362,23 +292,25 @@ def _from_list(input_list):
 @get_reference_time.register(obspy.Catalog)
 def _get_first_event(catalog):
     """ ensure the events is length one, return event """
-    assert len(catalog) == 1, f"{events} has more than one event"
+    assert len(catalog) == 1, f"{catalog} has more than one event"
     return _get_event_origin_time(catalog[0])
 
 
 def get_preferred(event: Event, what: str):
     """
-    get the preferred what (eg origin, magnitude) from the event.
-    If not defined use the last in the list.
-    If list is empty init empty object.
+    get the preferred object (eg origin, magnitude) from the event.
+
+    If not defined use the last in the list. If list is empty init empty
+    object.
     Parameters
+
     -----------
     event: obspy.core.event.Event
-        The instance for which the preferred should be sought
-    what: the prefered item to get
-        eg, magnitude, origin, focal_mechanism
+        The instance for which the preferred should be sought.
+    what: the preferred item to get
+        Can either be "magnitude", "origin", or "focal_mechanism".
     """
-    pref_tyoe = {
+    pref_type = {
         "magnitude": ev.Magnitude,
         "origin": ev.Origin,
         "focal_mechanism": ev.FocalMechanism,
@@ -401,7 +333,7 @@ def get_preferred(event: Event, what: str):
                 var = (pid.id, whats, str(event))
                 warnings.warn("cannot find %s in %s for event %s" % var)
                 obj = getattr(event, whats)[-1]
-    assert isinstance(obj, pref_tyoe[what]), "wrong type returned"
+    assert isinstance(obj, pref_type[what]), "wrong type returned"
     return obj
 
 
@@ -416,7 +348,7 @@ def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -
     return obspy.UTCDateTime(obj).timestamp
 
 
-def apply_or_skip(func: Callable, directory: str):
+def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
     """
     Generator for applying func to all files in directory.
 
@@ -425,17 +357,18 @@ def apply_or_skip(func: Callable, directory: str):
     Parameters
     ----------
     func
-        Any callable that takes a file path as the only input
+        Any callable that takes a file path as the only input.
 
     directory
-        A directory that exists
+        A directory that exists.
 
     Yields
     -------
     outputs of func
     """
-    assert os.path.isdir(directory), f"{directory} is not a directory"
-    for fi in glob.iglob(os.path.join(directory, "**", "*"), recursive=True):
+    path = Path(directory)
+    assert path.is_dir(), f"{directory} is not a directory"
+    for fi in path.rglob("*"):
         if os.path.isfile(fi):
             try:
                 yield func(fi)
@@ -449,7 +382,7 @@ def get_progressbar(
     """
     Get a progress bar object using the ProgressBar2 library.
 
-    Fails gracefully if bar cannot be displayed (eg if not std out).
+    Fails gracefully if bar cannot be displayed (eg if no std out).
     Args and kwargs are passed to ProgressBar constructor.
 
     Parameters
@@ -460,13 +393,26 @@ def get_progressbar(
         The minimum number of updates required to show the bar
     """
 
+    def _new_update(bar):
+        """ A new update function that swallows attribute and index errors """
+        old_update = bar.update
+
+        def update(value=None, force=False, **kwargs):
+            try:
+                old_update(value=value, force=force, **kwargs)
+            except (IndexError, ValueError, AttributeError):
+                pass
+
+        return update
+
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
         bar = ProgressBar(max_value=max_value, *args, **kwargs)
         bar.start()
+        bar.update = _new_update(bar)
         bar.update(1)
-    except Exception:
+    except Exception:  # this can happen when stdout is being redirected
         return None  # something went wrong, return None
     return bar
 
@@ -546,3 +492,116 @@ def getattrs(obsject, col_set, default_value=np.nan):
             val = default_value
         out[item] = val
     return out
+
+
+def compose_docstring(**kwargs):
+    """
+    Decorator for composing docstrings.
+
+    Provided values found in curly brackets un wrapped functions docstring
+    will be appropriately indented and included in wrapped function's
+    __docs__.
+    """
+
+    def _wrap(func):
+
+        docstring = func.__doc__
+        # iterate each provided value and look for it in the docstring
+        for key, value in kwargs.items():
+            search_value = "{%s}" % key
+            # find all lines that match values
+            lines = [x for x in docstring.split("\n") if search_value in x]
+            for line in lines:
+                # determine number of spaces used before matching character
+                spaces = line.split(search_value)[0]
+                # ensure only spaces preceed search value
+                assert set(spaces) == {" "}
+                new = {key: textwrap.indent(textwrap.dedent(value), spaces)}
+                docstring = docstring.replace(line, line.format(**new))
+        func.__doc__ = docstring
+        return func
+
+    return _wrap
+
+
+def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
+    """
+    Create a series of seed_ids from a dataframe with nslc columns.
+
+    Any "nullish" values (defined by the parameter null_codes) will be
+    replaced with an empty string.
+
+    Parameters
+    ----------
+    df
+        Any Dataframe that has str columns named:
+            network, station, location, channel
+    null_codes
+        Codes which should be replaced with a blank string.
+
+    Returns
+    -------
+    A series of concatenated nslc codes.
+    """
+    assert set(NSLC).issubset(df.columns), f"dataframe must have columns {NSLC}"
+    replace_dict = {x: "" for x in null_codes}
+    nslc = df[list(NSLC)].astype(str).replace(replace_dict)
+    net, sta, loc, chan = [nslc[x] for x in NSLC]
+    return net + "." + sta + "." + loc + "." + chan
+
+
+any_type = TypeVar("any_type")
+
+
+@singledispatch
+def replace_null_nlsc_codes(
+    obspy_object: any_type, null_codes=NULL_NSLC_CODES, replacement_value=""
+) -> any_type:
+    """
+    Iterate an obspy object and replace nullish nslc codes with some value.
+
+    Operates in place, but also returns the original object.
+
+    Parameters
+    ----------
+    obspy_object
+        An obspy catalog, event, (or any sub element), stream, trace,
+        inventory, etc.
+    null_codes
+        The codes that are considered null values and should be replaced.
+    replacement_value
+        The value with which to replace the null_codes.
+    """
+    wid_codes = tuple(x + "_code" for x in NSLC)
+    for wid, _, _ in yield_obj_parent_attr(obspy_object, cls=ev.WaveformStreamID):
+        for code in wid_codes:
+            if getattr(wid, code) in null_codes:
+                setattr(wid, code, replacement_value)
+    return obspy_object
+
+
+@replace_null_nlsc_codes.register(obspy.Stream)
+def _replace_null_stream(st, null_codes=NULL_NSLC_CODES, replacement_value=""):
+    for tr in st:
+        _replace_null_trace(tr, null_codes, replacement_value)
+    return st
+
+
+@replace_null_nlsc_codes.register(obspy.Trace)
+def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
+    for code in NSLC:
+        val = getattr(tr.stats, code)
+        if val in null_codes:
+            setattr(tr.stats, code, replacement_value)
+    return tr
+
+
+@replace_null_nlsc_codes.register(obspy.Inventory)
+@replace_null_nlsc_codes.register(Station)
+@replace_null_nlsc_codes.register(Channel)
+def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
+    for code in ["location_code", "code"]:
+        for obj, _, _ in yield_obj_parent_attr(inv, has_attr=code):
+            if getattr(obj, code) in null_codes:
+                setattr(obj, code, replacement_value)
+    return inv

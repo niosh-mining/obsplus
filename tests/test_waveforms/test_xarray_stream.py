@@ -244,14 +244,20 @@ class TestStreamDict2DataArray:
         ar = obspy_to_array(st_dict_close_lens)
         assert not ar.isnull().any()
 
+    def test_idempotent(self, st_dict_close_lens):
+        """ ensure the transformation to data array is idempotent """
+        dar = obspy_to_array(st_dict_close_lens)
+        dar2 = obspy_to_array(dar)
+        assert (dar == dar2).all()
+
 
 class TestStream2DataArray:
     """ ensure the stream2dataset function works as expected """
 
     # fixtures
     @pytest.fixture()
-    def data_array_from_stream(self, stream):
-        return obspy_to_array(stream)
+    def data_array_from_stream(self, waveform_cache_stream):
+        return obspy_to_array(waveform_cache_stream)
 
     @pytest.fixture(scope="class")
     def data_array_from_gappy_stream(self, basic_stream_with_gap):
@@ -259,9 +265,9 @@ class TestStream2DataArray:
         return obspy_to_array(st.merge(method=1), trim_stream=False)
 
     @pytest.fixture(scope="class")
-    def data_array_from_trace_dict(self):
+    def data_array_from_trace_dict(self, waveform_cache):
         """ make a data array from a dict of traces (not streams)"""
-        st = pytest.waveforms["default"]
+        st = waveform_cache["default"]
         out = {}
         for num, tr in enumerate(st):
             tr.stats.channel = st[0].stats.channel
@@ -273,9 +279,9 @@ class TestStream2DataArray:
         """ ensure a dataset was returned """
         assert isinstance(data_array_from_stream, xr.DataArray)
 
-    def test_shape(self, data_array_from_stream, stream):
+    def test_shape(self, data_array_from_stream, waveform_cache_stream):
         """ make sure the dataset matched the req_len of waveforms (plus time) """
-        assert data_array_from_stream.shape[1] == len(stream)
+        assert data_array_from_stream.shape[1] == len(waveform_cache_stream)
 
     def test_attrs(self, data_array_from_stream):
         """ make sure the dataset has the starttime coordinate """
@@ -313,15 +319,11 @@ class TestTrace2DataArray:
     array_fixtures = ["data_array_from_trace"]
 
     # fixtures
-    @pytest.fixture(scope="class", params=pytest.waveforms.keys)
-    def trace(self, request):
-        """ return the first trace of the waveforms for testing """
-        return pytest.waveforms[request.param][0]
-
     @pytest.fixture(scope="class")
-    def data_array_from_trace(self, trace):
+    def data_array_from_trace(self, waveform_cache_trace):
         """ convert the trace to a data array, return data array """
-        return obspy_to_array(trace), trace
+        tr = waveform_cache_trace
+        return obspy_to_array(tr), tr
 
     # tests
     def test_type(self, data_array_from_trace):
@@ -357,9 +359,12 @@ class TestArray2Dict:
 
     def _remove_processing(self, st):
         """ copy stream and remove processing"""
+        from obspy.core.trace import Stats
+
         st = st.copy()
         for tr in st:
-            tr.stats.pop("processing", None)
+            tr.stats = Stats({x: tr.stats[x] for x in Stats.defaults})
+            # tr.stats.pop("processing", None)
         return st
 
     def equal_without_processing(self, st1, st2):
@@ -399,9 +404,9 @@ class TestArray2Dict:
         stream_ids = set(default_array.stream_id.values)
         assert stream_ids == set(default_array2dict)
 
-    def test_streams_equal(self, default_array2dict, default_array):
+    def test_streams_equal(self, default_array2dict, default_array, waveform_cache):
         """ ensure the streams before and after array transform are equal """
-        st1 = pytest.waveforms["default"].sort()
+        st1 = waveform_cache["default"].sort()
         da = default_array2dict
         st2 = da[0].sort()
         # ensure data are the same
@@ -1033,9 +1038,9 @@ class TestArrayFFTAndIFFT:
         """ ensure the extra coord survived """
         assert "extra_coord" in default_array_extra_coord.coords
 
-    def test_default_values(self, default_fft):
+    def test_default_values(self, default_fft, waveform_cache):
         """ ensure performing fft directly on trace returns same result """
-        st = pytest.waveforms["default"]
+        st = waveform_cache["default"]
         for tr in st:
             # ensure the data are the same if fft performed directly along
             # expected axis
@@ -1200,3 +1205,42 @@ class Test2Netcdf:
         inv1 = default_array_more.attrs["stations"]
         inv2 = output_dar.attrs["stations"]
         assert inv1 == inv2
+
+
+class TestSeedStacking:
+    """ Tests for stacking waveform arrays by seed levels """
+
+    def test_all_level_stacks(self, crandall_data_array):
+        """
+        Test stacking the data array on all supported levels, and that
+        it can be unstacked.
+        """
+        # get a dataframe which splits network, station, location, and chan
+        seed_df = get_nslc_df(crandall_data_array)
+        # iterate each level and stack, then unstack
+        for level in seed_df.columns:
+            dar1 = crandall_data_array.copy()
+            dar2 = dar1.ops.stack_seed(level)
+            assert len(dar2[level]) == len(seed_df[level].unique())
+            assert (~dar1.isnull()).sum() == (~dar2.isnull()).sum()
+            # unstack, ensure dataarrays are equal and such
+            dar3 = dar2.ops.unstack_seed()
+            assert dar1.shape == dar3.shape
+            assert dar1.dims == dar3.dims
+            # all elements should be equal or null
+            assert ((dar1.values == dar3.values) | dar3.isnull().values).all()
+
+    def test_unstack_not_stacked_dar_rasies(self, default_array):
+        """ unstacking a data array that has not been stacked should raise """
+        with pytest.raises(ValueError):
+            default_array.ops.unstack_seed()
+
+    def test_stacking_with_frequencies(self, crandall_data_array):
+        """ ensure stacking can be performed with frequency domain data. """
+        stacked_time = crandall_data_array.ops.stack_seed("station")
+        dar_freq = crandall_data_array.ops.rfft()
+        stacked_freq = dar_freq.ops.stack_seed("station")
+        assert (stacked_freq.ids == stacked_time.ids).all()
+        unstacked_freq = stacked_freq.ops.unstack_seed()
+        # make sure stacking/unstacking is not lossy
+        assert ((dar_freq == unstacked_freq) | dar_freq.isnull()).all()

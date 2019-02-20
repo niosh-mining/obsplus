@@ -88,7 +88,8 @@ obsplus/datasets/**/events
 obsplus/datasets/**/.index
 obsplus/datasets/**/readme.txt
 obsplus/**/*.mseed
-docs/profiling/**/*.mseed
+profiling/**/*.mseed
+
 
 # shelve stuff
 *.dat

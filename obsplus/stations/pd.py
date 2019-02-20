@@ -9,9 +9,9 @@ from obspy.core.inventory import Channel
 
 import obsplus
 from obsplus.constants import STATION_COLUMNS, NSLC, STATION_DTYPES
-from obsplus.utils import apply_or_skip, get_instances
+from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
-from obsplus.interfaces import BankType, EventClient, WaveformClient
+from obsplus.utils import apply_to_files_or_skip, get_instances
 
 # attributes from channel to extract
 
@@ -55,7 +55,7 @@ def _str_inv_to_df(path):
     path = str(path)
     # if applied to directory, recurse
     if os.path.isdir(path):
-        df = pd.concat(list(apply_or_skip(_str_inv_to_df, path)))
+        df = pd.concat(list(apply_to_files_or_skip(_str_inv_to_df, path)))
         df.reset_index(drop=True, inplace=True)
         return df
     # else try to read single file
@@ -85,8 +85,13 @@ def _event_to_inv_df(event):
 
 @stations_to_df.register(BankType)
 def _bank_to_df(bank):
+    """ Convert the various bank types to station dataframes. """
     if isinstance(bank, EventClient):
         return stations_to_df(bank.get_events())
+    if isinstance(bank, obsplus.WaveBank):
+        rename = {"starttime": "start_date", "endtime": "end_date"}
+        return bank.get_availability_df().rename(columns=rename)
+
     else:
         raise TypeError(f"{bank} type not yet supported")
 

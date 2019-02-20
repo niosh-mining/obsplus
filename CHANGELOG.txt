@@ -1,0 +1,21 @@
+obsplus 0.0.1:
+  - obsplus.bank
+    * Speed up wavebank reads of file segments by passing start/end times
+      to underlying obspy functions (see #34).
+    * Speed up wavebank's get_waveforms and related methods by replacing
+      obspy's merge/split with a pandas merge function (see #50).
+    * Fixed issue #49 where traces with masked arrays could be returned from
+      WaveBank's get_waveforms methods (see #50).
+    * Added better error messages for trying to pull data from banks that do
+      not exist (see #36)
+    * Event bank eventid param can now accept numpy arrays (see 30).
+  - obsplus.waveforms
+    * Added stack_seed and unstack_seed methods to obsplus data array
+      accessors (see #27).
+    * Added function for creating SDS archives from existing archives
+      (see #35).
+  - obsplus.events
+    * Added utility function to create origins based on first hit station if
+      an event has only picks (see #32).
+  - obsplus.utils
+    * Added method for correcting nullish nslc codes (see #37 and #38)

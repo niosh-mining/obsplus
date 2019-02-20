@@ -10,6 +10,7 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 
+import obsplus
 from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC
 from obsplus.events.utils import get_reference_time
 from obsplus.interfaces import BankType, EventClient
@@ -17,7 +18,7 @@ from obsplus.structures.dfextractor import DataFrameExtractor
 from obsplus.utils import (
     read_file,
     get_preferred,
-    apply_or_skip,
+    apply_to_files_or_skip,
     get_instances,
     getattrs,
 )
@@ -34,7 +35,7 @@ def _get_event_description(event):
     """ return a string of the first event description. """
     try:
         return event.event_descriptions[0].text
-    except:
+    except (AttributeError, IndexError, TypeError):
         return None
 
 
@@ -69,7 +70,7 @@ def _get_update_time(eve):
     return {"updated": max(timestamps) if timestamps else np.NaN}
 
 
-origin_dtypes = {x: float for x in ["latitude", "longitude", "time", "depth"]}
+origin_dtypes = {x: float for x in ["latitude", "longitude", "depth"]}
 
 
 @events_to_df.extractor(dtypes=origin_dtypes)
@@ -77,6 +78,14 @@ def _get_origin_basic(eve):
     """ extract basic info from origin. """
     ori = get_preferred(eve, "origin")
     return getattrs(ori, set(origin_dtypes))
+
+
+@events_to_df.extractor(dtypes={"time": float})
+def _get_time(event):
+    try:
+        return {"time": obsplus.get_reference_time(event)}
+    except ValueError:  # no valid starttime
+        return {"time": np.nan}
 
 
 def _get_used_stations(origin: ev.Origin, pid):
@@ -201,7 +210,7 @@ def _str_catalog_to_df(path):
     # if applied to directory, recurse
     path = str(path)  # convert possible path object to str
     if isdir(path):
-        df = pd.concat(list(apply_or_skip(_str_catalog_to_df, path)))
+        df = pd.concat(list(apply_to_files_or_skip(_str_catalog_to_df, path)))
         df.reset_index(drop=True, inplace=True)
         return df
     # else try to read single file

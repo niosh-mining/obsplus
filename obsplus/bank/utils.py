@@ -7,11 +7,13 @@ import os
 import re
 import sqlite3
 import warnings
+from functools import singledispatch
 from os.path import join
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import obspy
 import obspy.core.event as ev
+import numpy as np
 import pandas as pd
 
 from obsplus.constants import (
@@ -22,6 +24,8 @@ from obsplus.constants import (
     EVENT_NAME_STRUCTURE,
 )
 from obsplus.utils import _get_event_origin_time, READ_DICT
+from obspy import Inventory
+
 from .mseed import summarize_mseed
 
 # --- sensible defaults
@@ -66,7 +70,7 @@ def _get_path(info, path, name, path_struct, name_strcut):
     return dict(path=path, filename=out_name)
 
 
-def summarize_wave_file(path, format):
+def _summarize_wave_file(path, format):
     if format == "mseed":
         try:
             return summarize_mseed(path)
@@ -74,7 +78,7 @@ def summarize_wave_file(path, format):
             pass
     # specialized mseed function failed
     out_list = []
-    st = try_read_stream(path, format=format) or try_read_stream(path) or []
+    st = _try_read_stream(path, format=format) or _try_read_stream(path) or []
     for tr in st:
         out = {
             "starttime": tr.stats.starttime.timestamp,
@@ -86,7 +90,7 @@ def summarize_wave_file(path, format):
     return out_list
 
 
-def summarize_trace(
+def _summarize_trace(
     trace: obspy.Trace,
     path: Optional[str] = None,
     name: Optional[str] = None,
@@ -121,7 +125,7 @@ def summarize_trace(
     return out
 
 
-def summarize_event(
+def _summarize_event(
     event: ev.Event,
     path: Optional[str] = None,
     name: Optional[str] = None,
@@ -178,13 +182,17 @@ class _IndexCache:
         if not len(cached_index):  # query is not cached get it from cache
             where = get_kernel_query(starttime, endtime, buffer=buffer)
             index = self._get_index(where, **kwargs)
+            # replace "None" with None
+            ic = self.bank.index_str
+            index.loc[:, ic] = index.loc[:, ic].replace(["None"], [None])
             self._set_cache(index, starttime, endtime, kwargs)
         else:
             index = cached_index.iloc[0]["cindex"]
         # trim down index
         con1 = index.starttime >= (endtime + buffer)
         con2 = index.endtime <= (starttime - buffer)
-        return index[~(con1 | con2)]
+        df = index[~(con1 | con2)]
+        return df
 
     def _set_cache(self, index, starttime, endtime, kwargs):
         """ cache the current index """
@@ -278,9 +286,10 @@ def _make_wheres(queries):
     if "eventid" in kwargs:
         kwargs["event_id"] = kwargs["eventid"]
         kwargs.pop("eventid")
-    if "event_id" in kwargs:  # ensure event_id is a str
+    if "event_id" in kwargs:
         val = kwargs.pop("event_id")
-        if isinstance(val, (Sequence, set)) and not isinstance(val, str):
+        seq_types = (Sequence, set, np.ndarray)
+        if isinstance(val, seq_types) and not isinstance(val, str):
             kwargs["event_id"] = [str(x) for x in val]
         else:
             kwargs["event_id"] = str(val)
@@ -323,15 +332,17 @@ def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
         columns = ""
     else:
         columns = "*"
+    limit = kwargs.pop("limit", None)
     wheres = _make_wheres(kwargs)
-
     sql = f'{cmd.upper()} {columns} FROM "{table_name}"'
     if wheres:
         sql += f" WHERE {wheres}"
+    if limit:
+        sql += f" LIMIT {limit}"
     return sql + ";"
 
 
-def read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
+def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
     """
     Read a SQLite table.
 
@@ -346,22 +357,23 @@ def read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
 
     """
     sql = _make_sql_command("select", table_name, columns=columns, **kwargs)
+    # replace "None" with None
     return pd.read_sql(sql, con)
 
 
-def get_tables(con):
+def _get_tables(con):
     """ Return a list of table in sqlite database """
     out = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
     return set(out)
 
 
-def drop_rows(table_name, con, columns=None, **kwargs):
+def _drop_rows(table_name, con, columns=None, **kwargs):
     """ Drop indicies in table """
     sql = _make_sql_command("delete", table_name, columns=columns, **kwargs)
     con.execute(sql)
 
 
-def try_read_stream(stream_path, format=None, **kwargs):
+def _try_read_stream(stream_path, format=None, **kwargs):
     """" Try to read a waveforms from file, if raises return None """
     read = READ_DICT.get(format, obspy.read)
     stt = None
@@ -379,3 +391,27 @@ def try_read_stream(stream_path, format=None, **kwargs):
         if stt is not None and len(stt):
             return stt
     return None
+
+
+@singledispatch
+def get_inventory(inventory: Union[str, Inventory]):
+    """
+    Get an stations from stations parameter if path or stations else
+    return None
+
+    Parameters
+    ----------
+    inventory : str, obspy.Inventory, or None
+
+    Returns
+    -------
+    obspy.Inventory or None
+    """
+    assert isinstance(inventory, Inventory) or inventory is None
+    return inventory
+
+
+@get_inventory.register(str)
+def _get_inv_str(inventory):
+    """ if str is provided """
+    return obspy.read_inventory(inventory)

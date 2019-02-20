@@ -1,22 +1,21 @@
 from os.path import join
 
-import obsplus
-import obsplus.events.validate
 import obspy
 import pytest
+from obspy.core.event import ResourceIdentifier, WaveformStreamID
+
+import obsplus
+import obsplus.events.validate
 from obsplus import validate_catalog
-from obspy.core.event import ResourceIdentifier
-
-CAT1_PATH = join(pytest.test_data_path, "qml_files", "2017-01-16T01-15-13-8a42f.xml")
-
+from obsplus.utils import yield_obj_parent_attr
 
 # ----------------- module level fixtures
 
 
 @pytest.fixture(scope="function")
-def cat1():
+def cat1(event_cache):
     """ return a copy of events 1"""
-    cat = obspy.read_events(CAT1_PATH)
+    cat = event_cache["2017-01-16T01-15-13-8a42f.xml"].copy()
     validate_catalog(cat)
     cat[0].focal_mechanisms.append(obspy.core.event.FocalMechanism())
     return cat
@@ -129,6 +128,13 @@ class TestValidateCatalog:
         cat[0].picks[0].waveform_id = None
         return cat
 
+    @pytest.fixture
+    def cat_nullish_nslc_codes(self, cat1):
+        """ Create several picks with nullish location codes. """
+        cat1[0].picks[0].waveform_id.location_code = "--"
+        cat1[0].picks[1].waveform_id.location_code = None
+        return validate_catalog(cat1)
+
     # tests
     def test_pcat1_cleared_preferreds(self, cat1_cleared_preferreds):
         """ cleared preferreds should be reset to last in list"""
@@ -189,6 +195,31 @@ class TestValidateCatalog:
     def test_works_with_event(self, cat1):
         """ ensure the method can also be called on an event """
         validate_catalog(cat1[0])
+
+    def test_s_before_p(self, cat1):
+        """ ensure raise if any s picks are before p picks """
+        cat = cat1.copy()
+        # Set s time before p time
+        # pick[3] is a s pick and pick[2] is a p pick
+        cat[0].picks[3].time = cat[0].picks[2].time - 60
+        with pytest.raises(AssertionError):
+            obsplus.events.validate.check_picks(cat)
+
+    def test_duplicate_picks(self, cat1):
+        """ ensure raise if there are more than one p or s pick per station """
+        cat = cat1.copy()
+        # Duplicating p pick at picks[2]
+        pick = cat[0].picks[2]
+        pick.time = pick.time + 60
+        cat[0].picks.append(pick)
+        with pytest.raises(AssertionError):
+            obsplus.events.validate.check_picks(cat)
+
+    def test_nullish_codes_replaced(self, cat_nullish_nslc_codes):
+        """ Nullish location codes should be replace with empty strings. """
+        kwargs = dict(obj=cat_nullish_nslc_codes, cls=WaveformStreamID)
+        for obj, _, _ in yield_obj_parent_attr(**kwargs):
+            assert obj.location_code == ""
 
 
 class TestAddValidator:

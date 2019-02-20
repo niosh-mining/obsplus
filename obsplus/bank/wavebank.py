@@ -22,10 +22,11 @@ from obspy import UTCDateTime, Stream
 import obsplus
 from obsplus.bank.core import _Bank
 from obsplus.bank.utils import (
-    summarize_trace,
+    _summarize_trace,
     _IndexCache,
-    summarize_wave_file,
-    try_read_stream,
+    _summarize_wave_file,
+    _try_read_stream,
+    get_inventory,
 )
 from obsplus.constants import (
     NSLC,
@@ -33,14 +34,17 @@ from obsplus.constants import (
     WAVEFORM_STRUCTURE,
     WAVEFORM_NAME_STRUCTURE,
     utc_time_type,
+    get_waveforms_parameters,
 )
 from obsplus.utils import (
+    compose_docstring,
     make_time_chunks,
-    get_inventory,
     to_timestamp,
     get_progressbar,
     thread_lock_function,
+    get_nslc_series,
 )
+from obsplus.waveforms.utils import merge_traces
 
 # from obsplus.interfaces import WaveformClient
 
@@ -116,7 +120,8 @@ class WaveBank(_Bank):
     buffer = 10.111  # the time before and after the desired times to pull
 
     # dict defining lengths of str columns (after seed spec)
-    min_itemsize = {"path": 79, "station": 5, "network": 2, "location": 2, "channel": 3}
+    # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
+    min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
 
     # ----------------------------- setup stuff
 
@@ -150,6 +155,7 @@ class WaveBank(_Bank):
         """
         Return the last modified time stored in the index, else None.
         """
+        self.ensure_bank_path_exists()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -195,11 +201,10 @@ class WaveBank(_Bank):
         # loop over un-index files and add info to index
         updates = []
         for num, fi in enumerate(self._unindexed_file_iterator()):
-            updates.append(summarize_wave_file(fi, format=self.format))
-            # if more files are added during update this can raise
-            if bar is not None:
-                # with suppress(Exception):
-                bar.update(num)  # ignore; progress bar isn't too important
+            updates.append(_summarize_wave_file(fi, format=self.format))
+            # update bar
+            if bar and num % self._bar_update_interval == 0:
+                bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
         if len(updates):  # flatten list and make df
             self._write_update(list(chain.from_iterable(updates)))
@@ -231,13 +236,23 @@ class WaveBank(_Bank):
             else:
                 df.index += nrows
                 store.append(node, df, append=True, **self.hdf_kwargs)
+            # update timestamp
+            store.put(self._time_node, pd.Series(time.time()))
+        self._ensure_meta_table_exists()
+
+    def _ensure_meta_table_exists(self):
+        """
+        If the bank path exists ensure it has a meta table, if not create it.
+        """
+        if not Path(self.index_path).exists():
+            return
+        with pd.HDFStore(self.index_path) as store:
             # add metadata if not in store
             if self._meta_node not in store:
                 meta = self._make_meta_table()
                 store.put(self._meta_node, meta, format="table")
-            # update timestamp
-            store.put(self._time_node, pd.Series(time.time()))
 
+    @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
         self,
         network: Optional[str] = None,
@@ -249,30 +264,15 @@ class WaveBank(_Bank):
         **kwargs,
     ) -> pd.DataFrame:
         """
-        Return a subset of the index as dataframe containing the requested
-        parameters.
+        Return a dataframe of the index, optionally applying filters.
 
-         Parameters
+        Parameters
         ----------
-        network : str
-            The network code
-        station : str
-            The station code
-        location : str
-            The location code
-        channel : str
-            The channel code
-        starttime : float or obspy.UTCDateTime
-            The desired starttime of the waveforms
-        endtime : float or obspy.UTCDateTime
-            The desired endtime of the waveforms
+        {waveform_params}
         kwargs
             kwargs are passed to pandas.read_hdf function
-
-        Returns
-        -------
-        pd.DataFrame
         """
+        self.ensure_bank_path_exists()
         if starttime is not None and endtime is not None:
             if starttime > endtime:
                 msg = f"starttime cannot be greater than endtime"
@@ -292,17 +292,19 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
+        self._ensure_meta_table_exists()
         return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
 
+    @compose_docstring(get_waveform_params=get_waveforms_parameters)
     def get_availability_df(self, *args, **kwargs) -> pd.DataFrame:
         """
-        Create a dataframe of start and end times for specified channels.
+        Return a dataframe specifying the availability of the archive.
 
-        Returns
-        -------
-        pd.DataFrame
+        Parameters
+        ----------
+        {get_waveform_params}
 
         """
         # no need to read in path, just read needed columns
@@ -340,14 +342,14 @@ class WaveBank(_Bank):
         df["gap_duration"] = df["endtime"] - df["starttime"]
         return df
 
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_gaps_df(self, *args, min_gap=1.0, **kwargs) -> pd.DataFrame:
         """
         Return a dataframe containing an entry for every gap in the archive.
 
-        This function accepts the same input as obsplus.Sbank.read_index.
-
         Parameters
         ----------
+        {get_waveforms_params}
         min_gap
             The minimum gap to report. Should at least be greater than
             the sample rate in order to avoid counting one sample between
@@ -366,17 +368,15 @@ class WaveBank(_Bank):
             return pd.DataFrame(columns=self.gap_columns)
         return out
 
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_uptime_df(self, *args, **kwargs) -> pd.DataFrame:
         """
-        Get key statistics about reliability of each seed id.
+        Return a dataframe with uptime stats for selected channels.
 
-        See get_index for accepted inputs.
+        Parameters
+        ----------
+        {get_waveforms_params}
 
-        Returns
-        -------
-        pd.DateFrame
-            A dataframe with each seed id, data duration, gap duration,
-            availability percentage.
         """
         # get total number of seconds bank spans for each seed id
         avail = self.get_availability_df(*args, **kwargs)
@@ -401,23 +401,16 @@ class WaveBank(_Bank):
         self, bulk: List[str], index: Optional[pd.DataFrame] = None, **kwargs
     ) -> Stream:
         """
-        Get a large number of waveforms with a bulk request
+        Get a large number of waveforms with a bulk request.
+
         Parameters
         ----------
         bulk
             A list of any number of lists containing the following:
             (network, station, location, channel, starttime, endtime).
         index
-            A pandas dataframe of indicies (allows avoiding reaching out
-            to db multiple times).
-
-        Returns
-        -------
-        obspy.Stream
-
-        Notes
-        --------
-        see get_waveforms
+            A dataframe returned by read_index. Enables calling code to only
+            read the index from disk once for repetitive calls.
         """
         if not bulk:  # return emtpy waveforms if empty list or None
             return obspy.Stream()
@@ -443,8 +436,8 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, mar.any(axis=0))
             # handle columns that do not need matches
             if not df_no_match.empty:
-                nslc1 = set(_get_nslc(df_no_match))
-                nslc2 = _get_nslc(ind)
+                nslc1 = set(get_nslc_series(df_no_match))
+                nslc2 = get_nslc_series(ind)
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
@@ -465,6 +458,7 @@ class WaveBank(_Bank):
         streams = [_func(time, df=df, ind=ind) for time in unique_times]
         return reduce(add, streams)
 
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(
         self,
         network: Optional[str] = None,
@@ -478,28 +472,17 @@ class WaveBank(_Bank):
         """
         Get waveforms from the bank.
 
-        Note: all string parameters accept
-        ? and * for posix style string matching
         Parameters
         ----------
-        network : str
-            The network code
-        station : str
-            The station code
-        location : str
-            The location code
-        channel : str
-            The channel code
-        starttime : float or obspy.UTCDateTime
-            The desired starttime of the waveforms
-        endtime : float or obspy.UTCDateTime
-            The desired endtime of the waveforms
+        {get_waveforms_params}
         attach_response : bool
             If True attach the response to the waveforms using the stations
 
-        Returns
-        -------
-        Requested data in an obspy.Stream instance
+        Notes
+        -----
+        All string parameters can use posix style matching with * and ? chars.
+        All datapoints between selected starttime and endtime will be returned.
+        Consequently there may be gaps in the returned stream.
         """
         index = self.read_index(
             network=network,
@@ -511,6 +494,7 @@ class WaveBank(_Bank):
         )
         return self._index2stream(index, starttime, endtime, attach_response)
 
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def yield_waveforms(
         self,
         network: Optional[str] = None,
@@ -524,22 +508,11 @@ class WaveBank(_Bank):
         overlap: Optional[float] = None,
     ) -> Stream:
         """
-        Yield waveforms from the bank. Note: all string parameters accept
-        ? and * for posix style string matching.
+        Yield waveforms from the bank.
+
         Parameters
         ----------
-        network : str
-            The network code
-        station : str
-            The station code
-        location : str
-            The location code
-        channel : str
-            The channel code
-        starttime : float or obspy.UTCDateTime
-            The desired starttime of the waveforms
-        endtime : float or obspy.UTCDateTime
-            The desired endtime of the waveforms
+        {get_waveforms_params}
         attach_response : bool
             If True attach the response to the waveforms using the stations
         duration : float
@@ -549,9 +522,10 @@ class WaveBank(_Bank):
             If duration is used, the amount of overlap in yielded streams,
             added to the end of the waveforms.
 
-        Yields
-        -------
-        obspy.Stream
+
+        Notes
+        -----
+        All string parameters can use posix style matching with * and ? chars.
         """
         # get times in float format
         starttime = to_timestamp(starttime, 0.0)
@@ -602,10 +576,6 @@ class WaveBank(_Bank):
         attach_response
             If True, and if a an stations is attached to the bank, attach
             the response to the waveforms before returning.
-
-        Returns
-        -------
-        Stream
         """
         seed_id = [seed_id] if isinstance(seed_id, str) else seed_id
         index = self._read_index_by_seed(seed_id, starttime, endtime)
@@ -629,7 +599,7 @@ class WaveBank(_Bank):
 
     # ----------------------- deposit waveforms methods
 
-    def put_waveforms(self, stream: obspy.Stream, name=None):
+    def put_waveforms(self, stream: obspy.Stream, name=None, update_index=True):
         """
         Add the waveforms in a waveforms to the bank.
 
@@ -639,12 +609,15 @@ class WaveBank(_Bank):
             An obspy waveforms object to add to the bank
         name
             Name of file, if None it will be determined based on contents
-
+        update_index
+            Flag to indicate whether or not to update the waveform index
+            after writing the new events. Default is True.
         """
+        self.ensure_bank_path_exists(create=True)
         st_dic = defaultdict(lambda: [])
         # iter the waveforms and group by common paths
         for tr in stream:
-            summary = summarize_trace(
+            summary = _summarize_trace(
                 tr,
                 name=name,
                 path_struct=self.path_structure,
@@ -666,7 +639,7 @@ class WaveBank(_Bank):
             stream.merge(method=1)
             stream.write(path, format="mseed")
         # update the index as the contents have changed
-        if st_dic:
+        if st_dic and update_index:
             self.update_index()
 
     # ------------------------ misc methods
@@ -679,45 +652,38 @@ class WaveBank(_Bank):
         files: pd.Series = (self.bank_path + index.path).unique()
         # iterate the files to read and try to load into waveforms
         stt = obspy.Stream()
-        for st in (try_read_stream(x, format=self.format) for x in files):
+        kwargs = dict(
+            format=self.format,
+            starttime=obspy.UTCDateTime(starttime) if starttime else None,
+            endtime=obspy.UTCDateTime(endtime) if endtime else None,
+        )
+        for st in (_try_read_stream(x, **kwargs) for x in files):
             if st is not None and len(st):
                 stt += st
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
-        nslc = set(
-            index.network
-            + "."
-            + index.station
-            + "."
-            + index.location
-            + "."
-            + index.channel
-        )
+        nslc = set(get_nslc_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
-        self._polish_stream(stt, starttime, endtime, attach_response)
+        stt = self._prep_output_stream(stt, starttime, endtime, attach_response)
         return stt
 
-    def _polish_stream(self, st, starttime=None, endtime=None, attach_response=False):
+    def _prep_output_stream(
+        self, st, starttime=None, endtime=None, attach_response=False
+    ) -> obspy.Stream:
         """
-        prepare waveforms object for output by trimming to desired times,
-        merging channels, and attaching responses
+        Prepare waveforms object for output by trimming to desired times,
+        merging channels, and attaching responses.
         """
         if not len(st):
             return st
         starttime = starttime or min([x.stats.starttime for x in st])
         endtime = endtime or max([x.stats.endtime for x in st])
         # trim
-        st.trim(
-            starttime=obspy.UTCDateTime(starttime), endtime=obspy.UTCDateTime(endtime)
-        )
+        st.trim(starttime=UTCDateTime(starttime), endtime=UTCDateTime(endtime))
         if attach_response:
             st.attach_response(self.inventory)
-        try:
-            st.merge(method=1)
-        except Exception:  # cant be more specific, obspy raises Exception
-            pass  # TODO write test for this
-        st.sort()
+        return merge_traces(st, inplace=True).sort()
 
     def get_service_version(self):
         """ Return the version of obsplus """
@@ -727,19 +693,13 @@ class WaveBank(_Bank):
 # --- auxiliary functions
 
 
-def _get_nslc(df):
-    """ Given a dataframe with columns network, station, location, channel
-    return a series with seed ids. """
-
-    # first replace None or other empty-ish codes with empty str
-    dfs = [df[x].replace({None: "", "--": ""}) for x in NSLC]
-    # concat columns and return (this is ugly but the fastest way to do it)
-    return dfs[0] + "." + dfs[1] + "." + dfs[2] + "." + dfs[3]
-
-
 def filter_index(index, net, sta, loc, chan, start=None, end=None):
-    """ return an array of 1 and 0 of the same shape len as df, 1 means
-    it meets filter reqs, 0 means it does not """
+    """
+    Determine if each row of the index meets some filter requirements.
+
+    Returns a boolean array of the same len as df indicating if each row
+    meets the requirements.
+    """
     # get a dict of query params
     query = dict(network=net, station=sta, location=loc, channel=chan)
     # divide queries into match type (str) and sequences (eg lists)

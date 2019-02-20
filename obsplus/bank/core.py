@@ -1,21 +1,26 @@
 """
-Core for bank classes
+Bank ABC
 """
 import os
 import threading
 import warnings
 from abc import ABC, abstractmethod
 from os.path import join
+from pathlib import Path
 
 import pandas as pd
 from pandas.io.sql import DatabaseError
 
 import obsplus
 from obsplus.bank.utils import iter_files
+from obsplus.exceptions import BankDoesNotExistError
 
 
 class _Bank(ABC):
-    """ define common interfaces for banks """
+    """
+    The abstract base class for ObsPlus' banks. Used to access local
+    archives in a client-like fashion.
+    """
 
     # hdf5 compression defaults
     _complib = "blosc"
@@ -34,6 +39,7 @@ class _Bank(ABC):
     # the minimum obsplus version. If not met delete index and re-index
     # bump when database schema change.
     _min_version = "0.0.0"
+    _bar_update_interval = 50  # number of files before updating bar
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
@@ -49,7 +55,6 @@ class _Bank(ABC):
         Not available return None
         """
 
-    #
     @abstractmethod
     def _read_metadata(self) -> pd.DataFrame:
         """ Return a dictionary of metadata. """
@@ -127,3 +132,16 @@ class _Bank(ABC):
     def get_service_version(self):
         """ Return the version of obsplus used to create index. """
         return self._index_version
+
+    def ensure_bank_path_exists(self, create=False):
+        """
+        Ensure the bank_path exists else raise an BankDoesNotExistError.
+
+        If create is True, simply create the bank.
+        """
+        path = Path(self.bank_path)
+        if create:
+            path.mkdir(parents=True, exist_ok=True)
+        if not path.is_dir():
+            msg = f"{path} is not a directory, cant read bank"
+            raise BankDoesNotExistError(msg)

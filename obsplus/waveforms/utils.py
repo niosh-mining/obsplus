@@ -1,10 +1,11 @@
 """
 Stream utilities
 """
+import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, List
 
 import numpy as np
 import obspy
@@ -12,8 +13,15 @@ import pandas as pd
 from obspy import Stream, UTCDateTime
 
 import obsplus
-from obsplus.constants import waveform_clientable_type
+from obsplus.constants import (
+    waveform_clientable_type,
+    NSLC,
+    trace_sequence,
+    NUMPY_FLOAT_TYPES,
+    NUMPY_INT_TYPES,
+)
 from obsplus.interfaces import WaveformClient
+from obsplus.utils import get_nslc_series
 
 
 # ---------- trim functions
@@ -104,6 +112,92 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     return stream.trim(starttime=t1, endtime=t2)
 
 
+def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
+    """ Create a dataframe form a sequence of traces. """
+    # create dataframe of traces and stats (use ns for all time values)
+    data = [
+        {
+            "trace": x,
+            "nslc": x.id,
+            "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
+            "start": x.stats.starttime._ns,
+            "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
+        }
+        for x in traces
+    ]
+    sortby = ["nslc", "sr", "start", "end"]
+    df = pd.DataFrame(data).sort_values(sortby)
+    # create column if trace should be merged into previous trace
+    dfs = df.shift(1)  # shift all value forward one column
+    con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
+    con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
+    df["merge_group"] = (~(con1 & con2)).cumsum()
+    return df
+
+
+def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
+    """
+    An efficient function to merge overlapping data for a stream.
+
+    This function is equivalent to calling merge(1) and split() then returning
+    the resulting trace. This means only traces that have overlaps or adjacent
+    times will be merged, otherwise they will remain separate traces.
+
+    Parameters
+    ----------
+    st
+        The input stream to merge.
+    inplace
+        If True st is modified in place.
+
+    Returns
+    -------
+    A stream with merged traces.
+    """
+    traces = st.traces if isinstance(st, obspy.Stream) else st
+    if not inplace:
+        traces = copy.deepcopy(traces)
+    df = _make_trace_df(traces)
+    # get a series of properties by group
+    group = df.groupby("merge_group")
+    t1, t2 = group["start"].min(), group["end"].max()
+    sr = group["sr"].max()
+    gsize = group.size()  # number of traces in each group
+    gnum_one = gsize[gsize == 1].index  # groups with 1 trace
+    gnum_gt_one = gsize[gsize > 1].index  # group num with > 1 trace
+    # use this to avoid pandas groupbys
+    merged_traces = df[df["merge_group"].isin(gnum_one)]["trace"].tolist()
+    for gnum in gnum_gt_one:  # any groups w/ more than one trace
+        ind = df.merge_group == gnum
+        gtraces = list(df.trace[ind])
+        dtype = _get_dtype(gtraces)
+        # create list of time, y values, and marker for when values are filled
+        t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
+        y = np.empty(np.shape(t), dtype=dtype)
+        has_filled = np.zeros_like(t)
+        for tr in gtraces:
+            start_ind = np.searchsorted(t, tr.stats.starttime._ns)
+            y[start_ind : start_ind + len(tr.data)] = tr.data
+            has_filled[start_ind : start_ind + len(tr.data)] = 1
+        gtraces[0].data = y
+        merged_traces.append(gtraces[0])
+        assert np.all(has_filled), "some values not filled in!"
+    return obspy.Stream(traces=merged_traces)
+
+
+def _get_dtype(trace_list: List[trace_sequence]) -> np.dtype:
+    """
+    Return the datatype that should be used for the merged trace list.
+    """
+    # Try to determine datatype. Give preference to floats over ints
+    used_types = {x.data.dtype for x in trace_list}
+    float_used = used_types & NUMPY_FLOAT_TYPES
+    int_used = used_types & NUMPY_INT_TYPES
+    # if all else fails assume float32
+    dtype = list(float_used or int_used) or list(np.float64)
+    return dtype[0]
+
+
 def stream2contiguous(stream: Stream):
     """ generator to yield contiguous streams from disjointed streams """
     # pre-process waveforms by combining overlaps then breaking up masks
@@ -180,6 +274,84 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
     for arg in bulk_arg:
         st += self.get_waveforms(*arg)
     return st
+
+
+def archive_to_sds(
+    bank: Union[Path, str, "obsplus.WaveBank"],
+    sds_path: Union[Path, str],
+    starttime: Optional[UTCDateTime] = None,
+    endtime: Optional[UTCDateTime] = None,
+    overlap: float = 30,
+    type_code: str = "D",
+    stream_processor: Optional[callable] = None,
+):
+    """
+    Create a seiscomp data structure archive from a waveform source.
+
+    Parameters
+    ----------
+    bank
+        A wavebank or path to such.
+    sds_path
+        The path for the new sds archive to be created.
+    starttime
+        If not None, the starttime to convert data from bank.
+    endtime
+        If not None, the endtime to convert data from bank.
+    overlap
+        The overlap to use for each file.
+    type_code
+        The str indicating the datatype.
+    stream_processor
+        A callable that will take a single stream as input and return a
+        a single stream. May return and empty stream to skip a stream.
+
+    Notes
+    -----
+    see: https://www.seiscomp3.org/doc/applications/slarchive/SDS.html
+    """
+    sds_path = Path(sds_path)
+    # create a fetcher object for yielding continuous waveforms
+    bank = obsplus.WaveBank(bank)
+    bank.update_index()
+    # get starttime/endtimes
+    index = bank.read_index()
+    ts1 = index.starttime.min() if not starttime else starttime
+    t1 = _nearest_day(ts1)
+    t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
+    nslcs = get_nslc_series(index).unique()
+    # iterate over nslc and get data for selected channel
+    for nslc in nslcs:
+        nslc_dict = {n: v for n, v in zip(NSLC, nslc.split("."))}
+        # yield waveforms in desired chunks
+        ykwargs = dict(starttime=t1, endtime=t2, overlap=overlap, duration=86400)
+        ykwargs.update(nslc_dict)
+        for st in bank.yield_waveforms(**ykwargs):
+            if stream_processor:  # apply stream processor if needed.
+                st = stream_processor(st)
+            if st:
+                path = _get_sds_filename(st, sds_path, type_code, **nslc_dict)
+                st.write(str(path), "mseed")
+
+
+def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
+    """ Given a stream get the expected path for the file. """
+    time = _nearest_day(min([x.stats.starttime for x in st]))
+
+    # add year and julday to formatting dict
+    year, julday = "%04d" % time.year, "%03d" % time.julday
+    filename = f"{network}.{station}.{location}.{channel}.{type_code}.{year}.{julday}"
+    spath = f"{year}/{network}/{station}/{channel}.{type_code}"
+    path = base_path / spath
+    path.mkdir(parents=True, exist_ok=True)
+    return path / filename
+
+
+def _nearest_day(time):
+    """ Round a time down to the nearest day. """
+    ts = obspy.UTCDateTime(time).timestamp
+    ts_day = 3600 * 24
+    return obspy.UTCDateTime(ts - (ts % ts_day))
 
 
 @singledispatch

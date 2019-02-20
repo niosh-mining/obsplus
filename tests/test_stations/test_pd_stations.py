@@ -1,25 +1,26 @@
-import glob
+"""
+Tests for gettting station dataframes from objects.
+"""
 import os
 import tempfile
 from os.path import join, exists
-from pathlib import Path
 
 import numpy as np
 import obspy
 import pandas as pd
 import pytest
 
+import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
 from obsplus.datasets.dataloader import base_path
 
 KEM_PATH = base_path / "kemmerer"
+STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
 
 class TestInv2Df:
     """ tests for the stations to dataframe method """
-
-    expected_columns = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
     # fixtures
     @pytest.fixture(scope="class")
@@ -35,7 +36,7 @@ class TestInv2Df:
     def test_output(self, invdf):
         assert isinstance(invdf, pd.DataFrame)
         assert len(invdf)
-        assert self.expected_columns.issubset(invdf.columns)
+        assert STA_COLUMNS.issubset(invdf.columns)
         for ind, row in invdf.iterrows():
             t1, t2 = row.start_date, row.end_date
             assert isinstance(t1, float)
@@ -235,31 +236,32 @@ class TestReadDataFrame:
         assert (df_bad_location.loc[:, "location"] == "").all()
 
 
-class TestInventoryFromCatalog:
+class TestStationDfFromCatalog:
     """ test to read stations like data from catalogs/events """
 
-    qml_files = glob.glob(join(pytest.test_data_path, "qml_files", "*xml"))
-    CATALOGS = qml_files + []
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    @pytest.append_func_name(CATALOGS)
-    def kem_catalog(self, kem_archive):
-        path = Path(kem_archive)
-        return obspy.read_events(str(path.parent / "events.xml"))
-
-    # aggregate events fixtures, convert to dataframe
-    @pytest.fixture(scope="class", params=CATALOGS)
-    def inv_df(self, request):
-        param = request.param
-        try:
-            cat = obspy.read_events(param)
-        except FileNotFoundError:
-            cat = request.getfixturevalue(param)
-        return stations_to_df(cat)
-
     # tests
-    def test_type(self, inv_df):
-        """ ensure a non-empty dataframe was returned """
-        assert isinstance(inv_df, pd.DataFrame)
-        assert not inv_df.empty
+    def test_basic_inventories(self, station_cache_inventory):
+        df = stations_to_df(station_cache_inventory)
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+
+    def test_kem_catalog(self):
+        """ test converting the kemmerer catalog to an inv dataframe. """
+        ds = obsplus.load_dataset("kemmerer")
+        df = stations_to_df(ds.event_client.get_events())
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+
+
+class TestStationDfFromWaveBank:
+    """ Test that stations info can be extracted from the wavebank. """
+
+    @pytest.fixture(scope="class")
+    def wavebank_station_df(self, crandall_bank):
+        """ Return the station df from a wavebank """
+        return stations_to_df(crandall_bank)
+
+    def test_df_returned(self, wavebank_station_df):
+        """ a df should be returned and not empty. """
+        assert isinstance(wavebank_station_df, pd.DataFrame)
+        assert len(wavebank_station_df)

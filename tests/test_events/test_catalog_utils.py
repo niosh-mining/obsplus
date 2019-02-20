@@ -3,13 +3,13 @@ Tests for utils for events submodule
 """
 import glob
 import os
+import warnings
 from os.path import join
 from pathlib import Path
 
 import obspy
 import pytest
 from obspy.core.event import Comment, ResourceIdentifier
-import obspy.core.event as ev
 
 import obsplus
 from obsplus.events import validate
@@ -18,6 +18,7 @@ from obsplus.events.utils import (
     get_event_path,
     duplicate_events,
     catalog_to_directory,
+    make_origins,
 )
 from obsplus.utils import get_instances, get_preferred
 
@@ -27,29 +28,29 @@ CAT = obspy.read_events()
 # -------------------------- helper functions ----------------------- #
 
 
-def extract_merge_catalogs(merge_directory):
-    """ given a directory with two qmls, read in the qmls and return """
-    files = glob.glob(join(merge_directory, "*"))
-    cat_path1 = [x for x in files if x.endswith("1.xml")]
-    cat_path2 = [x for x in files if x.endswith("2.xml")]
-    cat1 = obspy.read_events(cat_path1[0])
-    cat2 = obspy.read_events(cat_path2[0])
-    validate(cat1)
-    validate(cat2)
-    return cat1, cat2
+# def extract_merge_catalogs(merge_directory):
+#     """ given a directory with two qmls, read in the qmls and return """
+#     files = glob.glob(join(merge_directory, "*"))
+#     cat_path1 = [x for x in files if x.endswith("1.xml")]
+#     cat_path2 = [x for x in files if x.endswith("2.xml")]
+#     cat1 = obspy.read_events(cat_path1[0])
+#     cat2 = obspy.read_events(cat_path2[0])
+#     validate(cat1)
+#     validate(cat2)
+#     return cat1, cat2
 
 
 # -------------------------- Module Fixtures
 
 
-@pytest.fixture(scope="class")
-def ms_catalog():
-    """ return a events of microseismic events """
-    cat = obspy.Catalog()
-    path = Path(pytest.test_data_path) / "qml_files"
-    for qml_path in path.rglob("*.xml"):
-        cat += obspy.read_events(str(qml_path))
-    return cat
+# @pytest.fixture(scope="class")
+# def ms_catalog():
+#     """ return a events of microseismic events """
+#     cat = obspy.Catalog()
+#     path = Path(pytest.test_data_path) / "qml_files"
+#     for qml_path in path.rglob("*.xml"):
+#         cat += obspy.read_events(str(qml_path))
+#     return cat
 
 
 # -------------------------------- tests ------------------------------- #
@@ -67,8 +68,8 @@ class TestDuplicateEvent:
         return duplicate_events(catalog)
 
     @pytest.fixture
-    def duplicated_big_catalog(self):
-        return obsplus.duplicate_events(pytest.cat6)
+    def duplicated_big_catalog(self, catalog_cache):
+        return obsplus.duplicate_events(catalog_cache["cat6"])
 
     def test_return_type(self, duplicated_catalog):
         """ ensure a events was returned """
@@ -100,12 +101,12 @@ class TestDuplicateEvent:
         """ ensure the duplicated events is valid """
         obsplus.validate_catalog(duplicated_big_catalog)
 
-    def test_interconnected_rids(self):
+    def test_interconnected_rids(self, catalog_cache):
         """ Tests for ensuring resource IDs are changed to point to new
         objects. This can get messed up when there are many objects
         that point to resource ids of other objects. EG picks/amplitudes.
         """
-        cat = duplicate_events(pytest.events.interconnected)
+        cat = duplicate_events(catalog_cache["interconnected"])
         # create a dict of pick ids and others that refer to picks
         pids = {str(x.resource_id): x for x in cat[0].picks}
         assert len(cat[0].origins) == 1, "there should be one origin"
@@ -302,9 +303,11 @@ class TestCatalogToDirectory:
         path = Path(tmpdir) / "events.xml"
         path_out1 = path.parent / "catalog_dir1"
         path_out2 = path.parent / "catalog_dir2"
-        cat.write(str(path), "quakeml")
+        # a slightly invalid uri is used, just ignore
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cat.write(str(path), "quakeml")
         # test works with a Path instance
-
         catalog_to_directory(path, path_out1)
         assert path_out1.exists()
         assert not obsplus.EventBank(path_out1).read_index().empty
@@ -312,3 +315,40 @@ class TestCatalogToDirectory:
         catalog_to_directory(str(path), path_out2)
         assert path_out2.exists()
         assert not obsplus.EventBank(path_out2).read_index().empty
+
+
+class TestEnsureOrigin:
+    """ Tests for the ensure origin function. """
+
+    @pytest.fixture(scope="class")
+    def cat_only_picks(self, crandall_dataset):
+        """ Return a catalog with only picks, no origins or magnitudes """
+        cat = crandall_dataset.event_client.get_events().copy()
+        for event in cat:
+            event.preferred_origin_id = None
+            event.preferred_magnitude_id = None
+            event.origins.clear()
+            event.magnitudes.clear()
+        return cat
+
+    @pytest.fixture(scope="class")
+    def cat_added_origins(self, cat_only_picks):
+        """ run ensure_origin on the catalog with only picks and return """
+        # get corresponding inventory
+        ds = obsplus.load_dataset("crandall")
+        inv = ds.station_client.get_stations()
+        return make_origins(events=cat_only_picks, inventory=inv)
+
+    def test_all_events_have_origins(self, cat_added_origins):
+        """ ensure all the events do indeed have origins """
+        for event in cat_added_origins:
+            assert event.origins, f"{event} has no origins"
+
+    def test_origins_have_time_and_location(self, cat_added_origins):
+        """ all added origins should have both times and locations. """
+        for event in cat_added_origins:
+            for origin in event.origins:
+                assert isinstance(origin.time, obspy.UTCDateTime)
+                assert origin.latitude is not None
+                assert origin.longitude is not None
+                assert origin.depth is not None
