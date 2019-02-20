@@ -418,23 +418,29 @@ def get_seed_id(obj: catalog_component) -> str:
         The SCNL, in the form of a seed string
     """
     if isinstance(obj, WaveformStreamID):
+        # Get the seed id
         return obj.get_seed_string()
-    elif hasattr(obj, "waveform_id"):
-        return get_seed_id(obj.waveform_id)
-    elif isinstance(obj, ResourceIdentifier):
+    if isinstance(obj, ResourceIdentifier):
+        # Get the next nested object
         return get_seed_id(obj.get_referred_object())
-    elif hasattr(obj, "pick_id"):
-        return get_seed_id(obj.pick_id)
-    elif hasattr(obj, "amplitude_id"):
-        return get_seed_id(obj.amplitude_id)
-    elif hasattr(obj, "station_magnitude_id"):
-        return get_seed_id(obj.station_magnitude_id)
-    elif (
-        obj is None
-    ):  # No SCNL tied to the parent object... what is the best way to handle this, so that there can be some kind of indication as to which object failed?
-        raise AttributeError("unable to fetch SCNL")
-    else:
-        raise TypeError(f"{type(obj)} is not supported for retrieving a seed id")
+    # The order of this list matters... it should go from the deepest nested
+    # attribute to the shallowest
+    attrs = ["waveform_id", "pick_id", "amplitude_id", "station_magnitude_id"]
+    # Make sure the object has at least one of the required attributes
+    if not len(set(attrs).intersection(set(vars(obj)))):
+        raise TypeError(f"cannot retrieve seed id for objects of type {type(obj)}")
+    # Loop over each of the attributes, if it exists and is not None,
+    # go down a level until it finds a seed id
+    for att in attrs:
+        if hasattr(obj, att):
+            val = getattr(obj, att)
+            if val:
+                try:
+                    return get_seed_id(val)
+                except (TypeError, AttributeError):
+                    raise AttributeError("Unable to fetch a seed id for {obj.resource_id}")
+    # If it makes it this far, it could not find a non-None attribute
+    raise AttributeError("Unable to fetch a seed id for {obj.resource_id}")
 
 
 def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
