@@ -438,7 +438,9 @@ def get_seed_id(obj: catalog_component) -> str:
                 try:
                     return get_seed_id(val)
                 except (TypeError, AttributeError):
-                    raise AttributeError("Unable to fetch a seed id for {obj.resource_id}")
+                    raise AttributeError(
+                        "Unable to fetch a seed id for {obj.resource_id}"
+                    )
     # If it makes it this far, it could not find a non-None attribute
     raise AttributeError("Unable to fetch a seed id for {obj.resource_id}")
 
