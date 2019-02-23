@@ -99,19 +99,37 @@ EVENT_DTYPES = MapProx(
 EVENT_COLUMNS = tuple(EVENT_DTYPES)
 
 # columns required for picks
-PICK_COLUMNS = (
-    "resource_id",
-    "event_id",
-    "event_time",
-    "phase_hint",
-    "onset",
-    "polarity",
-    "time",
-    "network",
-    "station",
-    "location",
-    "channel",
-)
+
+PICK_DTYPES = {
+    "resource_id": str,
+    "time": float,
+    "seed_id": str,
+    "filter_id": str,
+    "method_id": str,
+    "horizontal_slowness": float,
+    "backazimuth": float,
+    "onset": str,
+    "phase_hint": str,
+    "polarity": str,
+    "evaluation_mode": str,
+    "event_time": float,
+    "evaluation_status": str,
+    "creation_time": float,
+    "author": str,
+    "agency_id": str,
+    "event_id": str,
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "uncertainty": float,
+    "lower_uncertainty": float,
+    "upper_uncertainty": float,
+    "confidence_level": float,
+}
+
+PICK_COLUMNS = tuple(PICK_DTYPES)
+
 
 # keys used to identify UTC objects
 UTC_KEYS = ("creation_time", "time", "reference")

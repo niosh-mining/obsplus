@@ -15,7 +15,7 @@ from obspy import UTCDateTime
 from obsplus import events_to_df, picks_to_df
 from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS
 from obsplus.datasets.dataloader import base_path
-from obsplus.utils import get_preferred, getattrs
+from obsplus.utils import get_preferred, getattrs, get_nslc_series
 
 
 # ---------------- helper functions
@@ -349,6 +349,19 @@ class TestReadPhasePicks:
         df = picks_to_df(bingham_cat_only_picks)
         assert len(df.event_time.unique()) == len(df.event_id.unique())
 
+    def test_read_uncertainty(self):
+        """
+        tests that uncertainties in time_errors attribute are read. See #55.
+        """
+        kwargs = dict(lower_uncertainty=1, upper_uncertainty=2, uncertainty=12)
+        time_error = ev.QuantityError(**kwargs)
+        pick = ev.Pick(time=UTCDateTime(), time_errors=time_error)
+        df = picks_to_df(pick)
+        assert set(kwargs).issubset(df.columns)
+        assert len(df) == 1
+        ser = df.iloc[0]
+        assert all([ser[i] == kwargs[i] for i in kwargs])
+
 
 class TestReadKemPicks:
     """ test for reading a variety of pick formats from the kemmerer
@@ -385,15 +398,7 @@ class TestReadKemPicks:
         """ ensure valid seed_ids were created. """
         # recreate seed_id and make sure columns are equal
         df = pick_df
-        seed = (
-            df["network"]
-            + "."
-            + df["station"]
-            + "."
-            + df["location"]
-            + "."
-            + df["channel"]
-        )
+        seed = get_nslc_series(pick_df)
         assert (seed == df["seed_id"]).all()
 
 

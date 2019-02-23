@@ -179,6 +179,8 @@ def order_columns(
         A sequence that contains the column names
     dtype
         A dictionary of dtypes
+    replace
+        Input passed to DataFrame.Replace
     Returns
     -------
     pd.DataFrame

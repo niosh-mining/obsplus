@@ -83,7 +83,7 @@ class DataFrameExtractor(UserDict):
         self._func = singledispatch(self._base_call)
         self._base_required_columns = required_columns
         self._dtypes = [dtypes] if dtypes is not None else []
-        self.utc_columns = utc_columns
+        self.utc_columns = utc_columns or ()
         if pass_dataframe:
             self._func.register(pd.DataFrame)(_pass_through_dataframe)
 
@@ -198,7 +198,7 @@ class DataFrameExtractor(UserDict):
         assert isinstance(df, pd.DataFrame), "must return a DataFrame instance"
         if not df.empty:  # if df is not empty it should have all the columns
             # read in any UTCDateTime
-            for col in iterate(self.utc_columns):
+            for col in set(iterate(self.utc_columns)) & set(df.columns):
                 df[col] = df[col].apply(_timestampit)
         replace, dtypes = {"nan": ""}, self.dtypes
         required_cols = self._base_required_columns
