@@ -177,7 +177,6 @@ class EventBank(_Bank):
         # replace "None" with None on str columns
         str_cols = STR_COLUMNS & set(df.columns)
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [None])
-        dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
         return df
 
     @thread_lock_function()
