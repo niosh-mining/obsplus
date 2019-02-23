@@ -171,9 +171,13 @@ class EventBank(_Bank):
                 df = _read_table(self._index_node, con, **kwargs).set_index("event_id")
             except pd.io.sql.DatabaseError:  # empty or no db, return empty index
                 df = pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
+        # coerce datatypes
+        dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
+        df = df.astype(dtype=dtype)
         # replace "None" with None on str columns
         str_cols = STR_COLUMNS & set(df.columns)
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [None])
+        dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
         return df
 
     @thread_lock_function()
