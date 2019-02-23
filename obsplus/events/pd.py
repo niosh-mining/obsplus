@@ -11,7 +11,7 @@ import obspy.core.event as ev
 import pandas as pd
 
 import obsplus
-from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC
+from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC, PICK_DTYPES
 from obsplus.events.utils import get_reference_time
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
@@ -246,30 +246,6 @@ def _file_to_picks_df(path):
         return picks_to_df(pd.read_csv(path))
 
 
-pick_attrs = {
-    "resource_id": str,
-    "time": float,
-    "seed_id": str,
-    "filter_id": str,
-    "method_id": str,
-    "horizontal_slowness": float,
-    "backazimuth": float,
-    "onset": str,
-    "phase_hint": str,
-    "polarity": str,
-    "evaluation_mode": str,
-    "evaluation_status": str,
-    "creation_time": float,
-    "author": str,
-    "agency_id": str,
-    "event_id": str,
-    "network": str,
-    "station": str,
-    "location": str,
-    "channel": str,
-}
-
-
 @picks_to_df.register(ev.Event)
 @picks_to_df.register(ev.Catalog)
 def _picks_from_event(event: ev.Event):
@@ -296,23 +272,28 @@ def _picks_from_event_bank(event_bank):
     return picks_to_df(event_bank.get_events())
 
 
-@picks_to_df.extractor(dtypes=pick_attrs)
+@picks_to_df.extractor(dtypes=PICK_DTYPES)
 def _pick_extractor(pick):
     # extract attributes that are floats/str
-    overlap = set(pick.__dict__) & set(pick_attrs)
+    overlap = set(pick.__dict__) & set(PICK_DTYPES)
     base = {i: getattr(pick, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
     seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
     base.update(dd)
     base["seed_id"] = seed_id
-    # add event into
-
     # get creation info
     cio = pick.creation_info or ev.CreationInfo()
     base["creation_time"] = cio.creation_time
     base["author"] = cio.author
     base["agency_id"] = cio.agency_id
+    # get time error info
+    terrors = pick.time_errors
+    if terrors:
+        base["uncertainty"] = terrors.uncertainty
+        base["lower_uncertainty"] = terrors.lower_uncertainty
+        base["upper_uncertainty"] = terrors.upper_uncertainty
+        base["confidence_level"] = terrors.confidence_level
     return base
 
 
