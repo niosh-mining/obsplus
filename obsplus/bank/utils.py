@@ -180,19 +180,22 @@ class _IndexCache:
         con3 = self.cache.kwargs == self._kwargs_to_str(kwargs)
         cached_index = self.cache[con1 & con2 & con3]
         if not len(cached_index):  # query is not cached get it from cache
+            # get expected dtypes
+            strs = {x: str for x in self.bank.index_str}
+            floats = {x: float for x in self.bank.index_float}
+            dtypes = {**strs, **floats}
             where = get_kernel_query(starttime, endtime, buffer=buffer)
             index = self._get_index(where, **kwargs)
             # replace "None" with None
             ic = self.bank.index_str
             index.loc[:, ic] = index.loc[:, ic].replace(["None"], [None])
-            self._set_cache(index, starttime, endtime, kwargs)
+            self._set_cache(index.astype(dtypes), starttime, endtime, kwargs)
         else:
             index = cached_index.iloc[0]["cindex"]
         # trim down index
         con1 = index.starttime >= (endtime + buffer)
         con2 = index.endtime <= (starttime - buffer)
-        df = index[~(con1 | con2)]
-        return df
+        return index[~(con1 | con2)]
 
     def _set_cache(self, index, starttime, endtime, kwargs):
         """ cache the current index """
