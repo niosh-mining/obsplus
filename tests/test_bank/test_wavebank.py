@@ -20,11 +20,10 @@ import obspy
 import obspy.clients.fdsn
 import pandas as pd
 import pytest
-from obsplus.bank.wavebank import WaveBank, filter_index
-from obsplus.bank.utils import iter_files
+from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import make_time_chunks
+from obsplus.utils import make_time_chunks, filter_index, iter_files
 from obspy import UTCDateTime as UTC
 
 
@@ -345,7 +344,7 @@ class TestBankBasics:
         index = crandall_dataset.waveform_client.read_index(network="UU")
         t1 = index.starttime.mean()
         t2 = index.endtime.max()
-        bool_ind = filter_index(index, "UU", "*", "*", "*", start=t1, end=t2)
+        bool_ind = filter_index(index, "UU", "*", "*", "*", starttime=t1, endtime=t2)
         out = index[bool_ind]
         assert len(out) < len(index)
 

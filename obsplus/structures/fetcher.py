@@ -24,10 +24,17 @@ from obsplus.constants import (
     event_time_type,
     EVENT_WAVEFORM_PATH_STRUCTURE,
     WAVEFORM_STRUCTURE,
+    get_waveforms_parameters,
 )
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
-from obsplus.utils import make_time_chunks, register_func, get_reference_time
+from obsplus.utils import (
+    make_time_chunks,
+    register_func,
+    get_reference_time,
+    filter_index,
+    compose_docstring,
+)
 
 EventStream = namedtuple("EventStream", "event_id stream")
 far_out_time = UTCDateTime("2525-01-01").timestamp
@@ -200,27 +207,19 @@ class Fetcher:
                     self.station_df = None
 
     # ------------------------ continuous data fetching methods
-
-    def get_waveforms(
-        self, starttime: Union[UTCDateTime, float], endtime: Union[UTCDateTime, float]
-    ) -> Stream:
+    @compose_docstring(get_waveforms_parameters=get_waveforms_parameters)
+    def get_waveforms(self, *args, **kwargs) -> Stream:
         """
         Get waveforms for all channels in stations.
 
-        Parameters
-        ----------
-        starttime
-            The starting time of the waveforms
-        endtime
-            The stopping time of the waveforms
+        {get_waveform_parameters}
 
         Returns
         -------
         obspy.Stream
         """
         # get a list of tuples for get_waveforms_bulk call
-        t1, t2 = UTCDateTime(starttime), UTCDateTime(endtime)
-        nslcs = self._get_bulk_arg(t1, t2)
+        nslcs = self._get_bulk_arg(*args, **kwargs)
         return self._get_bulk_wf(nslcs)
 
     def yield_waveforms(
@@ -250,7 +249,7 @@ class Fetcher:
         """
         time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
         for t1, t2 in time_chunks:
-            yield self.get_waveforms(t1, t2)
+            yield self.get_waveforms(starttime=t1, endtime=t2)
 
     def yield_waveform_callable(
         self,
@@ -283,7 +282,11 @@ class Fetcher:
 
         time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
         for t1, t2 in time_chunks:
-            yield lambda t1=t1, t2=t2: self.get_waveforms(t1, t2)
+
+            def _func(starttime=t1, endtime=t2):
+                return self.get_waveforms(starttime=starttime, endtime=endtime)
+
+            yield _func
 
     # ------------------------ event waveforms fetching methods
 
@@ -341,7 +344,7 @@ class Fetcher:
         # iterate each event in the events and yield the waveform
         for event_id in event_ids:
             ser = reftimes[event_id]
-            bulk_args = self._get_bulk_arg(ser - tb, ser + ta)
+            bulk_args = self._get_bulk_arg(starttime=ser - tb, endtime=ser + ta)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))
             except Exception:
@@ -422,7 +425,7 @@ class Fetcher:
         time = get_reference_time(time_arg)
         t1 = time - tbefore
         t2 = time + tafter
-        return self.get_waveforms(t1, t2, **kwargs)
+        return self.get_waveforms(starttime=t1, endtime=t2, **kwargs)
 
     # ------------------------------- misc
 
@@ -439,14 +442,17 @@ class Fetcher:
         else:
             return out
 
-    def _get_bulk_arg(self, starttime, endtime) -> list:
+    def _get_bulk_arg(self, starttime=None, endtime=None, **kwargs) -> list:
         """ get the argument passed to get_waveforms_bulk, see
         obspy.fdsn.client for more info """
-        inv = self.station_df.copy()
+        station_df = self.station_df.copy()
+        inv = station_df[filter_index(station_df, **kwargs)]
         # replace None/Nan with larger number
         null_inds = inv["end_date"].isnull()
         inv.loc[null_inds, "end_date"] = far_out_time
         # remove station/channels that dont have data for requested time
+        starttime = starttime if starttime is not None else inv.start_date.min()
+        endtime = endtime if endtime is not None else inv.end_date.max()
         con1, con2 = (inv["start_date"] > endtime), (inv["end_date"] < starttime)
         inv = inv[~(con1 | con2)]
         df = inv[list(NSLC)]

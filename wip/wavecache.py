@@ -10,7 +10,7 @@ import obspy
 import pandas as pd
 
 import obsplus
-from obsplus.bank.wavebank import filter_index
+from obsplus.utils import filter_index
 
 processor_type = Callable[[obspy.Stream], obspy.Stream]
 
