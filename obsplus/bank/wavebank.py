@@ -1,12 +1,11 @@
 """
 A local database for waveform formats.
 """
-import fnmatch
 import os
 import re
 import time
 from collections import defaultdict
-from functools import partial, lru_cache, reduce
+from functools import partial, reduce
 from itertools import chain
 from operator import add
 from os.path import abspath
@@ -43,6 +42,7 @@ from obsplus.utils import (
     get_progressbar,
     thread_lock_function,
     get_nslc_series,
+    filter_index,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -53,11 +53,6 @@ assert tables.get_hdf5_version()
 
 
 # ------------------------ constants
-
-
-@lru_cache(maxsize=2500)
-def get_regex(nslc_str):
-    return fnmatch.translate(nslc_str)  # translate to re
 
 
 class WaveBank(_Bank):
@@ -292,8 +287,11 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
-        self._ensure_meta_table_exists()
-        return pd.read_hdf(self.index_path, self._meta_node)
+        try:
+            return pd.read_hdf(self.index_path, self._meta_node)
+        except (FileNotFoundError, ValueError, KeyError):
+            self._ensure_meta_table_exists()
+            return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
 
@@ -691,37 +689,6 @@ class WaveBank(_Bank):
 
 
 # --- auxiliary functions
-
-
-def filter_index(index, net, sta, loc, chan, start=None, end=None):
-    """
-    Determine if each row of the index meets some filter requirements.
-
-    Returns a boolean array of the same len as df indicating if each row
-    meets the requirements.
-    """
-    # get a dict of query params
-    query = dict(network=net, station=sta, location=loc, channel=chan)
-    # divide queries into match type (str) and sequences (eg lists)
-    match_query = {k: v for k, v in query.items() if isinstance(v, str)}
-    sequence_query = {
-        k: v for k, v in query.items() if k not in match_query and v is not None
-    }
-    # get a blank index of True for filters
-    bool_index = np.ones(len(index), dtype=bool)
-    # filter on string matching
-    for key, val in match_query.items():
-        regex = get_regex(val)
-        new = index[key].str.match(regex).values
-        bool_index = np.logical_and(bool_index, new)
-    for key, val in sequence_query.items():
-        bool_index = np.logical_and(bool_index, index[key].isin(val))
-    if start is not None or end is not None:
-        t1 = UTCDateTime(start).timestamp if start is not None else -1 * np.inf
-        t2 = UTCDateTime(end).timestamp if end is not None else np.inf
-        in_time = ~((index.endtime < t1) | (index.starttime > t2))
-        bool_index = np.logical_and(bool_index, in_time.values)
-    return bool_index
 
 
 def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:

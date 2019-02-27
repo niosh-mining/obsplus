@@ -235,35 +235,6 @@ def sql_connection(path, **kwargs):
         yield con
 
 
-def iter_files(path, ext=None, mtime=None, skip_hidden=True):
-    """
-    use os.scan dir to iter files, optionally only for those with given
-    extension (ext) or modified times after mtime
-
-    Parameters
-    ----------
-    path : str
-        The path to the base directory to traverse.
-    ext : str or None
-        The extensions to map.
-    mtime : int or float
-        Time stamp indicating the minimum mtime.
-    skip_hidden : bool
-        If True skip files that begin with a '.'
-
-    Returns
-    -------
-
-    """
-    for entry in os.scandir(path):
-        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
-            if mtime is None or entry.stat().st_mtime >= mtime:
-                if entry.name[0] != "." or not skip_hidden:
-                    yield entry.path
-        elif entry.is_dir():
-            yield from iter_files(entry.path, ext=ext, mtime=mtime)
-
-
 def get_kernel_query(starttime: float, endtime: float, buffer: float):
     """" get the HDF5 kernel query parameters (this is necessary because
     hdf5 doesnt accept invert conditions for some reason. A slight buffer

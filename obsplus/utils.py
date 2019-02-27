@@ -2,12 +2,13 @@
 General utilities for obsplus.
 """
 import contextlib
+import fnmatch
 import os
 import sys
 import textwrap
 import threading
 import warnings
-from functools import singledispatch, wraps
+from functools import singledispatch, wraps, lru_cache
 from pathlib import Path
 from typing import (
     Union,
@@ -26,12 +27,15 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
-from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
 from obspy.core.event import Event
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
+
+from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
+
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -607,3 +611,80 @@ def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
             if getattr(obj, code) in null_codes:
                 setattr(obj, code, replacement_value)
     return inv
+
+
+def filter_index(
+    index: pd.DataFrame,
+    network: Optional[str] = None,
+    station: Optional[str] = None,
+    location: Optional[str] = None,
+    channel: Optional[str] = None,
+    starttime: Optional[Union[UTC, float]] = None,
+    endtime: Optional[Union[UTC, float]] = None,
+):
+    """
+    Determine if each row of the index meets some filter requirements.
+
+    Returns a boolean array of the same len as df indicating if each row
+    meets the requirements.
+    """
+    # get a dict of query params
+    query = dict(network=network, station=station, location=location, channel=channel)
+    # divide queries into match type (str) and sequences (eg lists)
+    match_query = {k: v for k, v in query.items() if isinstance(v, str)}
+    sequence_query = {
+        k: v for k, v in query.items() if k not in match_query and v is not None
+    }
+    # get a blank index of True for filters
+    bool_index = np.ones(len(index), dtype=bool)
+    # filter on string matching
+    for key, val in match_query.items():
+        regex = get_regex(val)
+        new = index[key].str.match(regex).values
+        bool_index = np.logical_and(bool_index, new)
+    for key, val in sequence_query.items():
+        bool_index = np.logical_and(bool_index, index[key].isin(val))
+    if starttime is not None or endtime is not None:
+        t1 = UTC(starttime).timestamp if starttime is not None else -1 * np.inf
+        t2 = UTC(endtime).timestamp if endtime is not None else np.inf
+        # get time columns
+        start_col = getattr(index, "starttime", getattr(index, "start_date", None))
+        end_col = getattr(index, "endtime", getattr(index, "end_date", None))
+        in_time = ~((end_col < t1) | (start_col > t2))
+        bool_index = np.logical_and(bool_index, in_time.values)
+    return bool_index
+
+
+def iter_files(path, ext=None, mtime=None, skip_hidden=True):
+    """
+    use os.scan dir to iter files, optionally only for those with given
+    extension (ext) or modified times after mtime
+
+    Parameters
+    ----------
+    path : str
+        The path to the base directory to traverse.
+    ext : str or None
+        The extensions to map.
+    mtime : int or float
+        Time stamp indicating the minimum mtime.
+    skip_hidden : bool
+        If True skip files that begin with a '.'
+
+    Returns
+    -------
+
+    """
+    for entry in os.scandir(path):
+        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
+            if mtime is None or entry.stat().st_mtime >= mtime:
+                if entry.name[0] != "." or not skip_hidden:
+                    yield entry.path
+        elif entry.is_dir():
+            yield from iter_files(entry.path, ext=ext, mtime=mtime)
+
+
+@lru_cache(maxsize=2500)
+def get_regex(nslc_str):
+    """ Compile, and cache regex for str queries. """
+    return fnmatch.translate(nslc_str)  # translate to re

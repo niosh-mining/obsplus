@@ -12,7 +12,7 @@ import pandas as pd
 from pandas.io.sql import DatabaseError
 
 import obsplus
-from obsplus.bank.utils import iter_files
+from obsplus.utils import iter_files
 from obsplus.exceptions import BankDoesNotExistError
 
 
@@ -116,8 +116,11 @@ class _Bank(ABC):
 
     def _unindexed_file_iterator(self):
         """ return an iterator of potential unindexed waveform files """
-        # on rare occasions mtimes
-        mtime = self.last_updated - 0.001 if self.last_updated is not None else None
+        # get mtime, subtract a bit to avoid odd bugs
+        mtime = None
+        if self.last_updated is not None:
+            mtime = self.last_updated - 0.001
+        # return file iterator
         return iter_files(self.bank_path, ext=self.ext, mtime=mtime)
 
     def _make_meta_table(self):
