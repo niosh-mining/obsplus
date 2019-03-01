@@ -21,6 +21,7 @@ from typing import (
     Generator,
     Set,
     TypeVar,
+    Collection,
 )
 
 import numpy as np
@@ -28,14 +29,13 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 from obspy import UTCDateTime as UTC
-from obspy.core.inventory import Station, Channel
 from obspy.core.event import Event
+from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
 
 from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
-
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -615,44 +615,112 @@ def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
 
 def filter_index(
     index: pd.DataFrame,
-    network: Optional[str] = None,
-    station: Optional[str] = None,
-    location: Optional[str] = None,
-    channel: Optional[str] = None,
+    network: Optional = None,
+    station: Optional = None,
+    location: Optional = None,
+    channel: Optional = None,
     starttime: Optional[Union[UTC, float]] = None,
     endtime: Optional[Union[UTC, float]] = None,
-):
+    **kwargs,
+) -> np.array:
+    """
+    Filter an Index dataframe based on nslc codes and start/end times.
+
+    Parameters
+    ----------
+    index
+        A dataframe to filter which should have the corresponding columns
+        to any non-None parameters used in filter.
+    network
+        A network code as defined by seed standards.
+    station
+        A station code as defined by seed standards.
+    location
+        A location code as defined by seed standards.
+    channel
+        A channel code as defined by seed standards.
+    starttime
+        The starttime of interest.
+    endtime
+        The endtime of interest.
+
+    Additional kwargs are used as filters.
+
+    Returns
+    -------
+    A numpy array of boolean values indicating if each row met the filter
+    requirements.
+    """
+    # handle non-starttime/endtime queries
+    query = dict(network=network, station=station, location=location, channel=channel)
+    kwargs.update({i: v for i, v in query.items() if v is not None})
+    out = filter_df(index, **kwargs)
+    # handle starttime/endtime queries if needed
+    if starttime is not None or endtime is not None:
+        time_out = _filter_starttime_endtime(index, starttime, endtime)
+        out = np.logical_and(out, time_out)
+    return out
+
+
+def filter_df(df: pd.DataFrame, **kwargs) -> np.array:
     """
     Determine if each row of the index meets some filter requirements.
 
-    Returns a boolean array of the same len as df indicating if each row
-    meets the requirements.
+    Parameters
+    ----------
+    df
+        The input dataframe.
+    kwargs
+        Any condition to check against columns of df. Can be a single value
+        or a collection of values (to check isin on columns). Str arguments
+        can also use unix style matching.
+
+    Returns
+    -------
+    A boolean array of the same len as df indicating if each row meets the
+    requirements.
     """
-    # get a dict of query params
-    query = dict(network=network, station=station, location=location, channel=channel)
-    # divide queries into match type (str) and sequences (eg lists)
-    match_query = {k: v for k, v in query.items() if isinstance(v, str)}
+    # ensure the specified kwarg keys have corresponding columns
+    if not set(kwargs).issubset(df.columns):
+        msg = f"columns: {set(kwargs) - set(df.columns)} are not found in df"
+        raise ValueError(msg)
+    # divide queries into flat parameters and collections
+    flat_query = {
+        k: v
+        for k, v in kwargs.items()
+        if isinstance(v, str) or not isinstance(v, Collection)
+    }
     sequence_query = {
-        k: v for k, v in query.items() if k not in match_query and v is not None
+        k: v for k, v in kwargs.items() if k not in flat_query and v is not None
     }
     # get a blank index of True for filters
-    bool_index = np.ones(len(index), dtype=bool)
-    # filter on string matching
-    for key, val in match_query.items():
-        regex = get_regex(val)
-        new = index[key].str.match(regex).values
-        bool_index = np.logical_and(bool_index, new)
+    bool_index = np.ones(len(df), dtype=bool)
+    # filter on non-collection queries
+    for key, val in flat_query.items():
+        if isinstance(val, str):
+            regex = get_regex(val)
+            new = df[key].str.match(regex).values
+            bool_index = np.logical_and(bool_index, new)
+        else:
+            new = (df[key] == val).values
+            bool_index = np.logical_and(bool_index, new)
+    # filter on collection queries using isin
     for key, val in sequence_query.items():
-        bool_index = np.logical_and(bool_index, index[key].isin(val))
-    if starttime is not None or endtime is not None:
-        t1 = UTC(starttime).timestamp if starttime is not None else -1 * np.inf
-        t2 = UTC(endtime).timestamp if endtime is not None else np.inf
-        # get time columns
-        start_col = getattr(index, "starttime", getattr(index, "start_date", None))
-        end_col = getattr(index, "endtime", getattr(index, "end_date", None))
-        in_time = ~((end_col < t1) | (start_col > t2))
-        bool_index = np.logical_and(bool_index, in_time.values)
+        bool_index = np.logical_and(bool_index, df[key].isin(val))
+
     return bool_index
+
+
+def _filter_starttime_endtime(df, starttime=None, endtime=None):
+    """ Filter dataframe on starttime and endtime. """
+    bool_index = np.ones(len(df), dtype=bool)
+    t1 = UTC(starttime).timestamp if starttime is not None else -1 * np.inf
+    t2 = UTC(endtime).timestamp if endtime is not None else np.inf
+    # get time columns
+    start_col = getattr(df, "starttime", getattr(df, "start_date", None))
+    end_col = getattr(df, "endtime", getattr(df, "end_date", None))
+    in_time = ~((end_col < t1) | (start_col > t2))
+    return np.logical_and(bool_index, in_time.values)
 
 
 def iter_files(path, ext=None, mtime=None, skip_hidden=True):

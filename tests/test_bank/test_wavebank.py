@@ -337,17 +337,6 @@ class TestBankBasics:
         bank.put_waveforms(obspy.read())
         assert len(bank.read_index()) == 3
 
-    def test_filter_index(self, crandall_dataset):
-        """ Tests for filtering index with filter index function. """
-        # this is mainly here to test the time filtering, because the bank
-        # operations pass this of to the HDF5 kernel.
-        index = crandall_dataset.waveform_client.read_index(network="UU")
-        t1 = index.starttime.mean()
-        t2 = index.endtime.max()
-        bool_ind = filter_index(index, "UU", "*", "*", "*", starttime=t1, endtime=t2)
-        out = index[bool_ind]
-        assert len(out) < len(index)
-
 
 class TestEmptyBank:
     """ tests for graceful handling of empty sbanks"""

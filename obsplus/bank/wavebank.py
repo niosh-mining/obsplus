@@ -280,7 +280,9 @@ class WaveBank(_Bank):
         # grab index from cache
         index = self._index_cache(starttime, endtime, buffer=self.buffer, **kwargs)
         # filter and return
-        filt = filter_index(index, network, station, location, channel)
+        filt = filter_index(
+            index, network=network, station=station, location=location, channel=channel
+        )
         return index[filt]
 
     def _read_metadata(self):
