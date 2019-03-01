@@ -5,12 +5,19 @@ from pathlib import Path
 import obspy
 import obspy.core.event as ev
 import pytest
+import numpy as np
+import pandas as pd
 from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
 from obsplus.constants import NSLC, NULL_NSLC_CODES
-from obsplus.utils import compose_docstring, yield_obj_parent_attr
+from obsplus.utils import (
+    compose_docstring,
+    yield_obj_parent_attr,
+    filter_index,
+    filter_df,
+)
 
 
 def append_func_name(list_obj):
@@ -212,6 +219,70 @@ class TestReplaceNullNSLCCodes:
                 for chan in sta:
                     assert _valid_code(chan.code)
                     assert _valid_code(chan.location_code)
+
+
+class TestFilterDf:
+    @pytest.fixture
+    def example_df(self):
+        """ create a simple df for testing. Example from Chris Albon. """
+        raw_data = {
+            "first_name": ["Jason", "Molly", "Tina", "Jake", "Amy"],
+            "last_name": ["Miller", "Jacobson", "Ali", "Milner", "Cooze"],
+            "age": [42, 52, 36, 24, 73],
+            "preTestScore": [4, 24, 31, 2, 3],
+            "postTestScore": [25, 94, 57, 62, 70],
+        }
+        return pd.DataFrame(raw_data, columns=list(raw_data))
+
+    def test_filter_index(self, crandall_dataset):
+        """ Tests for filtering index with filter index function. """
+        # this is mainly here to test the time filtering, because the bank
+        # operations pass this of to the HDF5 kernel.
+        index = crandall_dataset.waveform_client.read_index(network="UU")
+        t1 = index.starttime.mean()
+        t2 = index.endtime.max()
+        kwargs = dict(network="UU", station="*", location="*", channel="*")
+        bool_ind = filter_index(index, starttime=t1, endtime=t2, **kwargs)
+        assert (~np.logical_not(bool_ind)).any()
+
+    def test_string_basic(self, example_df):
+        """ test that specifying a string with no matching works. """
+        out = filter_df(example_df, first_name="Jason")
+        assert out[0]
+        assert not out[1:].any()
+
+    def test_string_matching(self, example_df):
+        """ unix style matching should also work. """
+        # test *
+        out = filter_df(example_df, first_name="J*")
+        assert {"Jason", "Jake"} == set(example_df[out].first_name)
+        # test ???
+        out = filter_df(example_df, first_name="J???")
+        assert {"Jake"} == set(example_df[out].first_name)
+
+    def test_str_sequence(self, example_df):
+        """ Test str sequences find values in sequence. """
+        out = filter_df(example_df, last_name={"Miller", "Jacobson"})
+        assert out[:2].all()
+        assert not out[2:].any()
+
+    def test_non_str_single_arg(self, example_df):
+        """ test that filter index can be used on Non-nslc columns. """
+        # test non strings
+        out = filter_df(example_df, age=42)
+        assert out[0]
+        assert not out[1:].any()
+
+    def test_non_str_sequence(self, example_df):
+        """ ensure sequences still work for isin style comparisons. """
+        out = filter_df(example_df, age={42, 52})
+        assert out[:2].all()
+        assert not out[2:].any()
+
+    def test_bad_parameter_raises(self, example_df):
+        """ ensure passing a parameter that doesn't have a column raises. """
+        with pytest.raises(ValueError):
+            filter_df(example_df, bad_column=2)
 
 
 class TestMisc:
