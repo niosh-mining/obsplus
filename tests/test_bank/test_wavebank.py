@@ -21,9 +21,9 @@ import obspy.clients.fdsn
 import pandas as pd
 import pytest
 from obsplus.bank.wavebank import WaveBank
-from obsplus.constants import NSLC
+from obsplus.constants import NSLC, NULL_NSLC_CODES
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import make_time_chunks, filter_index, iter_files
+from obsplus.utils import make_time_chunks, iter_files, get_reference_time
 from obspy import UTCDateTime as UTC
 
 
@@ -552,6 +552,20 @@ class TestGetWaveforms:
         bank.update_index()
         return bank
 
+    @pytest.fixture
+    def bank_null_loc_codes(self, tmpdir):
+        """ create a bank that has nullish location codes in its streams. """
+        st = obspy.read()
+        path = Path(tmpdir)
+        for tr in st:
+            tr.stats.location = "--"
+            time = str(get_reference_time(tr))
+            name = time.split(".")[0].replace(":", "-") + f"_{tr.id}"
+            tr.write(str(path / name) + ".mseed", "mseed")
+        bank = WaveBank(path)
+        bank.update_index()
+        return bank
+
     # tests
     def test_attr(self, ta_bank_index):
         """ test that the bank class has the get_waveforms attr """
@@ -612,6 +626,16 @@ class TestGetWaveforms:
         for tr in st:
             assert not isinstance(tr.data, np.ma.MaskedArray)
         assert len(st.get_gaps()) == 3
+
+    def test_stream_null_location_codes(self, bank_null_loc_codes):
+        """
+        Ensure bank still works when stations have nullish location codes.
+        """
+        bank = bank_null_loc_codes
+        df = bank.read_index()
+        assert len(df) == 3
+        st = bank.get_waveforms()
+        assert len(st) == 3
 
 
 class TestUpdateBar:

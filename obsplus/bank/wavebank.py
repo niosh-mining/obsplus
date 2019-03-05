@@ -43,6 +43,7 @@ from obsplus.utils import (
     thread_lock_function,
     get_nslc_series,
     filter_index,
+    replace_null_nlsc_codes,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -660,6 +661,8 @@ class WaveBank(_Bank):
         for st in (_try_read_stream(x, **kwargs) for x in files):
             if st is not None and len(st):
                 stt += st
+        # sort out nullish nslc codes
+        stt = replace_null_nlsc_codes(stt)
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
         nslc = set(get_nslc_series(index))

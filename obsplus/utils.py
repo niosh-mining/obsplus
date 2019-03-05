@@ -35,7 +35,7 @@ from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
 
-from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
+from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES, wave_type
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -244,15 +244,35 @@ def register_func(dict, key=None):
 
 
 @singledispatch
-def get_reference_time(obj: event_time_type) -> obspy.UTCDateTime:
+def get_reference_time(obj: Union[event_time_type, wave_type],) -> obspy.UTCDateTime:
     """
-    Get a refernce time inferred from an object.
+    Get a reference time inferred from an object.
 
     Parameters
     ----------
     obj
-        The argument that will indicate a start time. Can be a one length
-        events, and event, a float, or a UTCDatetime object
+        The argument that will indicate a start time. Types and corresponding
+        behavior are as follows:
+            float:
+                Convert to UTCDateTime object, interpret as a timestamp.
+            UTCDateTime:
+                Return a new UTCDateTime as a copy.
+            catalog:
+                Return the earliest reference time of all events.
+            event:
+                First check for a preferred origin, if found return its origin
+                time. If not found, iterate through the events picks and
+                return the earliest pick time. If None are found raise a
+                ValueError.
+            stream:
+                Return the earliest reference time of all traces.
+            trace:
+                Return the starttime in the stats object.
+
+    Raises
+    ------
+    TypeError if the type is not supported.
+    ValueError if the type is supported but no reference time could be determined.
 
     Returns
     -------
@@ -260,7 +280,11 @@ def get_reference_time(obj: event_time_type) -> obspy.UTCDateTime:
     """
     if obj is None:
         return None
-    return obspy.UTCDateTime(obj)
+    try:
+        return obspy.UTCDateTime(obj)
+    except TypeError:
+        msg = f"get_reference_time does not support type {type(obj)}"
+        raise TypeError(msg)
 
 
 @get_reference_time.register(obspy.core.event.Event)
@@ -300,6 +324,18 @@ def _get_first_event(catalog):
     """ ensure the events is length one, return event """
     assert len(catalog) == 1, f"{catalog} has more than one event"
     return _get_event_origin_time(catalog[0])
+
+
+@get_reference_time.register(obspy.Stream)
+def _get_stream_time(st):
+    """ return the earliest start time for stream. """
+    return min([get_reference_time(tr) for tr in st])
+
+
+@get_reference_time.register(obspy.Trace)
+def _get_trace_time(tr):
+    """ return starttime of trace. """
+    return tr.stats.starttime
 
 
 def get_preferred(event: Event, what: str):
