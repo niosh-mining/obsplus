@@ -98,6 +98,12 @@ class TestGetReferenceTime:
         t_out = obsplus.utils.get_reference_time(event_only_picks)
         assert t_expected == t_out
 
+    def test_stream(self):
+        """ Ensure the start of the stream is returned. """
+        st = obspy.read()
+        out = obsplus.utils.get_reference_time(st)
+        assert out == min([tr.stats.starttime for tr in st])
+
 
 class TestIterate:
     def test_none(self):
