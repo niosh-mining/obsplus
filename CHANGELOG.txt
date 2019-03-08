@@ -17,5 +17,7 @@ obsplus 0.0.1:
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
+    * added utility function for removed rejected orphaned objects from
+      catalog tree (see #63).
   - obsplus.utils
     * Added method for correcting nullish nslc codes (see #37 and #38)
