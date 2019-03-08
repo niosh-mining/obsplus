@@ -1,13 +1,12 @@
 """
 Tests for utils for events submodule
 """
-import glob
 import os
 import warnings
-from os.path import join
 from pathlib import Path
 
 import obspy
+import obspy.core.event as ev
 import pytest
 from obspy.core.event import Comment, ResourceIdentifier
 
@@ -19,41 +18,11 @@ from obsplus.events.utils import (
     duplicate_events,
     catalog_to_directory,
     make_origins,
+    prune_events,
 )
 from obsplus.utils import get_instances, get_preferred
 
 CAT = obspy.read_events()
-
-
-# -------------------------- helper functions ----------------------- #
-
-
-# def extract_merge_catalogs(merge_directory):
-#     """ given a directory with two qmls, read in the qmls and return """
-#     files = glob.glob(join(merge_directory, "*"))
-#     cat_path1 = [x for x in files if x.endswith("1.xml")]
-#     cat_path2 = [x for x in files if x.endswith("2.xml")]
-#     cat1 = obspy.read_events(cat_path1[0])
-#     cat2 = obspy.read_events(cat_path2[0])
-#     validate(cat1)
-#     validate(cat2)
-#     return cat1, cat2
-
-
-# -------------------------- Module Fixtures
-
-
-# @pytest.fixture(scope="class")
-# def ms_catalog():
-#     """ return a events of microseismic events """
-#     cat = obspy.Catalog()
-#     path = Path(pytest.test_data_path) / "qml_files"
-#     for qml_path in path.rglob("*.xml"):
-#         cat += obspy.read_events(str(qml_path))
-#     return cat
-
-
-# -------------------------------- tests ------------------------------- #
 
 
 class TestDuplicateEvent:
@@ -116,6 +85,56 @@ class TestDuplicateEvent:
         assert set(apids).issubset(pids)
         assert set(ampids).issubset(pids)
         validate.validate_catalog(cat)
+
+
+class TestPruneEvents:
+    """ Tests for removing unused and rejected objects from events. """
+
+    @pytest.fixture
+    def event_rejected_pick(self):
+        """ Create an event with a rejected pick. """
+        wid = ev.WaveformStreamID(seed_string="UU.TMU.01.ENZ")
+        time = obspy.UTCDateTime("2019-01-01")
+        pick1 = ev.Pick(
+            time=time, waveform_id=wid, phase_hint="P", evaluation_status="rejected"
+        )
+        pick2 = ev.Pick(time=time, waveform_id=wid, phase_hint="P")
+        return ev.Event(picks=[pick1, pick2])
+
+    @pytest.fixture
+    def event_non_orphaned_rejected_pick(self, event_rejected_pick):
+        """ Change both picks to rejected but reference one from arrival. """
+        eve = event_rejected_pick.copy()
+        picks = eve.picks
+        for pick in picks:
+            pick.evaluation_status = "rejected"
+        first_pick_rid = str(picks[0].resource_id)
+        # now create origin and arrival
+        arrival = ev.Arrival(pick_id=first_pick_rid)
+        origin = ev.Origin(
+            latitude=0, longitude=0, depth=10, time=picks[0].time, arrivals=[arrival]
+        )
+        eve.origins.append(origin)
+        return eve
+
+    def test_copy_made(self):
+        """ Prune events should make a copy, not modify the original. """
+        cat = obspy.read_events()
+        assert prune_events(cat) is not cat
+
+    def test_pick_gone(self, event_rejected_pick):
+        """ Ensure the pick was removed. """
+        picks = prune_events(event_rejected_pick)[0].picks
+        assert all([x.evaluation_status != "rejected" for x in picks])
+
+    def test_non_orphan_rejected_kept(self, event_non_orphaned_rejected_pick):
+        """ Ensure rejected things are kept if their parents are not rejected. """
+        ev = prune_events(event_non_orphaned_rejected_pick)[0]
+        # One pick gets removed, the other is kept
+        assert len(ev.picks) == 1
+        assert ev.picks[0].evaluation_status == "rejected"
+        por = obsplus.get_preferred(ev, "origin")
+        assert len(por.arrivals) == 1
 
 
 class TestBumpCreationVersion:

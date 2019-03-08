@@ -12,6 +12,7 @@ from typing import Union, Optional, Callable
 
 import obspy
 import obspy.core.event as ev
+import pandas as pd
 from obspy.core.event import Catalog, Event, ResourceIdentifier
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
@@ -121,6 +122,89 @@ def catalog_to_directory(
         event.write(str(event_path), file_format)
     if event_bank_index:
         obsplus.EventBank(path).update_index()
+
+
+def prune_events(events: catalog_or_event) -> Catalog:
+    """
+    Remove all the unreferenced rejected objects from an event or catalog.
+
+    This function first creates a copy of the event/catalog. Then it looks
+    all objects with rejected evaluation status', which are not referred to
+    by any unrejected object, and removes them.
+
+    Parameters
+    ----------
+    events
+        The events to iterate and modify
+
+    Returns
+    -------
+    A Catalog with the pruned events.
+
+    """
+    from obsplus.events.validate import validate_catalog
+
+    # ensure we have something iterable
+    events = [events] if isinstance(events, ev.Event) else events
+    out = []
+
+    def _get_edges_rids_opa(event):
+        """
+        Return a list of edges (resource_id_parent, resource_id_child),
+        a set of rejected resource_ids and a dict of
+        {resource_id: (obj, parent, attr)}.
+        """
+
+        # {status: [obj, ]}
+        edges = []  # list of tuples (parent, child)
+        # {resource_id, }
+        rejected_rid = set()
+        # {resource_id: [obj, parent, attr]}
+        rejected_opa = {}
+        # first make a list objects with eval status as well as all other
+        # objects they refer to, using resource_ids
+        opa_iter = yield_obj_parent_attr(event, has_attr="evaluation_status")
+        for obj, parent, attr in opa_iter:
+            rid = str(obj.resource_id)
+            is_rejected = obj.evaluation_status == "rejected"
+            if is_rejected:
+                rejected_rid.add(rid)
+                rejected_opa[rid] = (obj, parent, attr)
+            # now recurse object and find all objects this one refers to
+            opa_iter_2 = yield_obj_parent_attr(obj, cls=ev.ResourceIdentifier)
+            for obj2, _, _ in opa_iter_2:
+                edges.append((rid, str(obj2)))
+        return edges, rejected_rid, rejected_opa
+
+    def _remove_object(obj, parent, attr):
+        """
+        Remove the object.
+        """
+        maybe_obj = getattr(parent, attr)
+        if maybe_obj is obj:
+            setattr(parent, attr, None)
+        else:
+            assert isinstance(maybe_obj, list)
+            maybe_obj.remove(obj)
+
+    # iterate events, find and destroy rejected orphans (that sounds bad...)
+    for event in events:
+        event = event.copy()
+        validate_catalog(event)
+        import obsplus
+
+        obsplus.debug = True
+        edges, rejected_rid, rejected_opa = _get_edges_rids_opa(event)
+        df = pd.DataFrame(edges, columns=["parent", "child"])
+        # filter out non rejected children
+        df = df[df.child.isin(rejected_opa)]
+        # iterate rejected children IDs and search for any non-rejected parent
+        for rid, dff in df.groupby("child"):
+            if dff.parent.isin(rejected_rid).all():
+                _remove_object(*rejected_opa[rid])
+        out.append(event)
+
+    return Catalog(out)
 
 
 def bump_creation_version(obj):
