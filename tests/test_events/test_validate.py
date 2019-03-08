@@ -223,8 +223,8 @@ class TestValidateCatalog:
         ensure raise if there are any iaml picks that are before p picks
         """
         cat = cat1.copy()
-        # Moving a iamp time before p time on the same station
-        # picks[23] is a known iamp pick
+        # Moving a iaml time before p time on the same station
+        # picks[23] is a known iaml pick
         # picks[2] is a known p pick 
         cat[0].picks[23].time = cat[0].picks[2].time - 60
         with pytest.raises(AssertionError):
@@ -260,8 +260,8 @@ class TestValidateCatalog:
     def test_z_amps(self, cat1):
         """ ensure raise if there are any IAML picks on Z axis """
         cat = cat1.copy()
-        # Assigning iamp pick to a z channel
-        # picks[23] is a known iamp pick
+        # Assigning iaml pick to a z channel
+        # picks[23] is a known iaml pick
         cat[0].picks[23].waveform_id.channel_code = 'HHZ'
         with pytest.raises(AssertionError):
             validate_catalog(cat, no_z_amps=True)
