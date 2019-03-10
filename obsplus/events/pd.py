@@ -281,7 +281,7 @@ def _pick_extractor(pick):
     # get waveform_id stuff (seed_id, network, station, location, channel)
     # Should it fail if it can't find the seed id, or just return one that's blank? A pick is pretty useless without it
     seed_id = get_seed_id(pick)
-    #seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
+    # seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
     base.update(dd)
     base["seed_id"] = seed_id
@@ -306,9 +306,7 @@ def _pick_extractor(pick):
 # It seems like there is enough similarity between amplitudes_to_df and
 # picks_to_df that there should be some way to combine them...
 amplitudes_to_df = DataFrameExtractor(
-    ev.Amplitude,
-    AMPLITUDE_COLUMNS,
-    utc_columns=("event_time"),
+    ev.Amplitude, AMPLITUDE_COLUMNS, utc_columns=("event_time")
 )
 
 

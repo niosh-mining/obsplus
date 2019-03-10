@@ -407,8 +407,9 @@ class TestReadAmplitudes:
     def pick_generator(self, scnls):
         picks = []
         for scnl in scnls:
-            p = ev.Pick(time=UTCDateTime(),
-                        waveform_id=ev.WaveformStreamID(seed_string=scnl))
+            p = ev.Pick(
+                time=UTCDateTime(), waveform_id=ev.WaveformStreamID(seed_string=scnl)
+            )
             picks.append(p)
         return picks
 
@@ -416,49 +417,61 @@ class TestReadAmplitudes:
         counter = 1
         amps = []
         scnls = scnls or []
-        params = {"type": "A",
-                  "unit": "dimensionless",
-                  "method_id": "mag_calculator",
-                  "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
-                  "magnitude_hint": "M",
-                  "category": "point",
-                  "evaluation_mode": "manual",
-                  "evaluation_status": "confirmed"}
+        params = {
+            "type": "A",
+            "unit": "dimensionless",
+            "method_id": "mag_calculator",
+            "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
+            "magnitude_hint": "M",
+            "category": "point",
+            "evaluation_mode": "manual",
+            "evaluation_status": "confirmed",
+        }
         for scnl in scnls:
             a = ev.Amplitude(
                 generic_amplitude=counter,
-                generic_amplitude_errors=ev.QuantityError(uncertainty=counter*0.1,
-                                                          confidence_level=95),
-                period=counter*2,
-                snr=counter*5,
+                generic_amplitude_errors=ev.QuantityError(
+                    uncertainty=counter * 0.1, confidence_level=95
+                ),
+                period=counter * 2,
+                snr=counter * 5,
                 time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
                 waveform_id=ev.WaveformStreamID(seed_string=scnl),
                 scaling_time=UTCDateTime(),
-                scaling_time_errors=ev.QuantityError(uncertainty=counter*0.001,
-                                                     confidence_level=95),
-                creation_info=ev.CreationInfo(agency_id="dummy_agency",
-                                              author="dummy",
-                                              creation_time=UTCDateTime()),
-                **params)
+                scaling_time_errors=ev.QuantityError(
+                    uncertainty=counter * 0.001, confidence_level=95
+                ),
+                creation_info=ev.CreationInfo(
+                    agency_id="dummy_agency",
+                    author="dummy",
+                    creation_time=UTCDateTime(),
+                ),
+                **params,
+            )
             amps.append(a)
             counter += 1
         picks = picks or []
         for pick in picks:
             a = ev.Amplitude(
                 generic_amplitude=counter,
-                generic_amplitude_errors=ev.QuantityError(uncertainty=counter*0.1,
-                                                          confidence_level=95),
-                period=counter*2,
-                snr=counter*5,
+                generic_amplitude_errors=ev.QuantityError(
+                    uncertainty=counter * 0.1, confidence_level=95
+                ),
+                period=counter * 2,
+                snr=counter * 5,
                 time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
                 pick_id=pick.resource_id,
                 scaling_time=UTCDateTime(),
-                scaling_time_errors=ev.QuantityError(uncertainty=counter*0.001,
-                                                     confidence_level=95),
-                creation_info=ev.CreationInfo(agency_id="dummy_agency",
-                                              author="dummy",
-                                              creation_time=UTCDateTime()),
-                **params)
+                scaling_time_errors=ev.QuantityError(
+                    uncertainty=counter * 0.001, confidence_level=95
+                ),
+                creation_info=ev.CreationInfo(
+                    agency_id="dummy_agency",
+                    author="dummy",
+                    creation_time=UTCDateTime(),
+                ),
+                **params,
+            )
             amps.append(a)
             counter += 1
         return amps
@@ -529,7 +542,9 @@ class TestReadAmplitudes:
         assert amp_ser["scaling_time"] == obspy.UTCDateTime(amp.scaling_time)
         assert amp_ser["evaluation_mode"] == amp.evaluation_mode
         assert amp_ser["evaluation_status"] == amp.evaluation_status
-        assert amp_ser["creation_time"] == obspy.UTCDateTime(amp.creation_info.creation_time)
+        assert amp_ser["creation_time"] == obspy.UTCDateTime(
+            amp.creation_info.creation_time
+        )
         assert amp_ser["author"] == amp.creation_info.author
         assert amp_ser["agency_id"] == amp.creation_info.agency_id
 
