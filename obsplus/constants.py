@@ -139,22 +139,15 @@ DISTANCE_COLUMNS = tuple(DISTANCE_DTYES)
 # columns required for amplitudes <-- I should probably reduce this?
 AMPLITUDE_COLUMNS = (
     "resource_id",
+    "event_id",
+    "event_time",
     "generic_amplitude",
     "type",
-    "category",
-    "unit",
-    "method_id",
-    "period",
-    "snr",
-    "time_begin",
-    "time_end",
-    "pick_id",
+    "magnitude_hint",
     "network",
     "station",
     "location",
     "channel",
-    "mode",
-    "status",
 )
 
 # keys used to identify UTC objects

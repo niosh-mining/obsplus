@@ -12,9 +12,10 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
-from obsplus import events_to_df, picks_to_df, get_preferred
-from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS
+from obsplus import events_to_df, picks_to_df, amplitudes_to_df, get_preferred
+from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, AMPLITUDE_COLUMNS
 from obsplus.datasets.dataloader import base_path
+from obsplus.events.utils import get_seed_id
 from obsplus.utils import getattrs, get_nslc_series
 
 
@@ -403,17 +404,148 @@ class TestReadKemPicks:
 
 
 class TestReadAmplitudes:
-    """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+    def pick_generator(self, scnls):
+        picks = []
+        for scnl in scnls:
+            p = ev.Pick(time=UTCDateTime(),
+                        waveform_id=ev.WaveformStreamID(seed_string=scnl))
+            picks.append(p)
+        return picks
 
-    def test_amplitudes(self):
-        assert False
+    def amp_generator(self, scnls=None, picks=None):
+        counter = 1
+        amps = []
+        scnls = scnls or []
+        params = {"type": "A",
+                  "unit": "dimensionless",
+                  "method_id": "mag_calculator",
+                  "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
+                  "magnitude_hint": "M",
+                  "category": "point",
+                  "evaluation_mode": "manual",
+                  "evaluation_status": "confirmed"}
+        for scnl in scnls:
+            a = ev.Amplitude(
+                generic_amplitude=counter,
+                generic_amplitude_errors=ev.QuantityError(uncertainty=counter*0.1,
+                                                          confidence_level=95),
+                period=counter*2,
+                snr=counter*5,
+                time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+                waveform_id=ev.WaveformStreamID(seed_string=scnl),
+                scaling_time=UTCDateTime(),
+                scaling_time_errors=ev.QuantityError(uncertainty=counter*0.001,
+                                                     confidence_level=95),
+                creation_info=ev.CreationInfo(agency_id="dummy_agency",
+                                              author="dummy",
+                                              creation_time=UTCDateTime()),
+                **params)
+            amps.append(a)
+            counter += 1
+        picks = picks or []
+        for pick in picks:
+            a = ev.Amplitude(
+                generic_amplitude=counter,
+                generic_amplitude_errors=ev.QuantityError(uncertainty=counter*0.1,
+                                                          confidence_level=95),
+                period=counter*2,
+                snr=counter*5,
+                time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+                pick_id=pick.resource_id,
+                scaling_time=UTCDateTime(),
+                scaling_time_errors=ev.QuantityError(uncertainty=counter*0.001,
+                                                     confidence_level=95),
+                creation_info=ev.CreationInfo(agency_id="dummy_agency",
+                                              author="dummy",
+                                              creation_time=UTCDateTime()),
+                **params)
+            amps.append(a)
+            counter += 1
+        return amps
 
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.picks = self.pick_generator(scnls1)
+        eve1.amplitudes = self.amp_generator(picks=eve1.picks)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.amplitudes = self.amp_generator(scnls=scnls2)
+        cat.events = [eve1, eve2]
+        return cat
 
-class TestReadKemAmplitudes:
-    """Going to have to think about these... I don't think the test datasets have these assigned to them...."""
+    @pytest.fixture(scope="class")
+    def dummy_cat_no_origin(self):
+        scnls = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        eve = ev.Event()
+        eve.picks = self.pick_generator(scnls)
+        eve.amplitudes = self.amp_generator(picks=eve.picks)
+        return eve
 
-    def test_amplitudes(self):
-        assert False
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_amps_output(self, dummy_cat):
+        return amplitudes_to_df(dummy_cat)
+
+    # general tests
+    def test_type(self, read_amps_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_amps_output, pd.DataFrame)
+
+    def test_len(self, read_amps_output, dummy_cat):
+        """ req_len should be the same as the amps req_len in events """
+        req_len = len(dummy_cat[0].amplitudes) + len(dummy_cat[1].amplitudes)
+        assert req_len == len(read_amps_output)
+
+    def test_values(self, read_amps_output, dummy_cat):
+        """ make sure the values of the first amplitude are as expected """
+        amp_ser = read_amps_output.iloc[0]
+        amp = dummy_cat[0].amplitudes[0]
+        # Is there a less messy way to check that the function correctly
+        # parsed the amplitude?
+        assert amp_ser["resource_id"] == amp.resource_id.id
+        assert amp_ser["generic_amplitude"] == amp.generic_amplitude
+        assert amp_ser["seed_id"] == get_seed_id(amp)
+        assert amp_ser["type"] == amp.type
+        assert amp_ser["category"] == amp.category
+        assert amp_ser["magnitude_hint"] == amp.magnitude_hint
+        assert amp_ser["unit"] == amp.unit
+        assert amp_ser["filter_id"] == amp.filter_id
+        assert amp_ser["method_id"] == amp.method_id
+        assert amp_ser["period"] == amp.period
+        assert amp_ser["snr"] == amp.snr
+        assert amp_ser["pick_id"] == amp.pick_id
+        assert amp_ser["reference"] == obspy.UTCDateTime(amp.time_window.reference)
+        assert amp_ser["time_begin"] == amp.time_window.begin
+        assert amp_ser["time_end"] == amp.time_window.end
+        assert amp_ser["scaling_time"] == obspy.UTCDateTime(amp.scaling_time)
+        assert amp_ser["evaluation_mode"] == amp.evaluation_mode
+        assert amp_ser["evaluation_status"] == amp.evaluation_status
+        assert amp_ser["creation_time"] == obspy.UTCDateTime(amp.creation_info.creation_time)
+        assert amp_ser["author"] == amp.creation_info.author
+        assert amp_ser["agency_id"] == amp.creation_info.agency_id
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = amplitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
+
+    def test_no_origin(self, dummy_cat_no_origin):
+        """ ensure event time is minimum time of picks """
+        amp_df = amplitudes_to_df(dummy_cat_no_origin)
+        pick_df = picks_to_df(dummy_cat_no_origin)
+        assert (amp_df.event_time == pick_df.time.min()).all()
 
 
 class TestGetPreferred:

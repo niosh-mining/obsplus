@@ -18,7 +18,7 @@ from obsplus.constants import (
     NSLC,
     PICK_DTYPES
 )
-from obsplus.events.utils import get_reference_time
+from obsplus.events.utils import get_reference_time, get_seed_id
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
 from obsplus.utils import read_file, apply_to_files_or_skip, get_instances, getattrs
@@ -279,7 +279,9 @@ def _pick_extractor(pick):
     overlap = set(pick.__dict__) & set(PICK_DTYPES)
     base = {i: getattr(pick, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
-    seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
+    # Should it fail if it can't find the seed id, or just return one that's blank? A pick is pretty useless without it
+    seed_id = get_seed_id(pick)
+    #seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
     base.update(dd)
     base["seed_id"] = seed_id
@@ -301,10 +303,12 @@ def _pick_extractor(pick):
 # -------------- Amplitudes to dataframe
 
 
+# It seems like there is enough similarity between amplitudes_to_df and
+# picks_to_df that there should be some way to combine them...
 amplitudes_to_df = DataFrameExtractor(
     ev.Amplitude,
     AMPLITUDE_COLUMNS,
-    utc_columns=("time_begin", "time_end", "event_time", "scaling_time"),
+    utc_columns=("event_time"),
 )
 
 
@@ -321,27 +325,30 @@ def _file_to_amplitudes_df(path):
 amplitude_attrs = {
     "resource_id": str,
     "generic_amplitude": float,
+    "seed_id": str,
     "type": str,
     "category": str,
     "unit": str,
+    "magnitude_hint": str,
+    "filter_id": str,
     "method_id": str,
     "period": float,
     "snr": float,
     "pick_id": str,
-    "filter_id": str,
-    "scaling_time": str,
-    "magnitude_hint": str,
-    "network": str,
-    "station": str,
-    "location": str,
-    "channel": str,
-    "seed_id": str,
+    "reference": float,
+    "time_begin": float,
+    "time_end": float,
+    "scaling_time": float,
     "evaluation_mode": str,
     "evaluation_status": str,
     "creation_time": float,
     "author": str,
     "agency_id": str,
     "event_id": str,
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
 }
 
 
@@ -377,14 +384,21 @@ def _amplitudes_extractor(amp):
     overlap = set(amp.__dict__) & set(amplitude_attrs)
     base = {i: getattr(amp, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
-    seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
+    seed_id = get_seed_id(amp)
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
     base.update(dd)
     base["seed_id"] = seed_id
-    # add event into
+
+    # get more complicated amplitude info
+    if amp.time_window:
+        base["reference"] = amp.time_window.reference.timestamp
+        base["time_begin"] = amp.time_window.begin
+        base["time_end"] = amp.time_window.end
+    if amp.scaling_time:
+        base["scaling_time"] = amp.scaling_time.timestamp
 
     # get creation info
-    cio = pick.creation_info or ev.CreationInfo()
+    cio = amp.creation_info or ev.CreationInfo()
     base["creation_time"] = cio.creation_time
     base["author"] = cio.author
     base["agency_id"] = cio.agency_id
@@ -395,19 +409,25 @@ def _amplitudes_extractor(amp):
 
 
 def event_to_dataframe(cat_or_event):
-    """ Given a events or event, return a Dataframe summary. """
+    """ Given a catalog or event, return a Dataframe summary. """
     return events_to_df(cat_or_event)
 
 
 def picks_to_dataframe(cat_or_event):
-    """ Given a events or event return a dataframe of picks """
+    """ Given a catalog or event return a dataframe of picks """
     return picks_to_df(cat_or_event)
+
+
+def amplitudes_to_dataframe(cat_or_event):
+    """ Given a catalog or event return a dataframe of amplitudes """
+    return amplitudes_to_df(cat_or_event)
 
 
 obspy.core.event.Catalog.to_df = event_to_dataframe
 obspy.core.event.Event.to_df = event_to_dataframe
 obspy.core.event.Catalog.picks_to_df = picks_to_dataframe
 obspy.core.event.Event.picks_to_df = picks_to_dataframe
+obspy.core.event.Catalog.amplitudes_to_df = amplitudes_to_dataframe
 
 # save the default events converter for use by other code (eg EventBank).
 _default_cat_to_df = events_to_df.copy()
