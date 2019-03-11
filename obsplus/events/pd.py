@@ -15,13 +15,8 @@ from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, NSLC, PICK_DTYPES
 from obsplus.events.utils import get_reference_time
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import DataFrameExtractor
-from obsplus.utils import (
-    read_file,
-    get_preferred,
-    apply_to_files_or_skip,
-    get_instances,
-    getattrs,
-)
+from obsplus.utils import read_file, apply_to_files_or_skip, get_instances, getattrs
+from obsplus import get_preferred
 
 # -------------------- event extractors
 
@@ -76,7 +71,7 @@ origin_dtypes = {x: float for x in ["latitude", "longitude", "depth"]}
 @events_to_df.extractor(dtypes=origin_dtypes)
 def _get_origin_basic(eve):
     """ extract basic info from origin. """
-    ori = get_preferred(eve, "origin")
+    ori = get_preferred(eve, "origin", init_empty=True)
     return getattrs(ori, set(origin_dtypes))
 
 
@@ -102,7 +97,7 @@ def _get_used_stations(origin: ev.Origin, pid):
 def _get_origin_quality(eve: ev.Event):
     """ get information from origin quality """
     # ensure resource_ids in arrivals don't point to picks that dont exist
-    ori = get_preferred(eve, "origin")
+    ori = get_preferred(eve, "origin", init_empty=True)
 
     for pick in eve.picks:
         pick.resource_id.set_referred_object(pick)
@@ -176,7 +171,7 @@ def _get_magnitude_info(eve: ev.Event):
     """ extract magnitude information. Get base magnitude, as well as various
      other magnitude types (where applicable). """
     out = {}
-    magnitude = get_preferred(eve, "magnitude")
+    magnitude = get_preferred(eve, "magnitude", init_empty=True)
     out["magnitude"] = magnitude.mag
     out["magnitude_type"] = magnitude.magnitude_type
     mw = [

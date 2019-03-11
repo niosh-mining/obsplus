@@ -17,7 +17,10 @@ obsplus 0.0.1:
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
-    * added utility function for removed rejected orphaned objects from
+    * Added utility function for removed rejected orphaned objects from
       catalog tree (see #63).
+    * Added the init_empty parameter to get_preferred, fixed an issue where
+      an IndexError could get raised (see #65), and moved get_preferred from
+      obsplus.utils to obsplus.events.utils (see #66).
   - obsplus.utils
     * Added method for correcting nullish nslc codes (see #37 and #38)

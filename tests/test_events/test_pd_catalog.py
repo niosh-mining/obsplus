@@ -12,10 +12,10 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
-from obsplus import events_to_df, picks_to_df
+from obsplus import events_to_df, picks_to_df, get_preferred
 from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS
 from obsplus.datasets.dataloader import base_path
-from obsplus.utils import get_preferred, getattrs, get_nslc_series
+from obsplus.utils import getattrs, get_nslc_series
 
 
 # ---------------- helper functions

@@ -6,6 +6,7 @@ import copy
 import logging
 import os
 import re
+import warnings
 from functools import lru_cache, singledispatch
 from pathlib import Path
 from typing import Union, Optional, Callable
@@ -13,6 +14,7 @@ from typing import Union, Optional, Callable
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy.core import event as ev
 from obspy.core.event import Catalog, Event, ResourceIdentifier
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
@@ -550,3 +552,63 @@ def make_class_map():
                 _add_lower_and_plural(name_, obj_type)
         _add_lower_and_plural(name, cls)
     return out
+
+
+def get_preferred(event: Event, what: str, init_empty=False):
+    """
+    get the preferred object (eg origin, magnitude) from the event.
+
+    If not defined use the last in the list. If list is empty init empty
+    object.
+
+    Parameters
+
+    -----------
+    event: obspy.core.event.Event
+        The instance for which the preferred should be sought.
+    what: the preferred item to get
+        Can either be "magnitude", "origin", or "focal_mechanism".
+    init_empty
+        If True, rather than return None when no preferred object is found
+        create an empty object of the appropriate class and return it.
+    """
+
+    def _none_or_empty():
+        """ Return None or an empty object of correct type. """
+        if init_empty:
+            return getattr(obspy.core.event, what.capitalize())()
+        else:
+            return None
+
+    pref_type = {
+        "magnitude": ev.Magnitude,
+        "origin": ev.Origin,
+        "focal_mechanism": ev.FocalMechanism,
+    }
+
+    prefname = "preferred_" + what
+    whats = what + "s"
+    obj = getattr(event, prefname)()
+    if obj is None:  # get end of list
+        pid = getattr(event, prefname + "_id")
+        if pid is None:  # no preferred id set, return last in list
+            try:  # if there is None return an empty one
+                obj = getattr(event, whats)[-1]
+            except IndexError:  # object has no whats (eg magnitude)
+                # TODO why not return None here?
+                return _none_or_empty()
+        else:  # there is an id, it has just come detached, try to find it
+            potentials = {x.resource_id.id: x for x in getattr(event, whats)}
+            if pid.id in potentials:
+                obj = potentials[pid.id]
+            else:
+                var = (pid.id, whats, str(event))
+                warnings.warn("cannot find %s in %s for event %s" % var)
+                try:
+                    obj = getattr(event, whats)[-1]
+                except IndexError:  # there are no "whats", return None
+                    return _none_or_empty()
+    # make sure the correct output type is returned
+    cls = pref_type[what]
+    assert isinstance(obj, cls), f"{type(obj)} is not a {cls}, wrong type returned"
+    return obj
