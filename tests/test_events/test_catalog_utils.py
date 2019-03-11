@@ -11,6 +11,7 @@ import pytest
 from obspy.core.event import Comment, ResourceIdentifier
 
 import obsplus
+import obsplus.events.utils
 from obsplus.events import validate
 from obsplus.events.utils import (
     bump_creation_version,
@@ -20,7 +21,8 @@ from obsplus.events.utils import (
     make_origins,
     prune_events,
 )
-from obsplus.utils import get_instances, get_preferred
+from obsplus.utils import get_instances
+from obsplus import get_preferred
 
 CAT = obspy.read_events()
 
@@ -133,7 +135,7 @@ class TestPruneEvents:
         # One pick gets removed, the other is kept
         assert len(ev.picks) == 1
         assert ev.picks[0].evaluation_status == "rejected"
-        por = obsplus.get_preferred(ev, "origin")
+        por = obsplus.events.utils.get_preferred(ev, "origin")
         assert len(por.arrivals) == 1
 
 
@@ -334,6 +336,34 @@ class TestCatalogToDirectory:
         catalog_to_directory(str(path), path_out2)
         assert path_out2.exists()
         assert not obsplus.EventBank(path_out2).read_index().empty
+
+
+class TestGetPreferred:
+    """
+    Tests for getting preferred things form events.
+    """
+
+    def test_events_no_preferred(self):
+        """ Test that the last origin gets returned. """
+        event = obspy.read_events()[0]
+        event.preferred_origin_id = None  # clear origin_id
+        assert event.origins[-1] == get_preferred(event, "origin")
+
+    def test_preferred_no_origins(self):
+        """ when the preferred id is set but origin is empty None should be
+        returned. """
+        event = obspy.read_events()[0]
+        # clear origins and ensure resource_id is not holding a reference
+        event.origins.clear()
+        rid = str(ev.ResourceIdentifier())
+        event.preferred_origin_id = rid
+        # It should now return None
+        with pytest.warns(UserWarning) as w:
+            assert get_preferred(event, "origin") is None
+        # but if init_empty it should return an empty origin
+        with pytest.warns(UserWarning) as w:
+            ori = get_preferred(event, "origin", init_empty=True)
+        assert isinstance(ori, ev.Origin)
 
 
 class TestEnsureOrigin:

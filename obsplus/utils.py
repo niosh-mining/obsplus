@@ -29,7 +29,6 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 from obspy import UTCDateTime as UTC
-from obspy.core.event import Event
 from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
@@ -336,47 +335,6 @@ def _get_stream_time(st):
 def _get_trace_time(tr):
     """ return starttime of trace. """
     return tr.stats.starttime
-
-
-def get_preferred(event: Event, what: str):
-    """
-    get the preferred object (eg origin, magnitude) from the event.
-
-    If not defined use the last in the list. If list is empty init empty
-    object.
-    Parameters
-
-    -----------
-    event: obspy.core.event.Event
-        The instance for which the preferred should be sought.
-    what: the preferred item to get
-        Can either be "magnitude", "origin", or "focal_mechanism".
-    """
-    pref_type = {
-        "magnitude": ev.Magnitude,
-        "origin": ev.Origin,
-        "focal_mechanism": ev.FocalMechanism,
-    }
-    prefname = "preferred_" + what
-    whats = what + "s"
-    obj = getattr(event, prefname)()
-    if obj is None:  # get end of list
-        pid = getattr(event, prefname + "_id")
-        if pid is None:  # no preferred id set, return last in list
-            try:  # if there is None return an empty one
-                obj = getattr(event, whats)[-1]
-            except IndexError:  # object has no whats (eg magnitude)
-                return getattr(obspy.core.event, what.capitalize())()
-        else:  # there is an id, it has just come detached, try to find it
-            potentials = {x.resource_id.id: x for x in getattr(event, whats)}
-            if pid.id in potentials:
-                obj = potentials[pid.id]
-            else:
-                var = (pid.id, whats, str(event))
-                warnings.warn("cannot find %s in %s for event %s" % var)
-                obj = getattr(event, whats)[-1]
-    assert isinstance(obj, pref_type[what]), "wrong type returned"
-    return obj
 
 
 def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -> float:

@@ -11,7 +11,7 @@ import pandas as pd
 
 # json conversions
 from obsplus.events.json import json_to_cat, cat_to_json, cat_to_dict
-from obsplus.events.utils import bump_creation_version, duplicate_events
+from obsplus.events.utils import bump_creation_version, duplicate_events, get_preferred
 
 # events validation and version bumping
 from obsplus.events.validate import catalog_validator, validate_catalog
@@ -29,7 +29,7 @@ from obsplus.bank.stationbank import StationBank
 Sbank = WaveBank
 
 # misc functions
-from obsplus.utils import get_preferred, get_reference_time
+from obsplus.utils import get_reference_time
 from obsplus.structures.dfextractor import DataFrameExtractor
 
 # package version
