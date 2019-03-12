@@ -45,8 +45,7 @@ PREFERRED = {
 }
 
 # columns required for station data
-STATION_DTYPES = MapProx(
-    OrderedDict(
+STATION_DTYPES = OrderedDict(
         network=str,
         station=str,
         location=str,
@@ -57,14 +56,12 @@ STATION_DTYPES = MapProx(
         elevation=float,
         start_date=float,
         end_date=float,
-    )
 )
 
 STATION_COLUMNS = tuple(STATION_DTYPES)
 
 # columns required for event_data
-EVENT_DTYPES = MapProx(
-    OrderedDict(
+EVENT_DTYPES = OrderedDict(
         time=float,
         latitude=float,
         longitude=float,
@@ -93,42 +90,57 @@ EVENT_DTYPES = MapProx(
         agency_id=str,
         creation_time=float,
         version=str,
-    )
 )
 
 EVENT_COLUMNS = tuple(EVENT_DTYPES)
 
 # columns required for picks
 
-PICK_DTYPES = {
-    "resource_id": str,
-    "time": float,
-    "seed_id": str,
-    "filter_id": str,
-    "method_id": str,
-    "horizontal_slowness": float,
-    "backazimuth": float,
-    "onset": str,
-    "phase_hint": str,
-    "polarity": str,
-    "evaluation_mode": str,
-    "event_time": float,
-    "evaluation_status": str,
-    "creation_time": float,
-    "author": str,
-    "agency_id": str,
-    "event_id": str,
-    "network": str,
-    "station": str,
-    "location": str,
-    "channel": str,
-    "uncertainty": float,
-    "lower_uncertainty": float,
-    "upper_uncertainty": float,
-    "confidence_level": float,
-}
+PICK_DTYPES = OrderedDict(
+        resource_id=str,
+        time=float,
+        seed_id=str,
+        filter_id=str,
+        method_id=str,
+        horizontal_slowness=float,
+        backazimuth=float,
+        onset=str,
+        phase_hint=str,
+        polarity=str,
+        evaluation_mode=str,
+        event_time=float,
+        evaluation_status=str,
+        creation_time=float,
+        author=str,
+        agency_id=str,
+        event_id=str,
+        network=str,
+        station=str,
+        location=str,
+        channel=str,
+        uncertainty=float,
+        lower_uncertainty=float,
+        upper_uncertainty=float,
+        confidence_level=float,
+)
+
 
 PICK_COLUMNS = tuple(PICK_DTYPES)
+
+# columns for distance dataframe
+
+DISTANCE_DTYES = OrderedDict(
+        event_id=str,
+        epicentral_distance=float,
+        hypocentral_distance=float,
+        depth_distance=float,
+        network=str,
+        station=str,
+        location=str,
+        channel=str,
+)
+
+DISTANCE_COLUMNS = tuple(DISTANCE_DTYES)
 
 
 # keys used to identify UTC objects

@@ -32,9 +32,19 @@ from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from obspy.geodetics import gps2dist_azimuth
 from progressbar import ProgressBar
 
-from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES, wave_type
+import obsplus
+from obsplus.constants import (
+    event_time_type,
+    NSLC,
+    NULL_NSLC_CODES,
+    wave_type,
+    event_type,
+    inventory_type,
+    DISTANCE_COLUMNS,
+)
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -744,6 +754,31 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
                     yield entry.path
         elif entry.is_dir():
             yield from iter_files(entry.path, ext=ext, mtime=mtime)
+
+
+def get_distance_dataframe(events: event_type,
+                           stations: inventory_type) -> pd.DataFrame:
+    """
+    Create a dataframe of distances from events to stations.
+
+    Parameters
+    ----------
+    events
+        Any object from which event information is extractable,
+        eg obspy.Catalog.
+    stations
+        Any object from which station information is extractable,
+        eg obspy.Inventory.
+
+    Returns
+    -------
+    A dataframe with epicentral, hypocentral, and depth distances from each
+    event to each station.
+    """
+    edf = obsplus.events_to_df(events)
+    idf = obsplus.stations_to_df(stations)
+    breakpoint()
+    return pd.DataFrame(columns=DISTANCE_COLUMNS)
 
 
 @lru_cache(maxsize=2500)

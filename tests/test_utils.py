@@ -11,12 +11,13 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.constants import NSLC, NULL_NSLC_CODES
+from obsplus.constants import NSLC, NULL_NSLC_CODES, DISTANCE_COLUMNS
 from obsplus.utils import (
     compose_docstring,
     yield_obj_parent_attr,
     filter_index,
     filter_df,
+    get_distance_dataframe,
 )
 
 
@@ -347,3 +348,45 @@ class TestMisc:
         out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
+
+
+class TestDistanceDataframe:
+    """
+    Tests for returning a distance dataframe from some number of events
+    and some number of stations.
+    """
+
+    @pytest.fixture(scope='class')
+    def cat(self, crandall_dataset):
+        """ return the first 3 events from the crandall dataset. """
+        return crandall_dataset.event_client.get_events()[:3]
+
+    @pytest.fixture(scope='class')
+    def inv(self, crandall_dataset):
+        return crandall_dataset.station_client.get_stations()
+
+    @pytest.fixture(scope='class')
+    def distance_df(self, crandall_dataset):
+        """ Return a dataframe from all the crandall events and stations. """
+        inv = crandall_dataset.station_client.get_stations()
+        cat = crandall_dataset.event_client.get_events()
+        return get_distance_dataframe(events=cat, stations=inv)
+
+    def test_type(self, distance_df):
+        """ ensure a dataframe was returned. """
+        assert isinstance(distance_df, pd.DataFrame)
+        assert set(distance_df.columns) == set(DISTANCE_COLUMNS)
+
+    def test_all_events_in_df(self, distance_df, cat):
+        """ Ensure all the events are in the distance dataframe. """
+        event_ids = {str(x.resource_id) for x in cat}
+        assert set(event_ids).issubset(distance_df.event_id)
+
+    def test_all_channels_in_df(self, distance_df, inv):
+        inv_df = obsplus.stations_to_df(inv)
+        inv_nslc = inv_df[list(NSLC)].to_records()
+
+        assert
+        breakpoint()
+        assert distance_df['channel']
+
