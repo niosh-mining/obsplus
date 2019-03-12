@@ -11,12 +11,13 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.constants import NSLC, NULL_NSLC_CODES
+from obsplus.constants import NSLC, NULL_NSLC_CODES, DISTANCE_COLUMNS
 from obsplus.utils import (
     compose_docstring,
     yield_obj_parent_attr,
     filter_index,
     filter_df,
+    get_distance_df,
 )
 
 
@@ -347,3 +348,40 @@ class TestMisc:
         out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
+
+
+class TestDistanceDataframe:
+    """
+    Tests for returning a distance dataframe from some number of events
+    and some number of stations.
+    """
+
+    @pytest.fixture(scope="class")
+    def cat(self):
+        """ return the first 3 events from the crandall dataset. """
+        return obspy.read_events()
+
+    @pytest.fixture(scope="class")
+    def inv(self):
+        return obspy.read_inventory()
+
+    @pytest.fixture(scope="class")
+    def distance_df(self, cat, inv):
+        """ Return a dataframe from all the crandall events and stations. """
+        return get_distance_df(events=cat, stations=inv)
+
+    def test_type(self, distance_df):
+        """ ensure a dataframe was returned. """
+        assert isinstance(distance_df, pd.DataFrame)
+        assert set(distance_df.columns) == set(DISTANCE_COLUMNS)
+
+    def test_all_events_in_df(self, distance_df, cat):
+        """ Ensure all the events are in the distance dataframe. """
+        event_ids_df = set(distance_df.index.to_frame()["event_id"])
+        event_ids_cat = {str(x.resource_id) for x in cat}
+        assert event_ids_cat == event_ids_df
+
+    def test_all_seed_id_in_df(self, distance_df, inv):
+        seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
+        seed_id_df = set(distance_df.index.to_frame()["seed_id"])
+        assert seed_id_df == seed_id_stations

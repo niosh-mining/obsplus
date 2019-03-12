@@ -10,6 +10,7 @@ import threading
 import warnings
 from functools import singledispatch, wraps, lru_cache
 from pathlib import Path
+from itertools import product
 from typing import (
     Union,
     Sequence,
@@ -32,9 +33,20 @@ from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from obspy.geodetics import gps2dist_azimuth
 from progressbar import ProgressBar
 
-from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES, wave_type
+import obsplus
+from obsplus.constants import (
+    event_time_type,
+    NSLC,
+    NULL_NSLC_CODES,
+    wave_type,
+    event_type,
+    inventory_type,
+    DISTANCE_COLUMNS,
+    DISTANCE_DTYES,
+)
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -744,6 +756,65 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
                     yield entry.path
         elif entry.is_dir():
             yield from iter_files(entry.path, ext=ext, mtime=mtime)
+
+
+def get_distance_df(events: event_type, stations: inventory_type) -> pd.DataFrame:
+    """
+    Create a dataframe of distances and azimuths from events to stations.
+
+    Parameters
+    ----------
+    events
+        Any object from which event information is extractable,
+        eg obspy.Catalog.
+    stations
+        Any object from which station information is extractable,
+        eg obspy.Inventory. Channel-level information must be present.
+
+    Notes
+    -----
+    Simply uses obspy.geodetics.gps2dist_azimuth under the hood.
+
+    Returns
+    -------
+    A dataframe with epicentral, hypocentral, and depth distances, as well as
+    azimuth, from each event to each station.
+    """
+
+    def _dist_func(tup1, tup2):
+        """
+        Function to get distances and azimuths from pairs of coordinates
+        """
+        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
+        z_diff = tup2[2] - tup1[2]
+        hypo_dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
+        out = dict(
+            epicentral_distance=gs_dist,
+            hypocentral_distance=hypo_dist,
+            depth_distance=z_diff,
+            azimuth=azimuth,
+        )
+        return out
+
+    latlon = ["latitude", "longitude", "elevation"]
+    event_cols = latlon + ["event_id"]
+    sta_cols = latlon + ["seed_id"]
+    # get dataframes of event/station data
+    edf = obsplus.events_to_df(events)
+    edf["elevation"] = -edf["depth"]
+    idf = obsplus.stations_to_df(stations)
+    # get sets of unique lat/lon for stations and events
+    elatlons = set(edf[event_cols].itertuples(index=False, name=None))
+    ilatlons = set(idf[sta_cols].itertuples(index=False, name=None))
+    # make a dict of {(event_id, seed_id): (dist, azimuth)}
+    dist_dicts = {
+        (ell[-1], ill[-1]): _dist_func(ell, ill)
+        for ell, ill in product(elatlons, ilatlons)
+    }
+    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
+    # make sure index is named
+    df.index.names = ("event_id", "seed_id")
+    return df[list(DISTANCE_COLUMNS)]
 
 
 @lru_cache(maxsize=2500)
