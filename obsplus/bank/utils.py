@@ -262,11 +262,13 @@ def _make_wheres(queries):
         kwargs.pop("eventid")
     if "event_id" in kwargs:
         val = kwargs.pop("event_id")
-        seq_types = (Sequence, set, np.ndarray)
-        if isinstance(val, seq_types) and not isinstance(val, str):
-            kwargs["event_id"] = [str(x) for x in val]
+        if isinstance(val, str):
+            kwargs["event_id"] = val
         else:
-            kwargs["event_id"] = str(val)
+            try:
+                kwargs["event_id"] = [str(x) for x in val]
+            except TypeError:
+                kwargs["event_id"] = str(val)
     if "endtime" in kwargs:
         kwargs["maxtime"] = kwargs["endtime"]
         kwargs.pop("endtime")
