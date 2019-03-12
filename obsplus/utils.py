@@ -773,13 +773,12 @@ def get_distance_df(events: event_type, stations: inventory_type) -> pd.DataFram
 
     Notes
     -----
-    Uses obspy.geodetics.gps2dist_azimuth under the hood so all distances
-    are great circle distances. 
+    Simply uses obspy.geodetics.gps2dist_azimuth under the hood.
 
     Returns
     -------
-    A dataframe with epicentral, hypocentral, and depth distances from each
-    event to each station.
+    A dataframe with epicentral, hypocentral, and depth distances, as well as
+    azimuth, from each event to each station.
     """
 
     def _dist_func(tup1, tup2):
