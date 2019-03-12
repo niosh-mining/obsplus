@@ -379,14 +379,20 @@ class TestDistanceDataframe:
 
     def test_all_events_in_df(self, distance_df, cat):
         """ Ensure all the events are in the distance dataframe. """
-        event_ids = {str(x.resource_id) for x in cat}
-        assert set(event_ids).issubset(distance_df.event_id)
+        event_ids_df = set(distance_df.index.to_frame()['event_id'])
+        event_ids_cat = {str(x.resource_id) for x in cat}
+        assert event_ids_cat == event_ids_df
+
+    def test_all_seed_id_in_df(self, distance_df, inv):
+        seed_id_stations = set(obsplus.stations_to_df(inv)['seed_id'])
+        seed_id_df = set(distance_df.index.to_frame()['seed_id'])
+        assert seed_id_df == seed_id_stations
 
     def test_all_channels_in_df(self, distance_df, inv):
         inv_df = obsplus.stations_to_df(inv)
         inv_nslc = inv_df[list(NSLC)].to_records()
 
-        assert
+        assert 1
         breakpoint()
         assert distance_df['channel']
 
