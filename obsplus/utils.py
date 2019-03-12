@@ -758,8 +758,7 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
             yield from iter_files(entry.path, ext=ext, mtime=mtime)
 
 
-def get_distance_dataframe(events: event_type,
-                           stations: inventory_type) -> pd.DataFrame:
+def get_distance_df(events: event_type, stations: inventory_type) -> pd.DataFrame:
     """
     Create a dataframe of distances and azimuths from events to stations.
 
@@ -770,7 +769,12 @@ def get_distance_dataframe(events: event_type,
         eg obspy.Catalog.
     stations
         Any object from which station information is extractable,
-        eg obspy.Inventory.
+        eg obspy.Inventory. Channel-level information must be present.
+
+    Notes
+    -----
+    Uses obspy.geodetics.gps2dist_azimuth under the hood so all distances
+    are great circle distances. 
 
     Returns
     -------
@@ -784,31 +788,33 @@ def get_distance_dataframe(events: event_type,
         """
         gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
         z_diff = tup2[2] - tup1[2]
-        hypo_dist = np.sqrt(gs_dist**2 + z_diff**2)
+        hypo_dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
         out = dict(
             epicentral_distance=gs_dist,
             hypocentral_distance=hypo_dist,
             depth_distance=z_diff,
-            azimuth=azimuth
+            azimuth=azimuth,
         )
         return out
 
-    latlon = ['latitude', 'longitude', 'elevation']
-    event_cols = latlon + ['event_id']
-    sta_cols = latlon + ['seed_id']
+    latlon = ["latitude", "longitude", "elevation"]
+    event_cols = latlon + ["event_id"]
+    sta_cols = latlon + ["seed_id"]
     # get dataframes of event/station data
     edf = obsplus.events_to_df(events)
-    edf['elevation'] = -edf['depth']
+    edf["elevation"] = -edf["depth"]
     idf = obsplus.stations_to_df(stations)
     # get sets of unique lat/lon for stations and events
     elatlons = set(edf[event_cols].itertuples(index=False, name=None))
     ilatlons = set(idf[sta_cols].itertuples(index=False, name=None))
     # make a dict of {(event_id, seed_id): (dist, azimuth)}
-    dist_dicts = {(ell[-1], ill[-1]): _dist_func(ell, ill)
-                  for ell, ill in product(elatlons, ilatlons)}
+    dist_dicts = {
+        (ell[-1], ill[-1]): _dist_func(ell, ill)
+        for ell, ill in product(elatlons, ilatlons)
+    }
     df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
     # make sure index is named
-    df.index.names = ('event_id', 'seed_id')
+    df.index.names = ("event_id", "seed_id")
     return df[list(DISTANCE_COLUMNS)]
 
 

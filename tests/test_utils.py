@@ -17,7 +17,7 @@ from obsplus.utils import (
     yield_obj_parent_attr,
     filter_index,
     filter_df,
-    get_distance_dataframe,
+    get_distance_df,
 )
 
 
@@ -356,21 +356,19 @@ class TestDistanceDataframe:
     and some number of stations.
     """
 
-    @pytest.fixture(scope='class')
-    def cat(self, crandall_dataset):
+    @pytest.fixture(scope="class")
+    def cat(self):
         """ return the first 3 events from the crandall dataset. """
-        return crandall_dataset.event_client.get_events()[:3]
+        return obspy.read_events()
 
-    @pytest.fixture(scope='class')
-    def inv(self, crandall_dataset):
-        return crandall_dataset.station_client.get_stations()
+    @pytest.fixture(scope="class")
+    def inv(self):
+        return obspy.read_inventory()
 
-    @pytest.fixture(scope='class')
-    def distance_df(self, crandall_dataset):
+    @pytest.fixture(scope="class")
+    def distance_df(self, cat, inv):
         """ Return a dataframe from all the crandall events and stations. """
-        inv = crandall_dataset.station_client.get_stations()
-        cat = crandall_dataset.event_client.get_events()
-        return get_distance_dataframe(events=cat, stations=inv)
+        return get_distance_df(events=cat, stations=inv)
 
     def test_type(self, distance_df):
         """ ensure a dataframe was returned. """
@@ -379,20 +377,11 @@ class TestDistanceDataframe:
 
     def test_all_events_in_df(self, distance_df, cat):
         """ Ensure all the events are in the distance dataframe. """
-        event_ids_df = set(distance_df.index.to_frame()['event_id'])
+        event_ids_df = set(distance_df.index.to_frame()["event_id"])
         event_ids_cat = {str(x.resource_id) for x in cat}
         assert event_ids_cat == event_ids_df
 
     def test_all_seed_id_in_df(self, distance_df, inv):
-        seed_id_stations = set(obsplus.stations_to_df(inv)['seed_id'])
-        seed_id_df = set(distance_df.index.to_frame()['seed_id'])
+        seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
+        seed_id_df = set(distance_df.index.to_frame()["seed_id"])
         assert seed_id_df == seed_id_stations
-
-    def test_all_channels_in_df(self, distance_df, inv):
-        inv_df = obsplus.stations_to_df(inv)
-        inv_nslc = inv_df[list(NSLC)].to_records()
-
-        assert 1
-        breakpoint()
-        assert distance_df['channel']
-
