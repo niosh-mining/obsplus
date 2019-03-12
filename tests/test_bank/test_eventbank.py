@@ -221,10 +221,21 @@ class TestReadIndexQueries:
         assert len(df) == 1
         assert eve_id in df.index
 
+    def test_query_resource_id(self, bing_ebank, catalog):
+        """ test query on a resource id """
+        eve_id = catalog[0].resource_id
+        df = bing_ebank.read_index(event_id=eve_id)
+        assert len(df) == 1
+        assert str(eve_id) in df.index
+
     def test_query_event_ids(self, bing_ebank, catalog):
-        """ test querying multiple ids """
-        eve_ids = [str(x.resource_id) for x in catalog]
+        """
+        test querying multiple ids (specifically using something other
+        than a list)
+        """
+        eve_ids = bing_ebank.read_index().iloc[0:2].index
         df = bing_ebank.read_index(eventid=eve_ids)
+        assert len(df) == 2
         assert df.index.isin(eve_ids).all()
 
     def test_bad_param_raises(self, bing_ebank):
