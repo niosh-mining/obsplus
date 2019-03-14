@@ -7,24 +7,25 @@ import shutil
 import sys
 import tempfile
 import types
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from io import StringIO
 from os.path import join
 from pathlib import Path
 
 import numpy as np
-import obsplus
-import obsplus.bank.utils
-import obsplus.bank.wavebank as sbank
 import obspy
 import obspy.clients.fdsn
 import pandas as pd
 import pytest
+from obspy import UTCDateTime as UTC
+
+import obsplus
+import obsplus.bank.utils
+import obsplus.bank.wavebank as sbank
 from obsplus.bank.wavebank import WaveBank
-from obsplus.constants import NSLC, NULL_NSLC_CODES
+from obsplus.constants import NSLC
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import make_time_chunks, iter_files, get_reference_time
-from obspy import UTCDateTime as UTC
 
 
 # ----------------------------------- Helper functions
@@ -58,15 +59,15 @@ class ArchiveDirectory:
     """ class for creating a simple archive """
 
     def __init__(
-        self,
-        path,
-        starttime=None,
-        endtime=None,
-        sampling_rate=1,
-        duration=3600,
-        overlap=0,
-        gaps=None,
-        seed_ids=("TA.M17A..VHZ", "TA.BOB..VHZ"),
+            self,
+            path,
+            starttime=None,
+            endtime=None,
+            sampling_rate=1,
+            duration=3600,
+            overlap=0,
+            gaps=None,
+            seed_ids=("TA.M17A..VHZ", "TA.BOB..VHZ"),
     ):
         self.path = path
         if not os.path.exists(path):
@@ -135,7 +136,7 @@ class ArchiveDirectory:
 
         assert self.starttime and self.endtime, "needs defined times"
         for t1, t2 in make_time_chunks(
-            self.starttime, self.endtime, self.duration, self.overlap
+                self.starttime, self.endtime, self.duration, self.overlap
         ):
             # figure out of this time lies in a gap
             gap = df[~((df.start >= t2) | (df.end <= t1))]
@@ -1178,11 +1179,21 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
-class TestThreadSafeUpdateIndex:
-    """ tests to make sure running update index in different threads
-    doesn't cause hdf5 to fail """
+class TestConcurrency:
+    """
+    Tests to make sure running update index in different threads/processes.
+    """
+    worker_count = 6
+    new_files = 10
 
-    worker_count = 3
+    def func(self, wbank, tnum=0):
+        """ add new files to the wavebank then update index, return index. """
+        path = Path(wbank.bank_path)
+        for ind in range(self.new_files):
+            st = obspy.read()
+            st.write(f'{path / str(ind)}.mseed', 'mseed')
+        wbank.update_index(tnum=tnum)
+        return wbank.read_index()
 
     # fixtures
     @pytest.fixture(scope="class")
@@ -1196,16 +1207,47 @@ class TestThreadSafeUpdateIndex:
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
+        ta_bank.update_index()
+        func = functools.partial(self.func, wbank=ta_bank)
         for _ in range(self.worker_count):
-            out.append(thread_pool.submit(ta_bank.update_index))
+            out.append(thread_pool.submit(func))
+        return list(as_completed(out))
+
+    @pytest.fixture(scope="class")
+    def process_pool(self):
+        """ return a thread pool """
+        with ProcessPoolExecutor(self.worker_count) as executor:
+            yield executor
+
+    @pytest.fixture
+    def process_update_index(self, ta_bank, process_pool):
+        """ run a bunch of update index operations in different processes,
+        return list of results """
+        breakpoint()
+        ta_bank.update_index()
+        breakpoint()
+        out = []
+        for num in range(self.worker_count):
+            func = functools.partial(self.func, wbank=ta_bank, tnum=num)
+            out.append(process_pool.submit(func))
         return list(as_completed(out))
 
     # tests
-    def test_index_update(self, thread_update_index, ta_bank):
+    def test_index_update_threads(self, thread_update_index, ta_bank):
         """ ensure the index updated and the threads didn't kill each
         other """
         # get a list of exceptions that occurred
+        assert len(thread_update_index) == self.worker_count
         excs = [x.exception() for x in thread_update_index if x.exception() is not None]
+        assert len(excs) == 0
+
+    def test_index_update_processes(self, process_update_index, ta_bank):
+        """
+        Ensure the index can be updated in different processes.
+        """
+        assert len(process_update_index) == self.worker_count
+        # ensure no exceptions were raised
+        excs = [x.exception() for x in process_update_index if x.exception() is not None]
         assert len(excs) == 0
 
 

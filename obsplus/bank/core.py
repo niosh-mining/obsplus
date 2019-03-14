@@ -2,18 +2,21 @@
 Bank ABC
 """
 import os
+import time
 import threading
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from os.path import join
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from pandas.io.sql import DatabaseError
 
 import obsplus
 from obsplus.utils import iter_files
-from obsplus.exceptions import BankDoesNotExistError
+from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 
 
 class _Bank(ABC):
@@ -33,6 +36,8 @@ class _Bank(ABC):
     bank_path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
+    _lock_file_name = '.~obsplus_hdf5.lock'
+    _owns_lock = False
     # optional str defining the directory structure and file name schemes
     path_structure = None
     name_structure = None
@@ -50,7 +55,7 @@ class _Bank(ABC):
         """ update the index """
 
     @abstractmethod
-    def last_updated(self):
+    def last_updated(self) -> Optional[float]:
         """ get the last modified time stored in the index. If
         Not available return None
         """
@@ -67,6 +72,13 @@ class _Bank(ABC):
         The expected path to the index file.
         """
         return join(self.bank_path, self.index_name)
+
+    @property
+    def lock_file_path(self):
+        """
+        The expected path for the lock file.
+        """
+        return join(self.bank_path, self._lock_file_name)
 
     @property
     def _index_node(self):
@@ -118,8 +130,9 @@ class _Bank(ABC):
         """ return an iterator of potential unindexed waveform files """
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
-        if self.last_updated is not None:
-            mtime = self.last_updated - 0.001
+        last_updated = self.last_updated  # this needs db so only call once
+        if last_updated is not None:
+            mtime = last_updated - 0.001
         # return file iterator
         return iter_files(self.bank_path, ext=self.ext, mtime=mtime)
 
@@ -148,3 +161,62 @@ class _Bank(ABC):
         if not path.is_dir():
             msg = f"{path} is not a directory, cant read bank"
             raise BankDoesNotExistError(msg)
+
+    def block_on_index_lock(self, wait_interval=1, max_retry=6):
+        """
+        Blocks until the lock is released.
+
+        Will wait a certain number of seconds a certain number of times
+        before raising a BankIndexLockError.
+
+        Parameters
+        ----------
+        wait_interval
+            The number of seconds to wait between each try
+        max_retry
+            The number of times to retry before raising.
+        """
+        print(f'waiting for index lock {self.tnum}')
+        # if there is no lock, or this bank owns the lock return
+        if not os.path.exists(self.lock_file_path) or self._owns_lock:
+            return
+        # else try to wait {wait_interval} seconds {max_retry} times
+        count = 0
+        while count < max_retry:
+            if not os.path.exists(self.lock_file_path):
+                return
+            time.sleep(wait_interval)
+            count += 1
+        else:
+            duration = max_retry * wait_interval
+            msg = (f'{self.lock_file_path} was not released after '
+                   f'{duration} seconds. It may need to be manually deleted'
+                   f' if the index is not in the process of being updated.')
+            # import traceback
+            # msg += ''.join([str(x) for x in traceback.format_stack()])
+            raise BankIndexLockError(msg)
+
+    @contextmanager
+    def lock_index(self):
+        """
+        Acquire lock for work inside context manager.
+        """
+        self.block_on_index_lock()  # ensure lock isn't already in use
+        print(f'locked index {self.tnum}')
+        assert Path(self.bank_path).exists()
+        open(self.lock_file_path, 'w').close()  # create lock file
+        self._owns_lock = True
+        yield
+        try:
+            os.unlink(self.lock_file_path)
+        except FileNotFoundError:
+            pass
+        self._owns_lock = False
+        print(f'released index lock {self.tnum}')
+
+
+
+
+
+
+
