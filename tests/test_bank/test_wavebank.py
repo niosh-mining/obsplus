@@ -59,15 +59,15 @@ class ArchiveDirectory:
     """ class for creating a simple archive """
 
     def __init__(
-            self,
-            path,
-            starttime=None,
-            endtime=None,
-            sampling_rate=1,
-            duration=3600,
-            overlap=0,
-            gaps=None,
-            seed_ids=("TA.M17A..VHZ", "TA.BOB..VHZ"),
+        self,
+        path,
+        starttime=None,
+        endtime=None,
+        sampling_rate=1,
+        duration=3600,
+        overlap=0,
+        gaps=None,
+        seed_ids=("TA.M17A..VHZ", "TA.BOB..VHZ"),
     ):
         self.path = path
         if not os.path.exists(path):
@@ -136,7 +136,7 @@ class ArchiveDirectory:
 
         assert self.starttime and self.endtime, "needs defined times"
         for t1, t2 in make_time_chunks(
-                self.starttime, self.endtime, self.duration, self.overlap
+            self.starttime, self.endtime, self.duration, self.overlap
         ):
             # figure out of this time lies in a gap
             gap = df[~((df.start >= t2) | (df.end <= t1))]
@@ -1183,6 +1183,7 @@ class TestConcurrency:
     """
     Tests to make sure running update index in different threads/processes.
     """
+
     worker_count = 6
     new_files = 10
 
@@ -1191,7 +1192,7 @@ class TestConcurrency:
         path = Path(wbank.bank_path)
         for ind in range(self.new_files):
             st = obspy.read()
-            st.write(f'{path / str(ind)}.mseed', 'mseed')
+            st.write(f"{path / str(ind)}.mseed", "mseed")
         wbank.update_index(tnum=tnum)
         return wbank.read_index()
 
@@ -1247,7 +1248,9 @@ class TestConcurrency:
         """
         assert len(process_update_index) == self.worker_count
         # ensure no exceptions were raised
-        excs = [x.exception() for x in process_update_index if x.exception() is not None]
+        excs = [
+            x.exception() for x in process_update_index if x.exception() is not None
+        ]
         assert len(excs) == 0
 
 

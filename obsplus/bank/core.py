@@ -36,7 +36,7 @@ class _Bank(ABC):
     bank_path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
-    _lock_file_name = '.~obsplus_hdf5.lock'
+    _lock_file_name = ".~obsplus_hdf5.lock"
     _owns_lock = False
     # optional str defining the directory structure and file name schemes
     path_structure = None
@@ -176,7 +176,7 @@ class _Bank(ABC):
         max_retry
             The number of times to retry before raising.
         """
-        print(f'waiting for index lock {self.tnum}')
+        print(f"waiting for index lock {self.tnum}")
         # if there is no lock, or this bank owns the lock return
         if not os.path.exists(self.lock_file_path) or self._owns_lock:
             return
@@ -189,9 +189,11 @@ class _Bank(ABC):
             count += 1
         else:
             duration = max_retry * wait_interval
-            msg = (f'{self.lock_file_path} was not released after '
-                   f'{duration} seconds. It may need to be manually deleted'
-                   f' if the index is not in the process of being updated.')
+            msg = (
+                f"{self.lock_file_path} was not released after "
+                f"{duration} seconds. It may need to be manually deleted"
+                f" if the index is not in the process of being updated."
+            )
             # import traceback
             # msg += ''.join([str(x) for x in traceback.format_stack()])
             raise BankIndexLockError(msg)
@@ -202,9 +204,9 @@ class _Bank(ABC):
         Acquire lock for work inside context manager.
         """
         self.block_on_index_lock()  # ensure lock isn't already in use
-        print(f'locked index {self.tnum}')
+        print(f"locked index {self.tnum}")
         assert Path(self.bank_path).exists()
-        open(self.lock_file_path, 'w').close()  # create lock file
+        open(self.lock_file_path, "w").close()  # create lock file
         self._owns_lock = True
         yield
         try:
@@ -212,11 +214,4 @@ class _Bank(ABC):
         except FileNotFoundError:
             pass
         self._owns_lock = False
-        print(f'released index lock {self.tnum}')
-
-
-
-
-
-
-
+        print(f"released index lock {self.tnum}")
