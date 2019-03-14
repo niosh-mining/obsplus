@@ -164,7 +164,7 @@ class _Bank(ABC):
             msg = f"{path} is not a directory, cant read bank"
             raise BankDoesNotExistError(msg)
 
-    def block_on_index_lock(self, wait_interval=1, max_retry=6):
+    def block_on_index_lock(self, wait_interval=.2, max_retry=10):
         """
         Blocks until the lock is released.
 
