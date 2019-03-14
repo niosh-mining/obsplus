@@ -102,6 +102,12 @@ class WaveBank(_Bank):
     ext : str or None
         The extension of the waveform files. If provided, only files with
         this extension will be read.
+    concurrent_updates
+        If True this bank will share an index with other processes, one or
+        more of which may perform update_index operations. When True a simple
+        file locking mechanism attempts to compensate for shortcommings in
+        HDF5 stores lack of concurrency support. This is not needed if all
+        processes are only going to read from the bank.
     """
 
     # index columns and types
@@ -129,6 +135,7 @@ class WaveBank(_Bank):
         inventory: Optional[Union[obspy.Inventory, str]] = None,
         format="mseed",
         ext=None,
+        concurrent_updates=False,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -142,6 +149,7 @@ class WaveBank(_Bank):
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
+        self._concurrent = concurrent_updates
 
     # ----------------------- index related stuff
 
@@ -297,10 +305,6 @@ class WaveBank(_Bank):
         except (FileNotFoundError, ValueError, KeyError):
             self._ensure_meta_table_exists()
             return pd.read_hdf(self.index_path, self._meta_node)
-        # except (OSError, HDF5ExtError):
-        #     # This happens when the index is being updated by another process
-        #     self.block_on_index_lock()  # try to wait it out, else raise
-        #     return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
 

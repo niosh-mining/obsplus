@@ -1197,6 +1197,13 @@ class TestConcurrency:
         return wbank.read_index()
 
     # fixtures
+    @pytest.fixture
+    def concurrent_bank(self, tmpdir):
+        """ Make a temporary bank and index it. """
+        wbank = WaveBank(str(tmpdir), concurrent_updates=True)
+        self.func(wbank)
+        return wbank
+
     @pytest.fixture(scope="class")
     def thread_pool(self):
         """ return a thread pool """
@@ -1204,12 +1211,12 @@ class TestConcurrency:
             yield executor
 
     @pytest.fixture
-    def thread_update_index(self, ta_bank, thread_pool):
+    def thread_update_index(self, concurrent_bank, thread_pool):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
-        ta_bank.update_index()
-        func = functools.partial(self.func, wbank=ta_bank)
+        concurrent_bank.update_index()
+        func = functools.partial(self.func, wbank=concurrent_bank)
         for _ in range(self.worker_count):
             out.append(thread_pool.submit(func))
         return list(as_completed(out))
@@ -1221,18 +1228,18 @@ class TestConcurrency:
             yield executor
 
     @pytest.fixture
-    def process_update_index(self, ta_bank, process_pool):
+    def process_update_index(self, concurrent_bank, process_pool):
         """ run a bunch of update index operations in different processes,
         return list of results """
-        ta_bank.update_index()
+        concurrent_bank.update_index()
         out = []
-        func = functools.partial(self.func, wbank=ta_bank)
-        for _ in range(self.worker_count):
+        func = functools.partial(self.func, wbank=concurrent_bank)
+        for num in range(self.worker_count):
             out.append(process_pool.submit(func))
         return list(as_completed(out))
 
     # tests
-    def test_index_update_threads(self, thread_update_index, ta_bank):
+    def test_index_update_threads(self, thread_update_index):
         """ ensure the index updated and the threads didn't kill each
         other """
         # get a list of exceptions that occurred
@@ -1240,7 +1247,7 @@ class TestConcurrency:
         excs = [x.exception() for x in thread_update_index if x.exception() is not None]
         assert len(excs) == 0
 
-    def test_index_update_processes(self, process_update_index, ta_bank):
+    def test_index_update_processes(self, process_update_index):
         """
         Ensure the index can be updated in different processes.
         """
@@ -1251,10 +1258,10 @@ class TestConcurrency:
         ]
         assert len(excs) == 0
 
-    def test_file_lock(self, ta_bank):
+    def test_file_lock(self, concurrent_bank):
         """ Tests for the file locking mechanism. """
-        newbank = WaveBank(ta_bank)
-        with ta_bank.lock_index():
+        newbank = WaveBank(concurrent_bank)
+        with concurrent_bank.lock_index():
             with pytest.raises(BankIndexLockError):
                 newbank.block_on_index_lock(0.01, 1)
 
