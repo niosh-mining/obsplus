@@ -1,8 +1,10 @@
 """
 Bank ABC
 """
+import gc
 import os
 import time
+import tables
 import threading
 import warnings
 from abc import ABC, abstractmethod
@@ -208,6 +210,10 @@ class _Bank(ABC):
         assert Path(self.bank_path).exists()
         open(self.lock_file_path, "w").close()  # create lock file
         self._owns_lock = True
+        # close all open files (nothing should have tables at this point)
+        gc.collect()  # must call GC to ensure everything is cleaned up (ugly)
+        tables.file._open_files.close_all()
+        print(tables.file._FILE_OPEN_POLICY)
         yield
         try:
             os.unlink(self.lock_file_path)

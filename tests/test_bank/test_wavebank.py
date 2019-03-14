@@ -1184,10 +1184,10 @@ class TestConcurrency:
     Tests to make sure running update index in different threads/processes.
     """
 
-    worker_count = 6
-    new_files = 10
+    worker_count = 4
+    new_files = 1
 
-    def func(self, wbank, tnum=0):
+    def func(self, wbank, tnum=None):
         """ add new files to the wavebank then update index, return index. """
         path = Path(wbank.bank_path)
         for ind in range(self.new_files):
@@ -1224,9 +1224,7 @@ class TestConcurrency:
     def process_update_index(self, ta_bank, process_pool):
         """ run a bunch of update index operations in different processes,
         return list of results """
-        breakpoint()
         ta_bank.update_index()
-        breakpoint()
         out = []
         for num in range(self.worker_count):
             func = functools.partial(self.func, wbank=ta_bank, tnum=num)
@@ -1252,6 +1250,9 @@ class TestConcurrency:
             x.exception() for x in process_update_index if x.exception() is not None
         ]
         assert len(excs) == 0
+
+    def test_file_lock(self):
+        """ Tests for the file locking mechanism. """
 
 
 class TestSelectDoesntReturnSuperset:

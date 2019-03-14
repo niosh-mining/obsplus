@@ -154,6 +154,7 @@ class WaveBank(_Bank):
         Return the last modified time stored in the index, else None.
         """
         self.ensure_bank_path_exists()
+        self.block_on_index_lock()
         node = self._time_node
         print(f"reading last updated {self.tnum}")
         try:
@@ -191,9 +192,9 @@ class WaveBank(_Bank):
             progress bar.
         """
         self.tnum = tnum
-        print(f"updating index! {tnum}")
+        print(f"calling update_index on {tnum}")
 
-        # self._enforce_min_version()
+        self._enforce_min_version()
         num_files = sum([1 for _ in self._unindexed_file_iterator()])
         if num_files >= min_files_for_bar:
             print(f"updating or creating waveform index for {self.bank_path}")
@@ -233,7 +234,14 @@ class WaveBank(_Bank):
             df[float_index] = df[float_index].astype(float)
         # populate index store and update metadata
         assert not df.isnull().any().any(), "null values found in index dataframe"
+        print(f'getting store {self.tnum}')
+        store = pd.HDFStore(self.index_path, mode='r')
+        if store.is_open:
+            store.close()
+        # if store.is_open:
+        #     store.close()
         print(f"opening store {self.tnum}")
+
         try:
             with pd.HDFStore(self.index_path) as store:
                 node = self._index_node
@@ -249,11 +257,14 @@ class WaveBank(_Bank):
                 # update timestamp
                 store.put(self._time_node, pd.Series(time.time()))
         except Exception as e:
+            # self._write_update(updates)
             import traceback
 
-            msg = f"failed at open store {self.tnum} {self._owns_lock}"
+            msg = f"failed at open store {self.tnum} {self._owns_lock}, {store.is_open}"
             print(msg)
-            raise ValueError(msg + traceback.print_tb(e.__traceback__))
+            tb = traceback.print_tb(e.__traceback__)
+            print(tb)
+            raise e
             strout = traceback.print
 
         print(f"closing store {self.tnum}")
@@ -314,6 +325,8 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
+        self.block_on_index_lock()
+        print(f'reading metadata on {self.tnum}')
         try:
             return pd.read_hdf(self.index_path, self._meta_node)
         except (FileNotFoundError, ValueError, KeyError):
