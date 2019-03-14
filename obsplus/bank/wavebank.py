@@ -112,11 +112,8 @@ class WaveBank(_Bank):
     columns_no_path = index_columns[:-1]
     gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
-    tnum = None
-
     # other defaults
     buffer = 10.111  # the time before and after the desired times to pull
-
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
     min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
@@ -156,7 +153,6 @@ class WaveBank(_Bank):
         self.ensure_bank_path_exists()
         self.block_on_index_lock()
         node = self._time_node
-        print(f"reading last updated {self.tnum}")
         try:
             out = pd.read_hdf(self.index_path, node)[0]
         except (IOError, IndexError, ValueError, KeyError, AttributeError):
@@ -174,9 +170,7 @@ class WaveBank(_Bank):
         )
 
     @thread_lock_function()
-    def update_index(
-        self, bar: Optional = None, min_files_for_bar: int = 5000, tnum=None
-    ):
+    def update_index(self, bar: Optional = None, min_files_for_bar: int = 5000):
         """
         Iterate files in bank and add any modified since last update to index.
 
@@ -191,9 +185,6 @@ class WaveBank(_Bank):
             Minimum number of un-indexed files required for using the
             progress bar.
         """
-        self.tnum = tnum
-        print(f"calling update_index on {tnum}")
-
         self._enforce_min_version()
         num_files = sum([1 for _ in self._unindexed_file_iterator()])
         if num_files >= min_files_for_bar:
@@ -211,8 +202,6 @@ class WaveBank(_Bank):
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
 
         if len(updates):  # flatten list and make df
-            print(f"processing updates {tnum}")
-
             with self.lock_index():
                 self._write_update(list(chain.from_iterable(updates)))
             self._read_metadata()  # ensures metadata table exists
@@ -222,7 +211,6 @@ class WaveBank(_Bank):
     def _write_update(self, updates):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and cast to correct types
-        print(f"starting dataframe formatting {self.tnum}")
         df = pd.DataFrame.from_dict(updates)
         # ensure the bank path is not in the path column
         df["path"] = df["path"].str.replace(self.bank_path, "")
@@ -234,40 +222,19 @@ class WaveBank(_Bank):
             df[float_index] = df[float_index].astype(float)
         # populate index store and update metadata
         assert not df.isnull().any().any(), "null values found in index dataframe"
-        print(f'getting store {self.tnum}')
-        store = pd.HDFStore(self.index_path, mode='r')
-        if store.is_open:
-            store.close()
-        # if store.is_open:
-        #     store.close()
-        print(f"opening store {self.tnum}")
-
-        try:
-            with pd.HDFStore(self.index_path) as store:
-                node = self._index_node
-                try:
-                    nrows = store.get_storer(node).nrows
-                except (AttributeError, KeyError):
-                    store.append(
-                        node, df, min_itemsize=self.min_itemsize, **self.hdf_kwargs
-                    )
-                else:
-                    df.index += nrows
-                    store.append(node, df, append=True, **self.hdf_kwargs)
-                # update timestamp
-                store.put(self._time_node, pd.Series(time.time()))
-        except Exception as e:
-            # self._write_update(updates)
-            import traceback
-
-            msg = f"failed at open store {self.tnum} {self._owns_lock}, {store.is_open}"
-            print(msg)
-            tb = traceback.print_tb(e.__traceback__)
-            print(tb)
-            raise e
-            strout = traceback.print
-
-        print(f"closing store {self.tnum}")
+        with pd.HDFStore(self.index_path) as store:
+            node = self._index_node
+            try:
+                nrows = store.get_storer(node).nrows
+            except (AttributeError, KeyError):
+                store.append(
+                    node, df, min_itemsize=self.min_itemsize, **self.hdf_kwargs
+                )
+            else:
+                df.index += nrows
+                store.append(node, df, append=True, **self.hdf_kwargs)
+            # update timestamp
+            store.put(self._time_node, pd.Series(time.time()))
 
     def _ensure_meta_table_exists(self):
         """
@@ -276,7 +243,6 @@ class WaveBank(_Bank):
         if not Path(self.index_path).exists():
             return
         with self.lock_index():
-            print(f"ensureing meta exsits {self.tnum}")
             with pd.HDFStore(self.index_path) as store:
                 # add metadata if not in store
                 if self._meta_node not in store:
@@ -326,7 +292,6 @@ class WaveBank(_Bank):
         Read the metadata table.
         """
         self.block_on_index_lock()
-        print(f'reading metadata on {self.tnum}')
         try:
             return pd.read_hdf(self.index_path, self._meta_node)
         except (FileNotFoundError, ValueError, KeyError):

@@ -24,7 +24,7 @@ import obsplus.bank.utils
 import obsplus.bank.wavebank as sbank
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
-from obsplus.exceptions import BankDoesNotExistError
+from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 from obsplus.utils import make_time_chunks, iter_files, get_reference_time
 
 
@@ -1171,7 +1171,6 @@ class TestGetGaps:
 
 class TestBadInputs:
     """ ensure wavebank handles bad inputs correctly """
-
     # tests
     def test_bad_inventory(self, tmp_ta_dir):
         """ ensure giving a bad stations str raises """
@@ -1183,17 +1182,16 @@ class TestConcurrency:
     """
     Tests to make sure running update index in different threads/processes.
     """
-
     worker_count = 4
     new_files = 1
 
-    def func(self, wbank, tnum=None):
+    def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
         path = Path(wbank.bank_path)
         for ind in range(self.new_files):
             st = obspy.read()
             st.write(f"{path / str(ind)}.mseed", "mseed")
-        wbank.update_index(tnum=tnum)
+        wbank.update_index()
         return wbank.read_index()
 
     # fixtures
@@ -1226,8 +1224,8 @@ class TestConcurrency:
         return list of results """
         ta_bank.update_index()
         out = []
-        for num in range(self.worker_count):
-            func = functools.partial(self.func, wbank=ta_bank, tnum=num)
+        func = functools.partial(self.func, wbank=ta_bank)
+        for _ in range(self.worker_count):
             out.append(process_pool.submit(func))
         return list(as_completed(out))
 
@@ -1251,8 +1249,12 @@ class TestConcurrency:
         ]
         assert len(excs) == 0
 
-    def test_file_lock(self):
+    def test_file_lock(self, ta_bank):
         """ Tests for the file locking mechanism. """
+        newbank = WaveBank(ta_bank)
+        with ta_bank.lock_index():
+            with pytest.raises(BankIndexLockError):
+                newbank.block_on_index_lock(.01, 1)
 
 
 class TestSelectDoesntReturnSuperset:
