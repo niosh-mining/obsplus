@@ -136,6 +136,7 @@ class TestBankBasics:
 
             def finish(self):
                 pass
+
         # set the interval to 1 to ensure it gets called
         ebank_with_bad_files._bar_update_interval = 1
         # remove old index, update with custom bar function
