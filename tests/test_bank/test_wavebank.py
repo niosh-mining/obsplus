@@ -1171,6 +1171,7 @@ class TestGetGaps:
 
 class TestBadInputs:
     """ ensure wavebank handles bad inputs correctly """
+
     # tests
     def test_bad_inventory(self, tmp_ta_dir):
         """ ensure giving a bad stations str raises """
@@ -1182,6 +1183,7 @@ class TestConcurrency:
     """
     Tests to make sure running update index in different threads/processes.
     """
+
     worker_count = 4
     new_files = 1
 
@@ -1254,7 +1256,7 @@ class TestConcurrency:
         newbank = WaveBank(ta_bank)
         with ta_bank.lock_index():
             with pytest.raises(BankIndexLockError):
-                newbank.block_on_index_lock(.01, 1)
+                newbank.block_on_index_lock(0.01, 1)
 
 
 class TestSelectDoesntReturnSuperset:
