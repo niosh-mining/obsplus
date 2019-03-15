@@ -130,8 +130,8 @@ PICK_COLUMNS = tuple(PICK_DTYPES)
 # columns for distance dataframe
 
 DISTANCE_DTYES = OrderedDict(
-    epicentral_distance=float,
-    hypocentral_distance=float,
+    distance=float,
+    horizontal_distance=float,
     depth_distance=float,
     azimuth=float,
 )
