@@ -16,6 +16,7 @@ import numpy as np
 import obspy
 import pandas as pd
 import tables
+from tables.exceptions import HDF5ExtError
 from obspy import UTCDateTime, Stream
 
 import obsplus
@@ -101,6 +102,13 @@ class WaveBank(_Bank):
     ext : str or None
         The extension of the waveform files. If provided, only files with
         this extension will be read.
+    concurrent_updates
+        If True this bank will share an index with other processes, one or
+        more of which may perform update_index operations. When used a simple
+        file locking mechanism attempts to compensate for shortcomings in
+        HDF5 stores lack of concurrency support. This is not needed if all
+        processes are only going to read from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a few concurrent processes.
     """
 
     # index columns and types
@@ -111,10 +119,8 @@ class WaveBank(_Bank):
     columns_no_path = index_columns[:-1]
     gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
-
     # other defaults
     buffer = 10.111  # the time before and after the desired times to pull
-
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
     min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
@@ -130,6 +136,7 @@ class WaveBank(_Bank):
         inventory: Optional[Union[obspy.Inventory, str]] = None,
         format="mseed",
         ext=None,
+        concurrent_updates=False,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -143,6 +150,7 @@ class WaveBank(_Bank):
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
+        self._concurrent = concurrent_updates
 
     # ----------------------- index related stuff
 
@@ -152,6 +160,7 @@ class WaveBank(_Bank):
         Return the last modified time stored in the index, else None.
         """
         self.ensure_bank_path_exists()
+        self.block_on_index_lock()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -168,8 +177,6 @@ class WaveBank(_Bank):
             format="table",
             data_columns=list(self.index_float),
         )
-
-    # --- properties to get hdf5 nodes / paths
 
     @thread_lock_function()
     def update_index(self, bar: Optional = None, min_files_for_bar: int = 5000):
@@ -202,8 +209,10 @@ class WaveBank(_Bank):
             if bar and num % self._bar_update_interval == 0:
                 bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
+
         if len(updates):  # flatten list and make df
-            self._write_update(list(chain.from_iterable(updates)))
+            with self.lock_index():
+                self._write_update(list(chain.from_iterable(updates)))
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
 
@@ -234,7 +243,11 @@ class WaveBank(_Bank):
                 store.append(node, df, append=True, **self.hdf_kwargs)
             # update timestamp
             store.put(self._time_node, pd.Series(time.time()))
-        self._ensure_meta_table_exists()
+            # make sure meta table also exists.
+            # Note this is hear to avoid opening the store again.
+            if self._meta_node not in store:
+                meta = self._make_meta_table()
+                store.put(self._meta_node, meta, format="table")
 
     def _ensure_meta_table_exists(self):
         """
@@ -242,11 +255,12 @@ class WaveBank(_Bank):
         """
         if not Path(self.index_path).exists():
             return
-        with pd.HDFStore(self.index_path) as store:
-            # add metadata if not in store
-            if self._meta_node not in store:
-                meta = self._make_meta_table()
-                store.put(self._meta_node, meta, format="table")
+        with self.lock_index():
+            with pd.HDFStore(self.index_path) as store:
+                # add metadata if not in store
+                if self._meta_node not in store:
+                    meta = self._make_meta_table()
+                    store.put(self._meta_node, meta, format="table")
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -290,6 +304,7 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
+        self.block_on_index_lock()
         try:
             return pd.read_hdf(self.index_path, self._meta_node)
         except (FileNotFoundError, ValueError, KeyError):

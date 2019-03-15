@@ -8,6 +8,7 @@ import re
 import sqlite3
 import warnings
 from functools import singledispatch
+from contextlib import contextmanager
 from os.path import join
 from typing import Optional, Sequence, Union
 
