@@ -213,7 +213,7 @@ class WaveBank(_Bank):
         if len(updates):  # flatten list and make df
             with self.lock_index():
                 self._write_update(list(chain.from_iterable(updates)))
-            self._read_metadata()  # ensures metadata table exists
+            self._ensure_meta_table_exists()  # ensures metadata table exists
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
 
