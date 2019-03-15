@@ -213,7 +213,6 @@ class WaveBank(_Bank):
         if len(updates):  # flatten list and make df
             with self.lock_index():
                 self._write_update(list(chain.from_iterable(updates)))
-            self._ensure_meta_table_exists()  # ensures metadata table exists
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
 
@@ -244,6 +243,11 @@ class WaveBank(_Bank):
                 store.append(node, df, append=True, **self.hdf_kwargs)
             # update timestamp
             store.put(self._time_node, pd.Series(time.time()))
+            # make sure meta table also exists.
+            # Note this is hear to avoid opening the store again.
+            if self._meta_node not in store:
+                meta = self._make_meta_table()
+                store.put(self._meta_node, meta, format="table")
 
     def _ensure_meta_table_exists(self):
         """
