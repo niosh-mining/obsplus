@@ -1236,7 +1236,7 @@ class TestConcurrency:
         out = []
         func = functools.partial(self.func, wbank=concurrent_bank)
         for num in range(self.worker_count):
-            time.sleep(.1)
+            time.sleep(0.1)
             out.append(process_pool.submit(func))
         return list(as_completed(out))
 
