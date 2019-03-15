@@ -185,8 +185,8 @@ class _Bank(ABC):
         # if there is no lock, or this bank owns the lock return
         if not os.path.exists(self.lock_file_path) or self._owns_lock:
             return
-        # get random state, based on process id, for waiting randomw seconds
-        rand = np.random.RandomState(os.getpid() or 0)
+        # get random state, based on process id, for waiting random seconds
+        rand = np.random.RandomState(os.getpid() or 13)
         # wait until the lock file is gone or timeout occurs (then raise)
         count = 0
         while count < max_retry:

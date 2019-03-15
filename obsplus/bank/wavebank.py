@@ -104,10 +104,11 @@ class WaveBank(_Bank):
         this extension will be read.
     concurrent_updates
         If True this bank will share an index with other processes, one or
-        more of which may perform update_index operations. When True a simple
-        file locking mechanism attempts to compensate for shortcommings in
+        more of which may perform update_index operations. When used a simple
+        file locking mechanism attempts to compensate for shortcomings in
         HDF5 stores lack of concurrency support. This is not needed if all
-        processes are only going to read from the bank.
+        processes are only going to read from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a few concurrent processes.
     """
 
     # index columns and types

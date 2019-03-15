@@ -6,6 +6,7 @@ import pathlib
 import shutil
 import sys
 import tempfile
+import time
 import types
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from io import StringIO
@@ -1235,6 +1236,7 @@ class TestConcurrency:
         out = []
         func = functools.partial(self.func, wbank=concurrent_bank)
         for num in range(self.worker_count):
+            time.sleep(.1)
             out.append(process_pool.submit(func))
         return list(as_completed(out))
 
