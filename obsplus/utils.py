@@ -758,27 +758,33 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
             yield from iter_files(entry.path, ext=ext, mtime=mtime)
 
 
-def get_distance_df(events: event_type, stations: inventory_type) -> pd.DataFrame:
+def get_distance_df(
+    entity_1: Union[event_type, inventory_type],
+    entity_2: Union[event_type, inventory_type],
+) -> pd.DataFrame:
     """
     Create a dataframe of distances and azimuths from events to stations.
 
     Parameters
     ----------
-    events
-        Any object from which event information is extractable,
-        eg obspy.Catalog.
-    stations
-        Any object from which station information is extractable,
-        eg obspy.Inventory. Channel-level information must be present.
+    entity_1
+        An object from which latitude, longitude and depth are
+        extractable.
+    entity_2
+        An object from which latitude, longitude and depth are
+        extractable.
 
     Notes
     -----
-    Simply uses obspy.geodetics.gps2dist_azimuth under the hood.
+    Simply uses obspy.geodetics.gps2dist_azimuth under the hood. The index
+    of the dataframe is a multi-index where the first level corresponds to ids
+    from entity_1 (either an event_id or seed_id str) and the second level
+    corresponds to ids from entity_2.
 
     Returns
     -------
-    A dataframe with epicentral, hypocentral, and depth distances, as well as
-    azimuth, from each event to each station.
+    A dataframe with distance, horizontal_distance, and depth distances,
+    as well as azimuth, for each entity pair.
     """
 
     def _dist_func(tup1, tup2):
@@ -787,33 +793,39 @@ def get_distance_df(events: event_type, stations: inventory_type) -> pd.DataFram
         """
         gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
         z_diff = tup2[2] - tup1[2]
-        hypo_dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
+        dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
         out = dict(
-            epicentral_distance=gs_dist,
-            hypocentral_distance=hypo_dist,
+            horizontal_distance=gs_dist,
+            distance=dist,
             depth_distance=z_diff,
             azimuth=azimuth,
         )
         return out
 
-    latlon = ["latitude", "longitude", "elevation"]
-    event_cols = latlon + ["event_id"]
-    sta_cols = latlon + ["seed_id"]
-    # get dataframes of event/station data
-    edf = obsplus.events_to_df(events)
-    edf["elevation"] = -edf["depth"]
-    idf = obsplus.stations_to_df(stations)
-    # get sets of unique lat/lon for stations and events
-    elatlons = set(edf[event_cols].itertuples(index=False, name=None))
-    ilatlons = set(idf[sta_cols].itertuples(index=False, name=None))
+    def _get_distance_tuple(obj):
+        """ return a list of tuples for entities """
+        cols = ["latitude", "longitude", "elevation", "id"]
+        try:
+            df = obsplus.events_to_df(obj)
+            df["elevation"] = -df["depth"]
+            df["id"] = df["event_id"]
+        except (TypeError, ValueError, AttributeError):
+            df = obsplus.stations_to_df(obj)
+            df["id"] = df["seed_id"]
+        return set(df[cols].itertuples(index=False, name=None))
+
+    # get a tuple of
+    coord1 = _get_distance_tuple(entity_1)
+    coord2 = _get_distance_tuple(entity_2)
     # make a dict of {(event_id, seed_id): (dist, azimuth)}
     dist_dicts = {
         (ell[-1], ill[-1]): _dist_func(ell, ill)
-        for ell, ill in product(elatlons, ilatlons)
+        for ell, ill in product(coord1, coord2)
+        if ell[-1] != ill[-1]  # skip if same entity
     }
     df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
     # make sure index is named
-    df.index.names = ("event_id", "seed_id")
+    df.index.names = ("id1", "id2")
     return df[list(DISTANCE_COLUMNS)]
 
 

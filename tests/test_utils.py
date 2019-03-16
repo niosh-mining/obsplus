@@ -1,4 +1,5 @@
 """ tests for various utility functions """
+import itertools
 import textwrap
 from pathlib import Path
 
@@ -368,7 +369,7 @@ class TestDistanceDataframe:
     @pytest.fixture(scope="class")
     def distance_df(self, cat, inv):
         """ Return a dataframe from all the crandall events and stations. """
-        return get_distance_df(events=cat, stations=inv)
+        return get_distance_df(entity_1=cat, entity_2=inv)
 
     def test_type(self, distance_df):
         """ ensure a dataframe was returned. """
@@ -377,11 +378,18 @@ class TestDistanceDataframe:
 
     def test_all_events_in_df(self, distance_df, cat):
         """ Ensure all the events are in the distance dataframe. """
-        event_ids_df = set(distance_df.index.to_frame()["event_id"])
+        event_ids_df = set(distance_df.index.to_frame()["id1"])
         event_ids_cat = {str(x.resource_id) for x in cat}
         assert event_ids_cat == event_ids_df
 
     def test_all_seed_id_in_df(self, distance_df, inv):
         seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
-        seed_id_df = set(distance_df.index.to_frame()["seed_id"])
+        seed_id_df = set(distance_df.index.to_frame()["id2"])
         assert seed_id_df == seed_id_stations
+
+    def test_cat_cat(self, cat):
+        """ ensure it works with two catalogs """
+        df = get_distance_df(cat, cat)
+        event_ids = {str(x.resource_id) for x in cat}
+        combinations = set(itertools.permutations(event_ids, 2))
+        assert combinations == set(df.index)

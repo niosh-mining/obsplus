@@ -26,5 +26,5 @@ obsplus 0.0.1:
       obsplus.utils to obsplus.events.utils (see #66).
   - obsplus.utils
     * Added method for correcting nullish nslc codes (see #37 and #38)
-    * Added function for getting source-receiver geometric parameters from
-      any number of events/channels (see #67).
+    * Added function for getting geometric parameters from two groups of
+      events or stations see (see #67/#72).
