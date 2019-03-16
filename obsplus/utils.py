@@ -786,6 +786,7 @@ def get_distance_df(
     A dataframe with distance, horizontal_distance, and depth distances,
     as well as azimuth, for each entity pair.
     """
+
     def _dist_func(tup1, tup2):
         """
         Function to get distances and azimuths from pairs of coordinates
@@ -803,14 +804,14 @@ def get_distance_df(
 
     def _get_distance_tuple(obj):
         """ return a list of tuples for entities """
-        cols = ['latitude', 'longitude', 'elevation', 'id']
+        cols = ["latitude", "longitude", "elevation", "id"]
         try:
             df = obsplus.events_to_df(obj)
-            df['elevation'] = -df['depth']
-            df['id'] = df['event_id']
+            df["elevation"] = -df["depth"]
+            df["id"] = df["event_id"]
         except (TypeError, ValueError, AttributeError):
             df = obsplus.stations_to_df(obj)
-            df['id'] = df['seed_id']
+            df["id"] = df["seed_id"]
         return set(df[cols].itertuples(index=False, name=None))
 
     # get a tuple of
