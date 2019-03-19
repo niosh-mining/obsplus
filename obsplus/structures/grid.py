@@ -147,7 +147,7 @@ class Grid(object):
             implemented...)
         """
         if interpolate:
-            raise Exception("Logic not yet developed to interpolate grid " "values")
+            raise Exception("Logic not yet developed to interpolate grid values")
 
         ind = self.get_index(point)
         value = self.values[ind]
@@ -222,7 +222,7 @@ class Grid(object):
         # Make sure the grid is kosher for this plotting method
         if not (len(self.values.shape) == 2):
             raise TypeError(
-                "plot_2d method only works for 2D grid. Use " "plot_slice instead"
+                "plot_2d method only works for 2D grid. Use plot_slice instead"
             )
 
         # Set necessary kwargs
@@ -284,7 +284,7 @@ class Grid(object):
         # Make sure the grid is kosher for this plotting method
         if len(self.values.shape) < 3:
             raise TypeError(
-                "plot_slice method only works for 3D grids. Use " "plot_2D instead"
+                "plot_slice method only works for 3D grids. Use plot_2D instead"
             )
 
         if layer_coord == "grid":
@@ -539,7 +539,7 @@ def read_header(path, gtype=None):
     with open(path, "r") as headfile:
         header = headfile.read().split()
     if not header[9] == gtype:
-        raise TypeError("Grid format does not match specified grid type: " f"{gtype}")
+        raise TypeError(f"Grid format does not match specified grid type: {gtype}")
     num_gps = [int(header[0]), int(header[1]), int(header[2])]
     origin = [float(header[3]), float(header[4]), float(header[5])]
     spacing = [float(header[6]), float(header[7]), float(header[8])]
@@ -677,7 +677,7 @@ def apply_layers(grid, layers):
     for elev in layers:
         if not isinstance(elev, Iterable) or isinstance(elev, str):
             raise TypeError(
-                "velocity input should be a 2D list of values " "and elevations"
+                "velocity input should be a 2D list of values and elevations"
             )
         grid.values[:, :, grid.grid_points[2] <= elev[1]] = elev[0]
 
@@ -826,7 +826,7 @@ def apply_topo(
         topo = topo_points
         if not {"X", "Y", "Z"}.issubset(topo.columns):
             raise KeyError(
-                f"topo_points must contain the following " "columns: ['X', 'Y', 'Z']"
+                f"topo_points must contain the following columns: ['X', 'Y', 'Z']"
             )
     elif isinstance(topo_points, str):
         if not os.path.isfile(topo_points):
@@ -838,7 +838,7 @@ def apply_topo(
         raise TypeError("An invalid topo_points was provided to apply_topo")
     if not {"X", "Y", "Z"}.issubset(topo.columns):
         raise KeyError(
-            f"topo_points must contain the following columns: " "['X', 'Y', 'Z']"
+            f"topo_points must contain the following columns: ['X', 'Y', 'Z']"
         )
 
     if method not in ["nearest", "linear", "cubic"]:
@@ -970,6 +970,53 @@ def plt_grid(x1_coords, x2_coords, values, **kwargs):
     # Make the plot look nice
     ax.set_aspect("equal")
     return fig, ax
+
+
+def grid_cross(grid, coord, direction="X"):
+    """
+    Function for returning a profile from a two-dimensional grid
+
+    Parameters
+    ----------
+    grid : Grid
+        Grid from which to pull the values
+    coord : float
+        Coordinate along which to get the profile
+    direction : str
+        Direction along which to get the profile. Possible values are "X"
+        for a profile that parallel to the x-axis and "Y" for a profile
+        that is parallel to the y-axis.
+
+    Returns
+    -------
+    points : np.array
+        List of coordinates along the profile
+    values : np.array
+        Values at each coordinate
+    """
+    if not len(grid.grid_points) == 2:
+        raise TypeError("grid must be a 2D Grid")
+    points = {"X": grid.grid_points[0], "Y": grid.grid_points[1]}
+
+    if (coord < points[direction][0]) and (coord > points[direction][-1]):
+        raise ValueError(
+            f"coord is outside grid bounds: {coord} not in "
+            f"({points[direction][0]}, {points[direction][-1]})"
+        )
+    elif direction == "X":
+        # Slice the grid in the X-direction at that the provided Y-coordinate
+        dummy = points["X"][0]
+        ind = grid.get_index((dummy, coord))[1]
+        values = grid.values[:, ind]
+        return points[direction], values
+    elif direction == "Y":
+        # Slice the grid in the Y-direction at the provided X-coordinate
+        dummy = points["Y"][0]
+        ind = grid.get_index((coord, dummy))[0]
+        values = grid.values[ind, :]
+        return points[direction], values
+    else:
+        raise ValueError(f"Unknown direction: {direction}")
 
 
 # ------------------ Coordinate conversion utilities ----------------- #
@@ -1272,5 +1319,5 @@ def _reshape_points(df, inlist, use_z=True):
         cols = ["X", "Y"]
     if not (len(points) % dim) == 0:
         handle = df.loc[df.CODE == "  5"].iloc[0].VALUE
-        raise IOError("Corrupt dxf file crashed while parsing entity: " f"{handle}")
+        raise IOError(f"Corrupt dxf file crashed while parsing entity: {handle}")
     return pd.DataFrame(points.reshape((len(points) // dim, dim)), columns=cols)

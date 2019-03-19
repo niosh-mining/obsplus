@@ -16,11 +16,9 @@ import numpy as np
 import pandas as pd
 
 from obspy.core import UTCDateTime as UTC
-import obsplus.structures.grid as grid
+import obsplus.structures.grid as obsgrid
 from obsplus.structures.grid import Grid
 
-# import nllpy.core.grids as grids
-# from nllpy import VelocityModel, Stations, Grid2Time, Time2EQ
 
 # Stuff for coordinate conversions
 wgs84 = "+init=EPSG:4326"
@@ -120,7 +118,7 @@ def velocity_model(inputs):
         spacing=inputs["spacing"],
         num_gps=inputs["num_gps"],
     )
-    grid.apply_layers(vel, inputs["vel_input"])
+    obsgrid.apply_layers(vel, inputs["vel_input"])
     return vel
 
 
@@ -133,7 +131,7 @@ def velocity_model_num_cells(inputs):
         spacing=inputs["spacing"],
         num_cells=inputs["num_cells"],
     )
-    grid.apply_layers(vel, inputs["vel_input"])
+    obsgrid.apply_layers(vel, inputs["vel_input"])
     return vel
 
 
@@ -205,13 +203,13 @@ class TestGridReadWrite:
     def write_model(self, velocity_model, inputs):
         more_complex_layers = [[2.71, 3.00], [3.2, 2.5], [4.0, 2.0]]
         vm = deepcopy(velocity_model)
-        grid.apply_layers(vm, more_complex_layers)
+        obsgrid.apply_layers(vm, more_complex_layers)
         vm.write()
         return vm
 
     @pytest.fixture(scope="class")
     def loaded_grid(self, write_model, inputs):
-        return grid.load_grid(inputs["base_name"], gtype="VELOCITY")
+        return obsgrid.load_grid(inputs["base_name"], gtype="VELOCITY")
 
     def test_header(self, inputs, write_model):
         """ Make sure the header file is correct """
@@ -239,6 +237,22 @@ class TestGridReadWrite:
 class TestGridPlotting:
     """ Tests for verifying that grid plotting functions work correctly """
 
+    def test_plot_slice(self, velocity_model):
+        velocity_model.plot_slice(1.2)
+
+    def test_plot_2d(self):
+        origin = [0, 0]
+        spacing = [1, 1]
+        num_gps = [9, 11]
+        grid = Grid(
+            base_name="plane",
+            gtype="UNKNOWN",
+            origin=origin,
+            spacing=spacing,
+            num_gps=num_gps,
+        )
+        grid.plot_2d()
+
 
 class TestManipulateGrids:
     """ Tests for verifying functions for manipulating the values of grids """
@@ -249,14 +263,14 @@ class TestManipulateGrids:
         # Totally invalid input, bad item in list, bad value in layer
         for mod in ["abcd", [[2.71, 3.00], "abcd"], [[2.71, "a"]]]:
             with pytest.raises(TypeError):
-                grid.apply_layers(velocity_model, mod)
+                obsgrid.apply_layers(velocity_model, mod)
 
     # Tests for perturbing rectangular model regions
     def test_perturb_rectangle(self, velocity_model, grid_path):
         """Verify that a rectangular region of a grid can be perturbed"""
         rectangle = os.path.join(grid_path, "test_lvz.csv")
         vm = deepcopy(velocity_model)
-        grid.apply_rectangles(vm, rectangle, conversion=conversions["convert_to_km"])
+        obsgrid.apply_rectangles(vm, rectangle, conversion=conversions["convert_to_km"])
 
         x_coords = np.linspace(9.14, 13.14, 21)
         x_changed = np.extract(
@@ -295,14 +309,14 @@ class TestManipulateGrids:
     def test_bogus_rectangle(self, velocity_model, grid_path):
         rectangle = os.path.join(grid_path, "simple_topo.csv")
         with pytest.raises(IOError):
-            grid.apply_rectangles(velocity_model, rectangle)
+            obsgrid.apply_rectangles(velocity_model, rectangle)
 
     # Tests for incorporating topography
     def test_add_topo_csv(self, velocity_model, grid_path):
         """Verify that a csv file can be used to add topography"""
         vm = deepcopy(velocity_model)
         topo = os.path.join(grid_path, "simple_topo.csv")
-        grid.apply_topo(vm, topo, method="linear")
+        obsgrid.apply_topo(vm, topo, method="linear")
         # Spot check the velocities
         # (need to be careful here... it could just be a limitation of the
         # interpolation method, not necessarily the grid...)
@@ -316,10 +330,10 @@ class TestManipulateGrids:
         df = pd.read_csv(os.path.join(grid_path, "dxf_check.txt"))
         dxf_file = os.path.join(grid_path, "topo.dxf")
         vm = deepcopy(velocity_model)
-        csv = grid.apply_topo(
+        csv = obsgrid.apply_topo(
             vm, df, method="nearest", conversion=conversions["convert_to_km"]
         )
-        dxf = grid.apply_topo(
+        dxf = obsgrid.apply_topo(
             vm, dxf_file, method="nearest", conversion=conversions["convert_to_km"]
         )
         np.testing.assert_array_almost_equal(csv.values, dxf.values)
@@ -327,7 +341,7 @@ class TestManipulateGrids:
     def test_bogus_file(self, velocity_model, grid_path):
         topo = os.path.join(grid_path, "bogus.dxf")
         with pytest.raises(IOError):
-            grid.apply_topo(
+            obsgrid.apply_topo(
                 velocity_model,
                 topo,
                 method="nearest",
@@ -335,12 +349,49 @@ class TestManipulateGrids:
             )
         topo = os.path.join(grid_path, "test_modslow.P.mod.buf")
         with pytest.raises(IOError):
-            grid.apply_topo(
+            obsgrid.apply_topo(
                 velocity_model,
                 topo,
                 method="nearest",
                 conversion=conversions["convert_to_km"],
             )
+
+
+class TestValueRetrieval:
+    """ Tests for retrieving data from grids """
+
+    @pytest.fixture(scope="class")
+    def topo_map(self, grid_path):
+        """Make a very simple two-dimensional grid"""
+        plane = pd.read_csv(os.path.join(grid_path, "plane.csv"))
+        origin = [0, 0, 0]
+        spacing = [1, 1, 1]
+        num_gps = [9, 11, 1]
+        grid = Grid(
+            base_name="plane",
+            gtype="UNKNOWN",
+            origin=origin,
+            spacing=spacing,
+            num_gps=num_gps,
+        )
+        plane = obsgrid.apply_topo(grid, plane)
+        return plane
+
+    def test_get_x_profile(self, topo_map):
+        """Pull a profile along the x-axis"""
+        points, values = obsgrid.grid_cross(topo_map, 2, direction="X")
+        assert len(points) == 9
+        # The 'topo' map should increase linearly along the x-axis
+        for ind, val in enumerate(values):
+            if ind > 0:
+                assert val > values[ind - 1]
+
+    def test_get_y_profile(self, topo_map):
+        """Pull a profile along the y-axis"""
+        points, values = obsgrid.grid_cross(topo_map, 2, direction="Y")
+        assert len(points) == 11
+        # The 'topo' map should be constant along the y-axis
+        assert np.isclose(values, values[0]).all()
 
 
 class TestCoordinateConversion:
@@ -354,7 +405,7 @@ class TestCoordinateConversion:
     # Tests
     def test_conversion(self, points):
         """Verify it is possible to convert station coords to grid coords"""
-        df = grid.convert_coords(points, conversion=conversions["test_conversion"])
+        df = obsgrid.convert_coords(points, conversion=conversions["test_conversion"])
         assert not id(df) == id(points)
         assert {"X_GRID", "Y_GRID", "Z_GRID"}.issubset(df.columns)
         assert "X_GRID" not in points.columns
@@ -369,7 +420,7 @@ class TestCoordinateConversion:
             import pyproj
         except ModuleNotFoundError:
             pytest.skip("pyproj is not installed on this machine. Skipping.")
-        df = grid.convert_coords(points, conversion=conversions["test_project"])
+        df = obsgrid.convert_coords(points, conversion=conversions["test_project"])
         point = df.iloc[0]
         assert np.isclose(point.X_GRID, 11_337_944.568_914_454)
         assert np.isclose(point.Y_GRID, 7_426_524.761_504_985_4)
@@ -378,11 +429,11 @@ class TestCoordinateConversion:
     def test_bogus_conversion(self, points):
         """Verify a bogus conversion raises"""
         with pytest.raises(TypeError):
-            grid.convert_coords(points, conversion="a")
+            obsgrid.convert_coords(points, conversion="a")
 
     def test_conversion_callable(self, points):
         """Verify a callable conversion works"""
-        df = grid.convert_coords(
+        df = obsgrid.convert_coords(
             points,
             conversion=conversions["convert_callable"],
             conversion_kwargs={"x": "X_GRID", "y": "Y_GRID"},
@@ -395,9 +446,9 @@ class TestCoordinateConversion:
     def test_bogus_conversion_callable(self, points):
         """Verify a bogus callable conversion raises"""
         with pytest.raises(ValueError):
-            grid.convert_coords(points, conversion=conversions["bogus_callable"])
+            obsgrid.convert_coords(points, conversion=conversions["bogus_callable"])
 
     def test_excepting_conversion_callable(self, points):
         """Verify that a callable that excepts raises in a predictable manner"""
         with pytest.raises(RuntimeError):
-            grid.convert_coords(points, conversion=conversions["raising_callable"])
+            obsgrid.convert_coords(points, conversion=conversions["raising_callable"])
