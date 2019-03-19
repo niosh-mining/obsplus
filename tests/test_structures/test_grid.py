@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Dec  2 15:46:43 2017
+
+@author: shawn
+"""
+
+import pytest
+import os
+from copy import copy, deepcopy
+import tempfile
+import shutil
+
+import numpy as np
+import pandas as pd
+
+from obspy.core import UTCDateTime as UTC
+import obsplus.structures.grid as grid
+from obsplus.structures.grid import Grid
+
+# import nllpy.core.grids as grids
+# from nllpy import VelocityModel, Stations, Grid2Time, Time2EQ
+
+# Stuff for coordinate conversions
+wgs84 = "+init=EPSG:4326"
+grid_coords = "+init=EPSG:2926"
+
+
+def callable_conversion(df, x="X", y="Y"):
+    df[x] = df[x] * 0.3048
+    df[y] = df[y] * 0.3048
+    return df
+
+
+def bogus_conversion_callable(x):
+    x = "a"
+    return x
+
+
+def bogus_conversion_callable1(df):
+    return df
+
+
+def excepting_conversion_callable(x):
+    raise ValueError("Hi")
+
+
+conversions = {
+    "test_conversion": [
+        ("SCALE_X", 1 / 0.3048),
+        ("SCALE_Y", 1 / 0.3048),
+        ("SCALE_Z", 1 / 0.3048),
+        ("TRANSLATE_X", 1),
+        ("TRANSLATE_Y", 1),
+        ("TRANSLATE_Z", 1),
+        ("ROTATE_XY", 1),
+        ("ROTATE_XZ", 1),
+        ("ROTATE_YZ", 1),
+    ],
+    "test_project": [("PROJECT", {"from": wgs84, "to": grid_coords})],
+    "convert_to_km": [
+        ("SCALE_X", 0.3048 * 0.001),
+        ("SCALE_Y", 0.3048 * 0.001),
+        ("SCALE_Z", 0.3048 * 0.001),
+    ],
+    "convert_callable": callable_conversion,
+    "bogus_callable": bogus_conversion_callable,
+    "bogus_callabl1": bogus_conversion_callable1,
+    "raising_callable": excepting_conversion_callable,
+}
+
+
+# --- Functions for tests
+def check_grid_bounds(grid, origin, spacing, num_gps):
+    for num, val in enumerate(origin):
+        space = np.linspace(val, val + spacing[num] * (num_gps[num] - 1), num_gps[num])
+        np.testing.assert_array_almost_equal(grid.grid_points[num], space)
+        np.testing.assert_array_almost_equal(num_gps, grid.grid_map[num].shape)
+        np.testing.assert_almost_equal(val, grid.grid_map[num].min())
+        np.testing.assert_almost_equal(
+            val + spacing[num] * (num_gps[num] - 1), grid.grid_map[num].max()
+        )
+
+
+# --- Set up a temporary directory
+@pytest.fixture(scope="class")
+def temp_dir():
+    """ create a temporary working directory """
+    with tempfile.TemporaryDirectory() as td:
+        yield td
+    if os.path.exists(td):
+        shutil.rmtree(td)
+
+
+# --- Define common inputs
+@pytest.fixture(scope="class")
+def inputs(temp_dir):
+    """ common inputs for creating a velocity model grid """
+    inp = {
+        "base_name": os.path.join(temp_dir, "test_mod"),
+        "origin": [9.14, 3.67, 0.75],
+        "spacing": [0.05, 0.05, 0.05],
+        "num_gps": [81, 57, 41],
+        "num_cells": [80, 56, 40],
+        "vel_input": [[2.71, 3.00]],
+    }
+    # "vtype": "1d"}
+    return inp
+
+
+# --- Grids for tests
+@pytest.fixture(scope="class")
+def velocity_model(inputs):
+    """ Create simple 3D velocity model using a Grid object """
+    vel = Grid(
+        base_name=inputs["base_name"],
+        gtype="VELOCITY",
+        origin=inputs["origin"],
+        spacing=inputs["spacing"],
+        num_gps=inputs["num_gps"],
+    )
+    grid.apply_layers(vel, inputs["vel_input"])
+    return vel
+
+
+@pytest.fixture(scope="class")
+def velocity_model_num_cells(inputs):
+    vel = Grid(
+        base_name=inputs["base_name"],
+        gtype="VELOCITY",
+        origin=inputs["origin"],
+        spacing=inputs["spacing"],
+        num_cells=inputs["num_cells"],
+    )
+    grid.apply_layers(vel, inputs["vel_input"])
+    return vel
+
+
+class TestGrid:
+    """
+    Tests to verify the Grid structure can be built correctly
+    """
+
+    # --- Functions
+    def raising_grid(self, params, exception):
+        with pytest.raises(exception):
+            Grid(**params)
+
+    # --- Tests
+    def test_gp_velmod(self, velocity_model, inputs):
+        """Make sure the bounds and values of a velocity model are correct when defining using number of grid points"""
+        check_grid_bounds(
+            velocity_model, inputs["origin"], inputs["spacing"], inputs["num_gps"]
+        )
+
+    def test_cell_velmod(self, velocity_model_num_cells, inputs):
+        """Make sure the bounds and values of a velocity model are correct when defining using number of grid points"""
+        check_grid_bounds(
+            velocity_model_num_cells,
+            inputs["origin"],
+            inputs["spacing"],
+            inputs["num_gps"],
+        )
+
+    def test_bogus_gridspec(self, inputs):
+        """Verify bogus grid dimensions raise"""
+        inputs = deepcopy(inputs)
+        inputs.pop("vel_input")
+        for spec in ["origin", "spacing", "num_gps", "num_cells"]:
+            # Make sure an invalid spec raises
+            inps = deepcopy(inputs)
+            inps[spec] = "abc"
+            self.raising_grid(inps, TypeError)
+            # Make sure an invalid item in a spec raises
+            inps = deepcopy(inputs)
+            if (
+                spec == "num_cells"
+            ):  # Don't remember the reasoning for handling num_cells separately
+                inps[spec] = ["abc", 2, 3]
+            else:
+                inps[spec][0] = "abc"
+            self.raising_grid(inps, TypeError)
+            # Make sure an extra param in a spec raises
+            inps = deepcopy(inputs)
+            if spec == "num_cells":
+                inps[spec] = [1, 2, 3, 4]
+            else:
+                inps[spec] = inps[spec] + [1]
+            self.raising_grid(inps, ValueError)
+
+    def test_mismatched_num_gps_cells(self, inputs):
+        """Verify a bogus origin raises"""
+        inps = deepcopy(inputs)
+        inps.pop("vel_input")
+        inps["num_gps"] = [10, 20, 30]
+        inps["num_cells"] = [20, 30, 40]
+        self.raising_grid(inps, ValueError)
+
+
+class TestGridReadWrite:
+    """ Tests for verifying that it is possible to read/write grid objects """
+
+    @pytest.fixture(scope="class")
+    def write_model(self, velocity_model, inputs):
+        more_complex_layers = [[2.71, 3.00], [3.2, 2.5], [4.0, 2.0]]
+        vm = deepcopy(velocity_model)
+        grid.apply_layers(vm, more_complex_layers)
+        vm.write()
+        return vm
+
+    @pytest.fixture(scope="class")
+    def loaded_grid(self, write_model, inputs):
+        return grid.load_grid(inputs["base_name"], gtype="VELOCITY")
+
+    def test_header(self, inputs, write_model):
+        """ Make sure the header file is correct """
+        check = (
+            "81 57 41 9.140 3.670 -2.750 0.050 0.050 0.050 VELOCITY FLOAT\n"
+            "TRANSFORM NONE\n"
+        )
+        with open(f"{inputs['base_name']}.hdr") as f:
+            actual = f.read()
+        assert actual == check
+
+    def test_load_bounds(self, write_model, loaded_grid, inputs):
+        """ Check the bounds of the newly loaded grid """
+        check_grid_bounds(
+            loaded_grid, inputs["origin"], inputs["spacing"], inputs["num_gps"]
+        )
+
+    def test_grid_values(self, write_model, loaded_grid):
+        """ Make sure the components of the loaded grid match what was written """
+        for ind, gm in enumerate(loaded_grid.grid_map):
+            np.testing.assert_array_almost_equal(gm, write_model.grid_map[ind])
+        np.testing.assert_array_almost_equal(loaded_grid.values, write_model.values)
+
+
+class TestGridPlotting:
+    """ Tests for verifying that grid plotting functions work correctly """
+
+
+class TestManipulateGrids:
+    """ Tests for verifying functions for manipulating the values of grids """
+
+    # Tests for layered models
+    def test_bogus_layers(self, velocity_model):
+        """Verify a bogus layer specification"""
+        # Totally invalid input, bad item in list, bad value in layer
+        for mod in ["abcd", [[2.71, 3.00], "abcd"], [[2.71, "a"]]]:
+            with pytest.raises(TypeError):
+                grid.apply_layers(velocity_model, mod)
+
+    # Tests for perturbing rectangular model regions
+    def test_perturb_rectangle(self, velocity_model, grid_path):
+        """Verify that a rectangular region of a grid can be perturbed"""
+        rectangle = os.path.join(grid_path, "test_lvz.csv")
+        vm = deepcopy(velocity_model)
+        grid.apply_rectangles(vm, rectangle, conversion=conversions["convert_to_km"])
+
+        x_coords = np.linspace(9.14, 13.14, 21)
+        x_changed = np.extract(
+            (np.greater_equal(x_coords, 10.03) & np.less_equal(x_coords, 11)), x_coords
+        )
+        x_unchanged = np.extract(
+            (np.less(x_coords, 10.03) | np.greater(x_coords, 11)), x_coords
+        )
+        y_coords = np.linspace(3.67, 6.42, 56)
+        y_changed = np.extract(
+            (np.greater_equal(y_coords, 4.51) & np.less_equal(y_coords, 4.98)), y_coords
+        )
+        y_unchanged = np.extract(
+            (np.less(y_coords, 4.51) | np.greater(y_coords, 4.98)), y_coords
+        )
+        z_coords = np.linspace(0.75, 2.75, 21)
+        z_changed = np.extract(
+            (np.greater_equal(z_coords, 1.19) & np.less_equal(z_coords, 1.41)), z_coords
+        )
+        z_unchanged = np.extract(
+            (np.less(z_coords, 1.19) | np.greater(z_coords, 1.19)), z_coords
+        )
+        # Check that the velocity has been changed in the perturbed zone
+        for x in x_changed:
+            for y in y_changed:
+                for z in z_changed:
+                    val = vm.get_value((x, y, z), interpolate=False)
+                    assert np.isclose(val, 2.439)
+        # Check that the rest of the model is unchanged
+        for x in x_unchanged:
+            for y in y_unchanged:
+                for z in z_unchanged:
+                    val = vm.get_value((x, y, z), interpolate=False)
+                    assert np.isclose(val, 2.71)
+
+    def test_bogus_rectangle(self, velocity_model, grid_path):
+        rectangle = os.path.join(grid_path, "simple_topo.csv")
+        with pytest.raises(IOError):
+            grid.apply_rectangles(velocity_model, rectangle)
+
+    # Tests for incorporating topography
+    def test_add_topo_csv(self, velocity_model, grid_path):
+        """Verify that a csv file can be used to add topography"""
+        vm = deepcopy(velocity_model)
+        topo = os.path.join(grid_path, "simple_topo.csv")
+        grid.apply_topo(vm, topo, method="linear")
+        # Spot check the velocities
+        # (need to be careful here... it could just be a limitation of the
+        # interpolation method, not necessarily the grid...)
+        checkpoints = pd.read_csv(os.path.join(grid_path, "topo_check_vals.csv"))
+        for num, point in checkpoints.iterrows():
+            val = vm.get_value((point.X, point.Y, point.Z), interpolate=False)
+            assert np.isclose(val, 0.343) == point.AIR
+
+    def test_add_topo_dxf(self, velocity_model, grid_path):
+        """Verify that a dxf file can be used to add topography"""
+        df = pd.read_csv(os.path.join(grid_path, "dxf_check.txt"))
+        dxf_file = os.path.join(grid_path, "topo.dxf")
+        vm = deepcopy(velocity_model)
+        csv = grid.apply_topo(
+            vm, df, method="nearest", conversion=conversions["convert_to_km"]
+        )
+        dxf = grid.apply_topo(
+            vm, dxf_file, method="nearest", conversion=conversions["convert_to_km"]
+        )
+        np.testing.assert_array_almost_equal(csv.values, dxf.values)
+
+    def test_bogus_file(self, velocity_model, grid_path):
+        topo = os.path.join(grid_path, "bogus.dxf")
+        with pytest.raises(IOError):
+            grid.apply_topo(
+                velocity_model,
+                topo,
+                method="nearest",
+                conversion=conversions["convert_to_km"],
+            )
+        topo = os.path.join(grid_path, "test_modslow.P.mod.buf")
+        with pytest.raises(IOError):
+            grid.apply_topo(
+                velocity_model,
+                topo,
+                method="nearest",
+                conversion=conversions["convert_to_km"],
+            )
+
+
+class TestCoordinateConversion:
+    """ Tests for making sure the coordinate conversions work as expected """
+
+    # Fixture
+    @pytest.fixture(scope="class")
+    def points(self, grid_path):
+        return pd.read_csv(os.path.join(grid_path, "test_points.csv"))
+
+    # Tests
+    def test_conversion(self, points):
+        """Verify it is possible to convert station coords to grid coords"""
+        df = grid.convert_coords(points, conversion=conversions["test_conversion"])
+        assert not id(df) == id(points)
+        assert {"X_GRID", "Y_GRID", "Z_GRID"}.issubset(df.columns)
+        assert "X_GRID" not in points.columns
+        point = df.iloc[0]
+        assert np.isclose(point.X_GRID, -5.265_527_623_648_098_1)
+        assert np.isclose(point.Y_GRID, 13.367_252_189_813_943)
+        assert np.isclose(point.Z_GRID, 39.972_122_227_570_381)
+
+    def test_conversion_project(self, points):
+        """Verify it is possible to convert station coords to grid coords"""
+        try:
+            import pyproj
+        except ModuleNotFoundError:
+            pytest.skip("pyproj is not installed on this machine. Skipping.")
+        df = grid.convert_coords(points, conversion=conversions["test_project"])
+        point = df.iloc[0]
+        assert np.isclose(point.X_GRID, 11_337_944.568_914_454)
+        assert np.isclose(point.Y_GRID, 7_426_524.761_504_985_4)
+        assert np.isclose(point.Z_GRID, 2.75)
+
+    def test_bogus_conversion(self, points):
+        """Verify a bogus conversion raises"""
+        with pytest.raises(TypeError):
+            grid.convert_coords(points, conversion="a")
+
+    def test_conversion_callable(self, points):
+        """Verify a callable conversion works"""
+        df = grid.convert_coords(
+            points,
+            conversion=conversions["convert_callable"],
+            conversion_kwargs={"x": "X_GRID", "y": "Y_GRID"},
+        )
+        point = df.iloc[0]
+        assert np.isclose(point.X_GRID, 3.395_472)
+        assert np.isclose(point.Y_GRID, 1.499_616)
+        assert np.isclose(point.Z_GRID, 2.75)
+
+    def test_bogus_conversion_callable(self, points):
+        """Verify a bogus callable conversion raises"""
+        with pytest.raises(ValueError):
+            grid.convert_coords(points, conversion=conversions["bogus_callable"])
+
+    def test_excepting_conversion_callable(self, points):
+        """Verify that a callable that excepts raises in a predictable manner"""
+        with pytest.raises(RuntimeError):
+            grid.convert_coords(points, conversion=conversions["raising_callable"])

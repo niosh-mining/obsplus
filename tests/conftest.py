@@ -33,6 +33,8 @@ SETUP_PATH = join(TEST_PATH, "setup_code")
 CATALOG_DIRECTORY = join(TEST_DATA_PATH, "test_catalogs")
 # Directory containing test inventories
 INVENTORY_DIRECTORY = join(TEST_DATA_PATH, "test_inventories")
+# Directory containing test data for grids
+GRID_DIRECTORY = join(TEST_DATA_PATH, "test_grid_inputs")
 # get a list of cat_name file paths
 catalogs = glob.glob(join(CATALOG_DIRECTORY, "*xml"))
 # get a list of stations file paths
@@ -355,6 +357,12 @@ def station_cache():
 def station_cache_inventory(request):
     """ Return the test inventories. """
     return station_cache_obj[request.param]
+
+
+@pytest.fixture(scope="session")
+def grid_path():
+    """ Return the path to the grid inputs """
+    return GRID_DIRECTORY
 
 
 # -------------- configure test runner
