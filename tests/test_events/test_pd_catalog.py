@@ -475,7 +475,10 @@ class TestReadPhasePicks:
         """
         kwargs = dict(lower_uncertainty=1, upper_uncertainty=2, uncertainty=12)
         time_error = ev.QuantityError(**kwargs)
-        pick = ev.Pick(time=UTCDateTime(), time_errors=time_error)
+        waveform_id = ev.WaveformStreamID(station_code="A")
+        pick = ev.Pick(
+            time=UTCDateTime(), time_errors=time_error, waveform_id=waveform_id
+        )
         df = picks_to_df(pick)
         assert set(kwargs).issubset(df.columns)
         assert len(df) == 1

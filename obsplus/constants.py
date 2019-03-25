@@ -129,13 +129,45 @@ PICK_COLUMNS = tuple(PICK_DTYPES)
 
 # columns for distance dataframe
 
-DISTANCE_DTYES = OrderedDict(
+DISTANCE_DTYPES = OrderedDict(
     distance=float, horizontal_distance=float, depth_distance=float, azimuth=float
 )
 
-DISTANCE_COLUMNS = tuple(DISTANCE_DTYES)
+DISTANCE_COLUMNS = tuple(DISTANCE_DTYPES)
 
 # columns required for amplitudes
+AMPLITUDE_DTYPES = OrderedDict(
+    resource_id=str,
+    generic_amplitude=float,
+    seed_id=str,
+    type=str,
+    category=str,
+    unit=str,
+    magnitude_hint=str,
+    filter_id=str,
+    method_id=str,
+    period=float,
+    snr=float,
+    pick_id=str,
+    reference=float,
+    time_begin=float,
+    time_end=float,
+    scaling_time=float,
+    evaluation_mode=str,
+    evaluation_status=str,
+    creation_time=float,
+    author=str,
+    agency_id=str,
+    event_id=str,
+    network=str,
+    station=str,
+    location=str,
+    channel=str,
+    uncertainty=float,
+    lower_uncertainty=float,
+    upper_uncertainty=float,
+    confidence_level=float,
+)
 AMPLITUDE_COLUMNS = (
     "resource_id",
     "event_id",
@@ -150,6 +182,29 @@ AMPLITUDE_COLUMNS = (
 )
 
 # columns required for station magnitudes
+STATION_MAGNITUDE_DTYPES = OrderedDict(
+    resource_id=str,
+    mag=float,
+    seed_id=str,
+    station_magnitude_type=str,
+    amplitude_id=str,
+    magnitude_id=str,
+    origin_id=str,
+    method_id=str,
+    creation_time=float,
+    author=str,
+    agency_id=str,
+    event_id=str,
+    network=str,
+    station=str,
+    location=str,
+    channel=str,
+    uncertainty=float,
+    lower_uncertainty=float,
+    upper_uncertainty=float,
+    confidence_level=float,
+)
+
 STATION_MAGNITUDE_COLUMNS = (
     "resource_id",
     "mag",

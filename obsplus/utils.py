@@ -45,7 +45,7 @@ from obsplus.constants import (
     event_type,
     inventory_type,
     DISTANCE_COLUMNS,
-    DISTANCE_DTYES,
+    DISTANCE_DTYPES,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))

@@ -14,10 +14,12 @@ import obsplus
 from obsplus.constants import (
     EVENT_COLUMNS,
     PICK_COLUMNS,
+    PICK_DTYPES,
     AMPLITUDE_COLUMNS,
+    AMPLITUDE_DTYPES,
     STATION_MAGNITUDE_COLUMNS,
+    STATION_MAGNITUDE_DTYPES,
     NSLC,
-    PICK_DTYPES
 )
 from obsplus.events.utils import get_reference_time, get_seed_id
 from obsplus.interfaces import BankType, EventClient
@@ -280,24 +282,14 @@ def _pick_extractor(pick):
     overlap = set(pick.__dict__) & set(PICK_DTYPES)
     base = {i: getattr(pick, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
-    # Should it fail if it can't find the seed id, or just return one that's blank? A pick is pretty useless without it
-    seed_id = get_seed_id(pick)
-    # seed_id = (pick.waveform_id or ev.WaveformStreamID()).get_seed_string()
-    dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
-    base.update(dd)
-    base["seed_id"] = seed_id
-    # get creation info
-    cio = pick.creation_info or ev.CreationInfo()
-    base["creation_time"] = cio.creation_time
-    base["author"] = cio.author
-    base["agency_id"] = cio.agency_id
+    base.update(_get_nslc(pick))
     # get time error info
     terrors = pick.time_errors
     if terrors:
-        base["uncertainty"] = terrors.uncertainty
-        base["lower_uncertainty"] = terrors.lower_uncertainty
-        base["upper_uncertainty"] = terrors.upper_uncertainty
-        base["confidence_level"] = terrors.confidence_level
+        base.update(_get_uncertainty(terrors))
+    # get creation info
+    cio = pick.creation_info or ev.CreationInfo()
+    base.update(_get_creation_info(cio))
     return base
 
 
@@ -307,7 +299,7 @@ def _pick_extractor(pick):
 # It seems like there is enough similarity between amplitudes_to_df and
 # picks_to_df that there should be some way to combine them...
 amplitudes_to_df = DataFrameExtractor(
-    ev.Amplitude, AMPLITUDE_COLUMNS, utc_columns=("event_time")
+    ev.Amplitude, AMPLITUDE_COLUMNS, utc_columns=("event_time",)
 )
 
 
@@ -319,36 +311,6 @@ def _file_to_amplitudes_df(path):
         return amplitudes_to_df(obspy.read_events(path))
     except TypeError:  # obspy failed to read file, try csv
         return amplitudes_to_df(pd.read_csv(path))
-
-
-amplitude_attrs = {
-    "resource_id": str,
-    "generic_amplitude": float,
-    "seed_id": str,
-    "type": str,
-    "category": str,
-    "unit": str,
-    "magnitude_hint": str,
-    "filter_id": str,
-    "method_id": str,
-    "period": float,
-    "snr": float,
-    "pick_id": str,
-    "reference": float,
-    "time_begin": float,
-    "time_end": float,
-    "scaling_time": float,
-    "evaluation_mode": str,
-    "evaluation_status": str,
-    "creation_time": float,
-    "author": str,
-    "agency_id": str,
-    "event_id": str,
-    "network": str,
-    "station": str,
-    "location": str,
-    "channel": str,
-}
 
 
 @amplitudes_to_df.register(ev.Event)
@@ -377,40 +339,37 @@ def _amplitudes_from_event_bank(event_bank):
     return amplitudes_to_df(event_bank.get_events())
 
 
-@amplitudes_to_df.extractor(dtypes=amplitude_attrs)
+@amplitudes_to_df.extractor(dtypes=AMPLITUDE_DTYPES)
 def _amplitudes_extractor(amp):
     # extract attributes that are floats/str
-    overlap = set(amp.__dict__) & set(amplitude_attrs)
+    overlap = set(amp.__dict__) & set(AMPLITUDE_DTYPES)
     base = {i: getattr(amp, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
-    seed_id = get_seed_id(amp)
-    dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
-    base.update(dd)
-    base["seed_id"] = seed_id
-
-    # get more complicated amplitude info
+    base.update(_get_nslc(amp))
+    # get amplitude error info
+    aerrors = amp.generic_amplitude_errors
+    if aerrors:
+        base.update(_get_uncertainty(aerrors))
+    # get creation info
+    cio = amp.creation_info or ev.CreationInfo()
+    base.update(_get_creation_info(cio))
+    # get other amplitude info
     if amp.time_window:
         base["reference"] = amp.time_window.reference.timestamp
         base["time_begin"] = amp.time_window.begin
         base["time_end"] = amp.time_window.end
     if amp.scaling_time:
         base["scaling_time"] = amp.scaling_time.timestamp
-
-    # get creation info
-    cio = amp.creation_info or ev.CreationInfo()
-    base["creation_time"] = cio.creation_time
-    base["author"] = cio.author
-    base["agency_id"] = cio.agency_id
     return base
 
 
-# -------------- Amplitudes to dataframe
+# -------------- StationMagnitudes to dataframe
 
 
 # It seems like there is enough similarity between amplitudes_to_df and
 # picks_to_df that there should be some way to combine them...
 station_magnitudes_to_df = DataFrameExtractor(
-    ev.StationMagnitude, STATION_MAGNITUDE_COLUMNS, utc_columns=("event_time")
+    ev.StationMagnitude, STATION_MAGNITUDE_COLUMNS, utc_columns=("event_time",)
 )
 
 
@@ -422,26 +381,6 @@ def _file_to_station_magnitudes_df(path):
         return station_magnitudes_to_df(obspy.read_events(path))
     except TypeError:  # obspy failed to read file, try csv
         return station_magnitudes_to_df(pd.read_csv(path))
-
-
-station_magnitude_attrs = {
-    "resource_id": str,
-    "mag": float,
-    "seed_id": str,
-    "station_magnitude_type": str,
-    "amplitude_id": str,
-    "magnitude_id": str,
-    "origin_id": str,
-    "method_id": str,
-    "creation_time": float,
-    "author": str,
-    "agency_id": str,
-    "event_id": str,
-    "network": str,
-    "station": str,
-    "location": str,
-    "channel": str,
-}
 
 
 @station_magnitudes_to_df.register(ev.Event)
@@ -482,23 +421,47 @@ def _station_magnitudes_from_event_bank(event_bank):
     return station_magnitudes_to_df(event_bank.get_events())
 
 
-@station_magnitudes_to_df.extractor(dtypes=station_magnitude_attrs)
+@station_magnitudes_to_df.extractor(dtypes=STATION_MAGNITUDE_DTYPES)
 def _station_magnitudes_extractor(sm):
     # extract attributes that are floats/str
-    overlap = set(sm.__dict__) & set(station_magnitude_attrs)
+    overlap = set(sm.__dict__) & set(STATION_MAGNITUDE_DTYPES)
     base = {i: getattr(sm, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel)
-    seed_id = get_seed_id(sm)
-    dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
-    base.update(dd)
-    base["seed_id"] = seed_id
-
+    base.update(_get_nslc(sm))
+    # get magnitude error info
+    merrors = sm.mag_errors
+    if merrors:
+        base.update(_get_uncertainty(merrors))
     # get creation info
     cio = sm.creation_info or ev.CreationInfo()
-    base["creation_time"] = cio.creation_time
-    base["author"] = cio.author
-    base["agency_id"] = cio.agency_id
+    base.update(_get_creation_info(cio))
     return base
+
+
+def _get_creation_info(cio):
+    """ Strip the creation info for an extractor """
+    return {
+        "creation_time": cio.creation_time,
+        "author": cio.author,
+        "agency_id": cio.agency_id,
+    }
+
+
+def _get_uncertainty(errors):
+    """ Strip uncertainty info for an extractor """
+    return {
+        "uncertainty": errors.uncertainty,
+        "lower_uncertainty": errors.lower_uncertainty,
+        "upper_uncertainty": errors.upper_uncertainty,
+        "confidence_level": errors.confidence_level,
+    }
+
+
+def _get_nslc(obj):
+    """ Strip nslc info for an extractor """
+    seed_id = get_seed_id(obj)
+    dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
+    return {"seed_id": seed_id, **dd}
 
 
 # --- monkey patch events/event classes to have to_df methods.

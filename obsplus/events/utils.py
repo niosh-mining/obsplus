@@ -439,10 +439,10 @@ def get_seed_id(obj: catalog_component) -> str:
                     return get_seed_id(val)
                 except (TypeError, AttributeError):
                     raise AttributeError(
-                        "Unable to fetch a seed id for {obj.resource_id}"
+                        f"Unable to fetch a seed id for {obj.resource_id}"
                     )
     # If it makes it this far, it could not find a non-None attribute
-    raise AttributeError("Unable to fetch a seed id for {obj.resource_id}")
+    raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
 
 
 def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
@@ -457,7 +457,7 @@ def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
     Returns
     -------
     """
-    # get utc and formated list from event
+    # get utc and formatted list from event
     utc = get_reference_time(eve)
     fmt = "year month day hour minute second".split()
     utc_list = [UTC_FORMATS[x] % getattr(utc, x) for x in fmt]
