@@ -200,6 +200,11 @@ class DataFrameExtractor(UserDict):
             # read in any UTCDateTime
             for col in set(iterate(self.utc_columns)) & set(df.columns):
                 df[col] = df[col].apply(_timestampit)
+#            for col in iterate(self.utc_columns):
+#                try:
+#                    df[col] = df[col].apply(_timestampit)
+#                except KeyError:
+#                    pass
         replace, dtypes = {"nan": ""}, self.dtypes
         required_cols = self._base_required_columns
         return order_columns(df, required_cols, dtypes, replace)

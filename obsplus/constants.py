@@ -125,7 +125,6 @@ PICK_DTYPES = OrderedDict(
     confidence_level=float,
 )
 
-
 PICK_COLUMNS = tuple(PICK_DTYPES)
 
 # columns for distance dataframe
@@ -136,7 +135,7 @@ DISTANCE_DTYES = OrderedDict(
 
 DISTANCE_COLUMNS = tuple(DISTANCE_DTYES)
 
-# columns required for amplitudes <-- I should probably reduce this?
+# columns required for amplitudes
 AMPLITUDE_COLUMNS = (
     "resource_id",
     "event_id",
@@ -144,6 +143,17 @@ AMPLITUDE_COLUMNS = (
     "generic_amplitude",
     "type",
     "magnitude_hint",
+    "network",
+    "station",
+    "location",
+    "channel",
+)
+
+# columns required for station magnitudes
+STATION_MAGNITUDE_COLUMNS = (
+    "resource_id",
+    "mag",
+    "station_magnitude_type",
     "network",
     "station",
     "location",

@@ -12,8 +12,19 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
-from obsplus import events_to_df, picks_to_df, amplitudes_to_df, get_preferred
-from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS, AMPLITUDE_COLUMNS
+from obsplus import (
+    events_to_df,
+    picks_to_df,
+    amplitudes_to_df,
+    station_magnitudes_to_df,
+    get_preferred,
+)
+from obsplus.constants import (
+    EVENT_COLUMNS,
+    PICK_COLUMNS,
+    AMPLITUDE_COLUMNS,
+    STATION_MAGNITUDE_COLUMNS,
+)
 from obsplus.datasets.dataloader import base_path
 from obsplus.events.utils import get_seed_id
 from obsplus.utils import getattrs, get_nslc_series
@@ -30,6 +41,114 @@ def append_func_name(list_obj):
         return func
 
     return wrap
+
+
+def pick_generator(scnls):
+    picks = []
+    for scnl in scnls:
+        p = ev.Pick(
+            time=UTCDateTime(), waveform_id=ev.WaveformStreamID(seed_string=scnl)
+        )
+        picks.append(p)
+    return picks
+
+
+def amp_generator(scnls=None, picks=None):
+    counter = 1
+    amps = []
+    scnls = scnls or []
+    params = {
+        "type": "A",
+        "unit": "dimensionless",
+        "method_id": "mag_calculator",
+        "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
+        "magnitude_hint": "M",
+        "category": "point",
+        "evaluation_mode": "manual",
+        "evaluation_status": "confirmed",
+    }
+    for scnl in scnls:
+        a = ev.Amplitude(
+            generic_amplitude=counter,
+            generic_amplitude_errors=ev.QuantityError(
+                uncertainty=counter * 0.1, confidence_level=95
+            ),
+            period=counter * 2,
+            snr=counter * 5,
+            time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+            waveform_id=ev.WaveformStreamID(seed_string=scnl),
+            scaling_time=UTCDateTime(),
+            scaling_time_errors=ev.QuantityError(
+                uncertainty=counter * 0.001, confidence_level=95
+            ),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        amps.append(a)
+        counter += 1
+    picks = picks or []
+    for pick in picks:
+        a = ev.Amplitude(
+            generic_amplitude=counter,
+            generic_amplitude_errors=ev.QuantityError(
+                uncertainty=counter * 0.1, confidence_level=95
+            ),
+            period=counter * 2,
+            snr=counter * 5,
+            time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+            pick_id=pick.resource_id,
+            scaling_time=UTCDateTime(),
+            scaling_time_errors=ev.QuantityError(
+                uncertainty=counter * 0.001, confidence_level=95
+            ),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        amps.append(a)
+        counter += 1
+    return amps
+
+
+def sm_generator(scnls=None, amplitudes=None):
+    counter = 1
+    sms = []
+    scnls = scnls or []
+    params = {
+        "origin_id": ev.ResourceIdentifier(),
+        "station_magnitude_type": "M",
+        "method_id": "mag_calculator",
+    }
+
+    for scnl in scnls:
+        sm = ev.StationMagnitude(
+            mag=counter,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            waveform_id=ev.WaveformStreamID(seed_string=scnl),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        sms.append(sm)
+        counter += 1
+    amplitudes = amplitudes or []
+    for amp in amplitudes:
+        sm = ev.StationMagnitude(
+            mag=counter,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            amplitude_id=amp.resource_id,
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        sms.append(sm)
+        counter += 1
+    return sms
 
 
 # --------------- tests
@@ -404,78 +523,6 @@ class TestReadKemPicks:
 
 
 class TestReadAmplitudes:
-    def pick_generator(self, scnls):
-        picks = []
-        for scnl in scnls:
-            p = ev.Pick(
-                time=UTCDateTime(), waveform_id=ev.WaveformStreamID(seed_string=scnl)
-            )
-            picks.append(p)
-        return picks
-
-    def amp_generator(self, scnls=None, picks=None):
-        counter = 1
-        amps = []
-        scnls = scnls or []
-        params = {
-            "type": "A",
-            "unit": "dimensionless",
-            "method_id": "mag_calculator",
-            "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
-            "magnitude_hint": "M",
-            "category": "point",
-            "evaluation_mode": "manual",
-            "evaluation_status": "confirmed",
-        }
-        for scnl in scnls:
-            a = ev.Amplitude(
-                generic_amplitude=counter,
-                generic_amplitude_errors=ev.QuantityError(
-                    uncertainty=counter * 0.1, confidence_level=95
-                ),
-                period=counter * 2,
-                snr=counter * 5,
-                time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
-                waveform_id=ev.WaveformStreamID(seed_string=scnl),
-                scaling_time=UTCDateTime(),
-                scaling_time_errors=ev.QuantityError(
-                    uncertainty=counter * 0.001, confidence_level=95
-                ),
-                creation_info=ev.CreationInfo(
-                    agency_id="dummy_agency",
-                    author="dummy",
-                    creation_time=UTCDateTime(),
-                ),
-                **params,
-            )
-            amps.append(a)
-            counter += 1
-        picks = picks or []
-        for pick in picks:
-            a = ev.Amplitude(
-                generic_amplitude=counter,
-                generic_amplitude_errors=ev.QuantityError(
-                    uncertainty=counter * 0.1, confidence_level=95
-                ),
-                period=counter * 2,
-                snr=counter * 5,
-                time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
-                pick_id=pick.resource_id,
-                scaling_time=UTCDateTime(),
-                scaling_time_errors=ev.QuantityError(
-                    uncertainty=counter * 0.001, confidence_level=95
-                ),
-                creation_info=ev.CreationInfo(
-                    agency_id="dummy_agency",
-                    author="dummy",
-                    creation_time=UTCDateTime(),
-                ),
-                **params,
-            )
-            amps.append(a)
-            counter += 1
-        return amps
-
     # fixtures
     @pytest.fixture(scope="class")
     def dummy_cat(self):
@@ -483,22 +530,14 @@ class TestReadAmplitudes:
         cat = ev.Catalog()
         eve1 = ev.Event()
         eve1.origins.append(ev.Origin(time=UTCDateTime()))
-        eve1.picks = self.pick_generator(scnls1)
-        eve1.amplitudes = self.amp_generator(picks=eve1.picks)
+        eve1.picks = pick_generator(scnls1)
+        eve1.amplitudes = amp_generator(picks=eve1.picks)
         scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
         eve2 = ev.Event()
         eve2.origins.append(ev.Origin(time=UTCDateTime()))
-        eve2.amplitudes = self.amp_generator(scnls=scnls2)
+        eve2.amplitudes = amp_generator(scnls=scnls2)
         cat.events = [eve1, eve2]
         return cat
-
-    @pytest.fixture(scope="class")
-    def dummy_cat_no_origin(self):
-        scnls = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
-        eve = ev.Event()
-        eve.picks = self.pick_generator(scnls)
-        eve.amplitudes = self.amp_generator(picks=eve.picks)
-        return eve
 
     @pytest.fixture(scope="class")
     def empty_cat(self):
@@ -556,11 +595,93 @@ class TestReadAmplitudes:
         assert not len(df)
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
 
-    def test_no_origin(self, dummy_cat_no_origin):
-        """ ensure event time is minimum time of picks """
-        amp_df = amplitudes_to_df(dummy_cat_no_origin)
-        pick_df = picks_to_df(dummy_cat_no_origin)
-        assert (amp_df.event_time == pick_df.time.min()).all()
+
+class TestReadStationMagnitudes:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.amplitudes = amp_generator(scnls1)
+        eve1.station_magnitudes = sm_generator(amplitudes=eve1.amplitudes)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.station_magnitudes = sm_generator(scnls=scnls2)
+        cat.events = [eve1, eve2]
+        return cat
+
+    @pytest.fixture(scope="class")
+    def dummy_mag(self):
+        scnls = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        eve = ev.Event()
+        sms = sm_generator(scnls=scnls)
+        smcs = []
+        for sm in sms:
+            smcs.append(
+                ev.StationMagnitudeContribution(station_magnitude_id=sm.resource_id)
+            )
+        mag = ev.Magnitude(mag=1, station_magnitude_contributions=smcs)
+        eve.magnitudes = [mag]
+        eve.station_magnitudes = sms
+        return eve
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_sms_output(self, dummy_cat):
+        return station_magnitudes_to_df(dummy_cat)
+
+    # general tests
+    def test_type(self, read_sms_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_sms_output, pd.DataFrame)
+
+    def test_len(self, read_sms_output, dummy_cat):
+        """ req_len should be the same as the sms req_len in events """
+        req_len = len(dummy_cat[0].station_magnitudes) + len(
+            dummy_cat[1].station_magnitudes
+        )
+        assert req_len == len(read_sms_output)
+
+    def test_values(self, read_sms_output, dummy_cat):
+        """ make sure the values of the first amplitude are as expected """
+        sm_ser = read_sms_output.iloc[0]
+        sm = dummy_cat[0].station_magnitudes[0]
+        # Is there a less messy way to check that the function correctly
+        # parsed the amplitude?
+        assert sm_ser["resource_id"] == sm.resource_id.id
+        assert sm_ser["mag"] == sm.mag
+        assert sm_ser["seed_id"] == get_seed_id(sm)
+        assert sm_ser["station_magnitude_type"] == sm.station_magnitude_type
+        assert sm_ser["origin_id"] == sm.origin_id
+        assert sm_ser["method_id"] == sm.method_id
+        assert sm_ser["amplitude_id"] == sm.amplitude_id
+        assert sm_ser["creation_time"] == obspy.UTCDateTime(
+            sm.creation_info.creation_time
+        )
+        assert sm_ser["author"] == sm.creation_info.author
+        assert sm_ser["agency_id"] == sm.creation_info.agency_id
+
+    # magnitude object tests
+    def test_magnitude(self, dummy_mag):
+        dummy_mag = dummy_mag.magnitudes[0]
+        mag_df = station_magnitudes_to_df(dummy_mag)
+        assert len(mag_df) == len(dummy_mag.station_magnitude_contributions)
+        sm = mag_df.iloc[0]
+        assert sm.magnitude_id == dummy_mag.resource_id.id
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = station_magnitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
 
 
 class TestGetPreferred:
