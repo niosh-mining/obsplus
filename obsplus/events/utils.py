@@ -6,12 +6,15 @@ import copy
 import logging
 import os
 import re
+import warnings
 from functools import lru_cache, singledispatch
 from pathlib import Path
 from typing import Union, Optional, Callable
 
 import obspy
 import obspy.core.event as ev
+import pandas as pd
+from obspy.core import event as ev
 from obspy.core.event import Catalog, Event, ResourceIdentifier
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
@@ -121,6 +124,89 @@ def catalog_to_directory(
         event.write(str(event_path), file_format)
     if event_bank_index:
         obsplus.EventBank(path).update_index()
+
+
+def prune_events(events: catalog_or_event) -> Catalog:
+    """
+    Remove all the unreferenced rejected objects from an event or catalog.
+
+    This function first creates a copy of the event/catalog. Then it looks
+    all objects with rejected evaluation status', which are not referred to
+    by any unrejected object, and removes them.
+
+    Parameters
+    ----------
+    events
+        The events to iterate and modify
+
+    Returns
+    -------
+    A Catalog with the pruned events.
+
+    """
+    from obsplus.events.validate import validate_catalog
+
+    # ensure we have something iterable
+    events = [events] if isinstance(events, ev.Event) else events
+    out = []
+
+    def _get_edges_rids_opa(event):
+        """
+        Return a list of edges (resource_id_parent, resource_id_child),
+        a set of rejected resource_ids and a dict of
+        {resource_id: (obj, parent, attr)}.
+        """
+
+        # {status: [obj, ]}
+        edges = []  # list of tuples (parent, child)
+        # {resource_id, }
+        rejected_rid = set()
+        # {resource_id: [obj, parent, attr]}
+        rejected_opa = {}
+        # first make a list objects with eval status as well as all other
+        # objects they refer to, using resource_ids
+        opa_iter = yield_obj_parent_attr(event, has_attr="evaluation_status")
+        for obj, parent, attr in opa_iter:
+            rid = str(obj.resource_id)
+            is_rejected = obj.evaluation_status == "rejected"
+            if is_rejected:
+                rejected_rid.add(rid)
+                rejected_opa[rid] = (obj, parent, attr)
+            # now recurse object and find all objects this one refers to
+            opa_iter_2 = yield_obj_parent_attr(obj, cls=ev.ResourceIdentifier)
+            for obj2, _, _ in opa_iter_2:
+                edges.append((rid, str(obj2)))
+        return edges, rejected_rid, rejected_opa
+
+    def _remove_object(obj, parent, attr):
+        """
+        Remove the object.
+        """
+        maybe_obj = getattr(parent, attr)
+        if maybe_obj is obj:
+            setattr(parent, attr, None)
+        else:
+            assert isinstance(maybe_obj, list)
+            maybe_obj.remove(obj)
+
+    # iterate events, find and destroy rejected orphans (that sounds bad...)
+    for event in events:
+        event = event.copy()
+        validate_catalog(event)
+        import obsplus
+
+        obsplus.debug = True
+        edges, rejected_rid, rejected_opa = _get_edges_rids_opa(event)
+        df = pd.DataFrame(edges, columns=["parent", "child"])
+        # filter out non rejected children
+        df = df[df.child.isin(rejected_opa)]
+        # iterate rejected children IDs and search for any non-rejected parent
+        for rid, dff in df.groupby("child"):
+            if dff.parent.isin(rejected_rid).all():
+                _remove_object(*rejected_opa[rid])
+        out.append(event)
+
+    return Catalog(out)
 
 
 def bump_creation_version(obj):
@@ -466,3 +552,63 @@ def make_class_map():
                 _add_lower_and_plural(name_, obj_type)
         _add_lower_and_plural(name, cls)
     return out
+
+
+def get_preferred(event: Event, what: str, init_empty=False):
+    """
+    get the preferred object (eg origin, magnitude) from the event.
+
+    If not defined use the last in the list. If list is empty init empty
+    object.
+
+    Parameters
+
+    -----------
+    event: obspy.core.event.Event
+        The instance for which the preferred should be sought.
+    what: the preferred item to get
+        Can either be "magnitude", "origin", or "focal_mechanism".
+    init_empty
+        If True, rather than return None when no preferred object is found
+        create an empty object of the appropriate class and return it.
+    """
+
+    def _none_or_empty():
+        """ Return None or an empty object of correct type. """
+        if init_empty:
+            return getattr(obspy.core.event, what.capitalize())()
+        else:
+            return None
+
+    pref_type = {
+        "magnitude": ev.Magnitude,
+        "origin": ev.Origin,
+        "focal_mechanism": ev.FocalMechanism,
+    }
+
+    prefname = "preferred_" + what
+    whats = what + "s"
+    obj = getattr(event, prefname)()
+    if obj is None:  # get end of list
+        pid = getattr(event, prefname + "_id")
+        if pid is None:  # no preferred id set, return last in list
+            try:  # if there is None return an empty one
+                obj = getattr(event, whats)[-1]
+            except IndexError:  # object has no whats (eg magnitude)
+                # TODO why not return None here?
+                return _none_or_empty()
+        else:  # there is an id, it has just come detached, try to find it
+            potentials = {x.resource_id.id: x for x in getattr(event, whats)}
+            if pid.id in potentials:
+                obj = potentials[pid.id]
+            else:
+                var = (pid.id, whats, str(event))
+                warnings.warn("cannot find %s in %s for event %s" % var)
+                try:
+                    obj = getattr(event, whats)[-1]
+                except IndexError:  # there are no "whats", return None
+                    return _none_or_empty()
+    # make sure the correct output type is returned
+    cls = pref_type[what]
+    assert isinstance(obj, cls), f"{type(obj)} is not a {cls}, wrong type returned"
+    return obj

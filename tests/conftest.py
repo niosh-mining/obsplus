@@ -15,9 +15,13 @@ from pathlib import Path
 import obspy
 import pytest
 
+import obsplus
+import obsplus.events.utils
+
 # ------------------------- define constants
 
 # path to the test directory
+
 TEST_PATH = abspath(dirname(__file__))
 # path to the package directory
 PKG_PATH = dirname(TEST_PATH)
@@ -91,7 +95,7 @@ def collect_catalogs():
     """
 
     def _get_origin_time(cat):
-        ori = obsplus.utils.get_preferred(cat, "origin")
+        ori = obsplus.get_preferred(cat, "origin")
         return ori.time
 
     out = {}

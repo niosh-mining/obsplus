@@ -1,12 +1,11 @@
 """
 A local database for waveform formats.
 """
-import fnmatch
 import os
 import re
 import time
 from collections import defaultdict
-from functools import partial, lru_cache, reduce
+from functools import partial, reduce
 from itertools import chain
 from operator import add
 from os.path import abspath
@@ -17,6 +16,7 @@ import numpy as np
 import obspy
 import pandas as pd
 import tables
+from tables.exceptions import HDF5ExtError
 from obspy import UTCDateTime, Stream
 
 import obsplus
@@ -43,6 +43,8 @@ from obsplus.utils import (
     get_progressbar,
     thread_lock_function,
     get_nslc_series,
+    filter_index,
+    replace_null_nlsc_codes,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -53,11 +55,6 @@ assert tables.get_hdf5_version()
 
 
 # ------------------------ constants
-
-
-@lru_cache(maxsize=2500)
-def get_regex(nslc_str):
-    return fnmatch.translate(nslc_str)  # translate to re
 
 
 class WaveBank(_Bank):
@@ -105,6 +102,13 @@ class WaveBank(_Bank):
     ext : str or None
         The extension of the waveform files. If provided, only files with
         this extension will be read.
+    concurrent_updates
+        If True this bank will share an index with other processes, one or
+        more of which may perform update_index operations. When used a simple
+        file locking mechanism attempts to compensate for shortcomings in
+        HDF5 stores lack of concurrency support. This is not needed if all
+        processes are only going to read from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a few concurrent processes.
     """
 
     # index columns and types
@@ -115,10 +119,8 @@ class WaveBank(_Bank):
     columns_no_path = index_columns[:-1]
     gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
-
     # other defaults
     buffer = 10.111  # the time before and after the desired times to pull
-
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
     min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
@@ -134,6 +136,7 @@ class WaveBank(_Bank):
         inventory: Optional[Union[obspy.Inventory, str]] = None,
         format="mseed",
         ext=None,
+        concurrent_updates=False,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -147,6 +150,7 @@ class WaveBank(_Bank):
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
+        self._concurrent = concurrent_updates
 
     # ----------------------- index related stuff
 
@@ -156,6 +160,7 @@ class WaveBank(_Bank):
         Return the last modified time stored in the index, else None.
         """
         self.ensure_bank_path_exists()
+        self.block_on_index_lock()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -172,8 +177,6 @@ class WaveBank(_Bank):
             format="table",
             data_columns=list(self.index_float),
         )
-
-    # --- properties to get hdf5 nodes / paths
 
     @thread_lock_function()
     def update_index(self, bar: Optional = None, min_files_for_bar: int = 5000):
@@ -206,8 +209,10 @@ class WaveBank(_Bank):
             if bar and num % self._bar_update_interval == 0:
                 bar.update(num)
         getattr(bar, "finish", lambda: None)()  # call finish if applicable
+
         if len(updates):  # flatten list and make df
-            self._write_update(list(chain.from_iterable(updates)))
+            with self.lock_index():
+                self._write_update(list(chain.from_iterable(updates)))
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
 
@@ -238,7 +243,11 @@ class WaveBank(_Bank):
                 store.append(node, df, append=True, **self.hdf_kwargs)
             # update timestamp
             store.put(self._time_node, pd.Series(time.time()))
-        self._ensure_meta_table_exists()
+            # make sure meta table also exists.
+            # Note this is hear to avoid opening the store again.
+            if self._meta_node not in store:
+                meta = self._make_meta_table()
+                store.put(self._meta_node, meta, format="table")
 
     def _ensure_meta_table_exists(self):
         """
@@ -246,11 +255,12 @@ class WaveBank(_Bank):
         """
         if not Path(self.index_path).exists():
             return
-        with pd.HDFStore(self.index_path) as store:
-            # add metadata if not in store
-            if self._meta_node not in store:
-                meta = self._make_meta_table()
-                store.put(self._meta_node, meta, format="table")
+        with self.lock_index():
+            with pd.HDFStore(self.index_path) as store:
+                # add metadata if not in store
+                if self._meta_node not in store:
+                    meta = self._make_meta_table()
+                    store.put(self._meta_node, meta, format="table")
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -285,15 +295,21 @@ class WaveBank(_Bank):
         # grab index from cache
         index = self._index_cache(starttime, endtime, buffer=self.buffer, **kwargs)
         # filter and return
-        filt = filter_index(index, network, station, location, channel)
+        filt = filter_index(
+            index, network=network, station=station, location=location, channel=channel
+        )
         return index[filt]
 
     def _read_metadata(self):
         """
         Read the metadata table.
         """
-        self._ensure_meta_table_exists()
-        return pd.read_hdf(self.index_path, self._meta_node)
+        self.block_on_index_lock()
+        try:
+            return pd.read_hdf(self.index_path, self._meta_node)
+        except (FileNotFoundError, ValueError, KeyError):
+            self._ensure_meta_table_exists()
+            return pd.read_hdf(self.index_path, self._meta_node)
 
     # ------------------------ availability stuff
 
@@ -660,6 +676,8 @@ class WaveBank(_Bank):
         for st in (_try_read_stream(x, **kwargs) for x in files):
             if st is not None and len(st):
                 stt += st
+        # sort out nullish nslc codes
+        stt = replace_null_nlsc_codes(stt)
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
         nslc = set(get_nslc_series(index))
@@ -691,37 +709,6 @@ class WaveBank(_Bank):
 
 
 # --- auxiliary functions
-
-
-def filter_index(index, net, sta, loc, chan, start=None, end=None):
-    """
-    Determine if each row of the index meets some filter requirements.
-
-    Returns a boolean array of the same len as df indicating if each row
-    meets the requirements.
-    """
-    # get a dict of query params
-    query = dict(network=net, station=sta, location=loc, channel=chan)
-    # divide queries into match type (str) and sequences (eg lists)
-    match_query = {k: v for k, v in query.items() if isinstance(v, str)}
-    sequence_query = {
-        k: v for k, v in query.items() if k not in match_query and v is not None
-    }
-    # get a blank index of True for filters
-    bool_index = np.ones(len(index), dtype=bool)
-    # filter on string matching
-    for key, val in match_query.items():
-        regex = get_regex(val)
-        new = index[key].str.match(regex).values
-        bool_index = np.logical_and(bool_index, new)
-    for key, val in sequence_query.items():
-        bool_index = np.logical_and(bool_index, index[key].isin(val))
-    if start is not None or end is not None:
-        t1 = UTCDateTime(start).timestamp if start is not None else -1 * np.inf
-        t2 = UTCDateTime(end).timestamp if end is not None else np.inf
-        in_time = ~((index.endtime < t1) | (index.starttime > t2))
-        bool_index = np.logical_and(bool_index, in_time.values)
-    return bool_index
 
 
 def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:

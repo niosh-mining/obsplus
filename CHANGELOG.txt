@@ -9,6 +9,8 @@ obsplus 0.0.1:
     * Added better error messages for trying to pull data from banks that do
       not exist (see #36)
     * Event bank eventid param can now accept numpy arrays (see 30).
+    * Added basic file-locking mechanism for wavebank and multiprocessing
+      tests (see #70).
   - obsplus.waveforms
     * Added stack_seed and unstack_seed methods to obsplus data array
       accessors (see #27).
@@ -17,5 +19,12 @@ obsplus 0.0.1:
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
+    * Added utility function for removed rejected orphaned objects from
+      catalog tree (see #63).
+    * Added the init_empty parameter to get_preferred, fixed an issue where
+      an IndexError could get raised (see #65), and moved get_preferred from
+      obsplus.utils to obsplus.events.utils (see #66).
   - obsplus.utils
     * Added method for correcting nullish nslc codes (see #37 and #38)
+    * Added function for getting geometric parameters from two groups of
+      events or stations see (see #67/#72).

@@ -2,13 +2,15 @@
 General utilities for obsplus.
 """
 import contextlib
+import fnmatch
 import os
 import sys
 import textwrap
 import threading
 import warnings
-from functools import singledispatch, wraps
+from functools import singledispatch, wraps, lru_cache
 from pathlib import Path
+from itertools import product
 from typing import (
     Union,
     Sequence,
@@ -20,18 +22,31 @@ from typing import (
     Generator,
     Set,
     TypeVar,
+    Collection,
 )
 
 import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
-from obsplus.constants import event_time_type, NSLC, NULL_NSLC_CODES
-from obspy.core.event import Event
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from obspy.geodetics import gps2dist_azimuth
 from progressbar import ProgressBar
+
+import obsplus
+from obsplus.constants import (
+    event_time_type,
+    NSLC,
+    NULL_NSLC_CODES,
+    wave_type,
+    event_type,
+    inventory_type,
+    DISTANCE_COLUMNS,
+    DISTANCE_DTYES,
+)
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
@@ -179,6 +194,8 @@ def order_columns(
         A sequence that contains the column names
     dtype
         A dictionary of dtypes
+    replace
+        Input passed to DataFrame.Replace
     Returns
     -------
     pd.DataFrame
@@ -238,15 +255,35 @@ def register_func(dict, key=None):
 
 
 @singledispatch
-def get_reference_time(obj: event_time_type) -> obspy.UTCDateTime:
+def get_reference_time(obj: Union[event_time_type, wave_type],) -> obspy.UTCDateTime:
     """
-    Get a refernce time inferred from an object.
+    Get a reference time inferred from an object.
 
     Parameters
     ----------
     obj
-        The argument that will indicate a start time. Can be a one length
-        events, and event, a float, or a UTCDatetime object
+        The argument that will indicate a start time. Types and corresponding
+        behavior are as follows:
+            float:
+                Convert to UTCDateTime object, interpret as a timestamp.
+            UTCDateTime:
+                Return a new UTCDateTime as a copy.
+            catalog:
+                Return the earliest reference time of all events.
+            event:
+                First check for a preferred origin, if found return its origin
+                time. If not found, iterate through the events picks and
+                return the earliest pick time. If None are found raise a
+                ValueError.
+            stream:
+                Return the earliest reference time of all traces.
+            trace:
+                Return the starttime in the stats object.
+
+    Raises
+    ------
+    TypeError if the type is not supported.
+    ValueError if the type is supported but no reference time could be determined.
 
     Returns
     -------
@@ -254,7 +291,11 @@ def get_reference_time(obj: event_time_type) -> obspy.UTCDateTime:
     """
     if obj is None:
         return None
-    return obspy.UTCDateTime(obj)
+    try:
+        return obspy.UTCDateTime(obj)
+    except TypeError:
+        msg = f"get_reference_time does not support type {type(obj)}"
+        raise TypeError(msg)
 
 
 @get_reference_time.register(obspy.core.event.Event)
@@ -296,45 +337,16 @@ def _get_first_event(catalog):
     return _get_event_origin_time(catalog[0])
 
 
-def get_preferred(event: Event, what: str):
-    """
-    get the preferred object (eg origin, magnitude) from the event.
+@get_reference_time.register(obspy.Stream)
+def _get_stream_time(st):
+    """ return the earliest start time for stream. """
+    return min([get_reference_time(tr) for tr in st])
 
-    If not defined use the last in the list. If list is empty init empty
-    object.
-    Parameters
 
-    -----------
-    event: obspy.core.event.Event
-        The instance for which the preferred should be sought.
-    what: the preferred item to get
-        Can either be "magnitude", "origin", or "focal_mechanism".
-    """
-    pref_type = {
-        "magnitude": ev.Magnitude,
-        "origin": ev.Origin,
-        "focal_mechanism": ev.FocalMechanism,
-    }
-    prefname = "preferred_" + what
-    whats = what + "s"
-    obj = getattr(event, prefname)()
-    if obj is None:  # get end of list
-        pid = getattr(event, prefname + "_id")
-        if pid is None:  # no preferred id set, return last in list
-            try:  # if there is None return an empty one
-                obj = getattr(event, whats)[-1]
-            except IndexError:  # object has no whats (eg magnitude)
-                return getattr(obspy.core.event, what.capitalize())()
-        else:  # there is an id, it has just come detached, try to find it
-            potentials = {x.resource_id.id: x for x in getattr(event, whats)}
-            if pid.id in potentials:
-                obj = potentials[pid.id]
-            else:
-                var = (pid.id, whats, str(event))
-                warnings.warn("cannot find %s in %s for event %s" % var)
-                obj = getattr(event, whats)[-1]
-    assert isinstance(obj, pref_type[what]), "wrong type returned"
-    return obj
+@get_reference_time.register(obspy.Trace)
+def _get_trace_time(tr):
+    """ return starttime of trace. """
+    return tr.stats.starttime
 
 
 def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -> float:
@@ -605,3 +617,219 @@ def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
             if getattr(obj, code) in null_codes:
                 setattr(obj, code, replacement_value)
     return inv
+
+
+def filter_index(
+    index: pd.DataFrame,
+    network: Optional = None,
+    station: Optional = None,
+    location: Optional = None,
+    channel: Optional = None,
+    starttime: Optional[Union[UTC, float]] = None,
+    endtime: Optional[Union[UTC, float]] = None,
+    **kwargs,
+) -> np.array:
+    """
+    Filter an Index dataframe based on nslc codes and start/end times.
+
+    Parameters
+    ----------
+    index
+        A dataframe to filter which should have the corresponding columns
+        to any non-None parameters used in filter.
+    network
+        A network code as defined by seed standards.
+    station
+        A station code as defined by seed standards.
+    location
+        A location code as defined by seed standards.
+    channel
+        A channel code as defined by seed standards.
+    starttime
+        The starttime of interest.
+    endtime
+        The endtime of interest.
+
+    Additional kwargs are used as filters.
+
+    Returns
+    -------
+    A numpy array of boolean values indicating if each row met the filter
+    requirements.
+    """
+    # handle non-starttime/endtime queries
+    query = dict(network=network, station=station, location=location, channel=channel)
+    kwargs.update({i: v for i, v in query.items() if v is not None})
+    out = filter_df(index, **kwargs)
+    # handle starttime/endtime queries if needed
+    if starttime is not None or endtime is not None:
+        time_out = _filter_starttime_endtime(index, starttime, endtime)
+        out = np.logical_and(out, time_out)
+    return out
+
+
+def filter_df(df: pd.DataFrame, **kwargs) -> np.array:
+    """
+    Determine if each row of the index meets some filter requirements.
+
+    Parameters
+    ----------
+    df
+        The input dataframe.
+    kwargs
+        Any condition to check against columns of df. Can be a single value
+        or a collection of values (to check isin on columns). Str arguments
+        can also use unix style matching.
+
+    Returns
+    -------
+    A boolean array of the same len as df indicating if each row meets the
+    requirements.
+    """
+    # ensure the specified kwarg keys have corresponding columns
+    if not set(kwargs).issubset(df.columns):
+        msg = f"columns: {set(kwargs) - set(df.columns)} are not found in df"
+        raise ValueError(msg)
+    # divide queries into flat parameters and collections
+    flat_query = {
+        k: v
+        for k, v in kwargs.items()
+        if isinstance(v, str) or not isinstance(v, Collection)
+    }
+    sequence_query = {
+        k: v for k, v in kwargs.items() if k not in flat_query and v is not None
+    }
+    # get a blank index of True for filters
+    bool_index = np.ones(len(df), dtype=bool)
+    # filter on non-collection queries
+    for key, val in flat_query.items():
+        if isinstance(val, str):
+            regex = get_regex(val)
+            new = df[key].str.match(regex).values
+            bool_index = np.logical_and(bool_index, new)
+        else:
+            new = (df[key] == val).values
+            bool_index = np.logical_and(bool_index, new)
+    # filter on collection queries using isin
+    for key, val in sequence_query.items():
+        bool_index = np.logical_and(bool_index, df[key].isin(val))
+
+    return bool_index
+
+
+def _filter_starttime_endtime(df, starttime=None, endtime=None):
+    """ Filter dataframe on starttime and endtime. """
+    bool_index = np.ones(len(df), dtype=bool)
+    t1 = UTC(starttime).timestamp if starttime is not None else -1 * np.inf
+    t2 = UTC(endtime).timestamp if endtime is not None else np.inf
+    # get time columns
+    start_col = getattr(df, "starttime", getattr(df, "start_date", None))
+    end_col = getattr(df, "endtime", getattr(df, "end_date", None))
+    in_time = ~((end_col < t1) | (start_col > t2))
+    return np.logical_and(bool_index, in_time.values)
+
+
+def iter_files(path, ext=None, mtime=None, skip_hidden=True):
+    """
+    use os.scan dir to iter files, optionally only for those with given
+    extension (ext) or modified times after mtime
+
+    Parameters
+    ----------
+    path : str
+        The path to the base directory to traverse.
+    ext : str or None
+        The extensions to map.
+    mtime : int or float
+        Time stamp indicating the minimum mtime.
+    skip_hidden : bool
+        If True skip files that begin with a '.'
+
+    Returns
+    -------
+
+    """
+    for entry in os.scandir(path):
+        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
+            if mtime is None or entry.stat().st_mtime >= mtime:
+                if entry.name[0] != "." or not skip_hidden:
+                    yield entry.path
+        elif entry.is_dir():
+            yield from iter_files(entry.path, ext=ext, mtime=mtime)
+
+
+def get_distance_df(
+    entity_1: Union[event_type, inventory_type],
+    entity_2: Union[event_type, inventory_type],
+) -> pd.DataFrame:
+    """
+    Create a dataframe of distances and azimuths from events to stations.
+
+    Parameters
+    ----------
+    entity_1
+        An object from which latitude, longitude and depth are
+        extractable.
+    entity_2
+        An object from which latitude, longitude and depth are
+        extractable.
+
+    Notes
+    -----
+    Simply uses obspy.geodetics.gps2dist_azimuth under the hood. The index
+    of the dataframe is a multi-index where the first level corresponds to ids
+    from entity_1 (either an event_id or seed_id str) and the second level
+    corresponds to ids from entity_2.
+
+    Returns
+    -------
+    A dataframe with distance, horizontal_distance, and depth distances,
+    as well as azimuth, for each entity pair.
+    """
+
+    def _dist_func(tup1, tup2):
+        """
+        Function to get distances and azimuths from pairs of coordinates
+        """
+        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
+        z_diff = tup2[2] - tup1[2]
+        dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
+        out = dict(
+            horizontal_distance=gs_dist,
+            distance=dist,
+            depth_distance=z_diff,
+            azimuth=azimuth,
+        )
+        return out
+
+    def _get_distance_tuple(obj):
+        """ return a list of tuples for entities """
+        cols = ["latitude", "longitude", "elevation", "id"]
+        try:
+            df = obsplus.events_to_df(obj)
+            df["elevation"] = -df["depth"]
+            df["id"] = df["event_id"]
+        except (TypeError, ValueError, AttributeError):
+            df = obsplus.stations_to_df(obj)
+            df["id"] = df["seed_id"]
+        return set(df[cols].itertuples(index=False, name=None))
+
+    # get a tuple of
+    coord1 = _get_distance_tuple(entity_1)
+    coord2 = _get_distance_tuple(entity_2)
+    # make a dict of {(event_id, seed_id): (dist, azimuth)}
+    dist_dicts = {
+        (ell[-1], ill[-1]): _dist_func(ell, ill)
+        for ell, ill in product(coord1, coord2)
+        if ell[-1] != ill[-1]  # skip if same entity
+    }
+    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
+    # make sure index is named
+    df.index.names = ("id1", "id2")
+    return df[list(DISTANCE_COLUMNS)]
+
+
+@lru_cache(maxsize=2500)
+def get_regex(nslc_str):
+    """ Compile, and cache regex for str queries. """
+    return fnmatch.translate(nslc_str)  # translate to re

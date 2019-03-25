@@ -8,6 +8,7 @@ import re
 import sqlite3
 import warnings
 from functools import singledispatch
+from contextlib import contextmanager
 from os.path import join
 from typing import Optional, Sequence, Union
 
@@ -180,19 +181,22 @@ class _IndexCache:
         con3 = self.cache.kwargs == self._kwargs_to_str(kwargs)
         cached_index = self.cache[con1 & con2 & con3]
         if not len(cached_index):  # query is not cached get it from cache
+            # get expected dtypes
+            strs = {x: str for x in self.bank.index_str}
+            floats = {x: float for x in self.bank.index_float}
+            dtypes = {**strs, **floats}
             where = get_kernel_query(starttime, endtime, buffer=buffer)
             index = self._get_index(where, **kwargs)
             # replace "None" with None
             ic = self.bank.index_str
             index.loc[:, ic] = index.loc[:, ic].replace(["None"], [None])
-            self._set_cache(index, starttime, endtime, kwargs)
+            self._set_cache(index.astype(dtypes), starttime, endtime, kwargs)
         else:
             index = cached_index.iloc[0]["cindex"]
         # trim down index
         con1 = index.starttime >= (endtime + buffer)
         con2 = index.endtime <= (starttime - buffer)
-        df = index[~(con1 | con2)]
-        return df
+        return index[~(con1 | con2)]
 
     def _set_cache(self, index, starttime, endtime, kwargs):
         """ cache the current index """
@@ -232,35 +236,6 @@ def sql_connection(path, **kwargs):
         yield con
 
 
-def iter_files(path, ext=None, mtime=None, skip_hidden=True):
-    """
-    use os.scan dir to iter files, optionally only for those with given
-    extension (ext) or modified times after mtime
-
-    Parameters
-    ----------
-    path : str
-        The path to the base directory to traverse.
-    ext : str or None
-        The extensions to map.
-    mtime : int or float
-        Time stamp indicating the minimum mtime.
-    skip_hidden : bool
-        If True skip files that begin with a '.'
-
-    Returns
-    -------
-
-    """
-    for entry in os.scandir(path):
-        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
-            if mtime is None or entry.stat().st_mtime >= mtime:
-                if entry.name[0] != "." or not skip_hidden:
-                    yield entry.path
-        elif entry.is_dir():
-            yield from iter_files(entry.path, ext=ext, mtime=mtime)
-
-
 def get_kernel_query(starttime: float, endtime: float, buffer: float):
     """" get the HDF5 kernel query parameters (this is necessary because
     hdf5 doesnt accept invert conditions for some reason. A slight buffer
@@ -288,11 +263,13 @@ def _make_wheres(queries):
         kwargs.pop("eventid")
     if "event_id" in kwargs:
         val = kwargs.pop("event_id")
-        seq_types = (Sequence, set, np.ndarray)
-        if isinstance(val, seq_types) and not isinstance(val, str):
-            kwargs["event_id"] = [str(x) for x in val]
+        if isinstance(val, str):
+            kwargs["event_id"] = val
         else:
-            kwargs["event_id"] = str(val)
+            try:
+                kwargs["event_id"] = [str(x) for x in val]
+            except TypeError:
+                kwargs["event_id"] = str(val)
     if "endtime" in kwargs:
         kwargs["maxtime"] = kwargs["endtime"]
         kwargs.pop("endtime")

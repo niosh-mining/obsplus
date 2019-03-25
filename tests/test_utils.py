@@ -1,16 +1,25 @@
 """ tests for various utility functions """
+import itertools
 import textwrap
 from pathlib import Path
 
 import obspy
 import obspy.core.event as ev
 import pytest
+import numpy as np
+import pandas as pd
 from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.constants import NSLC, NULL_NSLC_CODES
-from obsplus.utils import compose_docstring, yield_obj_parent_attr
+from obsplus.constants import NSLC, NULL_NSLC_CODES, DISTANCE_COLUMNS
+from obsplus.utils import (
+    compose_docstring,
+    yield_obj_parent_attr,
+    filter_index,
+    filter_df,
+    get_distance_df,
+)
 
 
 def append_func_name(list_obj):
@@ -90,6 +99,12 @@ class TestGetReferenceTime:
         t_expected = UTCDateTime("2015-01-01")
         t_out = obsplus.utils.get_reference_time(event_only_picks)
         assert t_expected == t_out
+
+    def test_stream(self):
+        """ Ensure the start of the stream is returned. """
+        st = obspy.read()
+        out = obsplus.utils.get_reference_time(st)
+        assert out == min([tr.stats.starttime for tr in st])
 
 
 class TestIterate:
@@ -214,6 +229,70 @@ class TestReplaceNullNSLCCodes:
                     assert _valid_code(chan.location_code)
 
 
+class TestFilterDf:
+    @pytest.fixture
+    def example_df(self):
+        """ create a simple df for testing. Example from Chris Albon. """
+        raw_data = {
+            "first_name": ["Jason", "Molly", "Tina", "Jake", "Amy"],
+            "last_name": ["Miller", "Jacobson", "Ali", "Milner", "Cooze"],
+            "age": [42, 52, 36, 24, 73],
+            "preTestScore": [4, 24, 31, 2, 3],
+            "postTestScore": [25, 94, 57, 62, 70],
+        }
+        return pd.DataFrame(raw_data, columns=list(raw_data))
+
+    def test_filter_index(self, crandall_dataset):
+        """ Tests for filtering index with filter index function. """
+        # this is mainly here to test the time filtering, because the bank
+        # operations pass this of to the HDF5 kernel.
+        index = crandall_dataset.waveform_client.read_index(network="UU")
+        t1 = index.starttime.mean()
+        t2 = index.endtime.max()
+        kwargs = dict(network="UU", station="*", location="*", channel="*")
+        bool_ind = filter_index(index, starttime=t1, endtime=t2, **kwargs)
+        assert (~np.logical_not(bool_ind)).any()
+
+    def test_string_basic(self, example_df):
+        """ test that specifying a string with no matching works. """
+        out = filter_df(example_df, first_name="Jason")
+        assert out[0]
+        assert not out[1:].any()
+
+    def test_string_matching(self, example_df):
+        """ unix style matching should also work. """
+        # test *
+        out = filter_df(example_df, first_name="J*")
+        assert {"Jason", "Jake"} == set(example_df[out].first_name)
+        # test ???
+        out = filter_df(example_df, first_name="J???")
+        assert {"Jake"} == set(example_df[out].first_name)
+
+    def test_str_sequence(self, example_df):
+        """ Test str sequences find values in sequence. """
+        out = filter_df(example_df, last_name={"Miller", "Jacobson"})
+        assert out[:2].all()
+        assert not out[2:].any()
+
+    def test_non_str_single_arg(self, example_df):
+        """ test that filter index can be used on Non-nslc columns. """
+        # test non strings
+        out = filter_df(example_df, age=42)
+        assert out[0]
+        assert not out[1:].any()
+
+    def test_non_str_sequence(self, example_df):
+        """ ensure sequences still work for isin style comparisons. """
+        out = filter_df(example_df, age={42, 52})
+        assert out[:2].all()
+        assert not out[2:].any()
+
+    def test_bad_parameter_raises(self, example_df):
+        """ ensure passing a parameter that doesn't have a column raises. """
+        with pytest.raises(ValueError):
+            filter_df(example_df, bad_column=2)
+
+
 class TestMisc:
     """ misc tests for small utilities """
 
@@ -270,3 +349,47 @@ class TestMisc:
         out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
+
+
+class TestDistanceDataframe:
+    """
+    Tests for returning a distance dataframe from some number of events
+    and some number of stations.
+    """
+
+    @pytest.fixture(scope="class")
+    def cat(self):
+        """ return the first 3 events from the crandall dataset. """
+        return obspy.read_events()
+
+    @pytest.fixture(scope="class")
+    def inv(self):
+        return obspy.read_inventory()
+
+    @pytest.fixture(scope="class")
+    def distance_df(self, cat, inv):
+        """ Return a dataframe from all the crandall events and stations. """
+        return get_distance_df(entity_1=cat, entity_2=inv)
+
+    def test_type(self, distance_df):
+        """ ensure a dataframe was returned. """
+        assert isinstance(distance_df, pd.DataFrame)
+        assert set(distance_df.columns) == set(DISTANCE_COLUMNS)
+
+    def test_all_events_in_df(self, distance_df, cat):
+        """ Ensure all the events are in the distance dataframe. """
+        event_ids_df = set(distance_df.index.to_frame()["id1"])
+        event_ids_cat = {str(x.resource_id) for x in cat}
+        assert event_ids_cat == event_ids_df
+
+    def test_all_seed_id_in_df(self, distance_df, inv):
+        seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
+        seed_id_df = set(distance_df.index.to_frame()["id2"])
+        assert seed_id_df == seed_id_stations
+
+    def test_cat_cat(self, cat):
+        """ ensure it works with two catalogs """
+        df = get_distance_df(cat, cat)
+        event_ids = {str(x.resource_id) for x in cat}
+        combinations = set(itertools.permutations(event_ids, 2))
+        assert combinations == set(df.index)

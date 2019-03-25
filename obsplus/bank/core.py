@@ -1,19 +1,25 @@
 """
 Bank ABC
 """
+import gc
 import os
 import threading
+import time
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager, suppress
 from os.path import join
 from pathlib import Path
+from typing import Optional
 
+import numpy as np
 import pandas as pd
+import tables
 from pandas.io.sql import DatabaseError
 
 import obsplus
-from obsplus.bank.utils import iter_files
-from obsplus.exceptions import BankDoesNotExistError
+from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
+from obsplus.utils import iter_files
 
 
 class _Bank(ABC):
@@ -25,14 +31,16 @@ class _Bank(ABC):
     # hdf5 compression defaults
     _complib = "blosc"
     _complevel = 9
-
-    # lock for updating index
-    _index_lock = threading.RLock()
     # attributes subclasses need to define
     ext = ""
     bank_path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
+    # concurrency handling features
+    _lock_file_name = ".~obsplus_hdf5.lock"
+    _owns_lock = False
+    _concurrent = False
+    _index_lock = threading.RLock()  # lock for updating index thread
     # optional str defining the directory structure and file name schemes
     path_structure = None
     name_structure = None
@@ -50,7 +58,7 @@ class _Bank(ABC):
         """ update the index """
 
     @abstractmethod
-    def last_updated(self):
+    def last_updated(self) -> Optional[float]:
         """ get the last modified time stored in the index. If
         Not available return None
         """
@@ -67,6 +75,13 @@ class _Bank(ABC):
         The expected path to the index file.
         """
         return join(self.bank_path, self.index_name)
+
+    @property
+    def lock_file_path(self):
+        """
+        The expected path for the lock file.
+        """
+        return join(self.bank_path, self._lock_file_name)
 
     @property
     def _index_node(self):
@@ -116,8 +131,12 @@ class _Bank(ABC):
 
     def _unindexed_file_iterator(self):
         """ return an iterator of potential unindexed waveform files """
-        # on rare occasions mtimes
-        mtime = self.last_updated - 0.001 if self.last_updated is not None else None
+        # get mtime, subtract a bit to avoid odd bugs
+        mtime = None
+        last_updated = self.last_updated  # this needs db so only call once
+        if last_updated is not None:
+            mtime = last_updated - 0.001
+        # return file iterator
         return iter_files(self.bank_path, ext=self.ext, mtime=mtime)
 
     def _make_meta_table(self):
@@ -145,3 +164,60 @@ class _Bank(ABC):
         if not path.is_dir():
             msg = f"{path} is not a directory, cant read bank"
             raise BankDoesNotExistError(msg)
+
+    def block_on_index_lock(self, wait_interval=0.2, max_retry=10):
+        """
+        Blocks until the lock is released.
+
+        Will wait a certain number of seconds a certain number of times
+        before raising a BankIndexLockError.
+
+        Parameters
+        ----------
+        wait_interval
+            The number of seconds to wait between each try
+        max_retry
+            The number of times to retry before raising.
+        """
+        # if the concurrent feature is not selected just bail out
+        if not self._concurrent:
+            return
+        # if there is no lock, or this bank owns the lock return
+        if not os.path.exists(self.lock_file_path) or self._owns_lock:
+            return
+        # get random state, based on process id, for waiting random seconds
+        rand = np.random.RandomState(os.getpid() or 13)
+        # wait until the lock file is gone or timeout occurs (then raise)
+        count = 0
+        while count < max_retry:
+            if not os.path.exists(self.lock_file_path):
+                return
+            time.sleep(wait_interval + rand.rand() * wait_interval)
+            count += 1
+        else:
+            duration = max_retry * wait_interval
+            msg = (
+                f"{self.lock_file_path} was not released after about "
+                f"{duration * 1.5} seconds. It may need to be manually deleted"
+                f" if the index is not in the process of being updated."
+            )
+            raise BankIndexLockError(msg)
+
+    @contextmanager
+    def lock_index(self):
+        """
+        Acquire lock for work inside context manager.
+        """
+        if self._concurrent:
+            self.block_on_index_lock()  # ensure lock isn't already in use
+            assert Path(self.bank_path).exists()
+            open(self.lock_file_path, "w").close()  # create lock file
+            self._owns_lock = True
+            # close all open files (nothing should have tables at this point)
+            gc.collect()  # must call GC to ensure everything is cleaned up (ugly)
+            tables.file._open_files.close_all()
+        yield
+        if self._concurrent:
+            with suppress(FileNotFoundError):
+                os.unlink(self.lock_file_path)
+            self._owns_lock = False

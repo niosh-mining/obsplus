@@ -146,8 +146,8 @@ class TestGeneric:
         start = inv_df.start_date.min()
         end = start + 15
         # ensure the same data is returned
-        ew1 = wf1.get_waveforms(start, end)
-        ew2 = wf2.get_waveforms(start, end)
+        ew1 = wf1.get_waveforms(starttime=start, endtime=end)
+        ew2 = wf2.get_waveforms(starttime=start, endtime=end)
         assert ew1 == ew2
 
     def test_init_with_banks(self, bingham_dataset):
@@ -177,7 +177,8 @@ class TestGetWaveforms:
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
         starttime = obspy.UTCDateTime("2009-04-01")
-        return kem_fetcher.get_waveforms(starttime, starttime + self.duration)
+        kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
+        return kem_fetcher.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
     @append_func_name(generic_streams)
@@ -186,15 +187,17 @@ class TestGetWaveforms:
         by get_waveforms"""
         starttime = obspy.UTCDateTime("2009-04-01")
         fetch = kem_fetcher_with_processor
-        return fetch.get_waveforms(starttime, starttime + self.duration)
+        kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
+        return fetch.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
     @append_func_name(generic_streams)
     def ta_stream(self, ta_fetcher):
         """ using the ta_fetcher and get_waveforms, return a data waveforms """
         starttime = obspy.UTCDateTime("2007-02-20")
+        kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         try:
-            return ta_fetcher.get_waveforms(starttime, starttime + self.duration)
+            return ta_fetcher.get_waveforms(**kwargs)
         except obspy.clients.fdsn.header.FDSNException:
             pytest.skip("failed to communicate with IRIS")
 
@@ -226,6 +229,21 @@ class TestGetWaveforms:
          custom processing function """
         for tr in kem_stream_processed:
             assert tr.stats["processor_ran"]
+
+    def test_get_waveforms_no_params(self, bingham_dataset):
+        """ Get waveforms with no params should use start_date and
+        end_date in inventory. """
+        fetcher = bingham_dataset.get_fetcher()
+        st = fetcher.get_waveforms()
+        assert isinstance(st, obspy.Stream)
+
+    def test_nslc_filter(self, bingham_dataset):
+        """ ensure the usual getwaveforms codes can be used to filter """
+        fetcher = bingham_dataset.get_fetcher()
+        st = fetcher.get_waveforms(network="UU", channel="*Z")
+        for tr in st:
+            assert tr.stats.network == "UU"
+            assert tr.stats.channel.endswith("Z")
 
 
 class TestYieldWaveforms:
@@ -655,13 +673,13 @@ class TestFilterInventoryByAvailability:
     @pytest.fixture
     def bulk_arg_later_time(self, altered_inv):
         fetcher = Fetcher(None, stations=altered_inv)
-        return fetcher._get_bulk_arg(self.t1 + 10, self.t2)
+        return fetcher._get_bulk_arg(starttime=self.t1 + 10, endtime=self.t2)
 
     @pytest.fixture
     def bulk_arg_none_enddate(self, inv_with_none):
         """ return the bulk args from an inv with None endate """
         fetcher = Fetcher(None, stations=inv_with_none)
-        return fetcher._get_bulk_arg(self.t0, self.t1)
+        return fetcher._get_bulk_arg(starttime=self.t0, endtime=self.t1)
 
     @pytest.fixture
     def fetcher(self, altered_inv, kem_fetcher):
