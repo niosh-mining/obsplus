@@ -416,7 +416,7 @@ class TestMakeOrigins:
         )
         eve = ev.Event()
         eve.picks = [pick1, pick2, pick3]
-        return make_origins(events=eve, inventory=inv, phases=["P", "S"]), pick3
+        return make_origins(events=eve, inventory=inv, phase_hints=["P", "S"]), pick3
 
     def test_all_events_have_origins(self, cat_added_origins):
         """ ensure all the events do indeed have origins """

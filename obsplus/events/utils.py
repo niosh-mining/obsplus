@@ -246,7 +246,7 @@ def make_origins(
     events: catalog_or_event,
     inventory: obspy.Inventory,
     depth: float = 1.0,
-    phases: Optional[Iterable] = None,
+    phase_hints: Optional[Iterable] = ("P", "p"),
 ) -> catalog_or_event:
     """
     Iterate a catalog or single events and ensure each has an origin.
@@ -267,9 +267,9 @@ def make_origins(
     depth
         The default depth for created origins. Should be in meters. See the
         obspy docs for Origin or the quakeml standard for more details.
-    phases
+    phase_hints
         List of acceptable phase hints to use for identifying the earliest
-        pick. By default will only search for "P" phase hints.
+        pick. By default will only search for "P" or "p" phase hints.
 
     Returns
     -------
@@ -280,13 +280,12 @@ def make_origins(
     # load inv dataframe and make sure it has a seed_id column
     df = obsplus.stations_to_df(inventory)
     nslc_series = get_nslc_series(df)
-    phases = phases or ["P"]
     for event in cat:
         if not event.origins:  # make new origin
             picks = event.picks_to_df()
             picks = picks.loc[
                 (~(picks.evaluation_status == "rejected"))
-                & (picks.phase_hint.isin(phases))
+                & (picks.phase_hint.isin(phase_hints))
             ]
             if not len(picks):
                 raise ValueError(f"{event} has no acceptable picks to create origin")
