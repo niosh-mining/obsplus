@@ -8,13 +8,11 @@ import re
 import sqlite3
 import warnings
 from functools import singledispatch
-from contextlib import contextmanager
 from os.path import join
 from typing import Optional, Sequence, Union
 
 import obspy
 import obspy.core.event as ev
-import numpy as np
 import pandas as pd
 
 from obsplus.constants import (

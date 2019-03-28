@@ -13,7 +13,6 @@ import pytest
 import obsplus
 from obsplus import EventBank
 from obsplus import copy_dataset
-from obsplus.utils import iterate
 from obsplus.events.utils import catalog_to_directory
 
 
