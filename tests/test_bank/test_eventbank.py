@@ -29,7 +29,12 @@ def catalog(bingham_dataset):
 def ebank(tmpdir):
     """ Create a bank from the default catalog. """
     path = Path(tmpdir) / "events"
+    # get catalog, add event descriptions to it
     cat = obspy.read_events()
+    descs = ["LR", "LR", "SomeSillyEvent"]
+    for event, desc_txt in zip(cat, descs):
+        desc = ev.EventDescription(desc_txt)
+        event.event_descriptions.insert(0, desc)
     obsplus.events.utils.catalog_to_directory(cat, path)
     ebank = EventBank(path)
     ebank.update_index()
@@ -252,6 +257,22 @@ class TestReadIndexQueries:
         """
         df = bing_ebank.read_index()
         assert not (df == "None").any().any()
+
+    def test_event_description_as_set(self, ebank):
+        """
+        The event description should be usable as a set, list, np array etc.
+        """
+        # get index with no filtering
+        df_raw = ebank.read_index()
+        # test filtering params
+        filts = [{"LR"}, "LR", np.array(["LR"]), ["LR"]]
+        for filt in filts:
+            # filter with dataframe
+            df_filt = [filt] if isinstance(filt, str) else filt
+            df1 = df_raw[df_raw["event_description"].isin(df_filt)]
+            df2 = ebank.read_index(event_description=filt)
+            assert len(df1) == len(df2)
+            assert df1.equals(df2)
 
 
 class TestGetEvents:
