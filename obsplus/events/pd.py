@@ -58,7 +58,7 @@ def _get_author(event):
 
 
 @events_to_df.extractor
-def _get_creation_info(event):
+def _get_eve_creation_info(event):
     """ pull out information from the event level creation_info """
     keys = ("author", "agency_id", "creation_time", "version")
     out = {}
@@ -245,44 +245,24 @@ picks_to_df = DataFrameExtractor(
 @picks_to_df.register(str)
 @picks_to_df.register(Path)
 def _file_to_picks_df(path):
-    path = str(path)
-    try:
-        return picks_to_df(obspy.read_events(path))
-    except TypeError:  # obspy failed to read file, try csv
-        return picks_to_df(pd.read_csv(path))
+    return _file_to_df(path, picks_to_df)
 
 
 @picks_to_df.register(ev.Event)
 @picks_to_df.register(ev.Catalog)
 def _picks_from_event(event: ev.Event):
     """ return a dataframe of picks from a pick list """
-    # ensure we have an iterable and flatten picks
-    cat = [event] if isinstance(event, ev.Event) else event
-    picks = [p for e in cat for p in e.picks]
-    return picks_to_df(picks, extras=_get_event_info(cat, "picks"))
+    return _objs_from_event(event, "picks", picks_to_df)
 
 
 @picks_to_df.register(BankType)
 def _picks_from_event_bank(event_bank):
-    assert isinstance(event_bank, EventClient)
-    return picks_to_df(event_bank.get_events())
+    return _objs_from_event_bank(event_bank, picks_to_df)
 
 
 @picks_to_df.extractor(dtypes=PICK_DTYPES)
 def _pick_extractor(pick):
-    # extract attributes that are floats/str
-    overlap = set(pick.__dict__) & set(PICK_DTYPES)
-    base = {i: getattr(pick, i) for i in overlap}
-    # get waveform_id stuff (seed_id, network, station, location, channel)
-    base.update(_get_nslc(pick))
-    # get time error info
-    terrors = pick.time_errors
-    if terrors:
-        base.update(_get_uncertainty(terrors))
-    # get creation info
-    cio = pick.creation_info or ev.CreationInfo()
-    base.update(_get_creation_info(cio))
-    return base
+    return _obj_extractor(pick, PICK_DTYPES, error_obj="time_errors")
 
 
 # -------------- Amplitudes to dataframe
@@ -298,43 +278,24 @@ amplitudes_to_df = DataFrameExtractor(
 @amplitudes_to_df.register(str)
 @amplitudes_to_df.register(Path)
 def _file_to_amplitudes_df(path):
-    path = str(path)
-    try:
-        return amplitudes_to_df(obspy.read_events(path))
-    except TypeError:  # obspy failed to read file, try csv
-        return amplitudes_to_df(pd.read_csv(path))
+    return _file_to_df(path, amplitudes_to_df)
 
 
 @amplitudes_to_df.register(ev.Event)
 @amplitudes_to_df.register(ev.Catalog)
 def _amplitudes_from_event(event: ev.Event):
     """ return a dataframe of amplitudes from an amplitude list """
-    # ensure we have an iterable and flatten amplitudes
-    cat = [event] if isinstance(event, ev.Event) else event
-    amps = [a for e in cat for a in e.amplitudes]
-    return amplitudes_to_df(amps, extras=_get_event_info(cat, "amplitudes"))
+    return _objs_from_event(event, "amplitudes", amplitudes_to_df)
 
 
 @amplitudes_to_df.register(BankType)
 def _amplitudes_from_event_bank(event_bank):
-    assert isinstance(event_bank, EventClient)
-    return amplitudes_to_df(event_bank.get_events())
+    return _objs_from_event_bank(event_bank, amplitudes_to_df)
 
 
 @amplitudes_to_df.extractor(dtypes=AMPLITUDE_DTYPES)
 def _amplitudes_extractor(amp):
-    # extract attributes that are floats/str
-    overlap = set(amp.__dict__) & set(AMPLITUDE_DTYPES)
-    base = {i: getattr(amp, i) for i in overlap}
-    # get waveform_id stuff (seed_id, network, station, location, channel)
-    base.update(_get_nslc(amp))
-    # get amplitude error info
-    aerrors = amp.generic_amplitude_errors
-    if aerrors:
-        base.update(_get_uncertainty(aerrors))
-    # get creation info
-    cio = amp.creation_info or ev.CreationInfo()
-    base.update(_get_creation_info(cio))
+    base = _obj_extractor(amp, AMPLITUDE_DTYPES, error_obj="generic_amplitude_errors")
     # get other amplitude info
     if amp.time_window:
         base["reference"] = amp.time_window.reference.timestamp
@@ -357,24 +318,14 @@ station_magnitudes_to_df = DataFrameExtractor(
 @station_magnitudes_to_df.register(str)
 @station_magnitudes_to_df.register(Path)
 def _file_to_station_magnitudes_df(path):
-    path = str(path)
-    try:
-        return station_magnitudes_to_df(obspy.read_events(path))
-    except TypeError:  # obspy failed to read file, try csv
-        return station_magnitudes_to_df(pd.read_csv(path))
+    return _file_to_df(path, station_magnitudes_to_df)
 
 
 @station_magnitudes_to_df.register(ev.Event)
 @station_magnitudes_to_df.register(ev.Catalog)
 def _station_magnitudes_from_event(event: ev.Event):
     """ return a dataframe of station_magnitudes from a station_magnitude list """
-    # ensure we have an iterable and flatten station_magnitudes
-    # is there a relatively simple way to get the ID of the magnitude(s) that use a sm?
-    cat = [event] if isinstance(event, ev.Event) else event
-    sms = [sm for e in cat for sm in e.station_magnitudes]
-    return station_magnitudes_to_df(
-        sms, extras=_get_event_info(cat, "station_magnitudes")
-    )
+    return _objs_from_event(event, "station_magnitudes", station_magnitudes_to_df)
 
 
 @station_magnitudes_to_df.register(ev.Magnitude)  # This may not work nicely...
@@ -391,25 +342,12 @@ def _station_magnitudes_from_magnitude(mag: ev.Magnitude):
 
 @station_magnitudes_to_df.register(BankType)
 def _station_magnitudes_from_event_bank(event_bank):
-    assert isinstance(event_bank, EventClient)
-    return station_magnitudes_to_df(event_bank.get_events())
+    return _objs_from_event_bank(event_bank, station_magnitudes_to_df)
 
 
 @station_magnitudes_to_df.extractor(dtypes=STATION_MAGNITUDE_DTYPES)
 def _station_magnitudes_extractor(sm):
-    # extract attributes that are floats/str
-    overlap = set(sm.__dict__) & set(STATION_MAGNITUDE_DTYPES)
-    base = {i: getattr(sm, i) for i in overlap}
-    # get waveform_id stuff (seed_id, network, station, location, channel)
-    base.update(_get_nslc(sm))
-    # get magnitude error info
-    merrors = sm.mag_errors
-    if merrors:
-        base.update(_get_uncertainty(merrors))
-    # get creation info
-    cio = sm.creation_info or ev.CreationInfo()
-    base.update(_get_creation_info(cio))
-    return base
+    return _obj_extractor(sm, STATION_MAGNITUDE_DTYPES, error_obj="mag_errors")
 
 
 # -------------- Magnitudes to dataframe
@@ -424,45 +362,69 @@ magnitudes_to_df = DataFrameExtractor(
 @magnitudes_to_df.register(str)
 @magnitudes_to_df.register(Path)
 def _file_to_magnitudes_df(path):
-    path = str(path)
-    try:
-        return magnitudes_to_df(obspy.read_events(path))
-    except TypeError:  # obspy failed to read file, try csv
-        return magnitudes_to_df(pd.read_csv(path))
+    return _file_to_df(path, magnitudes_to_df)
 
 
 @magnitudes_to_df.register(ev.Event)
 @magnitudes_to_df.register(ev.Catalog)
 def _magnitudes_from_event(event: ev.Event):
-    """ return a dataframe of station_magnitudes from a station_magnitude list """
-    # ensure we have an iterable and flatten station_magnitudes
-    cat = [event] if isinstance(event, ev.Event) else event
-    mags = [mag for e in cat for mag in e.magnitudes]
-    return magnitudes_to_df(mags, extras=_get_event_info(cat, "magnitudes"))
+    """ return a dataframe of magnitudes from a magnitude list """
+    return _objs_from_event(event, "magnitudes", magnitudes_to_df)
 
 
 @magnitudes_to_df.register(BankType)
 def _magnitudes_from_event_bank(event_bank):
-    assert isinstance(event_bank, EventClient)
-    return magnitudes_to_df(event_bank.get_events())
+    return _objs_from_event_bank(event_bank, magnitudes_to_df)
 
 
 @magnitudes_to_df.extractor(dtypes=MAGNITUDE_DTYPES)
 def _magnitudes_extractor(mag):
-    # extract attributes that are floats/str
-    overlap = set(mag.__dict__) & set(MAGNITUDE_DTYPES)
-    base = {i: getattr(mag, i) for i in overlap}
-    # get magnitude error info
-    merrors = mag.mag_errors
-    if merrors:
-        base.update(_get_uncertainty(merrors))
-    # get creation info
-    cio = mag.creation_info or ev.CreationInfo()
-    base.update(_get_creation_info(cio))
-    return base
+    return _obj_extractor(mag, MAGNITUDE_DTYPES, nslc=False, error_obj="mag_errors")
 
 
 # -------------- Internal functions for extracting event info
+
+
+def _file_to_df(path, extractor):
+    """Extract info from a file"""
+    path = str(path)
+    try:
+        return extractor(obspy.read_events(path))
+    except TypeError:  # obspy failed to read file, try csv
+        return extractor(pd.read_csv(path))
+
+
+def _objs_from_event(event, attr, extractor):
+    """ return a dataframe of an obj type from an event """
+    # ensure we have an iterable and flatten station_magnitudes
+    cat = [event] if isinstance(event, ev.Event) else event
+    objs = [obj for e in cat for obj in e.__dict__[attr]]
+    return extractor(objs, extras=_get_event_info(cat, attr))
+
+
+def _objs_from_event_bank(event_bank, extractor):
+    """ return a dataframe of a set obj type from an event bank """
+    assert isinstance(event_bank, EventClient)
+    return extractor(event_bank.get_events())
+
+
+def _obj_extractor(obj, dtypes, nslc=True, error_obj=None):
+    """ extract common information from event object """
+    # extract attributes that are floats/str
+    overlap = set(obj.__dict__) & set(dtypes)
+    base = {i: getattr(obj, i) for i in overlap}
+    # get waveform_id stuff (seed_id, network, station, location, channel), if applicable
+    if nslc:
+        base.update(_get_nslc(obj))
+    # extract error info, if applicable
+    if error_obj:
+        errors = obj.__dict__[error_obj]
+        if errors:
+            base.update(_get_uncertainty(errors))
+    # get creation info
+    cio = obj.creation_info or ev.CreationInfo()
+    base.update(_get_creation_info(cio))
+    return base
 
 
 def _get_event_info(cat, attr):
