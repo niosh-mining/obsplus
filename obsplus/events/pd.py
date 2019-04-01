@@ -21,6 +21,8 @@ from obsplus.constants import (
     STATION_MAGNITUDE_DTYPES,
     MAGNITUDE_COLUMNS,
     MAGNITUDE_DTYPES,
+    ARRIVAL_COLUMNS,
+    ARRIVAL_DTYPES,
     NSLC,
 )
 from obsplus.events.utils import get_reference_time, get_seed_id
@@ -382,6 +384,58 @@ def _magnitudes_extractor(mag):
     return _obj_extractor(mag, MAGNITUDE_DTYPES, nslc=False, error_obj="mag_errors")
 
 
+# -------------- Arrivals to dataframe
+
+
+# still thinking about the best way to go about combining these...
+arrivals_to_df = DataFrameExtractor(
+    ev.Arrival, ARRIVAL_COLUMNS, utc_columns=("event_time",)
+)
+
+
+@arrivals_to_df.register(str)
+@arrivals_to_df.register(Path)
+def _file_to_arrivals_df(path):
+    return _file_to_df(path, arrivals_to_df)
+
+
+@arrivals_to_df.register(ev.Event)
+@arrivals_to_df.register(ev.Catalog)
+def _arrivals_from_event(event: ev.Event):
+    """ return a dataframe of arrivals from an event """
+    cat = [event] if isinstance(event, ev.Event) else event
+    origins = [e.preferred_origin() for e in cat if e.preferred_origin()]
+    arr_list = []
+    for o in origins:
+        extras = {}
+        arrivals = o.arrivals
+        event_dict = dict(
+            origin_id=str(o.resource_id), origin_time=get_reference_time(o)
+        )
+        extras.update({id(arr): event_dict for arr in arrivals})
+        arrivals = arrivals_to_df(o.arrivals, extras=extras)
+        arr_list.append(arrivals)
+    if not len(arr_list):
+        return pd.DataFrame(columns=ARRIVAL_COLUMNS)
+    else:
+        return pd.concat(arr_list).reset_index()
+
+
+@arrivals_to_df.register(ev.Origin)
+def _arrivals_from_origin(origin: ev.Origin):
+    return arrivals_to_df(origin.arrivals, extras=_get_event_info(o, "arrivals"))
+
+
+@arrivals_to_df.register(BankType)
+def _arrivals_from_event_bank(event_bank):
+    return _objs_from_event_bank(event_bank, arrivals_to_df)
+
+
+@arrivals_to_df.extractor(dtypes=ARRIVAL_DTYPES)
+def _arrivals_extractor(mag):
+    return _obj_extractor(mag, ARRIVAL_DTYPES)
+
+
 # -------------- Internal functions for extracting event info
 
 
@@ -492,6 +546,7 @@ def station_magnitudes_to_dataframe(cat_or_event):
 
 def magnitudes_to_dataframe(cat_or_event):
     """ Given a catalog or event, return a dataframe of magnitudes """
+    return magnitudes_to_df(cat_or_event)
 
 
 obspy.core.event.Catalog.to_df = event_to_dataframe
@@ -503,6 +558,8 @@ obspy.core.event.Event.amplitudes_to_df = amplitudes_to_dataframe
 obspy.core.event.Catalog.station_magnitudes_to_df = station_magnitudes_to_dataframe
 obspy.core.event.Event.station_magnitudes_to_df = station_magnitudes_to_dataframe
 obspy.core.event.Magnitude.station_magnitudes_to_df = station_magnitudes_to_dataframe
+obspy.core.event.Catalog.magnitudes_to_df = magnitudes_to_dataframe
+obspy.core.event.Event.magnitudes_to_df = magnitudes_to_dataframe
 
 # save the default events converter for use by other code (eg EventBank).
 _default_cat_to_df = events_to_df.copy()

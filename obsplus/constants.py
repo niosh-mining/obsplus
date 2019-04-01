@@ -244,6 +244,51 @@ MAGNITUDE_DTYPES = OrderedDict(
 
 MAGNITUDE_COLUMNS = ("resource_id", "event_id", "event_time", "mag", "magnitude_type")
 
+# columns required for arrivals
+ARRIVAL_DTYPES = OrderedDict(
+    resource_id=str,
+    seed_id=str,
+    pick_id=str,
+    phase=str,
+    time_correction=float,
+    azimuth=float,
+    distance=float,
+    takeoff_angle=float,
+    time_residual=float,
+    horizontal_slowness_residual=float,
+    backazimuth_residual=float,
+    time_weight=float,
+    horizontal_slowness_weight=float,
+    backazimuth_weight=float,
+    earth_model_id=str,
+    creation_time=float,
+    author=str,
+    agency_id=str,
+    network=str,
+    station=str,
+    location=str,
+    channel=str,
+    origin_id=str,
+    origin_time=float,
+)
+
+ARRIVAL_COLUMNS = (
+    "resource_id",
+    "origin_id",
+    "origin_time",
+    "pick_id",
+    "phase",
+    "time_residual",
+    "azimuth",
+    "distance",
+    "time_weight",
+    "time_correction",
+    "network",
+    "station",
+    "location",
+    "channel",
+)
+
 # keys used to identify UTC objects
 UTC_KEYS = ("creation_time", "time", "reference")
 

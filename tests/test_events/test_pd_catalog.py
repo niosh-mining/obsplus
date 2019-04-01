@@ -15,6 +15,7 @@ from obspy import UTCDateTime
 from obsplus import (
     events_to_df,
     picks_to_df,
+    arrivals_to_df,
     amplitudes_to_df,
     station_magnitudes_to_df,
     magnitudes_to_df,
@@ -23,6 +24,7 @@ from obsplus import (
 from obsplus.constants import (
     EVENT_COLUMNS,
     PICK_COLUMNS,
+    ARRIVAL_COLUMNS,
     AMPLITUDE_COLUMNS,
     STATION_MAGNITUDE_COLUMNS,
     MAGNITUDE_COLUMNS,
@@ -53,6 +55,35 @@ def pick_generator(scnls):
         )
         picks.append(p)
     return picks
+
+
+def arr_generator(picks):
+    counter = 1
+    params = {"phase": "P"}
+    arrivals = []
+    picks = picks or []
+    for pick in picks:
+        a = ev.Arrival(
+            pick_id=pick.resource_id,
+            time_correction=counter * 0.05,
+            azimuth=counter * 5,
+            distance=counter * 0.1,
+            takeoff_angle=counter * 2,
+            time_residual=counter * 0.15,
+            horizontal_slowness_residual=counter * 0.2,
+            backazimuth_residual=counter * 0.25,
+            time_weight=counter * 0.3,
+            horizontal_slowness_weight=counter * 0.4,
+            backazimuth_weight=counter * 0.5,
+            earth_model_id=ev.ResourceIdentifier(),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        arrivals.append(a)
+        counter += 1
+    return arrivals
 
 
 def amp_generator(scnls=None, picks=None):
@@ -552,6 +583,96 @@ class TestReadKemPicks:
         assert (seed == df["seed_id"]).all()
 
 
+class TestReadArrivals:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.preferred_origin_id = eve1.origins[0].resource_id
+        picks = pick_generator(scnls1)
+        eve1.picks = picks
+        eve1.preferred_origin().arrivals = arr_generator(picks)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.preferred_origin_id = eve2.origins[0].resource_id
+        picks = pick_generator(scnls2)
+        eve2.picks = picks
+        eve2.preferred_origin().arrivals = arr_generator(picks)
+        cat.events = [eve1, eve2]
+        return cat
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def no_origin(self):
+        cat = ev.Catalog()
+        cat.append(ev.Event())
+        return cat
+
+    @pytest.fixture(scope="class")
+    def read_arr_output(self, dummy_cat):
+        return arrivals_to_df(dummy_cat)
+
+    # general tests
+    def test_type(self, read_arr_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_arr_output, pd.DataFrame)
+
+    def test_len(self, read_arr_output, dummy_cat):
+        """ req_len should be the same as the sms req_len in events """
+        req_len = len(dummy_cat[0].preferred_origin().arrivals) + len(
+            dummy_cat[1].preferred_origin().arrivals
+        )
+        assert req_len == len(read_arr_output)
+
+    def test_values(self, read_arr_output, dummy_cat):
+        """ make sure the values of the first arrival are as expected """
+        arr_ser = read_arr_output.iloc[0]
+        origin = dummy_cat[0].preferred_origin()
+        arr = origin.arrivals[0]
+        # Is there a less messy way to check that the function correctly
+        # parsed the amplitude?
+        assert arr_ser["resource_id"] == arr.resource_id.id
+        assert arr_ser["pick_id"] == arr.pick_id
+        assert arr_ser["phase"] == arr.phase
+        assert arr_ser["time_correction"] == arr.time_correction
+        assert arr_ser["azimuth"] == arr.azimuth
+        assert arr_ser["distance"] == arr.distance
+        assert arr_ser["takeoff_angle"] == arr.takeoff_angle
+        assert arr_ser["time_residual"] == arr.time_residual
+        assert (
+            arr_ser["horizontal_slowness_residual"] == arr.horizontal_slowness_residual
+        )
+        assert arr_ser["backazimuth_residual"] == arr.backazimuth_residual
+        assert arr_ser["time_weight"] == arr.time_weight
+        assert arr_ser["horizontal_slowness_weight"] == arr.horizontal_slowness_weight
+        assert arr_ser["backazimuth_weight"] == arr.backazimuth_weight
+        assert arr_ser["earth_model_id"] == arr.earth_model_id
+        assert arr_ser["origin_id"] == origin.resource_id.id
+        assert arr_ser["origin_time"] == origin.time
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = arrivals_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(ARRIVAL_COLUMNS)
+
+    def test_no_origin(self, no_origin):
+        """ ensure returns empty df with required columns """
+        df = arrivals_to_df(no_origin)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(ARRIVAL_COLUMNS)
+
+
 class TestReadAmplitudes:
     # fixtures
     @pytest.fixture(scope="class")
@@ -577,6 +698,14 @@ class TestReadAmplitudes:
     def read_amps_output(self, dummy_cat):
         return amplitudes_to_df(dummy_cat)
 
+    @pytest.fixture(scope="class")
+    def amplitude(self, dummy_cat):
+        return dummy_cat[0].amplitudes[0]
+
+    @pytest.fixture(scope="class")
+    def amp_series(self, read_amps_output):
+        return read_amps_output.iloc[0]
+
     # general tests
     def test_type(self, read_amps_output):
         """ make sure a dataframe was returned """
@@ -587,35 +716,36 @@ class TestReadAmplitudes:
         req_len = len(dummy_cat[0].amplitudes) + len(dummy_cat[1].amplitudes)
         assert req_len == len(read_amps_output)
 
-    def test_values(self, read_amps_output, dummy_cat):
+    def test_values(self, amplitude, amp_series):
         """ make sure the values of the first amplitude are as expected """
-        amp_ser = read_amps_output.iloc[0]
-        amp = dummy_cat[0].amplitudes[0]
         # Is there a less messy way to check that the function correctly
         # parsed the amplitude?
-        assert amp_ser["resource_id"] == amp.resource_id.id
-        assert amp_ser["generic_amplitude"] == amp.generic_amplitude
-        assert amp_ser["seed_id"] == get_seed_id(amp)
-        assert amp_ser["type"] == amp.type
-        assert amp_ser["category"] == amp.category
-        assert amp_ser["magnitude_hint"] == amp.magnitude_hint
-        assert amp_ser["unit"] == amp.unit
-        assert amp_ser["filter_id"] == amp.filter_id.id
-        assert amp_ser["method_id"] == amp.method_id.id
-        assert amp_ser["period"] == amp.period
-        assert amp_ser["snr"] == amp.snr
-        assert amp_ser["pick_id"] == amp.pick_id.id
-        assert amp_ser["reference"] == obspy.UTCDateTime(amp.time_window.reference)
-        assert amp_ser["time_begin"] == amp.time_window.begin
-        assert amp_ser["time_end"] == amp.time_window.end
-        assert amp_ser["scaling_time"] == obspy.UTCDateTime(amp.scaling_time)
-        assert amp_ser["evaluation_mode"] == amp.evaluation_mode
-        assert amp_ser["evaluation_status"] == amp.evaluation_status
-        assert amp_ser["creation_time"] == obspy.UTCDateTime(
-            amp.creation_info.creation_time
+        assert amp_series["resource_id"] == amplitude.resource_id.id
+        assert amp_series["generic_amplitude"] == amplitude.generic_amplitude
+        assert amp_series["type"] == amplitude.type
+        assert amp_series["category"] == amplitude.category
+        assert amp_series["magnitude_hint"] == amplitude.magnitude_hint
+        assert amp_series["unit"] == amplitude.unit
+        assert amp_series["filter_id"] == amplitude.filter_id.id
+        assert amp_series["method_id"] == amplitude.method_id.id
+        assert amp_series["period"] == amplitude.period
+        assert amp_series["snr"] == amplitude.snr
+        assert amp_series["pick_id"] == amplitude.pick_id.id
+        assert amp_series["reference"] == obspy.UTCDateTime(
+            amplitude.time_window.reference
         )
-        assert amp_ser["author"] == amp.creation_info.author
-        assert amp_ser["agency_id"] == amp.creation_info.agency_id
+        assert amp_series["time_begin"] == amplitude.time_window.begin
+        assert amp_series["time_end"] == amplitude.time_window.end
+        assert amp_series["scaling_time"] == obspy.UTCDateTime(amplitude.scaling_time)
+        assert amp_series["evaluation_mode"] == amplitude.evaluation_mode
+        assert amp_series["evaluation_status"] == amplitude.evaluation_status
+
+    def test_creation_time(self, amplitude, amp_series):
+        assert amp_series["creation_time"] == obspy.UTCDateTime(
+            amplitude.creation_info.creation_time
+        )
+        assert amp_series["author"] == amplitude.creation_info.author
+        assert amp_series["agency_id"] == amplitude.creation_info.agency_id
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
@@ -686,16 +816,10 @@ class TestReadStationMagnitudes:
         # parsed the amplitude?
         assert sm_ser["resource_id"] == sm.resource_id.id
         assert sm_ser["mag"] == sm.mag
-        assert sm_ser["seed_id"] == get_seed_id(sm)
         assert sm_ser["station_magnitude_type"] == sm.station_magnitude_type
         assert sm_ser["origin_id"] == sm.origin_id.id
         assert sm_ser["method_id"] == sm.method_id.id
         assert sm_ser["amplitude_id"] == sm.amplitude_id.id
-        assert sm_ser["creation_time"] == obspy.UTCDateTime(
-            sm.creation_info.creation_time
-        )
-        assert sm_ser["author"] == sm.creation_info.author
-        assert sm_ser["agency_id"] == sm.creation_info.agency_id
 
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
@@ -760,11 +884,6 @@ class TestReadMagnitudes:
         assert mag_ser["azimuthal_gap"] == mag.azimuthal_gap
         assert mag_ser["evaluation_mode"] == mag.evaluation_mode
         assert mag_ser["evaluation_status"] == mag.evaluation_status
-        assert mag_ser["creation_time"] == obspy.UTCDateTime(
-            mag.creation_info.creation_time
-        )
-        assert mag_ser["author"] == mag.creation_info.author
-        assert mag_ser["agency_id"] == mag.creation_info.agency_id
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):

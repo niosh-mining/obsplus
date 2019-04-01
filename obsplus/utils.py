@@ -298,7 +298,7 @@ def get_reference_time(obj: Union[event_time_type, wave_type],) -> obspy.UTCDate
         raise TypeError(msg)
 
 
-@get_reference_time.register(obspy.core.event.Event)
+@get_reference_time.register(ev.Event)
 def _get_event_origin_time(event):
     """ get the time from preferred origin from the event """
     # try to get origin
@@ -315,6 +315,11 @@ def _get_event_origin_time(event):
     else:
         msg = f"could not get reference time for {event}"
         raise ValueError(msg)
+
+
+@get_reference_time.register(ev.Origin)
+def _get_origin_time(origin):
+    return get_reference_time(origin.time)
 
 
 @get_reference_time.register(ev.Pick)
