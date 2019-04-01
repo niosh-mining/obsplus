@@ -9,7 +9,7 @@ import re
 import warnings
 from functools import lru_cache, singledispatch
 from pathlib import Path
-from typing import Union, Optional, Callable
+from typing import Union, Optional, Callable, Iterable
 
 import obspy
 import obspy.core.event as ev
@@ -243,7 +243,10 @@ def _bump_version(version):
 
 
 def make_origins(
-    events: catalog_or_event, inventory: obspy.Inventory, depth: float = 1.0
+    events: catalog_or_event,
+    inventory: obspy.Inventory,
+    depth: float = 1.0,
+    phase_hints: Optional[Iterable] = ("P", "p"),
 ) -> catalog_or_event:
     """
     Iterate a catalog or single events and ensure each has an origin.
@@ -264,6 +267,9 @@ def make_origins(
     depth
         The default depth for created origins. Should be in meters. See the
         obspy docs for Origin or the quakeml standard for more details.
+    phase_hints
+        List of acceptable phase hints to use for identifying the earliest
+        pick. By default will only search for "P" or "p" phase hints.
 
     Returns
     -------
@@ -276,13 +282,20 @@ def make_origins(
     nslc_series = get_nslc_series(df)
     for event in cat:
         if not event.origins:  # make new origin
-            assert event.picks, f"{event} has no picks cannot create origin"
+            picks = event.picks_to_df()
+            picks = picks.loc[
+                (~(picks.evaluation_status == "rejected"))
+                & (picks.phase_hint.isin(phase_hints))
+            ]
+            if not len(picks):
+                raise ValueError(f"{event} has no acceptable picks to create origin")
             # get first pick, determine time/station used
-            first_pick = min(event.picks, key=lambda x: x.time.timestamp)
-            seed_id = first_pick.waveform_id.get_seed_string()
+            first_pick = picks.loc[picks.time == picks.time.min()].iloc[0]
+            seed_id = first_pick.seed_id
             # find channel corresponding to pick
             df_chan = df[nslc_series == seed_id]
-            assert len(df_chan), f"{seed_id} not found in inventory"
+            if not len(df_chan):
+                raise KeyError(f"{seed_id} not found in inventory")
             ser = df_chan.iloc[0]
             # create origin
             ori = _create_first_pick_origin(first_pick, ser, depth=depth)
@@ -298,7 +311,7 @@ def _create_first_pick_origin(first_pick, channel_ser, depth):
     )
     comment = ev.Comment(text=msg)
     odict = dict(
-        time=first_pick.time,
+        time=obspy.UTCDateTime(first_pick.time),
         latitude=channel_ser.latitude,
         longitude=channel_ser.longitude,
         depth=depth,

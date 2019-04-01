@@ -366,8 +366,13 @@ class TestGetPreferred:
         assert isinstance(ori, ev.Origin)
 
 
-class TestEnsureOrigin:
+class TestMakeOrigins:
     """ Tests for the ensure origin function. """
+
+    @pytest.fixture(scope="class")
+    def inv(self):
+        ds = obsplus.load_dataset("crandall")
+        return ds.station_client.get_stations()
 
     @pytest.fixture(scope="class")
     def cat_only_picks(self, crandall_dataset):
@@ -381,12 +386,37 @@ class TestEnsureOrigin:
         return cat
 
     @pytest.fixture(scope="class")
-    def cat_added_origins(self, cat_only_picks):
-        """ run ensure_origin on the catalog with only picks and return """
+    def cat_added_origins(self, cat_only_picks, inv):
+        """ run make_origins on the catalog with only picks and return """
         # get corresponding inventory
-        ds = obsplus.load_dataset("crandall")
-        inv = ds.station_client.get_stations()
         return make_origins(events=cat_only_picks, inventory=inv)
+
+    @pytest.fixture(scope="class")
+    def strange_picks_added_origins(self, inv):
+        """ make sure "rejected" picks and oddball phase hints get skipped """
+        # Pick w/ good phase hint but bad evaluation status
+        pick1 = ev.Pick(
+            time=obspy.UTCDateTime(),
+            phase_hint="P",
+            evaluation_status="rejected",
+            waveform_id=ev.WaveformStreamID(seed_string="UU.TMU..HHZ"),
+        )
+        # Pick w/ bad phase hint but good evaluation status
+        pick2 = ev.Pick(
+            time=obspy.UTCDateTime(),
+            phase_hint="junk",
+            evaluation_status="reviewed",
+            waveform_id=ev.WaveformStreamID(seed_string="UU.CTU..HHZ"),
+        )
+        # Pick w/ good phase hint and evaluation status
+        pick3 = ev.Pick(
+            time=obspy.UTCDateTime(),
+            phase_hint="S",
+            waveform_id=ev.WaveformStreamID(seed_string="UU.SRU..HHN"),
+        )
+        eve = ev.Event()
+        eve.picks = [pick1, pick2, pick3]
+        return make_origins(events=eve, inventory=inv, phase_hints=["P", "S"]), pick3
 
     def test_all_events_have_origins(self, cat_added_origins):
         """ ensure all the events do indeed have origins """
@@ -401,3 +431,9 @@ class TestEnsureOrigin:
                 assert origin.latitude is not None
                 assert origin.longitude is not None
                 assert origin.depth is not None
+
+    def test_correct_origin_time(self, strange_picks_added_origins):
+        """ make sure newly attached origin used the correct pick to get the location """
+        ori = strange_picks_added_origins[0].origins[0]
+        time = strange_picks_added_origins[1].time
+        assert ori.time == time
