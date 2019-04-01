@@ -19,6 +19,8 @@ from obsplus.constants import (
     AMPLITUDE_DTYPES,
     STATION_MAGNITUDE_COLUMNS,
     STATION_MAGNITUDE_DTYPES,
+    MAGNITUDE_COLUMNS,
+    MAGNITUDE_DTYPES,
     NSLC,
 )
 from obsplus.events.utils import get_reference_time, get_seed_id
@@ -257,17 +259,7 @@ def _picks_from_event(event: ev.Event):
     # ensure we have an iterable and flatten picks
     cat = [event] if isinstance(event, ev.Event) else event
     picks = [p for e in cat for p in e.picks]
-    # iterate events and create extras for inject event info to pick level
-    extras = {}
-    for event in cat:
-        if not len(event.picks):
-            continue  # skip events with no picks
-        event_dict = dict(
-            event_id=str(event.resource_id), event_time=get_reference_time(event)
-        )
-        extras.update({id(p): event_dict for p in event.picks})
-
-    return picks_to_df(picks, extras=extras)
+    return picks_to_df(picks, extras=_get_event_info(cat, "picks"))
 
 
 @picks_to_df.register(BankType)
@@ -320,17 +312,7 @@ def _amplitudes_from_event(event: ev.Event):
     # ensure we have an iterable and flatten amplitudes
     cat = [event] if isinstance(event, ev.Event) else event
     amps = [a for e in cat for a in e.amplitudes]
-    # iterate events and create extras for inject event info to amplitude level
-    extras = {}
-    for event in cat:
-        if not len(event.amplitudes):
-            continue  # skip events with no amplitudes
-        event_dict = dict(
-            event_id=str(event.resource_id), event_time=get_reference_time(event)
-        )
-        extras.update({id(a): event_dict for a in event.amplitudes})
-
-    return amplitudes_to_df(amps, extras=extras)
+    return amplitudes_to_df(amps, extras=_get_event_info(cat, "amplitudes"))
 
 
 @amplitudes_to_df.register(BankType)
@@ -366,8 +348,7 @@ def _amplitudes_extractor(amp):
 # -------------- StationMagnitudes to dataframe
 
 
-# It seems like there is enough similarity between amplitudes_to_df and
-# picks_to_df that there should be some way to combine them...
+# still thinking about the best way to go about combining these...
 station_magnitudes_to_df = DataFrameExtractor(
     ev.StationMagnitude, STATION_MAGNITUDE_COLUMNS, utc_columns=("event_time",)
 )
@@ -391,16 +372,9 @@ def _station_magnitudes_from_event(event: ev.Event):
     # is there a relatively simple way to get the ID of the magnitude(s) that use a sm?
     cat = [event] if isinstance(event, ev.Event) else event
     sms = [sm for e in cat for sm in e.station_magnitudes]
-    # iterate events and create extras for inject event info to station magnitude level
-    extras = {}
-    for event in cat:
-        if not len(event.station_magnitudes):
-            continue  # skip events with no station magnitudes
-        event_dict = dict(
-            event_id=str(event.resource_id), event_time=get_reference_time(event)
-        )
-        extras.update({id(sm): event_dict for sm in event.station_magnitudes})
-    return station_magnitudes_to_df(sms, extras=extras)
+    return station_magnitudes_to_df(
+        sms, extras=_get_event_info(cat, "station_magnitudes")
+    )
 
 
 @station_magnitudes_to_df.register(ev.Magnitude)  # This may not work nicely...
@@ -438,6 +412,73 @@ def _station_magnitudes_extractor(sm):
     return base
 
 
+# -------------- Magnitudes to dataframe
+
+
+# still thinking about the best way to go about combining these...
+magnitudes_to_df = DataFrameExtractor(
+    ev.Magnitude, MAGNITUDE_COLUMNS, utc_columns=("event_time",)
+)
+
+
+@magnitudes_to_df.register(str)
+@magnitudes_to_df.register(Path)
+def _file_to_magnitudes_df(path):
+    path = str(path)
+    try:
+        return magnitudes_to_df(obspy.read_events(path))
+    except TypeError:  # obspy failed to read file, try csv
+        return magnitudes_to_df(pd.read_csv(path))
+
+
+@magnitudes_to_df.register(ev.Event)
+@magnitudes_to_df.register(ev.Catalog)
+def _magnitudes_from_event(event: ev.Event):
+    """ return a dataframe of station_magnitudes from a station_magnitude list """
+    # ensure we have an iterable and flatten station_magnitudes
+    cat = [event] if isinstance(event, ev.Event) else event
+    mags = [mag for e in cat for mag in e.magnitudes]
+    return magnitudes_to_df(mags, extras=_get_event_info(cat, "magnitudes"))
+
+
+@magnitudes_to_df.register(BankType)
+def _magnitudes_from_event_bank(event_bank):
+    assert isinstance(event_bank, EventClient)
+    return magnitudes_to_df(event_bank.get_events())
+
+
+@magnitudes_to_df.extractor(dtypes=MAGNITUDE_DTYPES)
+def _magnitudes_extractor(mag):
+    # extract attributes that are floats/str
+    overlap = set(mag.__dict__) & set(MAGNITUDE_DTYPES)
+    base = {i: getattr(mag, i) for i in overlap}
+    # get magnitude error info
+    merrors = mag.mag_errors
+    if merrors:
+        base.update(_get_uncertainty(merrors))
+    # get creation info
+    cio = mag.creation_info or ev.CreationInfo()
+    base.update(_get_creation_info(cio))
+    return base
+
+
+# -------------- Internal functions for extracting event info
+
+
+def _get_event_info(cat, attr):
+    """Extract event_id and time for an extractor"""
+    extras = {}
+    for event in cat:
+        iterable = event.__dict__[attr]
+        if not len(iterable):
+            continue
+        event_dict = dict(
+            event_id=str(event.resource_id), event_time=get_reference_time(event)
+        )
+        extras.update({id(item): event_dict for item in iterable})
+    return extras
+
+
 def _get_creation_info(cio):
     """ Strip the creation info for an extractor """
     return {
@@ -473,18 +514,22 @@ def event_to_dataframe(cat_or_event):
 
 
 def picks_to_dataframe(cat_or_event):
-    """ Given a catalog or event return a dataframe of picks """
+    """ Given a catalog or event, return a dataframe of picks """
     return picks_to_df(cat_or_event)
 
 
 def amplitudes_to_dataframe(cat_or_event):
-    """ Given a catalog or event return a dataframe of amplitudes """
+    """ Given a catalog or event, return a dataframe of amplitudes """
     return amplitudes_to_df(cat_or_event)
 
 
 def station_magnitudes_to_dataframe(cat_or_event):
-    """ Given a catalog or event return a dataframe of station magnitudes """
+    """ Given a catalog or event, return a dataframe of station magnitudes """
     return station_magnitudes_to_df(cat_or_event)
+
+
+def magnitudes_to_dataframe(cat_or_event):
+    """ Given a catalog or event, return a dataframe of magnitudes """
 
 
 obspy.core.event.Catalog.to_df = event_to_dataframe

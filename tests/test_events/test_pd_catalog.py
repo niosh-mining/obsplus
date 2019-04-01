@@ -17,6 +17,7 @@ from obsplus import (
     picks_to_df,
     amplitudes_to_df,
     station_magnitudes_to_df,
+    magnitudes_to_df,
     get_preferred,
 )
 from obsplus.constants import (
@@ -24,6 +25,7 @@ from obsplus.constants import (
     PICK_COLUMNS,
     AMPLITUDE_COLUMNS,
     STATION_MAGNITUDE_COLUMNS,
+    MAGNITUDE_COLUMNS,
 )
 from obsplus.datasets.dataloader import base_path
 from obsplus.events.utils import get_seed_id
@@ -149,6 +151,31 @@ def sm_generator(scnls=None, amplitudes=None):
         sms.append(sm)
         counter += 1
     return sms
+
+
+def mag_generator(mag_types):
+    params = {
+        "origin_id": ev.ResourceIdentifier(),
+        "method_id": ev.ResourceIdentifier("mag_calculator"),
+        "station_count": 2,
+        "azimuthal_gap": 30,
+        "evaluation_mode": "manual",
+        "evaluation_status": "reviewed",
+    }
+    mags = []
+    counter = 1
+    for mt in mag_types:
+        m = ev.Magnitude(
+            mag=counter,
+            magnitude_type=mt,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        mags.append(m)
+    return mags
 
 
 # --------------- tests
@@ -573,11 +600,11 @@ class TestReadAmplitudes:
         assert amp_ser["category"] == amp.category
         assert amp_ser["magnitude_hint"] == amp.magnitude_hint
         assert amp_ser["unit"] == amp.unit
-        assert amp_ser["filter_id"] == amp.filter_id
-        assert amp_ser["method_id"] == amp.method_id
+        assert amp_ser["filter_id"] == amp.filter_id.id
+        assert amp_ser["method_id"] == amp.method_id.id
         assert amp_ser["period"] == amp.period
         assert amp_ser["snr"] == amp.snr
-        assert amp_ser["pick_id"] == amp.pick_id
+        assert amp_ser["pick_id"] == amp.pick_id.id
         assert amp_ser["reference"] == obspy.UTCDateTime(amp.time_window.reference)
         assert amp_ser["time_begin"] == amp.time_window.begin
         assert amp_ser["time_end"] == amp.time_window.end
@@ -661,9 +688,9 @@ class TestReadStationMagnitudes:
         assert sm_ser["mag"] == sm.mag
         assert sm_ser["seed_id"] == get_seed_id(sm)
         assert sm_ser["station_magnitude_type"] == sm.station_magnitude_type
-        assert sm_ser["origin_id"] == sm.origin_id
-        assert sm_ser["method_id"] == sm.method_id
-        assert sm_ser["amplitude_id"] == sm.amplitude_id
+        assert sm_ser["origin_id"] == sm.origin_id.id
+        assert sm_ser["method_id"] == sm.method_id.id
+        assert sm_ser["amplitude_id"] == sm.amplitude_id.id
         assert sm_ser["creation_time"] == obspy.UTCDateTime(
             sm.creation_info.creation_time
         )
@@ -685,6 +712,67 @@ class TestReadStationMagnitudes:
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
+
+
+class TestReadMagnitudes:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        cat = ev.Catalog()
+        eve = ev.Event()
+        eve.origins.append(ev.Origin(time=UTCDateTime()))
+        eve.magnitudes = mag_generator(["ML", "Md", "MW"])
+        cat.append(eve)
+        return cat
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_mags_output(self, dummy_cat):
+        return magnitudes_to_df(dummy_cat)
+
+    # general tests
+    def test_type(self, read_mags_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_mags_output, pd.DataFrame)
+
+    def test_len(self, read_mags_output, dummy_cat):
+        """ req_len should be the same as the amps req_len in events """
+        req_len = len(dummy_cat[0].magnitudes)
+        assert req_len == len(read_mags_output)
+
+    def test_values(self, read_mags_output, dummy_cat):
+        """ make sure the values of the first amplitude are as expected """
+        mag_ser = read_mags_output.iloc[0]
+        mag = dummy_cat[0].magnitudes[0]
+        # Is there a less messy way to check that the function correctly
+        # parsed the amplitude?
+        assert mag_ser["resource_id"] == mag.resource_id.id
+        assert mag_ser["mag"] == mag.mag
+        assert mag_ser["uncertainty"] == mag.mag_errors.uncertainty
+        assert mag_ser["confidence_level"] == mag.mag_errors.confidence_level
+        assert mag_ser["magnitude_type"] == mag.magnitude_type
+        assert mag_ser["origin_id"] == mag.origin_id
+        assert mag_ser["method_id"] == mag.method_id
+        assert mag_ser["station_count"] == mag.station_count
+        assert mag_ser["azimuthal_gap"] == mag.azimuthal_gap
+        assert mag_ser["evaluation_mode"] == mag.evaluation_mode
+        assert mag_ser["evaluation_status"] == mag.evaluation_status
+        assert mag_ser["creation_time"] == obspy.UTCDateTime(
+            mag.creation_info.creation_time
+        )
+        assert mag_ser["author"] == mag.creation_info.author
+        assert mag_ser["agency_id"] == mag.creation_info.agency_id
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = magnitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(MAGNITUDE_COLUMNS)
 
 
 class TestGetPreferred:

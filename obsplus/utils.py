@@ -823,7 +823,7 @@ def get_distance_df(
         for ell, ill in product(coord1, coord2)
         if ell[-1] != ill[-1]  # skip if same entity
     }
-    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
+    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYPES)
     # make sure index is named
     df.index.names = ("id1", "id2")
     return df[list(DISTANCE_COLUMNS)]

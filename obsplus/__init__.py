@@ -23,6 +23,7 @@ from obsplus.events.pd import (
     picks_to_df,
     amplitudes_to_df,
     station_magnitudes_to_df,
+    magnitudes_to_df,
 )
 
 # Bank and WaveFetcher objects

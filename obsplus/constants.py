@@ -45,6 +45,7 @@ PREFERRED = {
     "preferred_focal_mechanism_id",
 }
 
+# ----- Extractor constants
 # columns required for station data
 STATION_DTYPES = OrderedDict(
     network=str,
@@ -158,6 +159,7 @@ AMPLITUDE_DTYPES = OrderedDict(
     creation_time=float,
     author=str,
     agency_id=str,
+    event_time=float,
     event_id=str,
     network=str,
     station=str,
@@ -168,6 +170,7 @@ AMPLITUDE_DTYPES = OrderedDict(
     upper_uncertainty=float,
     confidence_level=float,
 )
+
 AMPLITUDE_COLUMNS = (
     "resource_id",
     "event_id",
@@ -195,6 +198,7 @@ STATION_MAGNITUDE_DTYPES = OrderedDict(
     author=str,
     agency_id=str,
     event_id=str,
+    event_time=float,
     network=str,
     station=str,
     location=str,
@@ -214,6 +218,31 @@ STATION_MAGNITUDE_COLUMNS = (
     "location",
     "channel",
 )
+
+# columns required for magnitudes
+MAGNITUDE_DTYPES = OrderedDict(
+    resource_id=str,
+    mag=float,
+    seed_id=str,
+    magnitude_type=str,
+    origin_id=str,
+    method_id=str,
+    station_count=int,
+    azimuthal_gap=float,
+    evaluation_mode=str,
+    evaluation_status=str,
+    creation_time=float,
+    author=str,
+    agency_id=str,
+    event_id=str,
+    event_time=float,
+    uncertainty=float,
+    lower_uncertainty=float,
+    upper_uncertainty=float,
+    confidence_level=float,
+)
+
+MAGNITUDE_COLUMNS = ("resource_id", "event_id", "event_time", "mag", "magnitude_type")
 
 # keys used to identify UTC objects
 UTC_KEYS = ("creation_time", "time", "reference")
