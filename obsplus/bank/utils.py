@@ -8,13 +8,11 @@ import re
 import sqlite3
 import warnings
 from functools import singledispatch
-from contextlib import contextmanager
 from os.path import join
 from typing import Optional, Sequence, Union
 
 import obspy
 import obspy.core.event as ev
-import numpy as np
 import pandas as pd
 
 from obsplus.constants import (
@@ -253,6 +251,23 @@ def get_kernel_query(starttime: float, endtime: float, buffer: float):
 # --- SQL stuff
 
 
+def _str_of_params(value):
+    """
+    Make sure a list of params is returned.
+
+    This allows user to specify a single parameter, a list, set, nparray, etc.
+    to match on.
+    """
+    if isinstance(value, str):
+        return value
+    else:
+        # try to coerce in a list of str
+        try:
+            return [str(x) for x in value]
+        except TypeError:  # else fallback to str repr
+            return str(value)
+
+
 def _make_wheres(queries):
     """ Create the where queries, join with AND clauses """
     kwargs = dict(queries)
@@ -262,14 +277,9 @@ def _make_wheres(queries):
         kwargs["event_id"] = kwargs["eventid"]
         kwargs.pop("eventid")
     if "event_id" in kwargs:
-        val = kwargs.pop("event_id")
-        if isinstance(val, str):
-            kwargs["event_id"] = val
-        else:
-            try:
-                kwargs["event_id"] = [str(x) for x in val]
-            except TypeError:
-                kwargs["event_id"] = str(val)
+        kwargs["event_id"] = _str_of_params(kwargs["event_id"])
+    if "event_description" in kwargs:
+        kwargs["event_description"] = _str_of_params(kwargs["event_description"])
     if "endtime" in kwargs:
         kwargs["maxtime"] = kwargs["endtime"]
         kwargs.pop("endtime")
