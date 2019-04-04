@@ -148,6 +148,10 @@ NSLC = ("network", "station", "location", "channel")
 # the expected dimensions of the standard waveform array
 DIMS = ("stream_id", "seed_id", "time")
 
+# Small and BIG UTCDateTimes
+BIG_UTC = obspy.UTCDateTime("3000-01-01")
+SMALL_UTC = obspy.UTCDateTime("1970-01-01")
+
 # ------------------- type aliases (aliai?)
 
 # The waveforms processor type

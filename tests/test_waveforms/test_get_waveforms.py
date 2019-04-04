@@ -39,6 +39,10 @@ class TestGetWaveforms:
         assert all([tr.stats.network == "LF" for tr in st])
         assert all([tr.stats.station == "BOB" for tr in st])
 
+    def test_none_times(self, stream):
+        """ Ensure starttime/endtime can be None. """
+        st = stream.get_waveforms("*", "*", "*", "*", None, None)
+
 
 class TestGetWaveformsBulk:
     def test_has_attr(self, stream):
