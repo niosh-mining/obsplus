@@ -54,6 +54,9 @@ STATION_DTYPES = OrderedDict(
     latitude=float,
     longitude=float,
     elevation=float,
+    depth=float,
+    azimuth=float,
+    dip=float,
     start_date=float,
     end_date=float,
 )
