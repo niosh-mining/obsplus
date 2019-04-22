@@ -403,7 +403,7 @@ def get_utc_path(
 
 def get_seed_id(obj: catalog_component) -> str:
     """
-    Get the SCNL associated with a station-specific object
+    Get the NSLC associated with a station-specific object
 
     Parameters
     ----------
@@ -415,7 +415,7 @@ def get_seed_id(obj: catalog_component) -> str:
     Returns
     -------
     str :
-        The SCNL, in the form of a seed string
+        The NSLC, in the form of a seed string
     """
     if isinstance(obj, WaveformStreamID):
         # Get the seed id
@@ -423,24 +423,21 @@ def get_seed_id(obj: catalog_component) -> str:
     if isinstance(obj, ResourceIdentifier):
         # Get the next nested object
         return get_seed_id(obj.get_referred_object())
-    # The order of this list matters... it should go from the deepest nested
-    # attribute to the shallowest
-    attrs = ["waveform_id", "pick_id", "amplitude_id", "station_magnitude_id"]
+    # The order of this list matters! It should first try waveform_id and then
+    # go from the shallowest nested attribute to the deepest
+    attrs = ["waveform_id", "station_magnitude_id", "amplitude_id", "pick_id"]
     # Make sure the object has at least one of the required attributes
     if not len(set(attrs).intersection(set(vars(obj)))):
         raise TypeError(f"cannot retrieve seed id for objects of type {type(obj)}")
     # Loop over each of the attributes, if it exists and is not None,
     # go down a level until it finds a seed id
     for att in attrs:
-        if hasattr(obj, att):
-            val = getattr(obj, att)
-            if val:
-                try:
-                    return get_seed_id(val)
-                except (TypeError, AttributeError):
-                    raise AttributeError(
-                        f"Unable to fetch a seed id for {obj.resource_id}"
-                    )
+        val = getattr(obj, att, None)
+        if val:
+            try:
+                return get_seed_id(val)
+            except (TypeError, AttributeError):
+                raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
     # If it makes it this far, it could not find a non-None attribute
     raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
 

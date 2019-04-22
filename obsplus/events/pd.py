@@ -301,7 +301,7 @@ def _arrivals_from_event(event: ev.Event):
     if not len(arr_list):
         return pd.DataFrame(columns=ARRIVAL_COLUMNS)
     else:
-        return pd.concat(arr_list).reset_index()
+        return pd.concat(arr_list).reset_index(drop=True)
 
 
 @arrivals_to_df.register(ev.Origin)

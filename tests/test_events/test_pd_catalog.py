@@ -34,6 +34,21 @@ from obsplus.events.utils import get_seed_id
 from obsplus.utils import getattrs, get_nslc_series
 
 
+common_extractor_cols = {
+    "agency_id",
+    "author",
+    "channel",
+    "creation_time",
+    "location",
+    "network",
+    "seed_id",
+    "station",
+    "event_id",
+    "event_time",
+}
+common_obj_attrs = {"creation_info", "comments", "waveform_id"}
+
+
 # ---------------- helper functions
 
 
@@ -619,6 +634,31 @@ class TestReadArrivals:
     def read_arr_output(self, dummy_cat):
         return arrivals_to_df(dummy_cat)
 
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_arr_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_arr_output.iloc[0])
+        for key in common_extractor_cols:
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def arr_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        origin = dummy_cat[0].preferred_origin()
+        arr = origin.arrivals[0]
+        arr_dict = dict(arr.__dict__)
+        # Remove unnecessary items
+        for key in common_obj_attrs:
+            arr_dict.pop(key, None)
+        arr_dict.pop("takeoff_angle_errors")
+        # modify/add more complex items
+        arr_dict["resource_id"] = arr_dict["resource_id"].id
+        arr_dict["pick_id"] = arr_dict["pick_id"].id
+        arr_dict["origin_id"] = origin.resource_id.id
+        arr_dict["origin_time"] = origin.time.timestamp
+        return arr_dict
+
     # general tests
     def test_type(self, read_arr_output):
         """ make sure a dataframe was returned """
@@ -631,31 +671,9 @@ class TestReadArrivals:
         )
         assert req_len == len(read_arr_output)
 
-    def test_values(self, read_arr_output, dummy_cat):
+    def test_values(self, ser_dict, arr_dict):
         """ make sure the values of the first arrival are as expected """
-        arr_ser = read_arr_output.iloc[0]
-        origin = dummy_cat[0].preferred_origin()
-        arr = origin.arrivals[0]
-        # Is there a less messy way to check that the function correctly
-        # parsed the amplitude?
-        assert arr_ser["resource_id"] == arr.resource_id.id
-        assert arr_ser["pick_id"] == arr.pick_id
-        assert arr_ser["phase"] == arr.phase
-        assert arr_ser["time_correction"] == arr.time_correction
-        assert arr_ser["azimuth"] == arr.azimuth
-        assert arr_ser["distance"] == arr.distance
-        assert arr_ser["takeoff_angle"] == arr.takeoff_angle
-        assert arr_ser["time_residual"] == arr.time_residual
-        assert (
-            arr_ser["horizontal_slowness_residual"] == arr.horizontal_slowness_residual
-        )
-        assert arr_ser["backazimuth_residual"] == arr.backazimuth_residual
-        assert arr_ser["time_weight"] == arr.time_weight
-        assert arr_ser["horizontal_slowness_weight"] == arr.horizontal_slowness_weight
-        assert arr_ser["backazimuth_weight"] == arr.backazimuth_weight
-        assert arr_ser["earth_model_id"] == arr.earth_model_id
-        assert arr_ser["origin_id"] == origin.resource_id.id
-        assert arr_ser["origin_time"] == origin.time
+        assert ser_dict == arr_dict
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
@@ -706,6 +724,40 @@ class TestReadAmplitudes:
     def amp_series(self, read_amps_output):
         return read_amps_output.iloc[0]
 
+    @pytest.fixture(scope="class")
+    def ser_dict(self, amp_series):
+        """ values to compare from the extractor """
+        ser_dict = dict(amp_series)
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def amp_dict(self, amplitude):
+        """ values to compare from the arrivals """
+        amp_dict = dict(amplitude.__dict__)
+        # Remove unnecessary items
+        err_objs = {"generic_amplitude_errors", "scaling_time_errors", "period_errors"}
+        for key in common_obj_attrs.union(err_objs):
+            amp_dict.pop(key, None)
+        # modify/add more complex items
+        amp_dict["resource_id"] = amp_dict["resource_id"].id
+        amp_dict["pick_id"] = amp_dict["pick_id"].id
+        amp_dict["filter_id"] = amp_dict["filter_id"].id
+        amp_dict["method_id"] = amp_dict["method_id"].id
+        amp_dict["scaling_time"] = amp_dict["scaling_time"].timestamp
+        time_window = amp_dict.pop("time_window")
+        amp_dict["reference"] = time_window.reference.timestamp
+        amp_dict["time_begin"] = time_window.begin
+        amp_dict["time_end"] = time_window.end
+        return amp_dict
+
     # general tests
     def test_type(self, read_amps_output):
         """ make sure a dataframe was returned """
@@ -716,29 +768,9 @@ class TestReadAmplitudes:
         req_len = len(dummy_cat[0].amplitudes) + len(dummy_cat[1].amplitudes)
         assert req_len == len(read_amps_output)
 
-    def test_values(self, amplitude, amp_series):
+    def test_values(self, ser_dict, amp_dict):
         """ make sure the values of the first amplitude are as expected """
-        # Is there a less messy way to check that the function correctly
-        # parsed the amplitude?
-        assert amp_series["resource_id"] == amplitude.resource_id.id
-        assert amp_series["generic_amplitude"] == amplitude.generic_amplitude
-        assert amp_series["type"] == amplitude.type
-        assert amp_series["category"] == amplitude.category
-        assert amp_series["magnitude_hint"] == amplitude.magnitude_hint
-        assert amp_series["unit"] == amplitude.unit
-        assert amp_series["filter_id"] == amplitude.filter_id.id
-        assert amp_series["method_id"] == amplitude.method_id.id
-        assert amp_series["period"] == amplitude.period
-        assert amp_series["snr"] == amplitude.snr
-        assert amp_series["pick_id"] == amplitude.pick_id.id
-        assert amp_series["reference"] == obspy.UTCDateTime(
-            amplitude.time_window.reference
-        )
-        assert amp_series["time_begin"] == amplitude.time_window.begin
-        assert amp_series["time_end"] == amplitude.time_window.end
-        assert amp_series["scaling_time"] == obspy.UTCDateTime(amplitude.scaling_time)
-        assert amp_series["evaluation_mode"] == amplitude.evaluation_mode
-        assert amp_series["evaluation_status"] == amplitude.evaluation_status
+        assert ser_dict == amp_dict
 
     def test_creation_time(self, amplitude, amp_series):
         assert amp_series["creation_time"] == obspy.UTCDateTime(
@@ -796,6 +828,35 @@ class TestReadStationMagnitudes:
     def read_sms_output(self, dummy_cat):
         return station_magnitudes_to_df(dummy_cat)
 
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_sms_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_sms_output.iloc[0])
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def sm_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        sm_dict = dict(dummy_cat[0].station_magnitudes[0].__dict__)
+        # Remove unnecessary items
+        err_objs = {"mag_errors"}
+        for key in common_obj_attrs.union(err_objs):
+            sm_dict.pop(key, None)
+        # modify/add more complex items
+        sm_dict["resource_id"] = sm_dict["resource_id"].id
+        sm_dict["origin_id"] = sm_dict["origin_id"].id
+        sm_dict["amplitude_id"] = sm_dict["amplitude_id"].id
+        sm_dict["method_id"] = sm_dict["method_id"].id
+        return sm_dict
+
     # general tests
     def test_type(self, read_sms_output):
         """ make sure a dataframe was returned """
@@ -808,18 +869,9 @@ class TestReadStationMagnitudes:
         )
         assert req_len == len(read_sms_output)
 
-    def test_values(self, read_sms_output, dummy_cat):
-        """ make sure the values of the first amplitude are as expected """
-        sm_ser = read_sms_output.iloc[0]
-        sm = dummy_cat[0].station_magnitudes[0]
-        # Is there a less messy way to check that the function correctly
-        # parsed the amplitude?
-        assert sm_ser["resource_id"] == sm.resource_id.id
-        assert sm_ser["mag"] == sm.mag
-        assert sm_ser["station_magnitude_type"] == sm.station_magnitude_type
-        assert sm_ser["origin_id"] == sm.origin_id.id
-        assert sm_ser["method_id"] == sm.method_id.id
-        assert sm_ser["amplitude_id"] == sm.amplitude_id.id
+    def test_values(self, ser_dict, sm_dict):
+        """ make sure the values of the first station magnitude are as expected """
+        assert ser_dict == sm_dict
 
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
@@ -857,6 +909,34 @@ class TestReadMagnitudes:
     def read_mags_output(self, dummy_cat):
         return magnitudes_to_df(dummy_cat)
 
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_mags_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_mags_output.iloc[0])
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def mag_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        mag_dict = dict(dummy_cat[0].magnitudes[0].__dict__)
+        # Remove unnecessary items
+        extra_objs = {"mag_errors", "station_magnitude_contributions"}
+        for key in common_obj_attrs.union(extra_objs):
+            mag_dict.pop(key, None)
+        # modify/add more complex items
+        mag_dict["resource_id"] = mag_dict["resource_id"].id
+        mag_dict["origin_id"] = mag_dict["origin_id"].id
+        mag_dict["method_id"] = mag_dict["method_id"].id
+        return mag_dict
+
     # general tests
     def test_type(self, read_mags_output):
         """ make sure a dataframe was returned """
@@ -867,23 +947,9 @@ class TestReadMagnitudes:
         req_len = len(dummy_cat[0].magnitudes)
         assert req_len == len(read_mags_output)
 
-    def test_values(self, read_mags_output, dummy_cat):
-        """ make sure the values of the first amplitude are as expected """
-        mag_ser = read_mags_output.iloc[0]
-        mag = dummy_cat[0].magnitudes[0]
-        # Is there a less messy way to check that the function correctly
-        # parsed the amplitude?
-        assert mag_ser["resource_id"] == mag.resource_id.id
-        assert mag_ser["mag"] == mag.mag
-        assert mag_ser["uncertainty"] == mag.mag_errors.uncertainty
-        assert mag_ser["confidence_level"] == mag.mag_errors.confidence_level
-        assert mag_ser["magnitude_type"] == mag.magnitude_type
-        assert mag_ser["origin_id"] == mag.origin_id
-        assert mag_ser["method_id"] == mag.method_id
-        assert mag_ser["station_count"] == mag.station_count
-        assert mag_ser["azimuthal_gap"] == mag.azimuthal_gap
-        assert mag_ser["evaluation_mode"] == mag.evaluation_mode
-        assert mag_ser["evaluation_status"] == mag.evaluation_status
+    def test_values(self, ser_dict, mag_dict):
+        """ make sure the values of the first station magnitude are as expected """
+        assert ser_dict == mag_dict
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
