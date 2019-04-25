@@ -60,11 +60,6 @@ class Grid(object):
     station : list-like (default=None)
         Station the grid is specific to (required for certain grid types,
         such as travel-time grids)
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
 
     Attributes
     ----------
@@ -81,10 +76,6 @@ class Grid(object):
         Meshgrid mapping grid indices to physical space
     values : numpy array
         Array containing the values at each grid point
-    logging : int
-        Logging level
-    logfile : str
-        File to log to, if necessary
 
     Notes
     -----
@@ -425,7 +416,8 @@ class Grid(object):
             )
         return origin, spacing, num_gps
 
-    def _check_iterable(self, obj, name):
+    @staticmethod
+    def _check_iterable(obj, name):
         if not (isinstance(obj, Iterable) and not isinstance(obj, str)):
             raise TypeError(f"{name} must be iterable")
 
@@ -441,11 +433,6 @@ def coord2ind(point, xls):
         Point to be converted to indeces
     xls : numpy array (required)
         Array describing the model geometry
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
     """
     # index of best fitting x point in L1 sense
     xind = [abs(point[num2] - xls[num2]).argmin() for num2 in range(len(xls))]
@@ -477,11 +464,6 @@ def load_grid(base_name, gtype=None):
         Name of the grid file (minus extension)
     gtype : str (default=None)
         If specified, verify the grid is the expected format
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
 
     Returns
     -------
@@ -525,11 +507,6 @@ def read_header(path, gtype=None):
         Path to the header file
     gtype : str (optional, default=None)
         If specified, verify the grid is the expected format
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
 
     Returns
     -------
@@ -575,11 +552,6 @@ def read_bin_grid(path, grid):
         Path to the binary buffer
     grid : nllpy.grid Grid object (required)
         Grid object to dump the values into
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
 
     Returns
     -------
@@ -616,11 +588,6 @@ def write_header(path, gps, origin, spacing, gtype):
         Type of grid being written. Valid options are: "VELOCITY",
         "SLOWNESS", "VEL2", "SLOW2", "SLOW_LEN", "TIME", "TIME2D",
         "PROB_DENSITY", "MISFIT", "ANGLE", "ANGLE2D"
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
     """
     # Swap origin to be a left-handed system with positive z down
     origin_z = -1 * (origin[2] + spacing[2] * (gps[2] - 1))
@@ -650,11 +617,6 @@ def write_bin_grid(path, grid):
         Path for the binary file
     grid : numpy array (required)
         Three-dimensional numpy array containing the values for the grid
-    logging : int (default=5)
-        Value from 0 to 7 indicating how to log messages. Exceptions will
-        always be printed to screen.
-    logfile : str (default='nllpy.log')
-        File to log to, if necessary
     """
     grid = np.flip(grid, axis=2).reshape((1, grid.size))
     grid.astype("float32").tofile(path)
@@ -665,7 +627,7 @@ def apply_layers(grid, layers):
     """
         Internal method for applying velocities from a 1D layered model
 
-        Paremeters
+        Parameters
         ----------
         grid : Grid
             Grid on which to apply the layers
@@ -779,6 +741,7 @@ def apply_topo(
     conversion_kwargs=None,
     tolerance=1e-6,
     buffer=0,
+    topo_label="TOPO",
 ):
     """
         Method for applying a topographic surface to the model
@@ -803,6 +766,8 @@ def apply_topo(
             keywords are: "scale", "translate_x", "translate_y",
             "translate_z", "rotate_xy", "rotate_xz", "rotate_yz", and
             "project". See nllpy.util.convert_coords for more detail.
+        conversion_kwargs : dict (default=None)
+            If the conversion is a callable, these kwargs will get passed to it.
         tolerance : float (optional, default=1e-6)
             Should be small relative to the grid size. Deals with those
             pesky rounding errors.
@@ -884,7 +849,7 @@ def apply_topo(
     topo_grid = np.ndarray.astype(topo_grid, np.float64)
     topo = Grid(
         base_name=grid.base_name + "_topo",
-        gtype="TOPO",
+        gtype=topo_label,
         origin=grid.header["origin"][0:2],
         num_gps=grid.header["num_gps"][0:2],
         spacing=grid.header["spacing"][0:2],
@@ -1049,6 +1014,18 @@ def convert_coords(
         "rotate_xz", "rotate_yz", and "project". Alternatively, a callable
         that accepts and returns a dataframe can be specified with optional
         kwargs to handle the conversion.
+    xcol : str (default="X")
+        Name of the input x-coordinate column
+    ycol : str (default="Y")
+        Name of the input y-coordinate column
+    zcol : str (default="Z")
+        Name of the input z-coordinate column
+    xout : str (default="X_GRID")
+        Name of the output x-coordinate column
+    yout : str (default="Y_GRID")
+        Name of the output y-coordinate column
+    zout : str (default="Z_GRID")
+        Name of the output z-coordinate column
     conversion_kwargs : dict (default=None)
         Used if conversion is a callable. kwargs to be passed to the callable.
     inplace : bool (default=False)
@@ -1125,7 +1102,7 @@ def convert_coords(
 
     # Do some checking to make sure the conversion is kosher
     if not isinstance(conversion, Iterable):
-        raise TypeError(f"conversion shoud be a list of transformations")
+        raise TypeError(f"conversion should be a list of transformations")
     try:
         if not conversion[0][0].lower() in valid_keys:
             raise TypeError(f"conversion should be a list of transformations")
@@ -1168,16 +1145,11 @@ def convert_coords(
                 try:
                     fro = pyproj.Proj(str(value["from"]))
                 except RuntimeError:
-                    msg = "%s is not a valid projection" % value["from"]
-                    _log_raise(msg, ValueError)
+                    raise ValueError(f"{value['from']} is not a valid projection")
                 try:
                     to = pyproj.Proj(str(value["to"]))
                 except RuntimeError:
-                    msg = "%s is not a valid projection" % value["to"]
-                    _log_raise(msg, ValueError)
-                #                for i, point in points.iterrows():
-                #                    points.loc[i, xout], points.loc[i, yout] = pyproj.transform(
-                #                        fro, to, point[xout], point[yout])
+                    raise ValueError(f"{value['to']} is not a valid projection")
                 points[xout], points[yout] = pyproj.transform(
                     fro, to, points[xout].tolist(), points[yout].tolist()
                 )
@@ -1224,7 +1196,7 @@ def _read_topo_dxf(dxf, line_end="\n"):
     for num, entity in enum:
         records = entity.split(line_end)
         if records[0] == "LWPOLYLINE":
-            records = _entity_boilerplate(records, line_end)
+            records = _entity_boilerplate(records)
             # Get the elevation of the polyline
             try:
                 elev = np.float64(records.loc[records.CODE == " 38"].iloc[0].VALUE)
@@ -1238,7 +1210,7 @@ def _read_topo_dxf(dxf, line_end="\n"):
             # Append the parsed polyline to the list of parsed entities
             entities.append(entity)
         elif records[0] == "LINE":
-            records = _entity_boilerplate(records, line_end)
+            records = _entity_boilerplate(records)
             # Append table of endpoints to list of parsed entities
             inlist = [" 10", " 20", " 30", " 11", " 21", " 31"]
             entities.append(_reshape_points(records, inlist))
@@ -1255,19 +1227,19 @@ def _read_topo_dxf(dxf, line_end="\n"):
                 else:
                     # Otherwise, move the enumerator forward and add
                     # the parsed vertex to the point list
-                    entity = next(enum)
-                    points.append(_parse_pointlike(records, line_end))
+                    _ = next(enum)
+                    points.append(_parse_pointlike(records))
             # Take the points and merge them into a single df and
             # append to the list of parsed entities
             entities.append(pd.concat(points))
         elif records[0] == "POINT":
             # Append the parsed point coord to the list of parsed entities
-            entities.append(_parse_pointlike(records, line_end))
+            entities.append(_parse_pointlike(records))
         elif records[0] == "TEXT":
             # Append the parsed text coord to the list of parsed entities
-            entities.append(_parse_pointlike(records, line_end))
+            entities.append(_parse_pointlike(records))
         elif records[0] == "3DFACE":
-            records = _entity_boilerplate(records, line_end)
+            records = _entity_boilerplate(records)
             # Append table of endpoints to list of parsed entities
             inlist = [
                 " 10",
@@ -1290,7 +1262,7 @@ def _read_topo_dxf(dxf, line_end="\n"):
     return entities
 
 
-def _entity_boilerplate(entity, line_end="\n"):
+def _entity_boilerplate(entity):
     # Parse into a key, value DataFrame
     e = np.array(entity[1:])
     if not (len(e) % 2) == 0:
@@ -1299,8 +1271,8 @@ def _entity_boilerplate(entity, line_end="\n"):
     return pd.DataFrame(e, columns=["CODE", "VALUE"], dtype="object")
 
 
-def _parse_pointlike(entity, line_end="\n", level=0):
-    entity = _entity_boilerplate(entity, line_end)
+def _parse_pointlike(entity):
+    entity = _entity_boilerplate(entity)
     # Retrieve the X, Y, and Z coordinates of the point
     inlist = [" 10", " 20", " 30"]
     return _reshape_points(entity, inlist)
