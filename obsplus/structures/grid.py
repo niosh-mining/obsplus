@@ -872,7 +872,7 @@ def apply_topo(
 
 
 # --------------------- Grid plotting utilities ---------------------- #
-def plt_grid(x1_coords, x2_coords, values, **kwargs):
+def plt_grid(x1_coords, x2_coords, values, contour=False, **kwargs):
     """
     Function to plot a colormap of a grid
 
@@ -922,10 +922,13 @@ def plt_grid(x1_coords, x2_coords, values, **kwargs):
     ax = fig.add_subplot(gs[0])
 
     # Plot the grid with the appropriate user args
-    cmesh = ax.pcolormesh(
-        x1_coords, x2_coords, values, cmap=cmap, alpha=alpha, shading=shading
-    )
-
+    if not contour:
+        cmesh = ax.pcolormesh(
+            x1_coords, x2_coords, values, cmap=cmap, alpha=alpha, shading=shading, **kwargs
+        )
+    else:
+        cmesh = ax.contour(x1_coords, x2_coords, values, colors=cmap, **kwargs)
+        ax.clabel(cmesh, colors='k', fmt='%2.2f', fontsize=12)
     # Make the plot look nice and add a legend
     ax.xaxis.tick_top()
 
