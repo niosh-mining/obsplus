@@ -12,10 +12,41 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
-from obsplus import events_to_df, picks_to_df, get_preferred
-from obsplus.constants import EVENT_COLUMNS, PICK_COLUMNS
+from obsplus import (
+    events_to_df,
+    picks_to_df,
+    arrivals_to_df,
+    amplitudes_to_df,
+    station_magnitudes_to_df,
+    magnitudes_to_df,
+    get_preferred,
+)
+from obsplus.constants import (
+    EVENT_COLUMNS,
+    PICK_COLUMNS,
+    ARRIVAL_COLUMNS,
+    AMPLITUDE_COLUMNS,
+    STATION_MAGNITUDE_COLUMNS,
+    MAGNITUDE_COLUMNS,
+)
 from obsplus.datasets.dataloader import base_path
+from obsplus.events.utils import get_seed_id
 from obsplus.utils import getattrs, get_nslc_series
+
+
+common_extractor_cols = {
+    "agency_id",
+    "author",
+    "channel",
+    "creation_time",
+    "location",
+    "network",
+    "seed_id",
+    "station",
+    "event_id",
+    "event_time",
+}
+common_obj_attrs = {"creation_info", "comments", "waveform_id"}
 
 
 # ---------------- helper functions
@@ -29,6 +60,168 @@ def append_func_name(list_obj):
         return func
 
     return wrap
+
+
+def pick_generator(scnls):
+    picks = []
+    for scnl in scnls:
+        p = ev.Pick(
+            time=UTCDateTime(), waveform_id=ev.WaveformStreamID(seed_string=scnl)
+        )
+        picks.append(p)
+    return picks
+
+
+def arr_generator(picks):
+    counter = 1
+    params = {"phase": "P"}
+    arrivals = []
+    picks = picks or []
+    for pick in picks:
+        a = ev.Arrival(
+            pick_id=pick.resource_id,
+            time_correction=counter * 0.05,
+            azimuth=counter * 5,
+            distance=counter * 0.1,
+            takeoff_angle=counter * 2,
+            time_residual=counter * 0.15,
+            horizontal_slowness_residual=counter * 0.2,
+            backazimuth_residual=counter * 0.25,
+            time_weight=counter * 0.3,
+            horizontal_slowness_weight=counter * 0.4,
+            backazimuth_weight=counter * 0.5,
+            earth_model_id=ev.ResourceIdentifier(),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        arrivals.append(a)
+        counter += 1
+    return arrivals
+
+
+def amp_generator(scnls=None, picks=None):
+    counter = 1
+    amps = []
+    scnls = scnls or []
+    params = {
+        "type": "A",
+        "unit": "dimensionless",
+        "method_id": "mag_calculator",
+        "filter_id": ev.ResourceIdentifier("Wood-Anderson"),
+        "magnitude_hint": "M",
+        "category": "point",
+        "evaluation_mode": "manual",
+        "evaluation_status": "confirmed",
+    }
+    for scnl in scnls:
+        a = ev.Amplitude(
+            generic_amplitude=counter,
+            generic_amplitude_errors=ev.QuantityError(
+                uncertainty=counter * 0.1, confidence_level=95
+            ),
+            period=counter * 2,
+            snr=counter * 5,
+            time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+            waveform_id=ev.WaveformStreamID(seed_string=scnl),
+            scaling_time=UTCDateTime(),
+            scaling_time_errors=ev.QuantityError(
+                uncertainty=counter * 0.001, confidence_level=95
+            ),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        amps.append(a)
+        counter += 1
+    picks = picks or []
+    for pick in picks:
+        a = ev.Amplitude(
+            generic_amplitude=counter,
+            generic_amplitude_errors=ev.QuantityError(
+                uncertainty=counter * 0.1, confidence_level=95
+            ),
+            period=counter * 2,
+            snr=counter * 5,
+            time_window=ev.TimeWindow(0, 0.1, UTCDateTime()),
+            pick_id=pick.resource_id,
+            scaling_time=UTCDateTime(),
+            scaling_time_errors=ev.QuantityError(
+                uncertainty=counter * 0.001, confidence_level=95
+            ),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        amps.append(a)
+        counter += 1
+    return amps
+
+
+def sm_generator(scnls=None, amplitudes=None):
+    counter = 1
+    sms = []
+    scnls = scnls or []
+    params = {
+        "origin_id": ev.ResourceIdentifier(),
+        "station_magnitude_type": "M",
+        "method_id": "mag_calculator",
+    }
+
+    for scnl in scnls:
+        sm = ev.StationMagnitude(
+            mag=counter,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            waveform_id=ev.WaveformStreamID(seed_string=scnl),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        sms.append(sm)
+        counter += 1
+    amplitudes = amplitudes or []
+    for amp in amplitudes:
+        sm = ev.StationMagnitude(
+            mag=counter,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            amplitude_id=amp.resource_id,
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        sms.append(sm)
+        counter += 1
+    return sms
+
+
+def mag_generator(mag_types):
+    params = {
+        "origin_id": ev.ResourceIdentifier(),
+        "method_id": ev.ResourceIdentifier("mag_calculator"),
+        "station_count": 2,
+        "azimuthal_gap": 30,
+        "evaluation_mode": "manual",
+        "evaluation_status": "reviewed",
+    }
+    mags = []
+    counter = 1
+    for mt in mag_types:
+        m = ev.Magnitude(
+            mag=counter,
+            magnitude_type=mt,
+            mag_errors=ev.QuantityError(uncertainty=counter * 0.1, confidence_level=95),
+            creation_info=ev.CreationInfo(
+                agency_id="dummy_agency", author="dummy", creation_time=UTCDateTime()
+            ),
+            **params,
+        )
+        mags.append(m)
+    return mags
 
 
 # --------------- tests
@@ -355,7 +548,10 @@ class TestReadPhasePicks:
         """
         kwargs = dict(lower_uncertainty=1, upper_uncertainty=2, uncertainty=12)
         time_error = ev.QuantityError(**kwargs)
-        pick = ev.Pick(time=UTCDateTime(), time_errors=time_error)
+        waveform_id = ev.WaveformStreamID(station_code="A")
+        pick = ev.Pick(
+            time=UTCDateTime(), time_errors=time_error, waveform_id=waveform_id
+        )
         df = picks_to_df(pick)
         assert set(kwargs).issubset(df.columns)
         assert len(df) == 1
@@ -400,6 +596,368 @@ class TestReadKemPicks:
         df = pick_df
         seed = get_nslc_series(pick_df)
         assert (seed == df["seed_id"]).all()
+
+
+class TestReadArrivals:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.preferred_origin_id = eve1.origins[0].resource_id
+        picks = pick_generator(scnls1)
+        eve1.picks = picks
+        eve1.preferred_origin().arrivals = arr_generator(picks)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.preferred_origin_id = eve2.origins[0].resource_id
+        picks = pick_generator(scnls2)
+        eve2.picks = picks
+        eve2.preferred_origin().arrivals = arr_generator(picks)
+        cat.events = [eve1, eve2]
+        return cat
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def no_origin(self):
+        cat = ev.Catalog()
+        cat.append(ev.Event())
+        return cat
+
+    @pytest.fixture(scope="class")
+    def read_arr_output(self, dummy_cat):
+        return arrivals_to_df(dummy_cat)
+
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_arr_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_arr_output.iloc[0])
+        for key in common_extractor_cols:
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def arr_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        origin = dummy_cat[0].preferred_origin()
+        arr = origin.arrivals[0]
+        arr_dict = dict(arr.__dict__)
+        # Remove unnecessary items
+        for key in common_obj_attrs:
+            arr_dict.pop(key, None)
+        arr_dict.pop("takeoff_angle_errors")
+        # modify/add more complex items
+        arr_dict["resource_id"] = arr_dict["resource_id"].id
+        arr_dict["pick_id"] = arr_dict["pick_id"].id
+        arr_dict["origin_id"] = origin.resource_id.id
+        arr_dict["origin_time"] = origin.time.timestamp
+        return arr_dict
+
+    # general tests
+    def test_type(self, read_arr_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_arr_output, pd.DataFrame)
+
+    def test_len(self, read_arr_output, dummy_cat):
+        """ req_len should be the same as the sms req_len in events """
+        req_len = len(dummy_cat[0].preferred_origin().arrivals) + len(
+            dummy_cat[1].preferred_origin().arrivals
+        )
+        assert req_len == len(read_arr_output)
+
+    def test_values(self, ser_dict, arr_dict):
+        """ make sure the values of the first arrival are as expected """
+        assert ser_dict == arr_dict
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = arrivals_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(ARRIVAL_COLUMNS)
+
+    def test_no_origin(self, no_origin):
+        """ ensure returns empty df with required columns """
+        df = arrivals_to_df(no_origin)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(ARRIVAL_COLUMNS)
+
+
+class TestReadAmplitudes:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.picks = pick_generator(scnls1)
+        eve1.amplitudes = amp_generator(picks=eve1.picks)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.amplitudes = amp_generator(scnls=scnls2)
+        cat.events = [eve1, eve2]
+        return cat
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_amps_output(self, dummy_cat):
+        return amplitudes_to_df(dummy_cat)
+
+    @pytest.fixture(scope="class")
+    def amplitude(self, dummy_cat):
+        return dummy_cat[0].amplitudes[0]
+
+    @pytest.fixture(scope="class")
+    def amp_series(self, read_amps_output):
+        return read_amps_output.iloc[0]
+
+    @pytest.fixture(scope="class")
+    def ser_dict(self, amp_series):
+        """ values to compare from the extractor """
+        ser_dict = dict(amp_series)
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def amp_dict(self, amplitude):
+        """ values to compare from the arrivals """
+        amp_dict = dict(amplitude.__dict__)
+        # Remove unnecessary items
+        err_objs = {"generic_amplitude_errors", "scaling_time_errors", "period_errors"}
+        for key in common_obj_attrs.union(err_objs):
+            amp_dict.pop(key, None)
+        # modify/add more complex items
+        amp_dict["resource_id"] = amp_dict["resource_id"].id
+        amp_dict["pick_id"] = amp_dict["pick_id"].id
+        amp_dict["filter_id"] = amp_dict["filter_id"].id
+        amp_dict["method_id"] = amp_dict["method_id"].id
+        amp_dict["scaling_time"] = amp_dict["scaling_time"].timestamp
+        time_window = amp_dict.pop("time_window")
+        amp_dict["reference"] = time_window.reference.timestamp
+        amp_dict["time_begin"] = time_window.begin
+        amp_dict["time_end"] = time_window.end
+        return amp_dict
+
+    # general tests
+    def test_type(self, read_amps_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_amps_output, pd.DataFrame)
+
+    def test_len(self, read_amps_output, dummy_cat):
+        """ req_len should be the same as the amps req_len in events """
+        req_len = len(dummy_cat[0].amplitudes) + len(dummy_cat[1].amplitudes)
+        assert req_len == len(read_amps_output)
+
+    def test_values(self, ser_dict, amp_dict):
+        """ make sure the values of the first amplitude are as expected """
+        assert ser_dict == amp_dict
+
+    def test_creation_time(self, amplitude, amp_series):
+        assert amp_series["creation_time"] == obspy.UTCDateTime(
+            amplitude.creation_info.creation_time
+        )
+        assert amp_series["author"] == amplitude.creation_info.author
+        assert amp_series["agency_id"] == amplitude.creation_info.agency_id
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = amplitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
+
+
+class TestReadStationMagnitudes:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        cat = ev.Catalog()
+        eve1 = ev.Event()
+        eve1.origins.append(ev.Origin(time=UTCDateTime()))
+        eve1.amplitudes = amp_generator(scnls1)
+        eve1.station_magnitudes = sm_generator(amplitudes=eve1.amplitudes)
+        scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
+        eve2 = ev.Event()
+        eve2.origins.append(ev.Origin(time=UTCDateTime()))
+        eve2.station_magnitudes = sm_generator(scnls=scnls2)
+        cat.events = [eve1, eve2]
+        return cat
+
+    @pytest.fixture(scope="class")
+    def dummy_mag(self):
+        scnls = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
+        eve = ev.Event()
+        sms = sm_generator(scnls=scnls)
+        smcs = []
+        for sm in sms:
+            smcs.append(
+                ev.StationMagnitudeContribution(station_magnitude_id=sm.resource_id)
+            )
+        mag = ev.Magnitude(mag=1, station_magnitude_contributions=smcs)
+        eve.magnitudes = [mag]
+        eve.station_magnitudes = sms
+        return eve
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_sms_output(self, dummy_cat):
+        return station_magnitudes_to_df(dummy_cat)
+
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_sms_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_sms_output.iloc[0])
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def sm_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        sm_dict = dict(dummy_cat[0].station_magnitudes[0].__dict__)
+        # Remove unnecessary items
+        err_objs = {"mag_errors"}
+        for key in common_obj_attrs.union(err_objs):
+            sm_dict.pop(key, None)
+        # modify/add more complex items
+        sm_dict["resource_id"] = sm_dict["resource_id"].id
+        sm_dict["origin_id"] = sm_dict["origin_id"].id
+        sm_dict["amplitude_id"] = sm_dict["amplitude_id"].id
+        sm_dict["method_id"] = sm_dict["method_id"].id
+        return sm_dict
+
+    # general tests
+    def test_type(self, read_sms_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_sms_output, pd.DataFrame)
+
+    def test_len(self, read_sms_output, dummy_cat):
+        """ req_len should be the same as the sms req_len in events """
+        req_len = len(dummy_cat[0].station_magnitudes) + len(
+            dummy_cat[1].station_magnitudes
+        )
+        assert req_len == len(read_sms_output)
+
+    def test_values(self, ser_dict, sm_dict):
+        """ make sure the values of the first station magnitude are as expected """
+        assert ser_dict == sm_dict
+
+    # magnitude object tests
+    def test_magnitude(self, dummy_mag):
+        dummy_mag = dummy_mag.magnitudes[0]
+        mag_df = station_magnitudes_to_df(dummy_mag)
+        assert len(mag_df) == len(dummy_mag.station_magnitude_contributions)
+        sm = mag_df.iloc[0]
+        assert sm.magnitude_id == dummy_mag.resource_id.id
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = station_magnitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
+
+
+class TestReadMagnitudes:
+    # fixtures
+    @pytest.fixture(scope="class")
+    def dummy_cat(self):
+        cat = ev.Catalog()
+        eve = ev.Event()
+        eve.origins.append(ev.Origin(time=UTCDateTime()))
+        eve.magnitudes = mag_generator(["ML", "Md", "MW"])
+        cat.append(eve)
+        return cat
+
+    @pytest.fixture(scope="class")
+    def empty_cat(self):
+        return ev.Catalog()
+
+    @pytest.fixture(scope="class")
+    def read_mags_output(self, dummy_cat):
+        return magnitudes_to_df(dummy_cat)
+
+    @pytest.fixture(scope="class")
+    def ser_dict(self, read_mags_output):
+        """ values to compare from the extractor """
+        ser_dict = dict(read_mags_output.iloc[0])
+        err_cols = {
+            "confidence_level",
+            "uncertainty",
+            "lower_uncertainty",
+            "upper_uncertainty",
+        }
+        for key in common_extractor_cols.union(err_cols):
+            ser_dict.pop(key, None)
+        return ser_dict
+
+    @pytest.fixture(scope="class")
+    def mag_dict(self, dummy_cat):
+        """ values to compare from the arrivals """
+        mag_dict = dict(dummy_cat[0].magnitudes[0].__dict__)
+        # Remove unnecessary items
+        extra_objs = {"mag_errors", "station_magnitude_contributions"}
+        for key in common_obj_attrs.union(extra_objs):
+            mag_dict.pop(key, None)
+        # modify/add more complex items
+        mag_dict["resource_id"] = mag_dict["resource_id"].id
+        mag_dict["origin_id"] = mag_dict["origin_id"].id
+        mag_dict["method_id"] = mag_dict["method_id"].id
+        return mag_dict
+
+    # general tests
+    def test_type(self, read_mags_output):
+        """ make sure a dataframe was returned """
+        assert isinstance(read_mags_output, pd.DataFrame)
+
+    def test_len(self, read_mags_output, dummy_cat):
+        """ req_len should be the same as the amps req_len in events """
+        req_len = len(dummy_cat[0].magnitudes)
+        assert req_len == len(read_mags_output)
+
+    def test_values(self, ser_dict, mag_dict):
+        """ make sure the values of the first station magnitude are as expected """
+        assert ser_dict == mag_dict
+
+    # empty catalog tests
+    def test_empty_catalog(self, empty_cat):
+        """ ensure returns empty df with required columns """
+        df = magnitudes_to_df(empty_cat)
+        assert isinstance(df, pd.DataFrame)
+        assert not len(df)
+        assert set(df.columns).issubset(MAGNITUDE_COLUMNS)
 
 
 class TestGetPreferred:

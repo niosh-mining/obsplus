@@ -14,8 +14,7 @@ from typing import Union, Optional, Callable, Iterable
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from obspy.core import event as ev
-from obspy.core.event import Catalog, Event, ResourceIdentifier
+from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamID
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
 
@@ -23,6 +22,7 @@ import obsplus
 from obsplus.constants import (
     UTC_FORMATS,
     catalog_or_event,
+    catalog_component,
     EVENT_ATTRS,
     UTC_KEYS,
     event_clientable_type,
@@ -401,6 +401,47 @@ def get_utc_path(
     return out
 
 
+def get_seed_id(obj: catalog_component) -> str:
+    """
+    Get the NSLC associated with a station-specific object
+
+    Parameters
+    ----------
+    obj
+        The object for which to retrieve the SCNL. Can be anything that
+        has a waveform_id attribute or refers to an object with a
+        waveform_id attribute.
+
+    Returns
+    -------
+    str :
+        The NSLC, in the form of a seed string
+    """
+    if isinstance(obj, WaveformStreamID):
+        # Get the seed id
+        return obj.get_seed_string()
+    if isinstance(obj, ResourceIdentifier):
+        # Get the next nested object
+        return get_seed_id(obj.get_referred_object())
+    # The order of this list matters! It should first try waveform_id and then
+    # go from the shallowest nested attribute to the deepest
+    attrs = ["waveform_id", "station_magnitude_id", "amplitude_id", "pick_id"]
+    # Make sure the object has at least one of the required attributes
+    if not len(set(attrs).intersection(set(vars(obj)))):
+        raise TypeError(f"cannot retrieve seed id for objects of type {type(obj)}")
+    # Loop over each of the attributes, if it exists and is not None,
+    # go down a level until it finds a seed id
+    for att in attrs:
+        val = getattr(obj, att, None)
+        if val:
+            try:
+                return get_seed_id(val)
+            except (TypeError, AttributeError):
+                raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
+    # If it makes it this far, it could not find a non-None attribute
+    raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
+
+
 def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
     """
     Generate a file name for the given event.
@@ -413,7 +454,7 @@ def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
     Returns
     -------
     """
-    # get utc and formated list from event
+    # get utc and formatted list from event
     utc = get_reference_time(eve)
     fmt = "year month day hour minute second".split()
     utc_list = [UTC_FORMATS[x] % getattr(utc, x) for x in fmt]
