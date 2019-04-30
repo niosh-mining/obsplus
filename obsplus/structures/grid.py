@@ -7,7 +7,7 @@ Created on Sat Nov 18 10:13:03 2017
 """
 
 from copy import copy
-from typing import Iterable, Callable
+from typing import Sequence, Iterable, Callable
 import os.path
 import warnings
 from numbers import Integral
@@ -292,18 +292,17 @@ class Grid(object):
         else:
             raise ValueError("Invalid option for layer_coord.")
 
-        veltuple = [slice(None)] * len(self.grid_map)
-        veltuple[orien] = layer
-        veltuple = tuple(veltuple)
-        velslice = self.values[veltuple]
-        x = self.grid_map[orien - 2][veltuple]
-        y = self.grid_map[orien - 1][veltuple]
+        slice_tuple = [slice(None)] * len(self.grid_map)
+        slice_tuple[orien] = layer
+        slice_tuple = tuple(slice_tuple)
+        val_slice = self.values[slice_tuple]
+        x = self.grid_map[orien - 2][slice_tuple]
+        y = self.grid_map[orien - 1][slice_tuple]
         if (orien - 2 < 0) and (orien - 1 >= 0):
             x1 = y
             y = x
             x = x1
         if transpose:
-            # velslice = velslice.transpose()
             x1 = y
             y = x
             x = x1
@@ -313,7 +312,7 @@ class Grid(object):
             kwargs["legend_label"] = self.header["gtype"]
 
         # Generate the plot
-        fig, ax = plt_grid(x, y, velslice, **kwargs)
+        fig, ax = plt_grid(x, y, val_slice, **kwargs)
         if kwargs.get("show", True):
             fig.show()
         return fig, ax
@@ -396,7 +395,9 @@ class Grid(object):
         if num_cells and num_gps:
             if not len(num_cells) == len(num_gps):
                 raise ValueError("num_cells and num_gps must be the same shape")
-            for ind, val in enumerate(num_cells):
+            for ind, val in enumerate(
+                num_cells
+            ):  # There is something wrong with this, but I'm not quite sure what right this second
                 if not all(
                     [val == (num_gps[ind] - 1) for (ind, val) in enumerate(num_cells)]
                 ):
@@ -430,7 +431,7 @@ def coord2ind(point, xls):
     Parameters
     ----------
     point : tuple (required)
-        Point to be converted to indeces
+        Point to be converted to indices
     xls : numpy array (required)
         Array describing the model geometry
     """
@@ -441,12 +442,12 @@ def coord2ind(point, xls):
 
 def ind2coord(point, xls):
     """
-    Convert the grid indeces of a point to spatial coordinates\n
+    Convert the grid indices of a point to spatial coordinates\n
 
     Parameters
     ----------
     point : tuple (required)
-        Point to be converted to indeces
+        Point to be converted to indices
     xls : numpy array (required)
         Array describing the model geometry
     """
@@ -637,7 +638,7 @@ def apply_layers(grid, layers):
         """
     # For each layer in vel_input, apply the specified velocity
     for elev in layers:
-        if not isinstance(elev, Iterable) or isinstance(elev, str):
+        if not (isinstance(elev, Sequence) and not isinstance(elev, str)):
             raise TypeError(
                 "velocity input should be a 2D list of values and elevations"
             )
@@ -765,7 +766,7 @@ def apply_topo(
             Values should be of the form ["keyword", value]. Acceptable
             keywords are: "scale", "translate_x", "translate_y",
             "translate_z", "rotate_xy", "rotate_xz", "rotate_yz", and
-            "project". See nllpy.util.convert_coords for more detail.
+            "project". See obsplus.conversions.convert_coords for more detail.
         conversion_kwargs : dict (default=None)
             If the conversion is a callable, these kwargs will get passed to it.
         tolerance : float (optional, default=1e-6)
@@ -774,6 +775,13 @@ def apply_topo(
         buffer : int (default=0)
             Number of cells above the topography to extend the "rock" values
             (i.e., the values that are below the topography)
+        topo_label : str (default=0)
+            Label to assign the 2D grid that is created from topo_points
+
+        Returns
+        -------
+        topo : Grid
+            2D grid created from topo_points
 
         Notes
         -----
@@ -884,6 +892,8 @@ def plt_grid(x1_coords, x2_coords, values, contour=False, **kwargs):
         Coordinates of grid points along the vertical axis of the plot
     values : numpy array (required)
         Values stored in the grid
+    contour : bool (default=False)
+        Flag indicating whether to plot contour lines instead of a colormap
 
     Kwargs
     ------
@@ -924,11 +934,17 @@ def plt_grid(x1_coords, x2_coords, values, contour=False, **kwargs):
     # Plot the grid with the appropriate user args
     if not contour:
         cmesh = ax.pcolormesh(
-            x1_coords, x2_coords, values, cmap=cmap, alpha=alpha, shading=shading, **kwargs
+            x1_coords,
+            x2_coords,
+            values,
+            cmap=cmap,
+            alpha=alpha,
+            shading=shading,
+            **kwargs,
         )
     else:
         cmesh = ax.contour(x1_coords, x2_coords, values, colors=cmap, **kwargs)
-        ax.clabel(cmesh, colors='k', fmt='%2.2f', fontsize=12)
+        ax.clabel(cmesh, colors="k", fmt="%2.2f", fontsize=12)
     # Make the plot look nice and add a legend
     ax.xaxis.tick_top()
 
@@ -991,12 +1007,12 @@ def grid_cross(grid, coord, direction="X"):
 def convert_coords(
     points,
     conversion,
-    xcol="X",
-    ycol="Y",
-    zcol="Z",
-    xout="X_GRID",
-    yout="Y_GRID",
-    zout="Z_GRID",
+    xcol="x",
+    ycol="y",
+    zcol="z",
+    xout="x_conv",
+    yout="y_conv",
+    zout="z_conv",
     conversion_kwargs=None,
     inplace=False,
 ):
@@ -1104,7 +1120,7 @@ def convert_coords(
         return points
 
     # Do some checking to make sure the conversion is kosher
-    if not isinstance(conversion, Iterable):
+    if not isinstance(conversion, Sequence):
         raise TypeError(f"conversion should be a list of transformations")
     try:
         if not conversion[0][0].lower() in valid_keys:
