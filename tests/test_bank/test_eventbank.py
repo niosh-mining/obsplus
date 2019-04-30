@@ -197,6 +197,12 @@ class TestBankBasics:
         """ ensure the index version returns the obsplus version. """
         assert ebank._index_version == obsplus.__version__
 
+    def test_update_index_returns_self(self, ebank):
+        """ ensure update index returns the instance for chaining. """
+        out = ebank.update_index()
+        assert out is not None
+        assert out is ebank
+
 
 class TestReadIndexQueries:
     """ tests to ensure the index can be queried """
@@ -256,7 +262,7 @@ class TestReadIndexQueries:
         These should have been replaced with proper None values.
         """
         df = bing_ebank.read_index()
-        assert not (df == "None").any().any()
+        assert not "None" in df.values
 
     def test_event_description_as_set(self, ebank):
         """
