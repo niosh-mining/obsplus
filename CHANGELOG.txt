@@ -11,6 +11,8 @@ obsplus 0.0.1:
     * Event bank eventid param can now accept numpy arrays (see 30).
     * Added basic file-locking mechanism for wavebank and multiprocessing
       tests (see #70).
+    * Update_index methods now return the bank instance which allows chaining
+      the update call with the init (see #83).
   - obsplus.waveforms
     * Added stack_seed and unstack_seed methods to obsplus data array
       accessors (see #27).
