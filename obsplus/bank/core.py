@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager, suppress
 from os.path import join
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,9 @@ from pandas.io.sql import DatabaseError
 import obsplus
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 from obsplus.utils import iter_files
+
+
+BankType = TypeVar("BankType", bound="_Bank")
 
 
 class _Bank(ABC):
@@ -54,7 +57,7 @@ class _Bank(ABC):
         """ read the index filtering on various params """
 
     @abstractmethod
-    def update_index(self):
+    def update_index(self: BankType) -> BankType:
         """ update the index """
 
     @abstractmethod
