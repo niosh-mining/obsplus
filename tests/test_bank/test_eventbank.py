@@ -200,7 +200,6 @@ class TestBankBasics:
     def test_update_index_returns_self(self, ebank):
         """ ensure update index returns the instance for chaining. """
         out = ebank.update_index()
-        assert out is not None
         assert out is ebank
 
 
