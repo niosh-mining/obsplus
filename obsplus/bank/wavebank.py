@@ -179,7 +179,9 @@ class WaveBank(_Bank):
         )
 
     @thread_lock_function()
-    def update_index(self, bar: Optional = None, min_files_for_bar: int = 5000):
+    def update_index(
+        self, bar: Optional = None, min_files_for_bar: int = 5000
+    ) -> "WaveBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
@@ -215,6 +217,7 @@ class WaveBank(_Bank):
                 self._write_update(list(chain.from_iterable(updates)))
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
+        return self
 
     def _write_update(self, updates):
         """ convert updates to dataframe, then append to index table """
