@@ -61,7 +61,7 @@ class DataSet(abc.ABC):
     _loaded_datasets = {}
 
     def __init_subclass__(cls, **kwargs):
-        """ Register instances of datasets. """
+        """ Register subclasses of datasets. """
         assert hasattr(cls, "name"), "must have a name"
         assert isinstance(cls.name, str), "name must be a string"
         DataSet.datasets[cls.name.lower()] = cls
@@ -72,18 +72,19 @@ class DataSet(abc.ABC):
         """ download and load data into memory. """
         if base_path:  # overwrite main base path (mainly for testing)
             self.base_path = base_path
+        # create the dataset's base directory
         self.path.mkdir(exist_ok=True, parents=True)
+        # iterate each kind of data and download if needed
         for what in ["waveform", "event", "station"]:
-            path = getattr(self, what + "_path")
-            # the data have not yet been downloaded
-            if not path.exists():
-                # download data, ensure the expected paths are created
+            needs_str = f"{what}s_need_downloading"
+            if getattr(self, needs_str):
+                # download data, ensure the data dont need downloading when fisnished
                 print(f"downloading {what} data for {self.name} dataset ...")
                 getattr(self, "download_" + what + "s")()
-                assert path.exists(), f"after download {path} does not exist!"
+                assert not getattr(self, needs_str), f"Download {what} failed"
                 print(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
-            # data are downloaded, but not yet loaded
+            # data are downloaded, but not yet loaded into memory
             if what not in self.__dict__:
                 setattr(self, what + "_client", self._load(what, path))
         self.data_loaded = True
@@ -137,9 +138,9 @@ class DataSet(abc.ABC):
 
     __call__ = get_fetcher
 
-    def _write_readme(self):
+    def _write_readme(self, filename="readme.txt"):
         """ Writes the classes docstring to a file. """
-        path = self.path / "readme.txt"
+        path = self.path / filename
         if not path.exists():
             with path.open("w") as fi:
                 fi.write(str(self.__doc__))
@@ -197,6 +198,29 @@ class DataSet(abc.ABC):
     @property
     def station_path(self) -> Path:
         return self.path / "stations"
+
+    # --- checks for if each type of data is downloaded
+
+    @property
+    def waveforms_need_downloading(self):
+        """
+        Returns True if waveform data need to be downloaded.
+        """
+        return not self.waveform_path.exists()
+
+    @property
+    def events_need_downloading(self):
+        """
+        Returns True if event data need to be downloaded.
+        """
+        return not self.waveform_path.exists()
+
+    @property
+    def stations_need_downloading(self):
+        """
+        Returns True if station data need to be downloaded.
+        """
+        return not self.waveform_path.exists()
 
     @property
     @lru_cache()
