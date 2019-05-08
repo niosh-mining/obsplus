@@ -143,6 +143,6 @@ class TestCopyDataset:
         # now the new dataset should be loadable
         ds = obsplus.load_dataset(NewDataSet.name)
         # and the empty directories for event, waveforms, station should exist
-        assert Path(ds.waveform_path).exists()
-        assert Path(ds.event_path).exists()
-        assert Path(ds.station_path).exists()
+        assert not ds.events_need_downloading
+        assert not ds.stations_need_downloading
+        assert not ds.waveforms_need_downloading

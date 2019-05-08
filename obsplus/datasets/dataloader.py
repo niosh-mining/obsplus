@@ -40,10 +40,6 @@ class DataSet(abc.ABC):
     datasets = {}
     base_path = base_path
     name = None
-    # cache for loaded objects
-    event_client: Optional[EventBank] = None
-    waveform_client: Optional[WaveBank] = None
-    station_client: Optional[obspy.Inventory] = None
     data_loaded = False
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
@@ -85,8 +81,8 @@ class DataSet(abc.ABC):
                 print(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
             # data are downloaded, but not yet loaded into memory
-            if what not in self.__dict__:
-                setattr(self, what + "_client", self._load(what, path))
+            # if what not in self.__dict__:
+            #     setattr(self, what + "_client", self._load(what, path))
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
@@ -221,6 +217,24 @@ class DataSet(abc.ABC):
         Returns True if station data need to be downloaded.
         """
         return not self.waveform_path.exists()
+
+    @property
+    @lru_cache()
+    def waveform_client(self) -> Optional[WaveBank]:
+        """ A cached property for a waveform client """
+        return self._load("waveform", self.waveform_path)
+
+    @property
+    @lru_cache()
+    def event_client(self) -> Optional[EventBank]:
+        """ A cached property for an event client """
+        return self._load("event", self.event_path)
+
+    @property
+    @lru_cache()
+    def station_client(self) -> Optional[obspy.Inventory]:
+        """ A cached property for a station client """
+        return self._load("station", self.station_path)
 
     @property
     @lru_cache()
