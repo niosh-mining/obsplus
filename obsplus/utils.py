@@ -3,14 +3,16 @@ General utilities for obsplus.
 """
 import contextlib
 import fnmatch
+import hashlib
 import os
 import sys
 import textwrap
 import threading
+import fnmatch
 import warnings
 from functools import singledispatch, wraps, lru_cache
-from pathlib import Path
 from itertools import product
+from pathlib import Path
 from typing import (
     Union,
     Sequence,
@@ -31,9 +33,9 @@ import obspy.core.event as ev
 import pandas as pd
 from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
+from obspy.geodetics import gps2dist_azimuth
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
-from obspy.geodetics import gps2dist_azimuth
 from progressbar import ProgressBar
 
 import obsplus
@@ -838,3 +840,55 @@ def get_distance_df(
 def get_regex(nslc_str):
     """ Compile, and cache regex for str queries. """
     return fnmatch.translate(nslc_str)  # translate to re
+
+
+def md5(path: Union[str, Path]):
+    """
+    Calculate the md5 hash of a file.
+
+    Reads the file in chunks to allow using large files. Taken from this stack
+    overflow answer: http://bit.ly/2Jqb1Jr
+
+    Parameters
+    ----------
+    path
+        The path to the file to read.
+
+    Returns
+    -------
+    A str of hex for file hash
+
+    """
+    path = Path(path)
+    hash_md5 = hashlib.md5()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def md5_directory(
+    path: Union[Path, str], match: str = "*", exclude: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Calculate the md5 hash of all files in a directory.
+
+    Parameters
+    ----------
+    path
+
+    Returns
+    -------
+
+    """
+    path = Path(path)
+    out = {}
+    for sub_path in path.rglob(match):
+        # skip directories
+        if sub_path.is_dir():
+            continue
+        # skip if matches on exclusion
+        if exclude is not None and fnmatch.fnmatch(str(sub_path), exclude):
+            continue
+        out[str(sub_path)] = md5(sub_path)
+    return out
