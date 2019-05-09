@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
 from typing import Union, Optional
+from warnings import warn
 
 import obspy.clients.fdsn
 import pkg_resources
@@ -71,15 +72,23 @@ class DataSet(abc.ABC):
         # create the dataset's base directory
         self.path.mkdir(exist_ok=True, parents=True)
         # iterate each kind of data and download if needed
+        downloaded = False
         for what in ["waveform", "event", "station"]:
             needs_str = f"{what}s_need_downloading"
             if getattr(self, needs_str):
-                # download data, ensure the data dont need downloading when fisnished
+                # this is the first type of data to be downloaded, run fist hook
+                if not downloaded:
+                    self.pre_download_hook()
+                downloaded = True
+                # download data, test termination criteria
                 print(f"downloading {what} data for {self.name} dataset ...")
                 getattr(self, "download_" + what + "s")()
                 assert not getattr(self, needs_str), f"Download {what} failed"
                 print(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
+        # some data were downloaded, call post download hook
+        if downloaded:
+            self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
             # if what not in self.__dict__:
             #     setattr(self, what + "_client", self._load(what, path))
@@ -89,8 +98,12 @@ class DataSet(abc.ABC):
             self._loaded_datasets[self.name] = self.copy(deep=True)
 
     def _load(self, what, path):
-        client = self._load_funcs[what](path)
-        # load data into memory (eg load event bank contents into events)
+        try:
+            client = self._load_funcs[what](path)
+        except TypeError:
+            warn(f"failed to load {what} from {path}, returning None")
+            return None
+        # load data into memory (eg load event bank contents into catalog)
         if getattr(self, f"_load_{what}s"):
             return getattr(client, f"get_{what}s")()
         else:
@@ -209,14 +222,14 @@ class DataSet(abc.ABC):
         """
         Returns True if event data need to be downloaded.
         """
-        return not self.waveform_path.exists()
+        return not self.event_path.exists()
 
     @property
     def stations_need_downloading(self):
         """
         Returns True if station data need to be downloaded.
         """
-        return not self.waveform_path.exists()
+        return not self.station_path.exists()
 
     @property
     @lru_cache()
@@ -280,6 +293,12 @@ class DataSet(abc.ABC):
         self.station_path. Since there is not yet a functional StationBank,
         this method must be implemented by subclass.
         """
+
+    def pre_download_hook(self):
+        """ Code to run before any downloads. """
+
+    def post_download_hook(self):
+        """ code to run after any downloads. """
 
     def __str__(self):
         return f"Dataset: {self.name}"
