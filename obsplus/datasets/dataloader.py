@@ -93,6 +93,7 @@ class DataSet(abc.ABC):
                 self._write_readme()  # make sure readme has been written
         # some data were downloaded, call post download hook
         if downloaded:
+            self.check_hash()
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
             # if what not in self.__dict__:
@@ -280,7 +281,7 @@ class DataSet(abc.ABC):
         path
             The path to which the hash data is saved. If None dont save.
         """
-        out = md5_directory(self.path)
+        out = md5_directory(self.path, exclude="readme.txt")
         if path is not None:
             with (self.path / Path(path)).open("w") as fi:
                 json.dump(out, fi)
