@@ -5,6 +5,7 @@ import abc
 import copy
 import shutil
 import tempfile
+import json
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
@@ -16,9 +17,12 @@ import pkg_resources
 from obspy.clients.fdsn import Client
 
 from obsplus import Fetcher, WaveBank, EventBank
+from obsplus.utils import md5_directory
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
+from obsplus.exceptions import FileHashChangedError
+
 
 base_path = Path(__file__).parent
 
@@ -42,6 +46,7 @@ class DataSet(abc.ABC):
     base_path = base_path
     name = None
     data_loaded = False
+    _hash_path = "md5_hash.json"
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
         dict(
@@ -262,6 +267,59 @@ class DataSet(abc.ABC):
     def _download_client(self, item):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
+
+    def create_md5_hash(self, path=_hash_path) -> dict:
+        """
+        Create an md5 hash of all dataset's files.
+
+        Keys are paths (relative to dataset base path) and values are md5
+        hashes.
+
+        Parameters
+        ----------
+        path
+            The path to which the hash data is saved. If None dont save.
+        """
+        out = md5_directory(self.path)
+        if path is not None:
+            with (self.path / Path(path)).open("w") as fi:
+                json.dump(out, fi)
+        return out
+
+    def check_hash(self, warn_only=False):
+        """
+        Check that the file hashes match, else raise an error.
+
+        Parameters
+        ----------
+        warn_only
+            If True, issue a warning when a hash is not the expected value.
+            If False raise an exception.
+
+
+        Returns
+        -------
+
+        """
+        # If there is not a pre-existing hash file return
+        hash_path = Path(self.path / self._hash_path)
+        if not hash_path.exists():
+            return
+        # get old and new hash, and overlaps
+        old_hash = json.load(hash_path.open())
+        current_hash = md5_directory(self.path)
+        overlap = set(old_hash) & set(current_hash)
+        # get any files with new hashes
+        has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
+        if has_changed:
+            msg = (
+                f"The md5 hash for dataset {self.name} did not match the "
+                f"expected values for the following files:\n{has_changed}"
+            )
+            if not warn_only:
+                raise FileHashChangedError(msg)
+            else:
+                warn(msg)
 
     # --- Abstract methods subclasses should implement
 

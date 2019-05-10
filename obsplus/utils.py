@@ -8,7 +8,6 @@ import os
 import sys
 import textwrap
 import threading
-import fnmatch
 import warnings
 from functools import singledispatch, wraps, lru_cache
 from itertools import product
@@ -890,5 +889,5 @@ def md5_directory(
         # skip if matches on exclusion
         if exclude is not None and fnmatch.fnmatch(str(sub_path), exclude):
             continue
-        out[str(sub_path)] = md5(sub_path)
+        out[str(sub_path.relative_to(path))] = md5(sub_path)
     return out

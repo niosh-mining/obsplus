@@ -10,6 +10,7 @@ import pytest
 import obsplus
 from obsplus.datasets.dataloader import DataSet
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.exceptions import FileHashChangedError
 
 
 @pytest.fixture(scope="session", params=list(DataSet.datasets))
@@ -84,6 +85,27 @@ class TestDatasets:
         path = new_dataset.path / "readme.txt"
         assert path.exists()
 
+    def test_new_dataset(self, tmpdir):
+        """ ensure a new dataset can be created and creates default paths """
+        path = Path(tmpdir)
+        inv = obspy.read_inventory()
+
+        class NewDataSet(DataSet):
+            name = "test_dataset"
+            base_path = path
+
+            def download_stations(self):
+                self.station_path.mkdir(exist_ok=True, parents=True)
+                path = self.station_path / "inv.xml"
+                inv.write(str(path), "stationxml")
+
+        # now the new dataset should be loadable
+        ds = obsplus.load_dataset(NewDataSet.name)
+        # and the empty directories for event, waveforms, station should exist
+        assert not ds.events_need_downloading
+        assert not ds.stations_need_downloading
+        assert not ds.waveforms_need_downloading
+
 
 class TestCopyDataset:
     """ tests for copying datasets. """
@@ -126,23 +148,41 @@ class TestCopyDataset:
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
 
-    def test_new_dataset(self, tmpdir):
-        """ ensure a new dataset can be created and creates default paths """
-        path = Path(tmpdir)
-        inv = obspy.read_inventory()
 
-        class NewDataSet(DataSet):
-            name = "test_dataset"
-            base_path = path
+class TestMD5Hash:
+    """ Ensure a MD5 hash can be created of directory contents. """
 
-            def download_stations(self):
-                self.station_path.mkdir(exist_ok=True, parents=True)
-                path = self.station_path / "inv.xml"
-                inv.write(str(path), "stationxml")
+    @pytest.fixture
+    def copied_crandall(self, tmpdir_factory):
+        """ Copy the crandall ds to a new directory, create fresh hash
+        and return. """
+        newdir = Path(tmpdir_factory.mktemp("new_ds"))
+        ds = obsplus.load_dataset("crandall").copy_to(newdir)
+        ds.create_md5_hash()
+        return ds
 
-        # now the new dataset should be loadable
-        ds = obsplus.load_dataset(NewDataSet.name)
-        # and the empty directories for event, waveforms, station should exist
-        assert not ds.events_need_downloading
-        assert not ds.stations_need_downloading
-        assert not ds.waveforms_need_downloading
+    @pytest.fixture
+    def crandall_changed_file(self, copied_crandall):
+        """ Change a file (after hash has already run) """
+        path = copied_crandall.path
+        for mseed in path.rglob("*.mseed"):
+            st = obspy.read(str(mseed))
+            for tr in st:
+                tr.data = tr.data * 2
+            st.write(str(mseed), "mseed")
+            break
+        return copied_crandall
+
+    def test_good_hash(self, copied_crandall):
+        """ Test hashing the file contents. """
+        # when nothing has changed check hash should work silently
+        copied_crandall.check_hash()
+
+    def test_bad_hash(self, crandall_changed_file):
+        """ Test that when a file was changed the hash function raises. """
+        with pytest.raises(FileHashChangedError):
+            crandall_changed_file.check_hash()
+        # a warning should be raised if warn == True
+        with pytest.warns(UserWarning) as w:
+            crandall_changed_file.check_hash(warn_only=True)
+        assert any([x for x in w if "The md5 hash" in str(x.message)])
