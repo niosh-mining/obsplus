@@ -6,6 +6,7 @@ import copy
 import shutil
 import tempfile
 import json
+from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
@@ -46,7 +47,10 @@ class DataSet(abc.ABC):
     base_path = base_path
     name = None
     data_loaded = False
+    # variables for hashing datafiles
     _hash_path = "md5_hash.json"
+    _hash_excludes = ("readme.txt", _hash_path)
+
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
         dict(
@@ -96,8 +100,6 @@ class DataSet(abc.ABC):
             self.check_hash()
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
-            # if what not in self.__dict__:
-            #     setattr(self, what + "_client", self._load(what, path))
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
@@ -171,8 +173,7 @@ class DataSet(abc.ABC):
         Parameters
         ----------
         name
-            The name of the dataset. Supported values are in the
-            obsplus.datasets.dataload.DATASETS dict
+            The name of the dataset to load.
         """
         name = name.lower()
         if name not in cls.datasets:
@@ -283,8 +284,10 @@ class DataSet(abc.ABC):
         """
         out = md5_directory(self.path, exclude="readme.txt")
         if path is not None:
+            # sort dict to mess less with git
+            sort_dict = OrderedDict(sorted(out.items()))
             with (self.path / Path(path)).open("w") as fi:
-                json.dump(out, fi)
+                json.dump(sort_dict, fi)
         return out
 
     def check_hash(self, warn_only=False):
@@ -308,11 +311,12 @@ class DataSet(abc.ABC):
             return
         # get old and new hash, and overlaps
         old_hash = json.load(hash_path.open())
-        current_hash = md5_directory(self.path)
-        overlap = set(old_hash) & set(current_hash)
+        current_hash = md5_directory(self.path, exclude=self._hash_excludes)
+        overlap = set(old_hash) & set(current_hash) - set(self._hash_excludes)
         # get any files with new hashes
         has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
-        if has_changed:
+        missing = (set(old_hash) - set(current_hash)) - set(self._hash_excludes)
+        if has_changed or missing:
             msg = (
                 f"The md5 hash for dataset {self.name} did not match the "
                 f"expected values for the following files:\n{has_changed}"
