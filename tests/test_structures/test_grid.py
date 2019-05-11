@@ -8,65 +8,19 @@ Created on Sat Dec  2 15:46:43 2017
 
 import pytest
 import os
-from copy import copy, deepcopy
+from copy import deepcopy
 import tempfile
 import shutil
 
 import numpy as np
 import pandas as pd
 
-from obspy.core import UTCDateTime as UTC
 import obsplus.structures.grid as obsgrid
 from obsplus.structures.grid import Grid
 
 
 # Stuff for coordinate conversions
-wgs84 = "+init=EPSG:4326"
-grid_coords = "+init=EPSG:2926"
-
-
-def callable_conversion(df, x="X", y="Y"):
-    df[x] = df[x] * 0.3048
-    df[y] = df[y] * 0.3048
-    return df
-
-
-def bogus_conversion_callable(x):
-    x = "a"
-    return x
-
-
-def bogus_conversion_callable1(df):
-    return df
-
-
-def excepting_conversion_callable(x):
-    raise ValueError("Hi")
-
-
-conversions = {
-    "test_conversion": [
-        ("SCALE_X", 1 / 0.3048),
-        ("SCALE_Y", 1 / 0.3048),
-        ("SCALE_Z", 1 / 0.3048),
-        ("TRANSLATE_X", 1),
-        ("TRANSLATE_Y", 1),
-        ("TRANSLATE_Z", 1),
-        ("ROTATE_XY", 1),
-        ("ROTATE_XZ", 1),
-        ("ROTATE_YZ", 1),
-    ],
-    "test_project": [("PROJECT", {"from": wgs84, "to": grid_coords})],
-    "convert_to_km": [
-        ("SCALE_X", 0.3048 * 0.001),
-        ("SCALE_Y", 0.3048 * 0.001),
-        ("SCALE_Z", 0.3048 * 0.001),
-    ],
-    "convert_callable": callable_conversion,
-    "bogus_callable": bogus_conversion_callable,
-    "bogus_callabl1": bogus_conversion_callable1,
-    "raising_callable": excepting_conversion_callable,
-}
+from tests.test_conversions import conversions
 
 
 # --- Functions for tests
@@ -392,63 +346,3 @@ class TestValueRetrieval:
         assert len(points) == 11
         # The 'topo' map should be constant along the y-axis
         assert np.isclose(values, values[0]).all()
-
-
-class TestCoordinateConversion:
-    """ Tests for making sure the coordinate conversions work as expected """
-
-    # Fixture
-    @pytest.fixture(scope="class")
-    def points(self, grid_path):
-        return pd.read_csv(os.path.join(grid_path, "test_points.csv"))
-
-    # Tests
-    def test_conversion(self, points):
-        """Verify it is possible to convert station coords to grid coords"""
-        df = obsgrid.convert_coords(points, conversion=conversions["test_conversion"])
-        assert not id(df) == id(points)
-        assert {"X_GRID", "Y_GRID", "Z_GRID"}.issubset(df.columns)
-        assert "X_GRID" not in points.columns
-        point = df.iloc[0]
-        assert np.isclose(point.X_GRID, -5.265_527_623_648_098_1)
-        assert np.isclose(point.Y_GRID, 13.367_252_189_813_943)
-        assert np.isclose(point.Z_GRID, 39.972_122_227_570_381)
-
-    def test_conversion_project(self, points):
-        """Verify it is possible to convert station coords to grid coords"""
-        try:
-            import pyproj
-        except ModuleNotFoundError:
-            pytest.skip("pyproj is not installed on this machine. Skipping.")
-        df = obsgrid.convert_coords(points, conversion=conversions["test_project"])
-        point = df.iloc[0]
-        assert np.isclose(point.X_GRID, 11_337_944.568_914_454)
-        assert np.isclose(point.Y_GRID, 7_426_524.761_504_985_4)
-        assert np.isclose(point.Z_GRID, 2.75)
-
-    def test_bogus_conversion(self, points):
-        """Verify a bogus conversion raises"""
-        with pytest.raises(TypeError):
-            obsgrid.convert_coords(points, conversion="a")
-
-    def test_conversion_callable(self, points):
-        """Verify a callable conversion works"""
-        df = obsgrid.convert_coords(
-            points,
-            conversion=conversions["convert_callable"],
-            conversion_kwargs={"x": "X_GRID", "y": "Y_GRID"},
-        )
-        point = df.iloc[0]
-        assert np.isclose(point.X_GRID, 3.395_472)
-        assert np.isclose(point.Y_GRID, 1.499_616)
-        assert np.isclose(point.Z_GRID, 2.75)
-
-    def test_bogus_conversion_callable(self, points):
-        """Verify a bogus callable conversion raises"""
-        with pytest.raises(ValueError):
-            obsgrid.convert_coords(points, conversion=conversions["bogus_callable"])
-
-    def test_excepting_conversion_callable(self, points):
-        """Verify that a callable that excepts raises in a predictable manner"""
-        with pytest.raises(RuntimeError):
-            obsgrid.convert_coords(points, conversion=conversions["raising_callable"])

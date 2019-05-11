@@ -7,7 +7,7 @@ Created on Sat Nov 18 10:13:03 2017
 """
 
 from copy import copy
-from typing import Sequence, Iterable, Callable
+from typing import Sequence, Iterable
 import os.path
 import warnings
 from numbers import Integral
@@ -18,12 +18,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import griddata
 
+from obsplus.conversions import convert_coords
 from obsplus.utils import read_file
-
-try:
-    import pyproj
-except ModuleNotFoundError:
-    warnings.warn("pyproj is not installed on this system")
 
 
 class Grid(object):
@@ -681,31 +677,31 @@ def apply_rectangles(
     else:
         raise TypeError("rectangles must be a pandas DataFrame")
     if conversion:
-        temp_points = pd.DataFrame(columns=["X", "Y", "Z"])
+        temp_points = pd.DataFrame(columns=["x", "y", "z"])
         i = 0
         for num, r in rectangles.iterrows():
             temp_points.loc[i] = [r.XMIN, r.YMIN, r.ZMIN]
             temp_points.loc[i + 1] = [r.XMAX, r.YMAX, r.ZMAX]
             i = i + 2
         temp_points = convert_coords(
-            temp_points,
-            conversion=conversion,
-            conversion_kwargs=conversion_kwargs,
-            xout="X",
-            yout="Y",
-            zout="Z",
+            temp_points, conversion=conversion, conversion_kwargs=conversion_kwargs
         )
-        for num, r in temp_points.iterrows():  # Why did I do this this way?
+        for (
+            num,
+            r,
+        ) in (
+            temp_points.iterrows()
+        ):  # Why did I do this this way? (This whole thing will be better served using the new interface for convert coordinates that can just take a tuple instead of a pandas DataFrame
             i = num // 2
             ind = rectangles.iloc[i].name
             if (num % 2) == 0:
-                rectangles.loc[ind, "XMIN"] = r.X
-                rectangles.loc[ind, "YMIN"] = r.Y
-                rectangles.loc[ind, "ZMIN"] = r.Z
+                rectangles.loc[ind, "XMIN"] = r.x_conv
+                rectangles.loc[ind, "YMIN"] = r.y_conv
+                rectangles.loc[ind, "ZMIN"] = r.z_conv
             else:
-                rectangles.loc[ind, "XMAX"] = r.X
-                rectangles.loc[ind, "YMAX"] = r.Y
-                rectangles.loc[ind, "ZMAX"] = r.Z
+                rectangles.loc[ind, "XMAX"] = r.x_conv
+                rectangles.loc[ind, "YMAX"] = r.y_conv
+                rectangles.loc[ind, "ZMAX"] = r.z_conv
     v = grid.values
     gmap = grid.grid_map
     for num, zone in rectangles.iterrows():
@@ -786,7 +782,7 @@ def apply_topo(
         Notes
         -----
         If the input is a CSV file or pandas DataFrame, the following
-        columns are required: ["X", "Y", "Z"]. If the input is a dxf file,
+        columns are required: ["x", "y", "z"]. If the input is a dxf file,
         the dxf should not contain any data other than the topography (in
         the form of LWPOLYLINEs, LINEs, POLYLINES, POINTS, and/or 3DFACEs)
         and must have the elevation data stored in the entities (Z
@@ -797,21 +793,21 @@ def apply_topo(
     # Do some basic error checking and read in the topo data
     if isinstance(topo_points, pd.DataFrame):
         topo = topo_points
-        if not {"X", "Y", "Z"}.issubset(topo.columns):
+        if not {"x", "y", "z"}.issubset(topo.columns):
             raise KeyError(
-                f"topo_points must contain the following columns: ['X', 'Y', 'Z']"
+                f"topo_points must contain the following columns: ['x', 'y', 'z']"
             )
     elif isinstance(topo_points, str):
         if not os.path.isfile(topo_points):
             raise OSError(f"topo file does not exist: {topo_points}")
         topo = read_file(topo_points, funcs=(pd.read_csv, _read_topo_dxf))
-        if not {"X", "Y", "Z"}.issubset(topo.columns):
+        if not {"x", "y", "z"}.issubset(topo.columns):
             raise IOError(f"{topo_points} is not a valid topo file")
     else:
         raise TypeError("An invalid topo_points was provided to apply_topo")
-    if not {"X", "Y", "Z"}.issubset(topo.columns):
+    if not {"x", "y", "z"}.issubset(topo.columns):
         raise KeyError(
-            f"topo_points must contain the following columns: ['X', 'Y', 'Z']"
+            f"topo_points must contain the following columns: ['x', 'y', 'z']"
         )
 
     if method not in ["nearest", "linear", "cubic"]:
@@ -822,9 +818,12 @@ def apply_topo(
         topo = convert_coords(
             topo,
             conversion,
-            xout="X",
-            yout="Y",
-            zout="Z",
+            x_in="x",
+            y_in="y",
+            z_in="z",
+            x_out="x",
+            y_out="y",
+            z_out="z",
             conversion_kwargs=conversion_kwargs,
         )
 
@@ -837,8 +836,8 @@ def apply_topo(
     ]
     # Interpolate over the grid
     nearest_grid = griddata(
-        np.array(topo[["X", "Y"]]),
-        np.array(topo["Z"]),
+        np.array(topo[["x", "y"]]),
+        np.array(topo["z"]),
         (grid_x, grid_y),
         method="nearest",
     )
@@ -846,8 +845,8 @@ def apply_topo(
         topo_grid = nearest_grid
     else:
         topo_grid = griddata(
-            np.array(topo[["X", "Y"]]),
-            np.array(topo["Z"]),
+            np.array(topo[["x", "y"]]),
+            np.array(topo["z"]),
             (grid_x, grid_y),
             method=method,
         )
@@ -1003,198 +1002,6 @@ def grid_cross(grid, coord, direction="X"):
         raise ValueError(f"Unknown direction: {direction}")
 
 
-# ------------------ Coordinate conversion utilities ----------------- #
-def convert_coords(
-    points,
-    conversion,
-    xcol="x",
-    ycol="y",
-    zcol="z",
-    xout="x_conv",
-    yout="y_conv",
-    zout="z_conv",
-    conversion_kwargs=None,
-    inplace=False,
-):
-    """
-    Converts coordinates from one system to another
-
-    Parameters
-    ----------
-    points : DataFrame (required)
-        DataFrame containing the coordinates of the points to be
-        converted. The following columns are required: ["X", "Y",
-        "Z"(optional)]
-    conversion : list-like or callable (required)
-        Two-dimensional list-like option that specifies the various steps
-        in the conversion process. Values should be of the form
-        ["keyword", value]. Acceptable keywords are: "scale",
-        "translate_x", "translate_y", "translate_z", "rotate_xy",
-        "rotate_xz", "rotate_yz", and "project". Alternatively, a callable
-        that accepts and returns a dataframe can be specified with optional
-        kwargs to handle the conversion.
-    xcol : str (default="X")
-        Name of the input x-coordinate column
-    ycol : str (default="Y")
-        Name of the input y-coordinate column
-    zcol : str (default="Z")
-        Name of the input z-coordinate column
-    xout : str (default="X_GRID")
-        Name of the output x-coordinate column
-    yout : str (default="Y_GRID")
-        Name of the output y-coordinate column
-    zout : str (default="Z_GRID")
-        Name of the output z-coordinate column
-    conversion_kwargs : dict (default=None)
-        Used if conversion is a callable. kwargs to be passed to the callable.
-    inplace : bool (default=False)
-        Indicates whether the coordinate conversion should be done on the
-        DataFrame in place or o new DataFrame should be returned.
-
-    Notes
-    -----
-    The following describes the values to be provided with the keywords:\n
-    scale_x : float
-        Scale factor to apply to the x-coordinates\n
-    scale_y : float
-        Scale factor to apply to the x-coordinates\n
-    scale_z : float
-        Scale factor to apply to the x-coordinates\n
-    translate_x : float
-        Amount to move the coordinates in the x-direction\n
-    translate_y : float
-        Amount to move the coordinates in the y-direction\n
-    translate_z : float
-        Amount to move the coordinates in the z-direction\n
-    rotate_xy : float
-        Angle (in radians) to rotate the coordinates in the xy plane.
-        Positive is CCW.\n
-    rotate_xz : float
-        Angle (in radians) to rotate the coordinates in the xz plane.
-        Positive is CCW.\n
-    rotate_yz : float
-        Angle (in radians) to rotate the coordinates in the yz plane.
-        Positive is CCW.\n
-    project : dict
-        Strings for the pyproj.Proj class projection (ex:
-        "+init=EPSG:32611"). Keys in the dictionary should be "from" and
-        "to"\n
-
-    Returns
-    -------
-    pandas Dataframe :
-        Dataframe (either a copy or the original) with the converted coordinates
-    """
-    valid_keys = [
-        "scale_x",
-        "scale_y",
-        "scale_z",
-        "translate_x",
-        "translate_y",
-        "translate_z",
-        "rotate_xy",
-        "rotate_yz",
-        "rotate_xz",
-        "project",
-    ]
-    # Copy the input if not inplace
-    if not inplace:
-        points = copy(points)
-
-    # Define the columns to do the conversion on
-    points[xout] = points[xcol]
-    points[yout] = points[ycol]
-    points[zout] = points[zcol]
-
-    # Deal with a callable conversion
-    if isinstance(conversion, Callable):
-        try:
-            if conversion_kwargs is not None:
-                points = conversion(points, **conversion_kwargs)
-            else:
-                points = conversion(points)
-        except Exception as e:
-            raise RuntimeError(f"Conversion callable raised an exception: {e}")
-        if not isinstance(points, pd.DataFrame):
-            raise ValueError("Callable conversion must return a pandas DataFrame")
-        return points
-
-    # Do some checking to make sure the conversion is kosher
-    if not isinstance(conversion, Sequence):
-        raise TypeError(f"conversion should be a list of transformations")
-    try:
-        if not conversion[0][0].lower() in valid_keys:
-            raise TypeError(f"conversion should be a list of transformations")
-    except AttributeError:
-        raise TypeError(f"conversion should be a list of transformations")
-
-    # Go through each stage of the conversion
-    for stage in conversion:
-        # Make sure the stage is valid
-        key = stage[0].lower()
-        value = stage[1]
-        if key not in valid_keys:
-            raise ValueError(f"Invalid conversion operation: {key}")
-        elif not key == "project":
-            try:
-                value = float(value)
-            except ValueError:
-                raise TypeError(f"value must be a float for key: {key}, {value}")
-        # Do the conversion
-        if key == "scale_x":
-            points[xout] = points[xout] * value
-        elif key == "scale_y":
-            points[yout] = points[yout] * value
-        elif key == "scale_z":
-            points[zout] = points[zout] * value
-        elif key == "translate_x":
-            points[xout] = points[xout] + value
-        elif key == "translate_y":
-            points[yout] = points[yout] + value
-        elif key == "translate_z":
-            points[zout] = points[zout] + value
-        elif key == "rotate_xy":
-            points[xout], points[yout] = rotate_point(points[xout], points[yout], value)
-        elif key == "rotate_xz":
-            points[xout], points[zout] = rotate_point(points[xout], points[zout], value)
-        elif key == "rotate_yz":
-            points[yout], points[zout] = rotate_point(points[yout], points[zout], value)
-        elif key == "project":
-            try:
-                try:
-                    fro = pyproj.Proj(str(value["from"]))
-                except RuntimeError:
-                    raise ValueError(f"{value['from']} is not a valid projection")
-                try:
-                    to = pyproj.Proj(str(value["to"]))
-                except RuntimeError:
-                    raise ValueError(f"{value['to']} is not a valid projection")
-                points[xout], points[yout] = pyproj.transform(
-                    fro, to, points[xout].tolist(), points[yout].tolist()
-                )
-            except NameError:
-                raise ImportError("pyproj is not installed on this system")
-    return points
-
-
-def rotate_point(x, y, ang):  # around origin
-    """
-    Rotate a point about the origin
-
-    Parameters
-    ----------
-    x : float or list of floats (required)
-        X-coordinate(s)
-    y : float or list of floats (required)
-        Y-coordinate(s)
-    ang : float (required)
-        Rotation angle (radians)
-    """
-    x_temp = x * np.cos(ang) - y * np.sin(ang)
-    y_temp = x * np.sin(ang) + y * np.cos(ang)
-    return x_temp, y_temp
-
-
 # ------------- Internal functions for handling dxfs ----------------- #
 def _read_topo_dxf(dxf, line_end="\n"):
     with open(dxf, "r") as f:
@@ -1225,7 +1032,7 @@ def _read_topo_dxf(dxf, line_end="\n"):
             inlist = [" 10", " 20"]
             entity = _reshape_points(records, inlist, use_z=False)
             # Append the elevation
-            entity["Z"] = elev
+            entity["z"] = elev
             # Append the parsed polyline to the list of parsed entities
             entities.append(entity)
         elif records[0] == "LINE":
@@ -1304,10 +1111,10 @@ def _reshape_points(df, inlist, use_z=True):
     points = np.array(points.VALUE, dtype=np.float64)
     if use_z:
         dim = 3
-        cols = ["X", "Y", "Z"]
+        cols = ["x", "y", "z"]
     else:
         dim = 2
-        cols = ["X", "Y"]
+        cols = ["x", "y"]
     if not (len(points) % dim) == 0:
         handle = df.loc[df.CODE == "  5"].iloc[0].VALUE
         raise IOError(f"Corrupt dxf file crashed while parsing entity: {handle}")
