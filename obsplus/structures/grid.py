@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 18 10:13:03 2017
-
-@author: shawn
+This module contains an experimental class/functions for creating a manipulating a grid for storing spatially variable
+data (for instance, velocities, travel times, geologic properties, etc.). The interfaces for the Grid class and its
+supporting functions are still under development and may be subject to change without warning. Use at your own risk.
 """
 
 from copy import copy
 from typing import Sequence, Iterable
 import os.path
-import warnings
 from numbers import Integral
 
 import numpy as np
@@ -25,6 +24,8 @@ from obsplus.utils import read_file
 class Grid(object):
     """
     Class for generating/storing grids (compatible with NonLinLoc)
+
+    This class is currently experimental and its interface is subject to change.
 
     Parameters
     ----------
@@ -669,7 +670,7 @@ def apply_rectangles(
         if not os.path.isfile(path):
             raise OSError(f"rectangles file does not exist: {path}")
         rectangles = read_file(path)
-        cols = {"DELTA", "XMIN", "YMIN", "ZMIN", "XMAX", "YMAX", "ZMAX"}
+        cols = {"delta", "xmin", "ymin", "zmin", "xmax", "ymax", "zmax"}
         if not cols.issubset(rectangles.columns):
             raise IOError(f"{path} is not a valid rectangles file")
     elif isinstance(rectangles, pd.DataFrame):
@@ -677,55 +678,26 @@ def apply_rectangles(
     else:
         raise TypeError("rectangles must be a pandas DataFrame")
     if conversion:
-        temp_points = pd.DataFrame(columns=["x", "y", "z"])
-        i = 0
         for num, r in rectangles.iterrows():
-            temp_points.loc[i] = [r.XMIN, r.YMIN, r.ZMIN]
-            temp_points.loc[i + 1] = [r.XMAX, r.YMAX, r.ZMAX]
-            i = i + 2
-        temp_points = convert_coords(
-            temp_points, conversion=conversion, conversion_kwargs=conversion_kwargs
-        )
-        for (
-            num,
-            r,
-        ) in (
-            temp_points.iterrows()
-        ):  # Why did I do this this way? (This whole thing will be better served using the new interface for convert coordinates that can just take a tuple instead of a pandas DataFrame
-            i = num // 2
-            ind = rectangles.iloc[i].name
-            if (num % 2) == 0:
-                rectangles.loc[ind, "XMIN"] = r.x_conv
-                rectangles.loc[ind, "YMIN"] = r.y_conv
-                rectangles.loc[ind, "ZMIN"] = r.z_conv
-            else:
-                rectangles.loc[ind, "XMAX"] = r.x_conv
-                rectangles.loc[ind, "YMAX"] = r.y_conv
-                rectangles.loc[ind, "ZMAX"] = r.z_conv
+            rectangles.loc[num, ["xmin", "ymin", "zmin"]] = convert_coords(
+                r[["xmin", "ymin", "zmin"]],
+                conversion=conversion,
+                conversion_kwargs=conversion_kwargs,
+            )
+            rectangles.loc[num, ["xmax", "ymax", "zmax"]] = convert_coords(
+                r[["xmax", "ymax", "zmax"]],
+                conversion=conversion,
+                conversion_kwargs=conversion_kwargs,
+            )
     v = grid.values
     gmap = grid.grid_map
     for num, zone in rectangles.iterrows():
-        delta = 0.01 * zone.DELTA
-        # Use a ridiculous one-liner to modify the zones within the
-        # defined rectangle
-        v[
-            (gmap[0] >= zone.XMIN - tol)
-            & (gmap[0] <= zone.XMAX + tol)
-            & (gmap[1] >= zone.YMIN - tol)
-            & (gmap[1] <= zone.YMAX + tol)
-            & (gmap[2] >= zone.ZMIN - tol)
-            & (gmap[2] <= zone.ZMAX + tol)
-        ] = (
-            v[
-                (gmap[0] >= zone.XMIN - tol)
-                & (gmap[0] <= zone.XMAX + tol)
-                & (gmap[1] >= zone.YMIN - tol)
-                & (gmap[1] <= zone.YMAX + tol)
-                & (gmap[2] >= zone.ZMIN - tol)
-                & (gmap[2] <= zone.ZMAX + tol)
-            ]
-            * delta
-        )
+        # apply the perturbation
+        delta = 0.01 * zone.delta
+        xmask = (gmap[0] >= zone.xmin - tol) & (gmap[0] <= zone.xmax + tol)
+        ymask = (gmap[1] >= zone.ymin - tol) & (gmap[1] <= zone.ymax + tol)
+        zmask = (gmap[2] >= zone.zmin - tol) & (gmap[2] <= zone.zmax + tol)
+        v[xmask & ymask & zmask] = v[xmask & ymask & zmask] * delta
     return v
 
 

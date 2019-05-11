@@ -20,7 +20,11 @@ from obsplus.structures.grid import Grid
 
 
 # Stuff for coordinate conversions
-from tests.test_conversions import conversions
+ft_to_km = [
+    ["scale_x", 0.3048 * 0.001],
+    ["scale_y", 0.3048 * 0.001],
+    ["scale_z", 0.3048 * 0.001],
+]
 
 
 # --- Functions for tests
@@ -224,7 +228,8 @@ class TestManipulateGrids:
         """Verify that a rectangular region of a grid can be perturbed"""
         rectangle = os.path.join(grid_path, "test_lvz.csv")
         vm = deepcopy(velocity_model)
-        obsgrid.apply_rectangles(vm, rectangle, conversion=conversions["convert_to_km"])
+        breakpoint()
+        obsgrid.apply_rectangles(vm, rectangle, conversion=ft_to_km)
 
         x_coords = np.linspace(9.14, 13.14, 21)
         x_changed = np.extract(
@@ -284,30 +289,20 @@ class TestManipulateGrids:
         df = pd.read_csv(os.path.join(grid_path, "dxf_check.txt"))
         dxf_file = os.path.join(grid_path, "topo.dxf")
         vm = deepcopy(velocity_model)
-        csv = obsgrid.apply_topo(
-            vm, df, method="nearest", conversion=conversions["convert_to_km"]
-        )
-        dxf = obsgrid.apply_topo(
-            vm, dxf_file, method="nearest", conversion=conversions["convert_to_km"]
-        )
+        csv = obsgrid.apply_topo(vm, df, method="nearest", conversion=ft_to_km)
+        dxf = obsgrid.apply_topo(vm, dxf_file, method="nearest", conversion=ft_to_km)
         np.testing.assert_array_almost_equal(csv.values, dxf.values)
 
     def test_bogus_file(self, velocity_model, grid_path):
         topo = os.path.join(grid_path, "bogus.dxf")
         with pytest.raises(IOError):
             obsgrid.apply_topo(
-                velocity_model,
-                topo,
-                method="nearest",
-                conversion=conversions["convert_to_km"],
+                velocity_model, topo, method="nearest", conversion=ft_to_km
             )
         topo = os.path.join(grid_path, "test_modslow.P.mod.buf")
         with pytest.raises(IOError):
             obsgrid.apply_topo(
-                velocity_model,
-                topo,
-                method="nearest",
-                conversion=conversions["convert_to_km"],
+                velocity_model, topo, method="nearest", conversion=ft_to_km
             )
 
 
