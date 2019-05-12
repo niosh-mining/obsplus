@@ -27,15 +27,16 @@ INDICES = {"x": 0, "y": 1, "z": 2, "xy": (0, 1), "yz": (1, 2), "xz": (0, 2)}
 
 Conversion = Union[List[Tuple[str, Union[float, Dict]]], Callable]
 XYCoords = Tuple[Union[float, Sequence[float]], Union[float, Sequence[float]]]
+Convertable = Union[List, Tuple, pd.DataFrame, Sequence, np.array]
 
 
 @singledispatch
 def convert_coords(
-    points: Sequence,
+    points: Convertable,
     conversion: Conversion,
     conversion_kwargs: Optional[dict] = None,
     **kwargs,
-) -> Sequence:
+) -> Convertable:
     """
     Converts coordinates from one system to another
 
