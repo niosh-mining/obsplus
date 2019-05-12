@@ -180,7 +180,9 @@ class EventBank(_Bank):
         return df
 
     @thread_lock_function()
-    def update_index(self, bar: Optional = None, min_files_for_bar: int = 100):
+    def update_index(
+        self, bar: Optional = None, min_files_for_bar: int = 100
+    ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
@@ -220,6 +222,7 @@ class EventBank(_Bank):
         df["path"] = paths
         if len(df):
             self._write_update(self._clean_dataframe(df))
+        return self
 
     def _clean_dataframe(self, df: pd.DataFrame):
         """ clean the dataframe by casting add dtypes """

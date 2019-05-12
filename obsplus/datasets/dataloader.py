@@ -105,6 +105,23 @@ class DataSet(abc.ABC):
         """
         return copy.deepcopy(self) if deep else copy.copy(self)
 
+    def copy_to(self, destination: Optional[Union[str, Path]] = None):
+        """
+        Copy the dataset to a destination.
+
+        Parameters
+        ----------
+        destination
+            The destination to copy the dataset. It will be created if it
+            doesnt exist. If None is provided use tmpfile to create a temporary
+            directory.
+
+        Returns
+        -------
+        A new dataset object which refers to the copied files.
+        """
+        return copy_dataset(self, destination)
+
     def get_fetcher(self) -> Fetcher:
         """
         Return a Fetcher from the data.
@@ -254,7 +271,7 @@ def copy_dataset(
 
     Returns
     -------
-    None
+    A new dataset object which refers to the copied files.
     """
     if isinstance(dataset, str):
         dataset = load_dataset(dataset)

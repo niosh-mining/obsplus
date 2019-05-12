@@ -1,23 +1,28 @@
 """
 Module for adding the client-like "get_waveforms" to the Stream class
 """
+from typing import Optional
+
 import obspy
 from obspy import Stream, UTCDateTime as UTC
+
+from obsplus.constants import BIG_UTC, SMALL_UTC
 
 
 def get_waveforms(
     stream: Stream,
-    network: str,
-    station: str,
-    location: str,
-    channel: str,
-    starttime: UTC,
-    endtime: UTC,
+    network: str = "*",
+    station: str = "*",
+    location: str = "*",
+    channel: str = "*",
+    starttime: Optional[UTC] = None,
+    endtime: Optional[UTC] = None,
 ):
     """
     A subset of the Client.get_waveforms method.
 
-    Matching is available on all str paramters.
+    Simply makes successive calls to Stream.select and Stream.trim under the
+    hood. Matching is available on all str parameters.
 
     Parameters
     ----------
@@ -42,7 +47,7 @@ def get_waveforms(
     st = stream.select(
         network=network, station=station, location=location, channel=channel
     )
-    st = st.trim(starttime=UTC(starttime), endtime=UTC(endtime))
+    st = st.trim(starttime=UTC(starttime or SMALL_UTC), endtime=UTC(endtime or BIG_UTC))
     return st
 
 

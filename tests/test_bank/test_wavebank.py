@@ -339,6 +339,11 @@ class TestBankBasics:
         bank.put_waveforms(obspy.read())
         assert len(bank.read_index()) == 3
 
+    def test_update_index_returns_self(self, default_bank):
+        """ ensure update index returns the instance for chaining. """
+        out = default_bank.update_index()
+        assert out is default_bank
+
 
 class TestEmptyBank:
     """ tests for graceful handling of empty sbanks"""
@@ -428,7 +433,7 @@ class TestGetIndex:
         These should have been replaced with proper None values.
         """
         df = ta_bank_index.read_index()
-        assert not (df == "None").any().any()
+        assert "None" not in df.values
 
 
 class TestYieldStreams:
