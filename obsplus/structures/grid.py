@@ -7,7 +7,8 @@ supporting functions are still under development and may be subject to change wi
 """
 
 from copy import copy
-from typing import Sequence, Iterable
+from typing import Sequence, Iterable, Optional, Tuple, List, Union
+from numbers import Number, Integral
 import os.path
 from numbers import Integral
 
@@ -17,11 +18,11 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import griddata
 
-from obsplus.conversions import convert_coords
+from obsplus.conversions import convert_coords, Conversion
 from obsplus.utils import read_file
 
 
-class Grid(object):
+class Grid:
     """
     Class for generating/storing grids (compatible with NonLinLoc)
 
@@ -29,34 +30,25 @@ class Grid(object):
 
     Parameters
     ----------
-    base_name : str (required)
-        Name for the velocity model for writing to file. Path to the grid
-        file (minus extension).
-    gtype : str (required)
-        String describing the grid type. Common NonLinLoc formats are:
-        "VELOCITY", "SLOWNESS", "VEL2", "SLOW2", "SLOW_LEN", "TIME",
-        "TIME2D", "PROB_DENSITY", "MISFIT", "ANGLE", "ANGLE2D"
-    origin : list-like (required)
-        List of coordinates defining the origin using a right-handed
-        coordinate system (X positive East, Y positive North, Z positive
-        up). Functionality is only guaranteed for three-dimensional grids
-        at this time.
-    spacing : list-like (required)
-        List of grid spacings in each direction. Functionality is only
-        guaranteed for three-dimensional grids at this time. Note that
-        NonLinLoc velocity grids must have equal spacing in all
-        directions.
-    num_cells : list-like (int) (required)
-        List of number of cells in each direction. Functionality is only
-        guaranteed for three-dimensional grids at this time. Must specify
-        this or number of grid points.
-    num_gps : list-like (int) (required)
-        List of number of grid points (number of cells + 1) in each
-        direction. Functionality is only guaranteed for three-dimensional
-        grids at this time. Must specify this or number of cells.
-    station : list-like (default=None)
-        Station the grid is specific to (required for certain grid types,
-        such as travel-time grids)
+    base_name : str
+        Path to the grid file (minus extension).
+    gtype : str
+        String describing the grid type. Common NonLinLoc formats are: "VELOCITY", "SLOWNESS", "VEL2", "SLOW2",
+        "SLOW_LEN", "TIME", "TIME2D", "MISFIT", "ANGLE", "ANGLE2D"
+    origin : list of float
+        List of coordinates defining the origin using a right-handed coordinate system (X positive East, Y positive
+        North, Z positive up). Functionality is only guaranteed for two- or three-dimensional grids at this time.
+    spacing : list of float
+        List of grid spacings in each direction. Functionality is only guaranteed for two- or three-dimensional grids at
+        this time.
+    num_cells : list of int, optional
+        List of number of cells in each direction. Functionality is only guaranteed for two- or three-dimensional grids
+        at this time. Must specify this or number of grid points.
+    num_gps : list of int, optional
+        List of number of grid points (number of cells + 1) in each direction. Functionality is only guaranteed for two-
+        or three-dimensional grids at this time. Must specify this or number of cells.
+    station : str, optional
+        Name of station, if grid is specific to a seismic station (ex. travel-time grid) (default=None)
 
     Attributes
     ----------
@@ -65,35 +57,28 @@ class Grid(object):
     gtype : str
         Grid type descriptor
     header : dict
-        Dictionary containing all of the parameters found in the grid
-        header
+        Dictionary containing all of the parameters found in the grid header
     grid_points : list of numpy array
         Listing of grid coordinates along each dimension
     grid_map : numpy meshgrid
         Meshgrid mapping grid indices to physical space
     values : numpy array
         Array containing the values at each grid point
-
-    Notes
-    -----
-    If creating a "VELOCITY" or "VEL2" grid, the VelocityGrid object
-    should be used.
     """
 
     def __init__(
         self,
-        base_name=None,
-        gtype=None,
-        origin=None,
-        spacing=None,
-        num_cells=None,
-        num_gps=None,
-        station=None,
-    ):
+        base_name: str,
+        gtype: str,
+        origin: List[float],
+        spacing: List[float],
+        num_cells: Optional[List[int]] = None,
+        num_gps: Optional[List[int]] = None,
+        station: Optional[str] = None,
+    ) -> None:
         # Conduct initial checks to make sure inputs are kosher
         origin, spacing, num_gps = self._check_grid_inputs(
             base_name=base_name,
-            gtype=gtype,
             origin=origin,
             spacing=spacing,
             num_cells=num_cells,
@@ -121,53 +106,75 @@ class Grid(object):
         self.values = np.ones(self.header["num_gps"]) * -99
         return
 
-    def get_value(self, point, interpolate=True):
+    def get_value(self, point: Sequence[float], interpolate: bool = False) -> Number:
         """
-        Method for retrieving a value at the closest cell to the specified
-        point in the grid (eventually want to update this to interpolate?)
+        Method for retrieving a value at the closest cell to the specified point in the grid
 
-        point : list-like (required)
+        Parameters
+        ----------
+        point : list of floats or ints
             Physical coordinates of point to seek out in the grid
-        interpolate : bool (default=True)
-            Flag to indicate whether to interpolate between grid cells. If
-            False, returns value at the center of the nearest grid cell.
-            (Not yet implemented, not sure how or whether it should be
-            implemented...)
+        interpolate : bool, optional
+            Flag to indicate whether to interpolate between grid cells. If False, returns value at the center of the
+            nearest grid cell. If True, does a linear interpolation. Default is False.
+
+        Returns
+        -------
+        value : Number
+            The retrieved value
         """
         if interpolate:
-            raise Exception("Logic not yet developed to interpolate grid values")
+            # Get the indices of the points immediately surrounding the provided point
+            ind = _coord2surrounding_ind(point, self.grid_points)
+            if len(ind.shape) == 1:
+                # The point is outside of the grid... just get the value of the nearest point
+                return self.get_value(point, interpolate=False)
+            elif ind.shape[0] == 2:
+                # Do a bilinear interpolation
+                return _bilinear(point, ind, self.grid_points, self.values)
+            elif ind.shape[0] == 3:
+                # Do a trilinear interpolation
+                return _trilinear(point, ind, self.grid_points, self.values)
+            else:
+                raise RuntimeError(
+                    "Interpolation only supported for 2D or 3D grids at this time"
+                )
+        else:
+            ind = self.get_index(point)
+            value = self.values[ind]
+            return value
 
-        ind = self.get_index(point)
-        value = self.values[ind]
-        return value
-
-    def get_index(self, point):
+    def get_index(self, point: Sequence[float]) -> tuple:
         """
         Method for retrieving index of the cell point belongs to.
 
+        Parameters
+        ----------
         point : list-like (required)
             Physical coordinates of point to seek out in the grid
+
+        Returns
+        -------
+        tuple
+            Index of the cell
         """
-        return coord2ind(point, self.grid_points)
+        return _coord2ind(point, self.grid_points)
 
     # --- Write grid to file
-    def write(self, path=None):
+    def write(self, path: Optional[str] = None) -> None:
         """
         Method for writing the grid to a binary file
 
         Parameters
         ----------
-        path : str (default=Grid.base_name)
-            Base path (minus extension) for the grid
+        path : str, optional
+            Base path (minus extension) for the grid. Defaults to Grid.base_name if not provided.
         """
         # Determine the file names
         if path is None:
             path = self.base_name
         head_path = path + ".hdr"
-        if self.header["gtype"] == "PROB_DENSITY":
-            bin_path = path + ".scat"
-        else:
-            bin_path = path + ".buf"
+        bin_path = path + ".buf"
 
         # Write the grid file
         write_header(
@@ -181,24 +188,25 @@ class Grid(object):
         return
 
     # --- Methods for plotting
-    def plot_2d(self, **kwargs):
+    def plot_2d(self, **kwargs) -> Tuple[plt.Figure, plt.Axes]:
         """
         Method for plotting a 2D grid
 
-        Kwargs
-        ------
-        figsize : tuple (default=(9,9))
-            Size of the figure
-        cmap : str or matplotlib Colormap (or related) (default="rainbow")
-            Colormap to use for displaying grid values
-        alpha : float (default=0.5)
-            Transparency value for the colormap
-        legend_label : str (default="Value")
-            Label to display on the colorbar
-        shading : str (default="flat")
-            Indicates whether to use shading when rendering. Acceptable
-            values are "flat" for a solid color in each grid cell or
-            "gouraud" to apply Gouraud shading (see matplotlib docs)
+        Other Parameters
+        ----------------
+        figsize : tuple
+            Size of the figure. Default is (9, 9)
+        cmap : str or matplotlib Colormap (or related)
+            Colormap to use for displaying grid values. Default is "rainbow".
+        alpha : float
+            Transparency value for the colormap. Default is 0.5.
+        legend_label : str
+            Label to display on the colorbar. Default is "Value".
+        shading : str
+            Indicates whether to use shading when rendering. Acceptable values are "flat" for a solid color in each grid
+            cell (default) or "gouraud" to apply Gouraud shading (see matplotlib docs).
+        contour : bool
+            Flag to indicate whether to plot contour lines instead of a colormap
 
         Returns
         -------
@@ -223,7 +231,14 @@ class Grid(object):
         fig.show()
         return fig, ax
 
-    def plot_slice(self, layer, layer_coord="grid", orien=2, transpose=False, **kwargs):
+    def plot_slice(
+        self,
+        layer: Number,
+        layer_coord: str = "grid",
+        orientation: int = 2,
+        transpose: bool = False,
+        **kwargs,
+    ) -> Tuple[plt.Figure, plt.Axes]:
         """
         Method to plot a section of a 3D grid
 
@@ -231,32 +246,29 @@ class Grid(object):
         ----------
         layer : int or float
             Index or coordinate of the slice of the model to be plotted
-        layer_coord : str (default="grid")
-            If set to "grid", then the value in layer should be the
-            coordinate of the model slice in the grid space. If it is
-            "ind", then it should be the index of the grid slice.
-            (Want to add functionality to allow for coordinate
-            conversion between real-space and grid space?)
-        orien : int (default=2)
-            Index of the dimension of to plot the cross-section in (e.x.,
-            index=2 would plot an x-y view)
+        layer_coord : str, optional
+            If set to "grid", then the value in layer should be the coordinate of the model slice in the grid space
+            (default). If it is "ind", then it should be the index of the grid slice.
+        orientation : int, optional
+            Index of the dimension of to plot the cross-section in (e.x., index=2 would plot an x-y view). Default is 2.
         transpose : bool (default=False)
             Indicates whether to flip the axes
 
-        Kwargs
-        ------
-        figsize : tuple (default=(9,9))
-            Size of the figure
-        cmap : str or matplotlib Colormap (or related) (default="rainbow")
-            Colormap to use for displaying grid values
-        alpha : float (default=0.5)
-            Transparency value for the colormap
-        legend_label : str (default="Value")
-            Label to display on the colorbar
-        shading : str (default="flat")
-            Indicates whether to use shading when rendering. Acceptable
-            values are "flat" for a solid color in each grid cell or
-            "gouraud" to apply Gouraud shading (see matplotlib docs)
+        Other Parameters
+        ----------------
+        figsize : tuple
+            Size of the figure. Default is (9, 9)
+        cmap : str or matplotlib Colormap (or related)
+            Colormap to use for displaying grid values. Default is "rainbow".
+        alpha : float
+            Transparency value for the colormap. Default is 0.5.
+        legend_label : str
+            Label to display on the colorbar. Default is "Value".
+        shading : str
+            Indicates whether to use shading when rendering. Acceptable values are "flat" for a solid color in each grid
+            cell (default) or "gouraud" to apply Gouraud shading (see matplotlib docs).
+        contour : bool
+            Flag to indicate whether to plot contour lines instead of a colormap
 
         Returns
         -------
@@ -278,24 +290,23 @@ class Grid(object):
         if layer_coord == "grid":
             # More complicated than I thought it would be...
             grid_tuple = copy(self.header["origin"])
-            grid_tuple[orien] = layer
-            layer = coord2ind(grid_tuple, self.grid_points)[orien]
+            grid_tuple[orientation] = layer
+            layer = _coord2ind(grid_tuple, self.grid_points)[orientation]
         elif layer_coord == "ind":
             if not isinstance(layer, int):
                 raise TypeError(
-                    "Specified value is not a valid grid index "
-                    "(should be an integer)."
+                    "Specified value is not a valid grid index (should be an integer)."
                 )
         else:
             raise ValueError("Invalid option for layer_coord.")
 
         slice_tuple = [slice(None)] * len(self.grid_map)
-        slice_tuple[orien] = layer
+        slice_tuple[orientation] = layer
         slice_tuple = tuple(slice_tuple)
         val_slice = self.values[slice_tuple]
-        x = self.grid_map[orien - 2][slice_tuple]
-        y = self.grid_map[orien - 1][slice_tuple]
-        if (orien - 2 < 0) and (orien - 1 >= 0):
+        x = self.grid_map[orientation - 2][slice_tuple]
+        y = self.grid_map[orientation - 1][slice_tuple]
+        if (orientation - 2 < 0) and (orientation - 1 >= 0):
             x1 = y
             y = x
             x = x1
@@ -315,34 +326,26 @@ class Grid(object):
         return fig, ax
 
     # ----------------------- Internal Methods ----------------------- #
-    def _check_grid_inputs(self, base_name, gtype, origin, spacing, num_cells, num_gps):
+    def _check_grid_inputs(self, base_name, origin, spacing, num_cells, num_gps):
         """
         Internal method to validate Grid class inputs\n
 
         Parameters
         ----------
-        base_name : str (required)
+        base_name : str
             Path to the grid file (minus extension)
-        gtype : str (required)
-            String describing the grid type.
-        origin : list-like (required)
-            List of coordinates defining the origin using a right-handed
-            coordinate system (X positive East, Y positive North, Z positive
-            up). Functionality is only guaranteed for three-dimensional grids
-            at this time.
-        spacing : list-like (required)
-            List of grid spacing in each direction. Functionality is only
-            guaranteed for three-dimensional grids at this time. Note that
-            NonLinLoc velocity grids must have equal spacing in all
-            directions.
-        num_cells : list-like (int) (required)
-            List of number of cells in each direction. Functionality is only
-            guaranteed for three-dimensional grids at this time. Must specify
-            this or number of grid points.
-        num_gps : list-like (int) (required)
-            List of number of grid points (number of cells + 1) in each
-            direction. Functionality is only guaranteed for three-dimensional
-            grids at this time. Must specify this or number of cells.
+        origin : list of floats
+            List of coordinates defining the origin using a right-handed coordinate system (X positive East, Y positive
+            North, Z positive up). Functionality is only guaranteed for three-dimensional grids at this time.
+        spacing : list of floats
+            List of grid spacing in each direction. Functionality is only guaranteed for three-dimensional grids at this
+            time. Note that NonLinLoc velocity grids must have equal spacing in all directions.
+        num_cells : list of ints
+            List of number of cells in each direction. Functionality is only guaranteed for three-dimensional grids at
+            this time. Must specify this or number of grid points.
+        num_gps : list of ints
+            List of number of grid points (number of cells + 1) in each direction. Functionality is only guaranteed for
+            three-dimensional grids at this time. Must specify this or number of cells.
 
         Returns
         -------
@@ -356,8 +359,7 @@ class Grid(object):
         # File path and grid type
         if base_name is None:
             raise ValueError(
-                "You must specify a path for the grid file (minus"
-                " the file extension)"
+                "You must specify a path for the grid file (minus the file extension)"
             )
 
         # Origin
@@ -392,24 +394,19 @@ class Grid(object):
         if num_cells and num_gps:
             if not len(num_cells) == len(num_gps):
                 raise ValueError("num_cells and num_gps must be the same shape")
-            for ind, val in enumerate(
-                num_cells
-            ):  # There is something wrong with this, but I'm not quite sure what right this second
-                if not all(
-                    [val == (num_gps[ind] - 1) for (ind, val) in enumerate(num_cells)]
-                ):
-                    raise ValueError(
-                        "num_gps must be one greater than "
-                        "num_cells in each dimension"
-                    )
+            if not all(
+                [val == (num_gps[ind] - 1) for (ind, val) in enumerate(num_cells)]
+            ):
+                raise ValueError(
+                    "num_gps must be one greater than num_cells in each dimension"
+                )
         if num_cells and not num_gps:
             num_gps = [i + 1 for i in num_cells]
 
         # Final checks
         if not len(origin) == len(spacing) == len(num_gps):
             raise ValueError(
-                "Grid dimensions must match. Provided dimensions:"
-                f" Origin: {len(origin)} Spacing: {len(spacing)} "
+                f"Grid dimensions must match. Provided dimensions: Origin: {len(origin)} Spacing: {len(spacing)} "
                 f"Number of Grid Points: {len(num_gps)}"
             )
         return origin, spacing, num_gps
@@ -420,16 +417,16 @@ class Grid(object):
             raise TypeError(f"{name} must be iterable")
 
 
-# --------------- Functions for retrieving values from grids --------- #
-def coord2ind(point, xls):
+# --------------- Internal functions for retrieving values from grids --------- #
+def _coord2ind(point, xls):
     """
     Convert the spatial coordinates of a point to grid indeces\n
 
     Parameters
     ----------
-    point : tuple (required)
+    point : tuple
         Point to be converted to indices
-    xls : numpy array (required)
+    xls : numpy array
         Array describing the model geometry
     """
     # index of best fitting x point in L1 sense
@@ -437,30 +434,189 @@ def coord2ind(point, xls):
     return tuple(xind)
 
 
-def ind2coord(point, xls):
+def _coord2surrounding_ind(point: Sequence[float], xls: np.array):
     """
-    Convert the grid indices of a point to spatial coordinates\n
+    Get the indices of the points in a grid surrounding the specified point
+
+    If the point falls outside of the grid, fall back to returning the nearest point
 
     Parameters
     ----------
-    point : tuple (required)
-        Point to be converted to indices
-    xls : numpy array (required)
-        Array describing the model geometry
+    point : list of float
+        Point for which to retrieve the surrounding indices
+    xls : numpy array
+        Array describing the grid geometry
+
+    Returns
+    -------
+    tuple
+        Min and max indices of the points surrounding the point in each dimension, or the nearest point if the point is
+        not in the grid
     """
-    raise Exception("Not yet written")
+    xind = np.array(
+        [np.argpartition(abs(point[num] - x), 2)[0:2] for (num, x) in enumerate(xls)]
+    )
+    for num, x in enumerate(xls):
+        if not min(x[xind[num]]) < point[num] < max(x[xind[num]]):
+            return np.array(
+                [abs(point[num] - x).argmin() for (num, x) in enumerate(xls)]
+            )
+        return xind
+
+
+def _bilinear(point, inds, pts, vals):
+    """
+    Do a bilinear interpolation for the provided point
+    """
+    x1 = inds[0][0]
+    x2 = inds[0][1]
+    y1 = inds[1][0]
+    y2 = inds[1][1]
+    a = np.array(
+        [
+            [1, pts[0][x1], pts[1][y1], pts[0][x1] * pts[1][y1]],
+            [1, pts[0][x1], pts[1][y2], pts[0][x1] * pts[1][y2]],
+            [1, pts[0][x2], pts[1][y1], pts[0][x2] * pts[1][y1]],
+            [1, pts[0][x2], pts[1][y2], pts[0][x2] * pts[1][y2]],
+        ]
+    )
+    d = np.array([[vals[x1, y1]], [vals[x1, y2]], [vals[x2, y1]], [vals[x2, y2]]])
+    m = np.linalg.inv(a).dot(d)
+    return (m[0] + m[1] * point[0] + m[2] * point[1] + m[3] * point[0] * point[1])[0]
+
+
+def _trilinear(point, inds, pts, vals):
+    """
+    Do a trilinear interpolation for the provided point
+    """
+    xs = pts[0]
+    ys = pts[1]
+    zs = pts[2]
+    x1 = inds[0][0]
+    x2 = inds[0][1]
+    y1 = inds[1][0]
+    y2 = inds[1][1]
+    z1 = inds[2][0]
+    z2 = inds[2][1]
+    a = np.array(
+        [
+            [
+                1,
+                xs[x1],
+                ys[y1],
+                zs[z1],
+                xs[x1] * ys[y1],
+                xs[x1] * zs[z1],
+                ys[y1] * zs[z1],
+                xs[x1] * ys[y1] * zs[z1],
+            ],
+            [
+                1,
+                xs[x2],
+                ys[y1],
+                zs[z1],
+                xs[x2] * ys[y1],
+                xs[x2] * zs[z1],
+                ys[y1] * zs[z1],
+                xs[x2] * ys[y1] * zs[z1],
+            ],
+            [
+                1,
+                xs[x1],
+                ys[y2],
+                zs[z1],
+                xs[x1] * ys[y2],
+                xs[x1] * zs[z1],
+                ys[y2] * zs[z1],
+                xs[x1] * ys[y2] * zs[z1],
+            ],
+            [
+                1,
+                xs[x2],
+                ys[y2],
+                zs[z1],
+                xs[x2] * ys[y2],
+                xs[x2] * zs[z1],
+                ys[y2] * zs[z1],
+                xs[x2] * ys[y2] * zs[z1],
+            ],
+            [
+                1,
+                xs[x1],
+                ys[y1],
+                zs[z2],
+                xs[x1] * ys[y1],
+                xs[x1] * zs[z2],
+                ys[y1] * zs[z2],
+                xs[x1] * ys[y1] * zs[z2],
+            ],
+            [
+                1,
+                xs[x2],
+                ys[y1],
+                zs[z2],
+                xs[x2] * ys[y1],
+                xs[x2] * zs[z2],
+                ys[y1] * zs[z2],
+                xs[x2] * ys[y1] * zs[z2],
+            ],
+            [
+                1,
+                xs[x1],
+                ys[y2],
+                zs[z2],
+                xs[x1] * ys[y2],
+                xs[x1] * zs[z2],
+                ys[y2] * zs[z2],
+                xs[x1] * ys[y2] * zs[z2],
+            ],
+            [
+                1,
+                xs[x2],
+                ys[y2],
+                zs[z2],
+                xs[x2] * ys[y2],
+                xs[x2] * zs[z2],
+                ys[y2] * zs[z2],
+                xs[x2] * ys[y2] * zs[z2],
+            ],
+        ]
+    )
+    d = np.array(
+        [
+            [vals[x1, y1, z1]],
+            [vals[x2, y1, z1]],
+            [vals[x1, y2, z1]],
+            [vals[x2, y2, z1]],
+            [vals[x1, y1, z2]],
+            [vals[x2, y1, z2]],
+            [vals[x1, y2, z2]],
+            [vals[x2, y2, z2]],
+        ]
+    )
+    m = np.linalg.inv(a).dot(d)
+    return (
+        m[0]
+        + m[1] * point[0]
+        + m[2] * point[1]
+        + m[3] * point[2]
+        + m[4] * point[0] * point[1]
+        + m[5] * point[0] * point[2]
+        + m[6] * point[1] * point[2]
+        + m[7] * point[0] * point[1] * point[2]
+    )[0]
 
 
 # --------------- Functions for building/reading grids --------------- #
-def load_grid(base_name, gtype=None):
+def load_grid(base_name: str, gtype: Optional[str] = None) -> Grid:
     """
     Function for reading a binary binary grid
 
     Parameters
     ----------
-    base_name : str (required)
+    base_name : str
         Name of the grid file (minus extension)
-    gtype : str (default=None)
+    gtype : str, optional
         If specified, verify the grid is the expected format
 
     Returns
@@ -473,8 +629,6 @@ def load_grid(base_name, gtype=None):
     binary_name = base_name + ".buf"
     if not os.path.isfile(header_name):
         raise IOError(f"Binary grid header file {header_name} does not exist")
-    if gtype == "PROB_DENSITY":
-        binary_name = base_name + ".scat"
     if not os.path.isfile(binary_name):
         raise IOError(f"Binary grid buffer file {binary_name} does not exist")
 
@@ -495,15 +649,15 @@ def load_grid(base_name, gtype=None):
     return grid
 
 
-def read_header(path, gtype=None):
+def read_header(path: str, gtype: Optional[str] = None) -> dict:
     """
     Function for reading NonLinLoc binary grid header files
 
     Parameters
     ----------
-    path : str (required)
+    path : str
         Path to the header file
-    gtype : str (optional, default=None)
+    gtype : str, optional
         If specified, verify the grid is the expected format
 
     Returns
@@ -540,20 +694,20 @@ def read_header(path, gtype=None):
     return header_data
 
 
-def read_bin_grid(path, grid):
+def read_bin_grid(path: str, grid: Grid) -> Grid:
     """
     Function for reading in a NonLinLoc binary grid
 
     Parameters
     ----------
-    path : str (required)
+    path : str
         Path to the binary buffer
-    grid : nllpy.grid Grid object (required)
-        Grid object to dump the values into
+    grid : Grid
+        Grid to dump the values into
 
     Returns
     -------
-    grid : nllpy.grid Grid
+    grid : Grid
         Grid as read from the file.
     """
     values = np.fromfile(path, dtype=np.float32)
@@ -562,30 +716,31 @@ def read_bin_grid(path, grid):
     return grid
 
 
-# --------------- Functions for building/reading grids --------------- #
-
-
-def write_header(path, gps, origin, spacing, gtype):
+def write_header(
+    path: str, gps: Sequence[int], origin: Sequence[float], spacing: float, gtype: str
+) -> None:
     """
     Function for writing a NonLinLoc binary grid header
 
     Parameters
     ----------
-    path : str (required)
+    path : str
         Path for the header file
-    gps : list-like (required)
+    gps : list of int
         Number of grid points in the X, Y, and Z directions
-    origin : list-like (required)
-        X, Y, and Z coordinates of the grid origin (Z is positive
-        up). Coordinates must be in the NonLinLoc coordinate system
-        and must be in kilometers.
-    spacing : float (required)
-        Size of the grid cells in kilometers. Grid cells must be
-        square.
-    gtype : str (required)
-        Type of grid being written. Valid options are: "VELOCITY",
-        "SLOWNESS", "VEL2", "SLOW2", "SLOW_LEN", "TIME", "TIME2D",
-        "PROB_DENSITY", "MISFIT", "ANGLE", "ANGLE2D"
+    origin : list of float
+        X, Y, and Z coordinates of the grid origin (Z is positive up). Coordinates must be in the NonLinLoc coordinate
+        system and must be in kilometers.
+    spacing : float
+        Size of the grid cells in kilometers. Grid cells must be square to be compatible with NonLinLoc
+    gtype : str
+        Type of grid being written. Common options are: "VELOCITY", "SLOWNESS", "VEL2", "SLOW2", "SLOW_LEN", "TIME",
+        "TIME2D", "MISFIT", "ANGLE", "ANGLE2D"
+
+    Notes
+    -----
+    It is important to note that while the obsplus Grid objects here created such that Z is positive up, in order
+    to be compatible with NonLinLoc, the origin must be swapped when it is written so Z is positive down.
     """
     # Swap origin to be a left-handed system with positive z down
     origin_z = -1 * (origin[2] + spacing[2] * (gps[2] - 1))
@@ -605,15 +760,15 @@ def write_header(path, gps, origin, spacing, gtype):
     return
 
 
-def write_bin_grid(path, grid):
+def write_bin_grid(path: str, grid: np.array) -> None:
     """
     Function for writing a NonLinLoc binary grid
 
     Parameters
     ----------
-    path : str (required)
+    path : str
         Path for the binary file
-    grid : numpy array (required)
+    grid : numpy array
         Three-dimensional numpy array containing the values for the grid
     """
     grid = np.flip(grid, axis=2).reshape((1, grid.size))
@@ -621,18 +776,18 @@ def write_bin_grid(path, grid):
 
 
 # ---------- Utilities for manipulating the values of a grid --------- #
-def apply_layers(grid, layers):
+def apply_layers(grid: Grid, layers: List[List[float]]) -> None:
     """
-        Internal method for applying velocities from a 1D layered model
+    Function for applying velocities from a 1D layered model
 
-        Parameters
-        ----------
-        grid : Grid
-            Grid on which to apply the layers
-        layers : list-like
-            List of layers of the form [(value1, elevation1), (value2,
-            elevation2)] to  apply to the grid
-        """
+    Parameters
+    ----------
+    grid : Grid
+        Grid on which to apply the layers
+    layers : list-like
+        List of layers of the form [(value1, elevation1), (value2,
+        elevation2)] to  apply to the grid
+    """
     # For each layer in vel_input, apply the specified velocity
     for elev in layers:
         if not (isinstance(elev, Sequence) and not isinstance(elev, str)):
@@ -643,27 +798,31 @@ def apply_layers(grid, layers):
 
 
 def apply_rectangles(
-    grid, rectangles, tol=1e-6, conversion=None, conversion_kwargs=None
-):
+    grid: Grid,
+    rectangles: Union[pd.DataFrame, str],
+    tol: float = 1e-6,
+    conversion: Optional[Conversion] = None,
+    conversion_kwargs: Optional[dict] = None,
+) -> None:
     """
-    Internal method for perturbing grid values in rectangular grid regions
+    Function for perturbing grid values in rectangular regions
 
     Parameters
     ----------
     grid : Grid
         Grid on which to apply the layers
-    rectangles : pandas DataFrame (required)
+    rectangles : pandas DataFrame
         List of velocity perturbations to apply. Required columns
         include ["DELTA", "XMIN", "XMAX", "YMIN", "YMAX"] where "DELTA" is
         some percentage of the current grid value
-    tol : float (default=1e-6)
+    tol : float
         Value to add to rectangle coordinates to prevent rounding
         errors. This value should be small relative to the grid
         spacing.
-    conversion : list-like (default=None)
-        See convert_coords
-    conversion_kwargs : dict (default=None)
-        See convert_coords
+    conversion : list-like or callable, optional
+        See obsplus.conversions.convert_coords
+    conversion_kwargs : dict, optional
+        See obsplus.conversions.convert_coords
     """
     if isinstance(rectangles, str):
         path = rectangles
@@ -698,76 +857,65 @@ def apply_rectangles(
         ymask = (gmap[1] >= zone.ymin - tol) & (gmap[1] <= zone.ymax + tol)
         zmask = (gmap[2] >= zone.zmin - tol) & (gmap[2] <= zone.zmax + tol)
         v[xmask & ymask & zmask] = v[xmask & ymask & zmask] * delta
-    return v
+    return
 
 
 def apply_topo(
-    grid,
-    topo_points,
-    air=0.343,
-    method="nearest",
-    conversion=None,
-    conversion_kwargs=None,
-    tolerance=1e-6,
-    buffer=0,
-    topo_label="TOPO",
-):
+    grid: Grid,
+    topo_points: Union[str, pd.DataFrame],
+    air: float = 0.343,
+    method: str = "nearest",
+    conversion: Optional[Conversion] = None,
+    conversion_kwargs: Optional[dict] = None,
+    tolerance: float = 1e-6,
+    buffer: int = 0,
+    topo_label: str = "TOPO",
+) -> Grid:
     """
-        Method for applying a topographic surface to the model
+    Function for applying a topographic surface to the model
 
-        Parameters
-        ----------
-        grid : Grid
-            Grid on which to apply the layers
-        topo_points : required
-            Input containing the topography data
-        air : float (default=0.343)
-            Value to assign to the "air" blocks (blocks above the topography)
-        method : str (default="nearest")
-            Method used by scipy's griddata to interpolate the topography
-            grid. Acceptable values include: "nearest", "linear", and
-            "cubic"
-        conversion : list-like (default=None)
-            Coordinate conversion to apply to the points before mapping
-            them to the velocity grid. Two-dimensional list-like option
-            that specifies the various steps in the conversion process.
-            Values should be of the form ["keyword", value]. Acceptable
-            keywords are: "scale", "translate_x", "translate_y",
-            "translate_z", "rotate_xy", "rotate_xz", "rotate_yz", and
-            "project". See obsplus.conversions.convert_coords for more detail.
-        conversion_kwargs : dict (default=None)
-            If the conversion is a callable, these kwargs will get passed to it.
-        tolerance : float (optional, default=1e-6)
-            Should be small relative to the grid size. Deals with those
-            pesky rounding errors.
-        buffer : int (default=0)
-            Number of cells above the topography to extend the "rock" values
-            (i.e., the values that are below the topography)
-        topo_label : str (default=0)
-            Label to assign the 2D grid that is created from topo_points
+    Parameters
+    ----------
+    grid : Grid
+        Grid on which to apply the layers
+    topo_points : pandas DataFrame or path to csv or dxf file
+        Input containing the topography data
+    air : float, optional
+        Value to assign to the "air" blocks (blocks above the topography). Default is 0.343 km/s.
+    method : str, optional
+        Method used by scipy's griddata to interpolate the topography grid. Acceptable values include: "nearest"
+        (default), "linear", and "cubic"
+    conversion : list-like or callable, optional
+        See obsplus.conversions.convert_coords
+    conversion_kwargs : dict, optional
+        See obsplus.conversions.convert_coords
+    tolerance : float, optional
+        Should be small relative to the grid size. Deals with those pesky rounding errors. (Default=1e-6)
+    buffer : int, optional
+        Number of cells above the topography to extend the "rock" values (i.e., the values that are below the
+        topography) (default=0)
+    topo_label : str, optional
+        Label to assign the 2D grid that is created from topo_points (default="TOPO")
 
-        Returns
-        -------
-        topo : Grid
-            2D grid created from topo_points
+    Returns
+    -------
+    topo : Grid
+        2D grid created from topo_points
 
-        Notes
-        -----
-        If the input is a CSV file or pandas DataFrame, the following
-        columns are required: ["x", "y", "z"]. If the input is a dxf file,
-        the dxf should not contain any data other than the topography (in
-        the form of LWPOLYLINEs, LINEs, POLYLINES, POINTS, and/or 3DFACEs)
-        and must have the elevation data stored in the entities (Z
-        coordinates shouldn't be 0.0).\n
-        It should be noted that bizarre results may occur if the topo
-        data does not extend beyond the grid region.\n
-        """
+    Notes
+    -----
+    If the input is a CSV file or pandas DataFrame, the following columns are required: ["x", "y", "z"]. If the input is
+    a dxf file, the dxf should not contain any data other than the topography (in the form of LWPOLYLINEs, LINEs,
+    POLYLINES, POINTS, and/or 3DFACEs) and must have the elevation data stored in the entities (Z coordinates
+    shouldn't be 0.0).\n
+    It should be noted that bizarre results may occur if the topo data does not extend beyond the grid region.\n
+    """
     # Do some basic error checking and read in the topo data
     if isinstance(topo_points, pd.DataFrame):
         topo = topo_points
         if not {"x", "y", "z"}.issubset(topo.columns):
             raise KeyError(
-                f"topo_points must contain the following columns: ['x', 'y', 'z']"
+                "topo_points must contain the following columns: ['x', 'y', 'z']"
             )
     elif isinstance(topo_points, str):
         if not os.path.isfile(topo_points):
@@ -779,7 +927,7 @@ def apply_topo(
         raise TypeError("An invalid topo_points was provided to apply_topo")
     if not {"x", "y", "z"}.issubset(topo.columns):
         raise KeyError(
-            f"topo_points must contain the following columns: ['x', 'y', 'z']"
+            "topo_points must contain the following columns: ['x', 'y', 'z']"
         )
 
     if method not in ["nearest", "linear", "cubic"]:
@@ -836,8 +984,7 @@ def apply_topo(
     topo.values = topo_grid
     # Overlay the topo grid on the velocity grid
     elevs = grid.grid_map[:][:][2]
-    # Want to add an extra grid cell above the topo layer because of
-    # how Grid2Time interpolates the velocity between gps
+    # Optionally add extra cells above the topo layer to deal with the ways some programs interpolate between cells
     mask = np.array(
         [
             (elevs[:, :, i] > topo_grid + buffer * grid.header["spacing"][2])
@@ -851,35 +998,40 @@ def apply_topo(
 
 
 # --------------------- Grid plotting utilities ---------------------- #
-def plt_grid(x1_coords, x2_coords, values, contour=False, **kwargs):
+def plt_grid(
+    x1_coords: List[float],
+    x2_coords: List[float],
+    values: List[float],
+    contour: bool = False,
+    **kwargs,
+) -> Tuple[plt.Figure, plt.Axes]:
     """
     Function to plot a colormap of a grid
 
     Parameters
     ----------
-    x1_coords : array-like (required)
+    x1_coords : array-like
         Coordinates of grid points along the horizontal axis of the plot
-    x2_coords : array-like (required)
+    x2_coords : array-like
         Coordinates of grid points along the vertical axis of the plot
-    values : numpy array (required)
+    values : array-like
         Values stored in the grid
-    contour : bool (default=False)
-        Flag indicating whether to plot contour lines instead of a colormap
+    contour : bool, optional
+        Flag indicating whether to plot contour lines instead of a colormap (default=False
 
-    Kwargs
-    ------
-    figsize : tuple (default=(9,9))
-        Size of the figure
-    cmap : str or matplotlib Colormap (or related) (default="rainbow")
-        Colormap to use for displaying grid values
-    alpha : float (default=0.5)
-        Transparency value for the colormap
-    legend_label : str (default="Value")
-        Label to display on the colorbar
-    shading : str (default="flat")
-        Indicates whether to use shading when rendering. Acceptable
-        values are "flat" for a solid color in each grid cell or
-        "gouraud" to apply Gouraud shading (see matplotlib docs)
+    Other Parameters
+    ----------------
+    figsize : tuple
+        Size of the figure (default=(9,9))
+    cmap : str or matplotlib Colormap (or related)
+        Colormap to use for displaying grid values (default="rainbow")
+    alpha : float
+        Transparency value for the colormap (default=0.5)
+    legend_label : str
+        Label to display on the colorbar (default="Value")
+    shading : str
+        Indicates whether to use shading when rendering. Acceptable values are "flat" for a solid color in each grid
+        cell (default) or "gouraud" to apply Gouraud shading (see matplotlib docs)
 
     Returns
     -------
@@ -927,7 +1079,9 @@ def plt_grid(x1_coords, x2_coords, values, contour=False, **kwargs):
     return fig, ax
 
 
-def grid_cross(grid, coord, direction="X"):
+def grid_cross(
+    grid: Grid, coord: float, direction: str = "X"
+) -> Tuple[np.array, np.array]:
     """
     Function for returning a profile from a two-dimensional grid
 
@@ -937,9 +1091,9 @@ def grid_cross(grid, coord, direction="X"):
         Grid from which to pull the values
     coord : float
         Coordinate along which to get the profile
-    direction : str
+    direction : str, optional
         Direction along which to get the profile. Possible values are "X"
-        for a profile that parallel to the x-axis and "Y" for a profile
+        for a profile that parallel to the x-axis (default) and "Y" for a profile
         that is parallel to the y-axis.
 
     Returns
@@ -976,6 +1130,7 @@ def grid_cross(grid, coord, direction="X"):
 
 # ------------- Internal functions for handling dxfs ----------------- #
 def _read_topo_dxf(dxf, line_end="\n"):
+    """ Function for parsing topography information from a dxf file """
     with open(dxf, "r") as f:
         parsed = f.read()
     # Split by section
@@ -1061,6 +1216,7 @@ def _read_topo_dxf(dxf, line_end="\n"):
 
 
 def _entity_boilerplate(entity):
+    """ Internal function for parsing an entity from a dxf file """
     # Parse into a key, value DataFrame
     e = np.array(entity[1:])
     if not (len(e) % 2) == 0:
@@ -1070,6 +1226,7 @@ def _entity_boilerplate(entity):
 
 
 def _parse_pointlike(entity):
+    """ Internal function for parsing a point-like entity from a dxf file """
     entity = _entity_boilerplate(entity)
     # Retrieve the X, Y, and Z coordinates of the point
     inlist = [" 10", " 20", " 30"]
@@ -1077,6 +1234,7 @@ def _parse_pointlike(entity):
 
 
 def _reshape_points(df, inlist, use_z=True):
+    """ Internal function for properly reshaping a point entity """
     # Drop all of the extraneous stuff
     points = df.loc[df.CODE.isin(inlist)]
     # Reshape the series as a table of X, Y, and Z (optional) coordinates

@@ -21,9 +21,9 @@ from obsplus.structures.grid import Grid
 
 # Stuff for coordinate conversions
 ft_to_km = [
-    ["scale_x", 0.3048 * 0.001],
-    ["scale_y", 0.3048 * 0.001],
-    ["scale_z", 0.3048 * 0.001],
+    ("scale_x", 0.3048 * 0.001),
+    ("scale_y", 0.3048 * 0.001),
+    ("scale_z", 0.3048 * 0.001),
 ]
 
 
@@ -55,6 +55,7 @@ def inputs(temp_dir):
     """ common inputs for creating a velocity model grid """
     inp = {
         "base_name": os.path.join(temp_dir, "test_mod"),
+        "gtype": "VELOCITY",
         "origin": [9.14, 3.67, 0.75],
         "spacing": [0.05, 0.05, 0.05],
         "num_gps": [81, 57, 41],
@@ -228,7 +229,6 @@ class TestManipulateGrids:
         """Verify that a rectangular region of a grid can be perturbed"""
         rectangle = os.path.join(grid_path, "test_lvz.csv")
         vm = deepcopy(velocity_model)
-        breakpoint()
         obsgrid.apply_rectangles(vm, rectangle, conversion=ft_to_km)
 
         x_coords = np.linspace(9.14, 13.14, 21)
@@ -315,7 +315,7 @@ class TestValueRetrieval:
         plane = pd.read_csv(os.path.join(grid_path, "plane.csv"))
         origin = [0, 0, 0]
         spacing = [1, 1, 1]
-        num_gps = [9, 11, 1]
+        num_gps = [9, 11, 5]
         grid = Grid(
             base_name="plane",
             gtype="UNKNOWN",
@@ -324,11 +324,11 @@ class TestValueRetrieval:
             num_gps=num_gps,
         )
         plane = obsgrid.apply_topo(grid, plane)
-        return plane
+        return plane, grid
 
     def test_get_x_profile(self, topo_map):
         """Pull a profile along the x-axis"""
-        points, values = obsgrid.grid_cross(topo_map, 2, direction="X")
+        points, values = obsgrid.grid_cross(topo_map[0], 2, direction="X")
         assert len(points) == 9
         # The 'topo' map should increase linearly along the x-axis
         for ind, val in enumerate(values):
@@ -337,7 +337,28 @@ class TestValueRetrieval:
 
     def test_get_y_profile(self, topo_map):
         """Pull a profile along the y-axis"""
-        points, values = obsgrid.grid_cross(topo_map, 2, direction="Y")
+        points, values = obsgrid.grid_cross(topo_map[0], 2, direction="Y")
         assert len(points) == 11
         # The 'topo' map should be constant along the y-axis
         assert np.isclose(values, values[0]).all()
+
+    def test_get_point_bilinear(self, topo_map):
+        """Get a value right in the middle of the grid and verify that it is semi-sane"""
+        point = (5.5, 2.5)
+        val = topo_map[0].get_value(point, interpolate=True)
+        assert np.isclose(val, 6.5)
+
+    def test_get_point_trilinear(self, topo_map):
+        """Get a value right in the middle of the grid and verify it is semi-sane"""
+        # linearly vary the values in a grid with depth
+        for num in range(topo_map[1].values.shape[2]):
+            topo_map[1].values[:, :, num] = num
+        point = (5.5, 2.5, 1.5)
+        val = topo_map[1].get_value(point, interpolate=True)
+        assert np.isclose(val, 1.5)
+
+    def test_get_point_outside(self, topo_map):
+        """ Verify correct behavior if getting value for a point outside a grid when interpolate=True """
+        point = (20, 20, 20)
+        val = topo_map[1].get_value(point, interpolate=True)
+        assert np.isclose(val, 4)

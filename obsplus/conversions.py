@@ -1,5 +1,10 @@
+"""
+This module contains an experimental functions for converting coordinate systems. The interfaces for these functions
+likely will not change, but the functions may be moved.
+"""
+
 from copy import copy
-from typing import Callable, Sequence
+from typing import Callable, Sequence, List, Union, Dict, Tuple, Optional
 from functools import singledispatch
 
 import numpy as np
@@ -20,43 +25,51 @@ VALID_KEYS = {
 OPERATIONS = {}
 INDICES = {"x": 0, "y": 1, "z": 2, "xy": (0, 1), "yz": (1, 2), "xz": (0, 2)}
 
+Conversion = Union[List[Tuple[str, Union[float, Dict]]], Callable]
+XYCoords = Tuple[Union[float, Sequence[float]], Union[float, Sequence[float]]]
+
 
 @singledispatch
-def convert_coords(points, conversion, conversion_kwargs=None, **kwargs):
+def convert_coords(
+    points: Sequence,
+    conversion: Conversion,
+    conversion_kwargs: Optional[dict] = None,
+    **kwargs,
+) -> Sequence:
     """
     Converts coordinates from one system to another
 
     Parameters
     ----------
-    points : DataFrame (required)
-        DataFrame containing the coordinates of the points to be
-        converted. The following columns are required: ["X", "Y",
-        "Z"(optional)]
-    conversion : list-like or callable (required)
-        Two-dimensional list-like option that specifies the various steps
-        in the conversion process. Values should be of the form
-        ["keyword", value]. Acceptable keywords are: "scale",
-        "translate_x", "translate_y", "translate_z", "rotate_xy",
-        "rotate_xz", "rotate_yz", and "project". Alternatively, a callable
-        that accepts and returns a dataframe can be specified with optional
-        kwargs to handle the conversion.
-    xcol : str (default="X")
-        Name of the input x-coordinate column
-    ycol : str (default="Y")
-        Name of the input y-coordinate column
-    zcol : str (default="Z")
-        Name of the input z-coordinate column
-    xout : str (default="X_GRID")
-        Name of the output x-coordinate column
-    yout : str (default="Y_GRID")
-        Name of the output y-coordinate column
-    zout : str (default="Z_GRID")
-        Name of the output z-coordinate column
-    conversion_kwargs : dict (default=None)
+    points : Array-like
+        List of points to be converted. Can take a variety of formats, including tuples, lists, pandas DataFrames,
+        and numpy arrays as long as they can be arranged into a numpy array with three columns for the X, Y, and Z
+        coordinates.
+    conversion : list-like or callable
+        A set of instructions or callable for the coordinate conversion. If instructions are provided, they should
+        be arrange in a two-dimensional list-like structure of key-value pairs (i.e., [["scale_x", 0.3048], ["scale_y",
+        0.3048]]). See notes for acceptable keywords. If a callable is provided, it should take a three-column numpy
+        array as input and output.
+    conversion_kwargs : dict, optional
         Used if conversion is a callable. kwargs to be passed to the callable.
-    inplace : bool (default=False)
-        Indicates whether the coordinate conversion should be done on the
-        DataFrame in place or o new DataFrame should be returned.
+
+    Other Parameters
+    ----------------
+    xcol : str, optional
+        Name of the input x-coordinate column (default="x")
+    ycol : str, optional
+        Name of the input y-coordinate column (default="y")
+    zcol : str, optional
+        Name of the input z-coordinate column (default="z")
+    xout : str, optional
+        Name of the output x-coordinate column (default="x_conv")
+    yout : str, optional
+        Name of the output y-coordinate column (default="y_conv")
+    zout : str, optional
+        Name of the output z-coordinate column (default="z_conv")
+    inplace : bool, optional
+        Indicates whether the coordinate conversion should be done on the DataFrame in place or a new DataFrame should
+        be returned. (Only when a DataFrame is provided as input.) (default=False)
 
     Notes
     -----
@@ -83,14 +96,14 @@ def convert_coords(points, conversion, conversion_kwargs=None, **kwargs):
         Angle (in radians) to rotate the coordinates in the yz plane.
         Positive is CCW.\n
     project : dict
-        Strings for the pyproj.Proj class projection (ex:
-        "+init=EPSG:32611"). Keys in the dictionary should be "from" and
-        "to"\n
+        Strings for the pyproj.Proj class projection, or a pyproj.Proj object (ex: "+init=EPSG:32611"). Keys in the
+        dictionary should be "from" and "to"\n
 
     Returns
     -------
-    pandas Dataframe :
-        Dataframe (either a copy or the original) with the converted coordinates
+    points : Sequence
+        Array-like object with the converted coordinates. If a DataFrame, list, or tuple were provided as input, then
+        the same type will be returned. For all other formats, a numpy array will be returned.
     """
     if len(
         kwargs
@@ -152,7 +165,7 @@ def convert_coords(points, conversion, conversion_kwargs=None, **kwargs):
     return points
 
 
-@convert_coords.register
+@convert_coords.register(pd.DataFrame)
 def _convert_df(
     df: pd.DataFrame,
     conversion,
@@ -178,7 +191,7 @@ def _convert_df(
     return df
 
 
-@convert_coords.register
+@convert_coords.register(tuple)
 def _convert_tuple(points: tuple, conversion, conversion_kwargs=None):
     points = np.array(points)
     if len(points.shape) == 1:  # Single point
@@ -195,7 +208,7 @@ def _convert_tuple(points: tuple, conversion, conversion_kwargs=None):
         raise TypeError("points must be a tuple of three-dimensional points")
 
 
-@convert_coords.register
+@convert_coords.register(list)
 def _convert_list(points: list, conversion, conversion_kwargs=None):
     points = np.array(points)
     if len(points.shape) == 1:  # Single point
@@ -208,7 +221,9 @@ def _convert_list(points: list, conversion, conversion_kwargs=None):
         raise TypeError("points must be a list of three-dimensional points")
 
 
-def rotate_points(x, y, ang):  # around origin
+def rotate_points(
+    x: Union[float, Sequence[float]], y: Union[float, Sequence[float]], ang: float
+) -> XYCoords:  # around origin
     """
     Rotate a point about the origin
     Parameters
@@ -228,14 +243,16 @@ def rotate_points(x, y, ang):  # around origin
 def project(x, y, fro, to):
     import pyproj
 
-    try:
-        fro = pyproj.Proj(str(fro))
-    except RuntimeError:
-        raise ValueError(f"{fro} is not a valid projection")
-    try:
-        to = pyproj.Proj(str(to))
-    except RuntimeError:
-        raise ValueError(f"{to} is not a valid projection")
+    if not isinstance(fro, pyproj.Proj):
+        try:
+            fro = pyproj.Proj(str(fro))
+        except RuntimeError:
+            raise ValueError(f"{fro} is not a valid projection")
+    if not isinstance(to, pyproj.Proj):
+        try:
+            to = pyproj.Proj(str(to))
+        except RuntimeError:
+            raise ValueError(f"{to} is not a valid projection")
     return pyproj.transform(fro, to, x, y)
 
 
