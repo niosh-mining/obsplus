@@ -45,7 +45,7 @@ from obsplus.constants import (
     event_type,
     inventory_type,
     DISTANCE_COLUMNS,
-    DISTANCE_DTYES,
+    DISTANCE_DTYPES,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
@@ -298,7 +298,7 @@ def get_reference_time(obj: Union[event_time_type, wave_type],) -> obspy.UTCDate
         raise TypeError(msg)
 
 
-@get_reference_time.register(obspy.core.event.Event)
+@get_reference_time.register(ev.Event)
 def _get_event_origin_time(event):
     """ get the time from preferred origin from the event """
     # try to get origin
@@ -315,6 +315,11 @@ def _get_event_origin_time(event):
     else:
         msg = f"could not get reference time for {event}"
         raise ValueError(msg)
+
+
+@get_reference_time.register(ev.Origin)
+def _get_origin_time(origin):
+    return get_reference_time(origin.time)
 
 
 @get_reference_time.register(ev.Pick)
@@ -823,7 +828,7 @@ def get_distance_df(
         for ell, ill in product(coord1, coord2)
         if ell[-1] != ill[-1]  # skip if same entity
     }
-    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYES)
+    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYPES)
     # make sure index is named
     df.index.names = ("id1", "id2")
     return df[list(DISTANCE_COLUMNS)]

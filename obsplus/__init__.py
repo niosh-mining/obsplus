@@ -18,7 +18,14 @@ from obsplus.events.validate import catalog_validator, validate_catalog
 
 # pandas conversions
 from obsplus.stations.pd import stations_to_df
-from obsplus.events.pd import events_to_df, picks_to_df
+from obsplus.events.pd import (
+    events_to_df,
+    picks_to_df,
+    arrivals_to_df,
+    amplitudes_to_df,
+    station_magnitudes_to_df,
+    magnitudes_to_df,
+)
 
 # Bank and WaveFetcher objects
 from obsplus.bank.wavebank import WaveBank
