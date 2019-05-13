@@ -870,6 +870,7 @@ def md5_directory(
     path: Union[Path, str],
     match: str = "*",
     exclude: Optional[Union[str, Collection[str]]] = None,
+    hidden=False,
 ) -> Dict[str, str]:
     """
     Calculate the md5 hash of all files in a directory.
@@ -877,10 +878,17 @@ def md5_directory(
     Parameters
     ----------
     path
+        The path to the directory
+    match
+        A unix-style matching string
+    exclude
+        A list of unix style strings to exclude
+    hidden
+        If True skip all files starting with a .
 
     Returns
     -------
-
+    A dict containing paths and md5 hashes.
     """
     path = Path(path)
     out = {}
@@ -895,6 +903,8 @@ def md5_directory(
             if fnmatch.fnmatch(sub_path.name, exc):
                 keep = False
                 break
+        if sub_path.name.startswith("."):
+            keep = False
         if keep:
             out[str(sub_path.relative_to(path))] = md5(sub_path)
     return out

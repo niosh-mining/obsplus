@@ -22,7 +22,7 @@ from obsplus.utils import md5_directory
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
-from obsplus.exceptions import FileHashChangedError
+from obsplus.exceptions import FileHashChangedError, MissingDataFileError
 
 
 base_path = Path(__file__).parent
@@ -97,7 +97,7 @@ class DataSet(abc.ABC):
                 self._write_readme()  # make sure readme has been written
         # some data were downloaded, call post download hook
         if downloaded:
-            self.check_hash()
+            self.check_files()
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
         self.data_loaded = True
@@ -270,9 +270,9 @@ class DataSet(abc.ABC):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
 
-    def create_md5_hash(self, path=_hash_path) -> dict:
+    def create_md5_hash(self, path=_hash_path, hidden=False) -> dict:
         """
-        Create an md5 hash of all dataset's files.
+        Create an md5 hash of all dataset's files to ensure dataset integrity.
 
         Keys are paths (relative to dataset base path) and values are md5
         hashes.
@@ -281,8 +281,10 @@ class DataSet(abc.ABC):
         ----------
         path
             The path to which the hash data is saved. If None dont save.
+        hidden
+            If True also include hidden files
         """
-        out = md5_directory(self.path, exclude="readme.txt")
+        out = md5_directory(self.path, exclude="readme.txt", hidden=hidden)
         if path is not None:
             # sort dict to mess less with git
             sort_dict = OrderedDict(sorted(out.items()))
@@ -290,21 +292,20 @@ class DataSet(abc.ABC):
                 json.dump(sort_dict, fi)
         return out
 
-    def check_hash(self, warn_only=False):
+    def check_files(self, check_hash=False):
         """
-        Check that the file hashes match, else raise an error.
+        Check that the files are all there and have the correct Hashes.
 
         Parameters
         ----------
-        warn_only
-            If True, issue a warning when a hash is not the expected value.
-            If False raise an exception.
-
+        check_hash
+            If True check the hash of the files.
 
         Returns
         -------
 
         """
+        # TODO figure this out (data seem to have changed on IRIS' end)
         # If there is not a pre-existing hash file return
         hash_path = Path(self.path / self._hash_path)
         if not hash_path.exists():
@@ -316,15 +317,15 @@ class DataSet(abc.ABC):
         # get any files with new hashes
         has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
         missing = (set(old_hash) - set(current_hash)) - set(self._hash_excludes)
-        if has_changed or missing:
+        if has_changed and check_hash:
             msg = (
                 f"The md5 hash for dataset {self.name} did not match the "
                 f"expected values for the following files:\n{has_changed}"
             )
-            if not warn_only:
-                raise FileHashChangedError(msg)
-            else:
-                warn(msg)
+            raise FileHashChangedError(msg)
+        if missing:
+            msg = f"The following files are missing: \n{missing}"
+            raise MissingDataFileError(msg)
 
     # --- Abstract methods subclasses should implement
 

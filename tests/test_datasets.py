@@ -2,6 +2,7 @@
 Tests for the datasets
 """
 from collections import defaultdict
+import os
 from pathlib import Path
 
 import obspy
@@ -10,7 +11,7 @@ import pytest
 import obsplus
 from obsplus.datasets.dataloader import DataSet
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
-from obsplus.exceptions import FileHashChangedError
+from obsplus.exceptions import MissingDataFileError, FileHashChangedError
 
 
 @pytest.fixture(scope="session", params=list(DataSet.datasets))
@@ -162,6 +163,15 @@ class TestMD5Hash:
         return ds
 
     @pytest.fixture
+    def crandall_deleted_file(self, copied_crandall):
+        """ Delete a file """
+        path = copied_crandall.path
+        for mseed in path.rglob("*.mseed"):
+            os.remove(mseed)
+            break
+        return copied_crandall
+
+    @pytest.fixture
     def crandall_changed_file(self, copied_crandall):
         """ Change a file (after hash has already run) """
         path = copied_crandall.path
@@ -176,13 +186,17 @@ class TestMD5Hash:
     def test_good_hash(self, copied_crandall):
         """ Test hashing the file contents. """
         # when nothing has changed check hash should work silently
-        copied_crandall.check_hash()
+        copied_crandall.check_files()
+
+    def test_missing_file_found(self, crandall_deleted_file):
+        """ Ensure a missing file is found. """
+        with pytest.raises(MissingDataFileError):
+            crandall_deleted_file.check_files()
 
     def test_bad_hash(self, crandall_changed_file):
         """ Test that when a file was changed the hash function raises. """
+        # should not raise if the file has changed
+        crandall_changed_file.check_files()
+        # raise an error if checking for it
         with pytest.raises(FileHashChangedError):
-            crandall_changed_file.check_hash()
-        # a warning should be raised if warn == True
-        with pytest.warns(UserWarning) as w:
-            crandall_changed_file.check_hash(warn_only=True)
-        assert any([x for x in w if "The md5 hash" in str(x.message)])
+            crandall_changed_file.check_files(check_hash=True)

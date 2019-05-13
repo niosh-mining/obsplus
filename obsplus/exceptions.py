@@ -20,3 +20,9 @@ class FileHashChangedError(ValueError):
     """
     Raised when the expected md5 hash of a file has changed.
     """
+
+
+class MissingDataFileError(FileNotFoundError):
+    """
+    Raised when the expected md5 hash of a file has changed.
+    """
