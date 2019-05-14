@@ -482,8 +482,7 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def new_inventory_stream(self, kem_fetcher, new_inventory_df):
-        """ try swapping out the stations to only retutn a subset of the
-        channels """
+        """ swap out the stations to only return a subset of the channels """
         t1 = self.t1
         t2 = self.t1 + 60
         return kem_fetcher.get_waveforms(
@@ -505,7 +504,7 @@ class TestSwapAttrs:
 
     # tests for stations swaps
     def test_streams(self, new_inventory_stream, new_inventory_df):
-        """ ensure only the cahnnel in the new_inventory df was returned """
+        """ ensure only the channel in the new_inventory df was returned """
         assert len(new_inventory_stream) == 1
         assert new_inventory_stream[0].id == new_inventory_df["seed_id"].iloc[0]
 

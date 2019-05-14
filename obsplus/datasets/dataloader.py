@@ -5,19 +5,25 @@ import abc
 import copy
 import shutil
 import tempfile
+import json
+from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
 from typing import Union, Optional
+from warnings import warn
 
 import obspy.clients.fdsn
 import pkg_resources
 from obspy.clients.fdsn import Client
 
 from obsplus import Fetcher, WaveBank, EventBank
+from obsplus.utils import md5_directory
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
+from obsplus.exceptions import FileHashChangedError, MissingDataFileError
+
 
 base_path = Path(__file__).parent
 
@@ -40,11 +46,11 @@ class DataSet(abc.ABC):
     datasets = {}
     base_path = base_path
     name = None
-    # cache for loaded objects
-    event_client: Optional[EventBank] = None
-    waveform_client: Optional[WaveBank] = None
-    station_client: Optional[obspy.Inventory] = None
     data_loaded = False
+    # variables for hashing datafiles
+    _hash_path = "md5_hash.json"
+    _hash_excludes = ("readme.txt", _hash_path)
+
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
         dict(
@@ -61,7 +67,7 @@ class DataSet(abc.ABC):
     _loaded_datasets = {}
 
     def __init_subclass__(cls, **kwargs):
-        """ Register instances of datasets. """
+        """ Register subclasses of datasets. """
         assert hasattr(cls, "name"), "must have a name"
         assert isinstance(cls.name, str), "name must be a string"
         DataSet.datasets[cls.name.lower()] = cls
@@ -72,28 +78,40 @@ class DataSet(abc.ABC):
         """ download and load data into memory. """
         if base_path:  # overwrite main base path (mainly for testing)
             self.base_path = base_path
+        # create the dataset's base directory
         self.path.mkdir(exist_ok=True, parents=True)
+        # iterate each kind of data and download if needed
+        downloaded = False
         for what in ["waveform", "event", "station"]:
-            path = getattr(self, what + "_path")
-            # the data have not yet been downloaded
-            if not path.exists():
-                # download data, ensure the expected paths are created
+            needs_str = f"{what}s_need_downloading"
+            if getattr(self, needs_str):
+                # this is the first type of data to be downloaded, run fist hook
+                if not downloaded:
+                    self.pre_download_hook()
+                downloaded = True
+                # download data, test termination criteria
                 print(f"downloading {what} data for {self.name} dataset ...")
                 getattr(self, "download_" + what + "s")()
-                assert path.exists(), f"after download {path} does not exist!"
+                assert not getattr(self, needs_str), f"Download {what} failed"
                 print(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
-            # data are downloaded, but not yet loaded
-            if what not in self.__dict__:
-                setattr(self, what + "_client", self._load(what, path))
+        # some data were downloaded, call post download hook
+        if downloaded:
+            self.check_files()
+            self.post_download_hook()
+            # data are downloaded, but not yet loaded into memory
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
             self._loaded_datasets[self.name] = self.copy(deep=True)
 
     def _load(self, what, path):
-        client = self._load_funcs[what](path)
-        # load data into memory (eg load event bank contents into events)
+        try:
+            client = self._load_funcs[what](path)
+        except TypeError:
+            warn(f"failed to load {what} from {path}, returning None")
+            return None
+        # load data into memory (eg load event bank contents into catalog)
         if getattr(self, f"_load_{what}s"):
             return getattr(client, f"get_{what}s")()
         else:
@@ -137,9 +155,9 @@ class DataSet(abc.ABC):
 
     __call__ = get_fetcher
 
-    def _write_readme(self):
+    def _write_readme(self, filename="readme.txt"):
         """ Writes the classes docstring to a file. """
-        path = self.path / "readme.txt"
+        path = self.path / filename
         if not path.exists():
             with path.open("w") as fi:
                 fi.write(str(self.__doc__))
@@ -155,8 +173,7 @@ class DataSet(abc.ABC):
         Parameters
         ----------
         name
-            The name of the dataset. Supported values are in the
-            obsplus.datasets.dataload.DATASETS dict
+            The name of the dataset to load.
         """
         name = name.lower()
         if name not in cls.datasets:
@@ -198,6 +215,47 @@ class DataSet(abc.ABC):
     def station_path(self) -> Path:
         return self.path / "stations"
 
+    # --- checks for if each type of data is downloaded
+
+    @property
+    def waveforms_need_downloading(self):
+        """
+        Returns True if waveform data need to be downloaded.
+        """
+        return not self.waveform_path.exists()
+
+    @property
+    def events_need_downloading(self):
+        """
+        Returns True if event data need to be downloaded.
+        """
+        return not self.event_path.exists()
+
+    @property
+    def stations_need_downloading(self):
+        """
+        Returns True if station data need to be downloaded.
+        """
+        return not self.station_path.exists()
+
+    @property
+    @lru_cache()
+    def waveform_client(self) -> Optional[WaveBank]:
+        """ A cached property for a waveform client """
+        return self._load("waveform", self.waveform_path)
+
+    @property
+    @lru_cache()
+    def event_client(self) -> Optional[EventBank]:
+        """ A cached property for an event client """
+        return self._load("event", self.event_path)
+
+    @property
+    @lru_cache()
+    def station_client(self) -> Optional[obspy.Inventory]:
+        """ A cached property for a station client """
+        return self._load("station", self.station_path)
+
     @property
     @lru_cache()
     def _download_client(self):
@@ -211,6 +269,63 @@ class DataSet(abc.ABC):
     def _download_client(self, item):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
+
+    def create_md5_hash(self, path=_hash_path, hidden=False) -> dict:
+        """
+        Create an md5 hash of all dataset's files to ensure dataset integrity.
+
+        Keys are paths (relative to dataset base path) and values are md5
+        hashes.
+
+        Parameters
+        ----------
+        path
+            The path to which the hash data is saved. If None dont save.
+        hidden
+            If True also include hidden files
+        """
+        out = md5_directory(self.path, exclude="readme.txt", hidden=hidden)
+        if path is not None:
+            # sort dict to mess less with git
+            sort_dict = OrderedDict(sorted(out.items()))
+            with (self.path / Path(path)).open("w") as fi:
+                json.dump(sort_dict, fi)
+        return out
+
+    def check_files(self, check_hash=False):
+        """
+        Check that the files are all there and have the correct Hashes.
+
+        Parameters
+        ----------
+        check_hash
+            If True check the hash of the files.
+
+        Returns
+        -------
+
+        """
+        # TODO figure this out (data seem to have changed on IRIS' end)
+        # If there is not a pre-existing hash file return
+        hash_path = Path(self.path / self._hash_path)
+        if not hash_path.exists():
+            return
+        # get old and new hash, and overlaps
+        old_hash = json.load(hash_path.open())
+        current_hash = md5_directory(self.path, exclude=self._hash_excludes)
+        overlap = set(old_hash) & set(current_hash) - set(self._hash_excludes)
+        # get any files with new hashes
+        has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
+        missing = (set(old_hash) - set(current_hash)) - set(self._hash_excludes)
+        if has_changed and check_hash:
+            msg = (
+                f"The md5 hash for dataset {self.name} did not match the "
+                f"expected values for the following files:\n{has_changed}"
+            )
+            raise FileHashChangedError(msg)
+        if missing:
+            msg = f"The following files are missing: \n{missing}"
+            raise MissingDataFileError(msg)
 
     # --- Abstract methods subclasses should implement
 
@@ -242,6 +357,12 @@ class DataSet(abc.ABC):
         self.station_path. Since there is not yet a functional StationBank,
         this method must be implemented by subclass.
         """
+
+    def pre_download_hook(self):
+        """ Code to run before any downloads. """
+
+    def post_download_hook(self):
+        """ code to run after any downloads. """
 
     def __str__(self):
         return f"Dataset: {self.name}"

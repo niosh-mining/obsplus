@@ -116,6 +116,8 @@ ENTRY_POINTS = {
     ]
 }
 
+df = get_package_data_files()
+
 setup(
     name="obsplus",
     version=__version__,
