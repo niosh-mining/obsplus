@@ -59,6 +59,7 @@ STATION_DTYPES = OrderedDict(
     depth=float,
     azimuth=float,
     dip=float,
+    sample_rate=float,
     start_date=float,
     end_date=float,
 )
