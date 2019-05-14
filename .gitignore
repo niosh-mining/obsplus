@@ -89,6 +89,7 @@ obsplus/datasets/**/.index
 obsplus/datasets/**/readme.txt
 obsplus/**/*.mseed
 profiling/**/*.mseed
+tests/test_data/test_grid_inputs/.~*
 
 
 # shelve stuff
