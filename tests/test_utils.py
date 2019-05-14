@@ -3,11 +3,11 @@ import itertools
 import textwrap
 from pathlib import Path
 
+import numpy as np
 import obspy
 import obspy.core.event as ev
-import pytest
-import numpy as np
 import pandas as pd
+import pytest
 from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
@@ -393,3 +393,30 @@ class TestDistanceDataframe:
         event_ids = {str(x.resource_id) for x in cat}
         combinations = set(itertools.permutations(event_ids, 2))
         assert combinations == set(df.index)
+
+
+class TestMD5:
+    """ Tests for getting md5 hashes from files. """
+
+    @pytest.fixture(scope="class")
+    def directory_md5(self, tmpdir_factory):
+        """ Create an MD5 directory for testing. """
+        td = Path(tmpdir_factory.mktemp("md5test"))
+        with (td / "file1.txt").open("w") as fi:
+            fi.write("test1")
+        subdir = td / "subdir"
+        subdir.mkdir(exist_ok=True, parents=True)
+        with (subdir / "file2.txt").open("w") as fi:
+            fi.write("test2")
+        return td
+
+    @pytest.fixture(scope="class")
+    def md5_out(self, directory_md5):
+        """ return the md5 of the directory. """
+        return obsplus.utils.md5_directory(directory_md5, exclude="*1.txt")
+
+    def test_files_exist(self, md5_out):
+        """ make sure the hashes exist for the files and such """
+        # the file1.txt should not have been included
+        assert len(md5_out) == 1
+        assert "file1.txt" not in md5_out

@@ -2,6 +2,7 @@
 Tests for the datasets
 """
 from collections import defaultdict
+import os
 from pathlib import Path
 
 import obspy
@@ -10,6 +11,7 @@ import pytest
 import obsplus
 from obsplus.datasets.dataloader import DataSet
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.exceptions import MissingDataFileError, FileHashChangedError
 
 
 @pytest.fixture(scope="session", params=list(DataSet.datasets))
@@ -84,6 +86,27 @@ class TestDatasets:
         path = new_dataset.path / "readme.txt"
         assert path.exists()
 
+    def test_new_dataset(self, tmpdir):
+        """ ensure a new dataset can be created and creates default paths """
+        path = Path(tmpdir)
+        inv = obspy.read_inventory()
+
+        class NewDataSet(DataSet):
+            name = "test_dataset"
+            base_path = path
+
+            def download_stations(self):
+                self.station_path.mkdir(exist_ok=True, parents=True)
+                path = self.station_path / "inv.xml"
+                inv.write(str(path), "stationxml")
+
+        # now the new dataset should be loadable
+        ds = obsplus.load_dataset(NewDataSet.name)
+        # and the empty directories for event, waveforms, station should exist
+        assert not ds.events_need_downloading
+        assert not ds.stations_need_downloading
+        assert not ds.waveforms_need_downloading
+
 
 class TestCopyDataset:
     """ tests for copying datasets. """
@@ -126,23 +149,54 @@ class TestCopyDataset:
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
 
-    def test_new_dataset(self, tmpdir):
-        """ ensure a new dataset can be created and creates default paths """
-        path = Path(tmpdir)
-        inv = obspy.read_inventory()
 
-        class NewDataSet(DataSet):
-            name = "test_dataset"
-            base_path = path
+class TestMD5Hash:
+    """ Ensure a MD5 hash can be created of directory contents. """
 
-            def download_stations(self):
-                self.station_path.mkdir(exist_ok=True, parents=True)
-                path = self.station_path / "inv.xml"
-                inv.write(str(path), "stationxml")
+    @pytest.fixture
+    def copied_crandall(self, tmpdir_factory):
+        """ Copy the crandall ds to a new directory, create fresh hash
+        and return. """
+        newdir = Path(tmpdir_factory.mktemp("new_ds"))
+        ds = obsplus.load_dataset("crandall").copy_to(newdir)
+        ds.create_md5_hash()
+        return ds
 
-        # now the new dataset should be loadable
-        ds = obsplus.load_dataset(NewDataSet.name)
-        # and the empty directories for event, waveforms, station should exist
-        assert Path(ds.waveform_path).exists()
-        assert Path(ds.event_path).exists()
-        assert Path(ds.station_path).exists()
+    @pytest.fixture
+    def crandall_deleted_file(self, copied_crandall):
+        """ Delete a file """
+        path = copied_crandall.path
+        for mseed in path.rglob("*.mseed"):
+            os.remove(mseed)
+            break
+        return copied_crandall
+
+    @pytest.fixture
+    def crandall_changed_file(self, copied_crandall):
+        """ Change a file (after hash has already run) """
+        path = copied_crandall.path
+        for mseed in path.rglob("*.mseed"):
+            st = obspy.read(str(mseed))
+            for tr in st:
+                tr.data = tr.data * 2
+            st.write(str(mseed), "mseed")
+            break
+        return copied_crandall
+
+    def test_good_hash(self, copied_crandall):
+        """ Test hashing the file contents. """
+        # when nothing has changed check hash should work silently
+        copied_crandall.check_files()
+
+    def test_missing_file_found(self, crandall_deleted_file):
+        """ Ensure a missing file is found. """
+        with pytest.raises(MissingDataFileError):
+            crandall_deleted_file.check_files()
+
+    def test_bad_hash(self, crandall_changed_file):
+        """ Test that when a file was changed the hash function raises. """
+        # should not raise if the file has changed
+        crandall_changed_file.check_files()
+        # raise an error if checking for it
+        with pytest.raises(FileHashChangedError):
+            crandall_changed_file.check_files(check_hash=True)

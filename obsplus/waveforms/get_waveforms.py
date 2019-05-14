@@ -55,7 +55,10 @@ def get_waveforms_bulk(stream, bulk_args):
     """ get bulk waveforms from waveforms """
     st = obspy.Stream()
     for arg in bulk_args:
-        st += get_waveforms(stream, *arg)
+        stt = get_waveforms(stream, *arg)
+        # if a stream was returned then add it to original
+        if stt is not None:
+            st += stt
     return st
 
 

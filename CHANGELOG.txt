@@ -30,3 +30,7 @@ obsplus 0.0.1:
     * Added method for correcting nullish nslc codes (see #37 and #38)
     * Added function for getting geometric parameters from two groups of
       events or stations see (see #67/#72).
+  - obsplus.DataSet
+    * Made DataSet storage mechanism more customizable (see #84).
+    * Implemented md5 hashing for downloaded files. Can be used to check if
+      any files have changed hash or if files are missing (see # 84).

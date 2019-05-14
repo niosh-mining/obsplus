@@ -3,10 +3,10 @@ Ensure the interface isinstance and issubclass methods work
 """
 import obspy
 import pytest
+from obspy.clients.fdsn.client import Client, FDSNException
 
 from obsplus import EventBank, WaveBank
 from obsplus.interfaces import EventClient, WaveformClient, StationClient
-from obspy.clients.fdsn import Client
 
 
 # fixtures
@@ -15,7 +15,10 @@ from obspy.clients.fdsn import Client
 @pytest.fixture(scope="session")
 def iris_client():
     """ return the IRIS client """
-    return Client()
+    try:
+        return Client()
+    except FDSNException:
+        pytest.skip("could not connect to webservice")
 
 
 class TestEventClient:

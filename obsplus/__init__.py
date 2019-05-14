@@ -44,8 +44,7 @@ from obsplus.version import __version__
 from obsplus.structures.fetcher import Fetcher
 
 # load datasets function
-from obsplus.datasets.dataloader import load_dataset, copy_dataset
-
+from obsplus.datasets.dataloader import load_dataset, copy_dataset, DataSet
 
 # import xarray stuff
 from obsplus.waveforms.xarray.convert import (
