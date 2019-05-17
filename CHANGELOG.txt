@@ -18,6 +18,9 @@ obsplus 0.0.1:
       accessors (see #27).
     * Added function for creating SDS archives from existing archives
       (see #35).
+    * Made `Stream.get_waveforms_bulk` more efficient (see #85).
+    * Added `slice_stream_bulk` method for creating lists of sliced streams 
+      (see #85).
   - obsplus.events
     * Added utility function to create origins based on first hit station if
       an event has only picks (see #32).
