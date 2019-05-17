@@ -211,6 +211,13 @@ def default_bank(tmpdir):
     return bank
 
 
+@pytest.fixture(scope="class")
+def empty_bank():
+    """ init a bank with an empty directory, return """
+    with tempfile.TemporaryDirectory() as td:
+        yield WaveBank(td)
+
+
 # ------------------------------ Tests
 
 
@@ -347,12 +354,6 @@ class TestBankBasics:
 
 class TestEmptyBank:
     """ tests for graceful handling of empty sbanks"""
-
-    @pytest.fixture(scope="class")
-    def empty_bank(self):
-        """ init a bank with an empty directory, return """
-        with tempfile.TemporaryDirectory() as td:
-            yield WaveBank(td)
 
     @pytest.fixture(scope="class")
     def empty_index(self, empty_bank):
@@ -736,6 +737,31 @@ class TestGetBulkWaveforms:
         ]
         st = bank_3.get_waveforms_bulk(bulk)
         assert len(st) == 1
+
+    def test_no_matches(self, ta_bank):
+        """ Test waveform bulk when no params meet req. """
+        t1 = obspy.UTCDateTime("2012-01-01")
+        t2 = t1 + 12
+        bulk = [("bob", "is", "no", "sta", t1, t2)]
+        stt = ta_bank.get_waveforms_bulk(bulk)
+        assert isinstance(stt, obspy.Stream)
+
+    def test_empty_bank(self, empty_bank):
+        """ Test waveform bulk when no params meet req. """
+        t1 = obspy.UTCDateTime("2012-01-01")
+        t2 = t1 + 12
+        bulk = [("bob", "is", "no", "sta", t1, t2)]
+        stt = empty_bank.get_waveforms_bulk(bulk)
+        assert isinstance(stt, obspy.Stream)
+
+    def test_one_match(self, ta_bank):
+        """ Test waveform bulk when there is one req. that matches """
+        df = ta_bank.read_index()
+        row = df.iloc[0]
+        nslc = [getattr(row, x) for x in NSLC] + [row.starttime, row.endtime]
+        bulk = [tuple(nslc)]
+        stt = ta_bank.get_waveforms_bulk(bulk)
+        assert isinstance(stt, obspy.Stream)
 
 
 class TestGetWaveformsBySeedId:

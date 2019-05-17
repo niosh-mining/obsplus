@@ -317,8 +317,11 @@ stream_proc_type = Callable[[Stream], Stream]
 # The obspy types for waveform data
 wave_type = Union[Stream, Trace, xr.DataArray]
 
+# Type can can be turned into a UTCDateTime
+timable_type = Union[str, UTCDateTime, float]
+
 # waveform request type (args for get_waveforms)
-waveform_request_type = Tuple[str, str, str, str, UTCDateTime, UTCDateTime]
+waveform_request_type = Tuple[str, str, str, str, timable_type, timable_type]
 
 # the signature of obspy fdsn client
 wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]

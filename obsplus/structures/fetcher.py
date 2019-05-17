@@ -437,6 +437,10 @@ class Fetcher:
         get the wave forms using the client, apply processor if it is defined
         """
         out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
+        if out is None:
+            breakpoint()
+            out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
+
         if callable(self.stream_processor):
             return self.stream_processor(out) or out
         else:

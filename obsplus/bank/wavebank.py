@@ -2,7 +2,6 @@
 A local database for waveform formats.
 """
 import os
-import re
 import time
 from collections import defaultdict
 from functools import partial, reduce
@@ -10,13 +9,12 @@ from itertools import chain
 from operator import add
 from os.path import abspath
 from pathlib import Path
-from typing import Optional, Union, List, Iterable
+from typing import Optional, Union, List
 
 import numpy as np
 import obspy
 import pandas as pd
 import tables
-from tables.exceptions import HDF5ExtError
 from obspy import UTCDateTime, Stream
 
 import obsplus
@@ -45,6 +43,7 @@ from obsplus.utils import (
     get_nslc_series,
     filter_index,
     replace_null_nlsc_codes,
+    _column_contains,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -434,14 +433,11 @@ class WaveBank(_Bank):
         if not bulk:  # return emtpy waveforms if empty list or None
             return obspy.Stream()
 
-        match_chars = {"*", "?", "[", "]"}
-
         def _func(time, ind, df):
             """ return waveforms from df of bulk parameters """
-            # print('here')
+            match_chars = {"*", "?", "[", "]"}
             ar = np.ones(len(ind))  # indices of ind to use to load data
             t1, t2 = time[0], time[1]
-            # print(t1, t2)
             df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
             # determine which columns use any matching or other select features
             uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
@@ -460,9 +456,8 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
-        # get a dataframe of the bulk arguments
+        # get a dataframe of the bulk arguments, convert time to float
         df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-        # df = df.replace('*', '')  # Single star matches everything
         df["t1"] = df["utc1"].apply(float)
         df["t2"] = df["utc2"].apply(float)
         # read index that contains any times that might be used, or filter
@@ -712,9 +707,3 @@ class WaveBank(_Bank):
 
 
 # --- auxiliary functions
-
-
-def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
-    """ Test if a str series contains any values in a sequence """
-    safe_matches = {re.escape(x) for x in str_sequence}
-    return ser.str.contains("|".join(safe_matches)).values

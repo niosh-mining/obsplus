@@ -1,6 +1,8 @@
 """
 tests for get waveforms
 """
+import copy
+
 import obspy
 import pytest
 
@@ -45,6 +47,19 @@ class TestGetWaveforms:
 
 
 class TestGetWaveformsBulk:
+    @pytest.fixture(scope="class")
+    def bingham_st(self, bingham_dataset):
+        """ Return a stream with all data from bingham. """
+        return bingham_dataset.waveform_client.get_waveforms()
+
+    @pytest.fixture(scope="class")
+    def bingham_bulk_args(self, bingham_st):
+        """ Return bulk arguments which encompass all of the bingham dataset """
+        bulk = []
+        for tr in bingham_st:
+            bulk.append(tr.id.split(".") + [tr.stats.starttime, tr.stats.endtime])
+        return bulk
+
     def test_has_attr(self, stream):
         """ ensure the get_waveforms attrs exists """
         assert hasattr(stream, "get_waveforms_bulk")
@@ -56,3 +71,36 @@ class TestGetWaveformsBulk:
         st = stream.get_waveforms_bulk(bulk)
         assert all([tr.stats.network == "LF" for tr in st])
         assert all([tr.stats.station == "BOB" for tr in st])
+
+    def test_doesnt_modify_original(self, bingham_st, bingham_bulk_args):
+        """ Ensure the method doesn't modify the original stream or bulk args """
+        st1 = copy.deepcopy(bingham_st)
+        bulk1 = copy.deepcopy(bingham_bulk_args)
+        _ = st1.get_waveforms_bulk(bulk1)
+        assert st1 == bingham_st
+        assert bulk1 == bingham_bulk_args
+
+    def test_waveform_bulk(self, bingham_st, bingham_bulk_args):
+        """ Test that waveform bulk works on Bingham st """
+        # make a long bulk arg
+        st = bingham_st.get_waveforms_bulk(bingham_bulk_args)
+        assert len(st) == len(bingham_st)
+
+    def test_no_matches(self):
+        """ Test waveform bulk when no params meet req. """
+        t1 = obspy.UTCDateTime("2012-01-01")
+        t2 = t1 + 12
+        bulk = [("bob", "is", "no", "sta", t1, t2)]
+        st = obspy.read()
+        stt = st.get_waveforms_bulk(bulk)
+        assert isinstance(stt, obspy.Stream)
+        assert len(stt) == 0
+
+    def test_one_match(self):
+        """ Test waveform bulk when there is one req. that matches """
+        t1 = obspy.UTCDateTime("2012-01-01")
+        t2 = t1 + 12
+        st = obspy.read()
+        bulk = [tuple(st[0].id.split(".") + [t1, t2])]
+        stt = st.get_waveforms_bulk(bulk)
+        assert isinstance(stt, obspy.Stream)

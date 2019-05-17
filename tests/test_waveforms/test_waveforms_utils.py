@@ -16,6 +16,7 @@ from obsplus.waveforms.utils import (
     stream2contiguous,
     archive_to_sds,
     merge_traces,
+    stream_bulk_split,
 )
 
 
@@ -281,3 +282,36 @@ class TestArchiveToSDS:
             base = Path(sds_wavebank.bank_path) / fi[1:]
             st = obspy.read(str(base))
             assert len({tr.id for tr in st}) == 1
+
+
+class TestStreamBulkSplit:
+    """ Tests for converting a trace to a list of Streams. """
+
+    def test_stream_bulk_split(self):
+        """ Ensure the basic stream to trace works. """
+        # get bulk params
+        st = obspy.read()
+        t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
+        nslc = st[0].id.split(".")
+        bulk = [tuple(nslc + [t1, t2])]
+        # create traces, check len
+        streams = stream_bulk_split(st, bulk)
+        assert len(streams) == 1
+        # assert trace after trimmming is equal to before
+        t_expected = obspy.Stream([st[0].trim(starttime=t1, endtime=t2)])
+        assert t_expected == streams[0]
+
+    def test_empty_query_returns_empty(self):
+        """ An empty query should return an emtpy Stream """
+        st = obspy.read()
+        out = stream_bulk_split(st, [])
+        assert len(out) == 0
+
+    def test_empy_stream_returns_empty(self):
+        """ An empy stream should also return an empty stream """
+        st = obspy.read()
+        t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
+        nslc = st[0].id.split(".")
+        bulk = [tuple(nslc + [t1, t2])]
+        out = stream_bulk_split(obspy.Stream(), bulk)
+        assert len(out) == 0

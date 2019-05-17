@@ -5,12 +5,12 @@ import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, UTCDateTime
+from obspy import Stream, UTCDateTime, Trace
 
 import obsplus
 from obsplus.constants import (
@@ -19,9 +19,10 @@ from obsplus.constants import (
     trace_sequence,
     NUMPY_FLOAT_TYPES,
     NUMPY_INT_TYPES,
+    waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_nslc_series
+from obsplus.utils import get_nslc_series, _column_contains
 
 
 # ---------- trim functions
@@ -133,6 +134,76 @@ def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
     con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
     df["merge_group"] = (~(con1 & con2)).cumsum()
     return df
+
+
+def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
+    """
+    Collect queryable params from stream, return dataframe.
+
+    Parameters
+    ----------
+    stream
+
+    Returns
+    -------
+    """
+    st_contents = [
+        tr.id.split(".") + [tr.stats.starttime.timestamp, tr.stats.endtime.timestamp]
+        for tr in stream
+    ]
+    columns = ["network", "station", "location", "channel", "starttime", "endtime"]
+    df = pd.DataFrame(st_contents, columns=columns)
+    return df
+
+
+def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Stream]:
+    """
+    Split a stream into a list of streams that meet requirements in bulk.
+
+    This is similar to the get_waveforms_bulk methods of waveform_client, but
+    rather than merging any overlapping data it is returned in a list of traces.
+
+    Parameters
+    ----------
+    st
+        A stream object
+    bulk
+        A bulk request. Wildcards not currently supported on str params.
+
+    Returns
+    -------
+    List of traces, each meeting the corresponding request in bulk.
+    """
+    # return nothing if empty bulk args
+    if not bulk or len(st) == 0:
+        return []
+
+    # get dataframe of stream contents
+    sdf = _stream_data_to_df(st)
+    seed_st = get_nslc_series(sdf)
+    # get dataframe of bulk content
+    bulk_df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
+    bulk_t1 = bulk_df["utc1"].apply(float)
+    bulk_t2 = bulk_df["utc2"].apply(float)
+    seed_bulk = get_nslc_series(bulk_df)
+    # get outer array of time matches
+    is_greater = np.greater.outer(sdf["starttime"].values, bulk_t1)
+    is_less = np.less.outer(sdf["endtime"].values, bulk_t2)
+    is_in_time = ~(is_greater | is_less)
+    # determine if seeds are equal
+    matches_seed = np.equal.outer(seed_st.values, seed_bulk.values)
+    # get a list of needed values
+    needs = np.logical_and(matches_seed, is_in_time)
+    # iterate stream, return output
+    out = []
+    for num, need in enumerate(needs.T):
+        traces = [tr for tr, bo in zip(st, need) if bo]
+        new_st = obspy.Stream(traces)
+        t1, t2 = UTCDateTime(bulk_t1[num]), UTCDateTime(bulk_t2[num])
+        new = new_st.trim(starttime=t1, endtime=t2)
+        new.merge(method=1)
+        out.append(new)
+    return out
 
 
 def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
