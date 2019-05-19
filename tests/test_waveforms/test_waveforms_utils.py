@@ -369,3 +369,15 @@ class TestStreamBulkSplit:
             stats = st_out[0].stats
             out_duration = stats.endtime - stats.starttime
             assert np.isclose(duration - out_duration, 10)
+
+    def test_two_intervals_same_stream(self):
+        """ Tests for returning two intervals in the same stream. """
+        st = obspy.read()
+        bulk = self.get_bulk_from_stream(st, [0, 0], [[0, -15], [15, 0]])
+        out = stream_bulk_split(st, bulk)
+        assert len(out) == 2
+        for st_out in out:
+            assert len(st_out) == 1
+            stats = st_out[0].stats
+            out_duration = stats.endtime - stats.starttime
+            assert abs(out_duration - 15) <= stats.sampling_rate * 2

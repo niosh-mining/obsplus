@@ -200,7 +200,7 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         traces = [tr for tr, bo in zip(st, need) if bo]
         new_st = obspy.Stream(traces)
         t1, t2 = UTCDateTime(bulk_t1[num]), UTCDateTime(bulk_t2[num])
-        new = new_st.trim(starttime=t1, endtime=t2)
+        new = new_st.slice(starttime=t1, endtime=t2)
         if new is None or not len(new):
             out.append(obspy.Stream())
             continue
