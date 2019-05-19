@@ -287,6 +287,18 @@ class TestArchiveToSDS:
 class TestStreamBulkSplit:
     """ Tests for converting a trace to a list of Streams. """
 
+    def get_bulk_from_stream(self, st, tr_inds, times):
+        """ Create a bulk argument from a stream for traces specified and
+        relative times. """
+        out = []
+        for tr_ind, times in zip(tr_inds, times):
+            tr = st[tr_ind]
+            nslc = tr.id.split(".")
+            t1 = tr.stats.starttime + times[0]
+            t2 = tr.stats.endtime + times[1]
+            out.append(tuple(nslc + [t1, t2]))
+        return out
+
     def test_stream_bulk_split(self):
         """ Ensure the basic stream to trace works. """
         # get bulk params
@@ -297,7 +309,7 @@ class TestStreamBulkSplit:
         # create traces, check len
         streams = stream_bulk_split(st, bulk)
         assert len(streams) == 1
-        # assert trace after trimmming is equal to before
+        # assert trace after trimming is equal to before
         t_expected = obspy.Stream([st[0].trim(starttime=t1, endtime=t2)])
         assert t_expected == streams[0]
 
@@ -315,3 +327,45 @@ class TestStreamBulkSplit:
         bulk = [tuple(nslc + [t1, t2])]
         out = stream_bulk_split(obspy.Stream(), bulk)
         assert len(out) == 0
+
+    def test_no_bulk_matches(self):
+        """ Test when multiple bulk parameters don't match any traces. """
+        st = obspy.read()
+        bulk = []
+        for tr in st:
+            utc = obspy.UTCDateTime("2017-09-18")
+            t1, t2 = utc, utc
+            bulk.append(tuple([*tr.id.split(".") + [t1, t2]]))
+        out = stream_bulk_split(st, bulk)
+        assert len(out) == len(bulk)
+        for tr in out:
+            assert isinstance(tr, obspy.Stream)
+
+    def test_two_overlap(self):
+        """ Tests for when there is an overlap of available data and
+        requested data but some data are not available."""
+        # setup stream and bulk args
+        st = obspy.read()
+        duration = st[0].stats.endtime - st[0].stats.starttime
+        bulk = self.get_bulk_from_stream(st, [0, 1], [[-5, -5], [-5, -5]])
+        # request data, check durations
+        out = stream_bulk_split(st, bulk)
+        for st_out in out:
+            assert len(st_out) == 1
+            stats = st_out[0].stats
+            out_duration = stats.endtime - stats.starttime
+            assert np.isclose(duration - out_duration, 5)
+
+    def test_two_inter(self):
+        """ Tests for getting data completely contained in available range.  """
+        # setup stream and bulk args
+        st = obspy.read()
+        duration = st[0].stats.endtime - st[0].stats.starttime
+        bulk = self.get_bulk_from_stream(st, [0, 1], [[5, -5], [5, -5]])
+        # request data, check durations
+        out = stream_bulk_split(st, bulk)
+        for st_out in out:
+            assert len(st_out) == 1
+            stats = st_out[0].stats
+            out_duration = stats.endtime - stats.starttime
+            assert np.isclose(duration - out_duration, 10)
