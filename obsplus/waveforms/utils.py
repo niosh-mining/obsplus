@@ -187,8 +187,8 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     bulk_t2 = bulk_df["utc2"].apply(float)
     seed_bulk = get_nslc_series(bulk_df)
     # get outer array of time matches
-    is_greater = np.greater.outer(sdf["starttime"].values, bulk_t1)
-    is_less = np.less.outer(sdf["endtime"].values, bulk_t2)
+    is_greater = np.greater.outer(sdf["starttime"].values, bulk_t2)
+    is_less = np.less.outer(sdf["endtime"].values, bulk_t1)
     is_in_time = ~(is_greater | is_less)
     # determine if seeds are equal
     matches_seed = np.equal.outer(seed_st.values, seed_bulk.values)
@@ -201,8 +201,12 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         new_st = obspy.Stream(traces)
         t1, t2 = UTCDateTime(bulk_t1[num]), UTCDateTime(bulk_t2[num])
         new = new_st.trim(starttime=t1, endtime=t2)
+        if new is None or not len(new):
+            out.append(obspy.Stream())
+            continue
         new.merge(method=1)
         out.append(new)
+    assert len(out) == len(bulk), "output is not the same len as stream list"
     return out
 
 
