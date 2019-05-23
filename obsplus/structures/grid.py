@@ -227,8 +227,6 @@ class Grid:
 
         # Generate the plot
         fig, ax = plt_grid(self.grid_map[0], self.grid_map[1], self.values, **kwargs)
-
-        fig.show()
         return fig, ax
 
     def plot_slice(
@@ -321,8 +319,6 @@ class Grid:
 
         # Generate the plot
         fig, ax = plt_grid(x, y, val_slice, **kwargs)
-        if kwargs.get("show", True):
-            fig.show()
         return fig, ax
 
     # ----------------------- Internal Methods ----------------------- #
