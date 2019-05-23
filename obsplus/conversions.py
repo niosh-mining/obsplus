@@ -56,17 +56,17 @@ def convert_coords(
 
     Other Parameters
     ----------------
-    xcol : str, optional
+    x_in : str, optional
         Name of the input x-coordinate column (default="x")
-    ycol : str, optional
+    y_in : str, optional
         Name of the input y-coordinate column (default="y")
-    zcol : str, optional
+    z_in : str, optional
         Name of the input z-coordinate column (default="z")
-    xout : str, optional
+    x_out : str, optional
         Name of the output x-coordinate column (default="x_conv")
-    yout : str, optional
+    y_out : str, optional
         Name of the output y-coordinate column (default="y_conv")
-    zout : str, optional
+    z_out : str, optional
         Name of the output z-coordinate column (default="z_conv")
     inplace : bool, optional
         Indicates whether the coordinate conversion should be done on the DataFrame in place or a new DataFrame should
