@@ -79,6 +79,20 @@ class TestCoordinateConversion:
         assert np.isclose(point.y_conv, 13.367_252_189_813_943)
         assert np.isclose(point.z_conv, 39.972_122_227_570_381)
 
+    def test_conversion_df_point(self, points):
+        """ check the edge case of a single point being passed as a pandas DataFrame """
+        df = obsplus.conversions.convert_coords(
+            points.loc[0:1],
+            conversion=conversions["test_conversion"],
+            x_in="X",
+            y_in="Y",
+            z_in="Z",
+        )
+        point = df.iloc[0]
+        assert np.isclose(point.x_conv, -5.265_527_623_648_098_1)
+        assert np.isclose(point.y_conv, 13.367_252_189_813_943)
+        assert np.isclose(point.z_conv, 39.972_122_227_570_381)
+
     def test_conversion_tuple(self):
         """Verify it is possible to convert coordinates (from a tuple)"""
         # Test a multiple-point tuple

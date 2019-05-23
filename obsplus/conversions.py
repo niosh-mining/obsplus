@@ -186,9 +186,14 @@ def _convert_df(
     # Define the columns to do the conversion on
     points = np.array(df[[x_in, y_in, z_in]])
     points = convert_coords(points, conversion, conversion_kwargs)
-    df[x_out] = points[:, 0]
-    df[y_out] = points[:, 1]
-    df[z_out] = points[:, 2]
+    if points.shape == (3,):
+        df[x_out] = points[0]
+        df[y_out] = points[1]
+        df[z_out] = points[2]
+    else:
+        df[x_out] = points[:, 0]
+        df[y_out] = points[:, 1]
+        df[z_out] = points[:, 2]
     return df
 
 
