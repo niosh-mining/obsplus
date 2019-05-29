@@ -174,7 +174,7 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     -------
     List of traces, each meeting the corresponding request in bulk.
     """
-    # return nothing if empty bulk args
+    # return nothing if empty bulk or stream args
     if not bulk or len(st) == 0:
         return []
 
