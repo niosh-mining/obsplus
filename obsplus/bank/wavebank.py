@@ -436,8 +436,12 @@ class WaveBank(_Bank):
         def _func(time, ind, df):
             """ return waveforms from df of bulk parameters """
             match_chars = {"*", "?", "[", "]"}
-            ar = np.ones(len(ind))  # indices of ind to use to load data
             t1, t2 = time[0], time[1]
+            # filter index based on start/end times
+            in_time = ~((ind["starttime"] > t2) | (ind["endtime"] < t1))
+            ind = ind[in_time]
+            # create indices used to load data
+            ar = np.ones(len(ind))  # indices of ind to use to load data
             df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
             # determine which columns use any matching or other select features
             uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
