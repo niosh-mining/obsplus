@@ -39,7 +39,7 @@ def trim_event_stream(
     Trim the waveforms to a common start time and end time.
 
     Uses latest start and earliest end for each trace, unless an abnormally
-    short trace is found
+    short trace is found.
 
     Parameters
     ----------
@@ -47,7 +47,7 @@ def trim_event_stream(
         The waveforms to trim
     merge : int, optional
         If not None, merge the waveforms with this method before trimming. See
-        obspy waveforms docs for merge options
+        obspy waveforms docs for merge options.
     copy : bool
         Copy the waveforms before altering it.
     trim_tolerance:
