@@ -4,7 +4,7 @@ obsplus master:
       determining which files to read (see #93).
   - obsplus.waveforms
     * Renamed merge_traces to merge_trim_split and added starttime and endtime
-      params.
+      params (see #94).
 
 obsplus 0.0.1:
   - obsplus.bank
