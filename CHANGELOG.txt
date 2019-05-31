@@ -2,7 +2,9 @@ obsplus master:
   - obsplus.bank
     * Speed up wavebank.get_waveforms_bulk by time-filtering index before
       determining which files to read (see #93).
-
+  - obsplus.waveforms
+    * Renamed merge_traces to merge_trim_split and added starttime and endtime
+      params.
 
 obsplus 0.0.1:
   - obsplus.bank
