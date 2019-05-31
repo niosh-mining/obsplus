@@ -10,7 +10,7 @@ from typing import Optional, Union, List
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, UTCDateTime
+from obspy import Stream, UTCDateTime as UTC
 
 import obsplus
 from obsplus.constants import (
@@ -106,34 +106,11 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     if not len(df):
         return Stream()
     # get trim time, trim, emit warnings
-    t1, t2 = UTCDateTime(df.start.max()), UTCDateTime(df.end.min())
+    t1, t2 = UTC(df.start.max()), UTC(df.end.min())
     if t2 < t1:
         msg = f"The following waveforms has traces with no overlaps {stream}"
         raise ValueError(msg)
     return stream.trim(starttime=t1, endtime=t2)
-
-
-def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
-    """ Create a dataframe form a sequence of traces. """
-    # create dataframe of traces and stats (use ns for all time values)
-    data = [
-        {
-            "trace": x,
-            "nslc": x.id,
-            "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
-            "start": x.stats.starttime._ns,
-            "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
-        }
-        for x in traces
-    ]
-    sortby = ["nslc", "sr", "start", "end"]
-    df = pd.DataFrame(data).sort_values(sortby)
-    # create column if trace should be merged into previous trace
-    dfs = df.shift(1)  # shift all value forward one column
-    con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
-    con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
-    df["merge_group"] = (~(con1 & con2)).cumsum()
-    return df
 
 
 def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
@@ -180,15 +157,16 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         out = []
         for bulk, need in zip(bulks, needs):
             traces = [tr for tr, bo in zip(st, need) if bo]
+            t1 = UTC(bulk[-2])
+            t2 = UTC(bulk[-1])
             new_st = obspy.Stream(traces)
-            t1 = UTCDateTime(bulk[-2])
-            t2 = UTCDateTime(bulk[-1])
-            new = new_st.slice(starttime=t1, endtime=t2)
-            if new is None or not len(new):
+            if new_st is None or not len(new_st):
                 out.append(obspy.Stream())
                 continue
-            new.merge(method=1)
-            out.append(new)
+            st_merged = merge_trim_split(new_st, inplace=True, starttime=t1, endtime=t2)
+            # st_sliced = st_merged.slice(starttime=t1, endtime=t2)
+
+            out.append(st_merged)
         assert len(out) == len(bulks), "out is not the same len as bulk"
         return out
 
@@ -202,18 +180,25 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     return build_stream_list(bulk, needs, st)
 
 
-def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
+def merge_trim_split(
+    st: trace_sequence, *, starttime=None, endtime=None, inplace=False
+) -> obspy.Stream:
     """
-    An efficient function to merge overlapping data for a stream.
+    An efficient function to merge and trim overlapping data for a stream.
 
-    This function is equivalent to calling merge(1) and split() then returning
-    the resulting trace. This means only traces that have overlaps or adjacent
-    times will be merged, otherwise they will remain separate traces.
+    This function is equivalent to calling merge(1), trim(), and split() then
+    returning the resulting trace. This means only traces that have overlaps
+    or adjacent times will be merged, otherwise they will remain separate
+    traces, but all traces will be trimmed if needed.
 
     Parameters
     ----------
     st
         The input stream to merge.
+    starttime
+        The start time for trimming.
+    endtime
+        The end time for trimming waveforms.
     inplace
         If True st is modified in place.
 
@@ -221,10 +206,99 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     -------
     A stream with merged traces.
     """
+
+    def _make_trace_df(traces, trim_start, trim_end):
+        """ Create a dataframe form a sequence of traces. """
+        # create dataframe of traces and stats (use ns for all time values)
+        data = [
+            {
+                "trace": x,
+                "nslc": x.id,
+                "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
+                "start": x.stats.starttime._ns,
+                "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
+            }
+            for x in traces
+        ]
+        sortby = ["nslc", "sr", "start", "end"]
+        df = pd.DataFrame(data).sort_values(sortby)
+        # trim traces if needed
+        if trim_start is not None or trim_end is not None:
+            trim_start = UTC(trim_start)._ns if trim_start else None
+            trim_end = UTC(trim_end)._ns if trim_end else None
+            df = _trim_traces(df, trim_start, trim_end)
+
+        # create column if trace should be merged into previous trace
+        dfs = df.shift(1)  # shift all value forward one column
+        con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
+        con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
+        df["merge_group"] = (~(con1 & con2)).cumsum()
+        return df
+
+    def _trim_from_start(df, trim_start):
+        """ trim samples from start. Modifies streams in place. """
+        if not trim_start:
+            return
+        trim_start_inds = (df["start"] < trim_start).values.nonzero()[0]
+        for ind in trim_start_inds:
+            # get key
+            ser = df.iloc[ind]
+            tr = ser["trace"].copy()
+            tr_start = ser["start"]
+            sr = ser["sr"]
+            # get number of samples to trim
+            diff = trim_start - tr_start
+            assert diff > 0
+            samp_float = diff / sr
+            # get nearest sample
+            samps = int(samp_float if (diff % sr) < 0.5 else samp_float + 1)
+            # trim samples and reset starttime
+            tr.data = tr.data[samps:]
+            new_start = tr_start + samps * sr
+            df["start"].values[ind] = new_start
+            tr.stats.starttime = UTC(ns=new_start)
+            df.loc[ser.name, "trace"] = tr
+
+    def _trim_from_end(df, trim_end):
+        """ Trim stream from end. Modifies streams in place. """
+        if not trim_end:
+            return
+        trim_end_times = (df["end"] > trim_end).values.nonzero()[0]
+        for ind in trim_end_times:
+            # get key variables
+            ser = df.iloc[ind]
+            tr = ser["trace"].copy()
+            tr_end = ser["end"]
+            sr = ser["sr"]
+            # get number of samples to trim
+            diff = tr_end - trim_end
+            assert diff > 0
+            samp_float = diff / sr
+            samps = int(samp_float if (diff % sr) < 0.5 else samp_float + 1)
+            new_end = tr_end - samps * sr
+            df["end"].values[ind] = new_end
+            tr.data = tr.data[:-(samps)]
+            df.loc[ser.name, "trace"] = tr
+
+    def _trim_traces(df, trim_start, trim_end):
+        """ Trim the traces if needed. """
+        # first remove any traces which are out of range
+        keep = np.ones(len(df)).astype(bool)
+        if trim_start is not None:
+            keep = np.logical_and(keep, df["end"] >= trim_start)
+        if trim_end is not None:
+            keep = np.logical_and(keep, df["start"] <= trim_end)
+        df = df[keep]
+        # now handle traces that need to be shortened or lengthened
+        _trim_from_start(df, trim_start)
+        _trim_from_end(df, trim_end)
+        return df
+        # next trim any streams that should be trimmed
+
     traces = st.traces if isinstance(st, obspy.Stream) else st
     if not inplace:
         traces = copy.deepcopy(traces)
-    df = _make_trace_df(traces)
+    df = _make_trace_df(traces, starttime, endtime)
     # get a series of properties by group
     group = df.groupby("merge_group")
     t1, t2 = group["start"].min(), group["end"].max()
@@ -278,7 +352,7 @@ def stream2contiguous(stream: Stream):
         if t1 > t2 and len(starts) == len(ends) == 1:
             return  # if disjointed shutdown generator
         assert t1 < t2
-        stream_out = stream.slice(starttime=UTCDateTime(t1), endtime=UTCDateTime(t2))
+        stream_out = stream.slice(starttime=UTC(t1), endtime=UTC(t2))
         stream_out.merge(method=1)
         if len({tr.id for tr in stream_out}) == len(seed_ids):
             yield stream_out
@@ -306,8 +380,8 @@ def _get_start_end(stream):
 def _get_stream_start_end(stream, gap_df):
     """ return a list of the latest start time of initial chunk and earliest
     endtime of last time chunk """
-    st1 = stream.slice(endtime=UTCDateTime(gap_df.t1.min()))
-    st2 = stream.slice(starttime=UTCDateTime(gap_df.t2.max()))
+    st1 = stream.slice(endtime=UTC(gap_df.t1.min()))
+    st2 = stream.slice(starttime=UTC(gap_df.t2.max()))
     t1 = max([tr.stats.starttime.timestamp for tr in st1])
     t2 = min([tr.stats.endtime.timestamp for tr in st2])
     assert t1 < t2
@@ -346,8 +420,8 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
 def archive_to_sds(
     bank: Union[Path, str, "obsplus.WaveBank"],
     sds_path: Union[Path, str],
-    starttime: Optional[UTCDateTime] = None,
-    endtime: Optional[UTCDateTime] = None,
+    starttime: Optional[UTC] = None,
+    endtime: Optional[UTC] = None,
     overlap: float = 30,
     type_code: str = "D",
     stream_processor: Optional[callable] = None,
@@ -385,7 +459,7 @@ def archive_to_sds(
     index = bank.read_index()
     ts1 = index.starttime.min() if not starttime else starttime
     t1 = _nearest_day(ts1)
-    t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
+    t2 = UTC(index.endtime.max() if not endtime else endtime)
     nslcs = get_nslc_series(index).unique()
     # iterate over nslc and get data for selected channel
     for nslc in nslcs:

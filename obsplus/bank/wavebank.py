@@ -45,7 +45,7 @@ from obsplus.utils import (
     replace_null_nlsc_codes,
     _column_contains,
 )
-from obsplus.waveforms.utils import merge_traces
+from obsplus.waveforms.utils import merge_trim_split
 
 # from obsplus.interfaces import WaveformClient
 
@@ -203,6 +203,7 @@ class WaveBank(_Bank):
         # init progress bar
         bar = get_progressbar(**kwargs) if bar is None else bar(**kwargs)
         # loop over un-index files and add info to index
+        update_time = time.time()
         updates = []
         for num, fi in enumerate(self._unindexed_file_iterator()):
             updates.append(_summarize_wave_file(fi, format=self.format))
@@ -213,12 +214,12 @@ class WaveBank(_Bank):
 
         if len(updates):  # flatten list and make df
             with self.lock_index():
-                self._write_update(list(chain.from_iterable(updates)))
+                self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
         return self
 
-    def _write_update(self, updates):
+    def _write_update(self, updates, update_time=None):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and cast to correct types
         df = pd.DataFrame.from_dict(updates)
@@ -244,7 +245,8 @@ class WaveBank(_Bank):
                 df.index += nrows
                 store.append(node, df, append=True, **self.hdf_kwargs)
             # update timestamp
-            store.put(self._time_node, pd.Series(time.time()))
+            update_time = time.time() if update_time is None else update_time
+            store.put(self._time_node, pd.Series(update_time))
             # make sure meta table also exists.
             # Note this is hear to avoid opening the store again.
             if self._meta_node not in store:
@@ -703,7 +705,7 @@ class WaveBank(_Bank):
         st.trim(starttime=UTCDateTime(starttime), endtime=UTCDateTime(endtime))
         if attach_response:
             st.attach_response(self.inventory)
-        return merge_traces(st, inplace=True).sort()
+        return merge_trim_split(st, inplace=True).sort()
 
     def get_service_version(self):
         """ Return the version of obsplus """

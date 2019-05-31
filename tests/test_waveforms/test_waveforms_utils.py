@@ -15,7 +15,7 @@ from obsplus.waveforms.utils import (
     trim_event_stream,
     stream2contiguous,
     archive_to_sds,
-    merge_traces,
+    merge_trim_split,
     stream_bulk_split,
 )
 
@@ -68,7 +68,7 @@ class TestTrimEventStream:
         assert "BOB" not in stations
 
 
-class TestMegeStream:
+class TestMergeTrimSplit:
     """ Tests for obsplus' style for merging streams together. """
 
     def convert_stream_dtype(self, st, dtype):
@@ -83,7 +83,7 @@ class TestMegeStream:
         """ ensure passing identical streams performs de-duplication. """
         st = obspy.read()
         st2 = obspy.read() + st + obspy.read()
-        st_out = merge_traces(st2)
+        st_out = merge_trim_split(st2)
         assert st_out == st
 
     def test_adjacent_traces(self):
@@ -94,7 +94,7 @@ class TestMegeStream:
         for tr1, tr2 in zip(st1, st2):
             tr2.stats.starttime = tr1.stats.endtime + 1.0 / tr2.stats.sampling_rate
         st_in = st1 + st2
-        out = merge_traces(st_in)
+        out = merge_trim_split(st_in)
         assert len(out) == 3
         # should be the same as merge and split
         assert out == st_in.merge(1).split()
@@ -106,7 +106,7 @@ class TestMegeStream:
         for tr1, tr2 in zip(st1, st2):
             tr2.stats.starttime = tr1.stats.starttime + 10
         st_in = st1 + st2
-        out = merge_traces(st_in)
+        out = merge_trim_split(st_in)
         assert out == st_in.merge(1).split()
 
     def test_traces_with_different_sampling_rates(self):
@@ -116,7 +116,7 @@ class TestMegeStream:
         for tr in st2:
             tr.stats.sampling_rate = tr.stats.sampling_rate * 2
         st_in = st1 + st2
-        st_out = merge_traces(st_in)
+        st_out = merge_trim_split(st_in)
         assert st_out == st_in
 
     def test_array_data_type(self):
@@ -124,23 +124,42 @@ class TestMegeStream:
         # test floats
         st1 = obspy.read()
         st2 = obspy.read()
-        st_out1 = merge_traces(st1 + st2)
+        st_out1 = merge_trim_split(st1 + st2)
         for tr1, tr2 in zip(st_out1, st1):
             assert tr1.data.dtype == tr2.data.dtype
         # tests ints
         st3 = self.convert_stream_dtype(st1, np.int32)
         st4 = self.convert_stream_dtype(st1, np.int32)
-        st_out2 = merge_traces(st3 + st4)
+        st_out2 = merge_trim_split(st3 + st4)
         for tr in st_out2:
             assert tr.data.dtype == np.int32
         # def test one int one float
-        st_out3 = merge_traces(st1 + st3)
+        st_out3 = merge_trim_split(st1 + st3)
         for tr in st_out3:
             assert tr.data.dtype == np.float64
         # ensure order of traces doesn't mater for dtypes
-        st_out4 = merge_traces(st3 + st1)
+        st_out4 = merge_trim_split(st3 + st1)
         for tr in st_out4:
             assert tr.data.dtype == np.float64
+
+    def test_trim(self, stream_tester):
+        """ tests for using merge for trimming. """
+        st = obspy.read()
+        t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
+        expected = st.slice(starttime=t1, endtime=t2)
+        out = merge_trim_split(st, starttime=t1, endtime=t2)
+        # drop processing
+        stream_tester.streams_almost_equal(out, expected)
+
+    def test_trim_with_fragments(self, stream_tester):
+        st = obspy.read()
+        t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
+        st1 = st.slice(starttime=t1, endtime=t2 - 10)
+        st2 = st.slice(starttime=t2 - 10, endtime=t2)
+        st_test = st1 + st2
+        expected = st_test.copy().merge(1)
+        out = merge_trim_split(st_test, starttime=t1, endtime=t2)
+        assert stream_tester.streams_almost_equal(out, expected)
 
 
 class TestStream2Contiguous:
@@ -309,7 +328,7 @@ class TestStreamBulkSplit:
             out.append(tuple(nslc + [t1, t2]))
         return out
 
-    def test_stream_bulk_split(self):
+    def test_stream_bulk_split(self, stream_tester):
         """ Ensure the basic stream to trace works. """
         # get bulk params
         st = obspy.read()
@@ -321,7 +340,7 @@ class TestStreamBulkSplit:
         assert len(streams) == 1
         # assert trace after trimming is equal to before
         t_expected = obspy.Stream([st[0].trim(starttime=t1, endtime=t2)])
-        assert t_expected == streams[0]
+        assert stream_tester.streams_almost_equal(t_expected, streams[0])
 
     def test_empty_query_returns_empty(self):
         """ An empty query should return an emtpy Stream """
