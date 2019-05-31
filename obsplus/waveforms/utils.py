@@ -5,12 +5,12 @@ import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List
 
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, UTCDateTime, Trace
+from obspy import Stream, UTCDateTime
 
 import obsplus
 from obsplus.constants import (
@@ -22,7 +22,7 @@ from obsplus.constants import (
     waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_nslc_series, _column_contains
+from obsplus.utils import get_nslc_series, filter_index
 
 
 # ---------- trim functions
@@ -174,40 +174,32 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     -------
     List of traces, each meeting the corresponding request in bulk.
     """
+
+    def build_stream_list(bulks, needs, st):
+        """ Build the stream list and return it. """
+        out = []
+        for bulk, need in zip(bulks, needs):
+            traces = [tr for tr, bo in zip(st, need) if bo]
+            new_st = obspy.Stream(traces)
+            t1 = UTCDateTime(bulk[-2])
+            t2 = UTCDateTime(bulk[-1])
+            new = new_st.slice(starttime=t1, endtime=t2)
+            if new is None or not len(new):
+                out.append(obspy.Stream())
+                continue
+            new.merge(method=1)
+            out.append(new)
+        assert len(out) == len(bulks), "out is not the same len as bulk"
+        return out
+
     # return nothing if empty bulk or stream args
     if not bulk or len(st) == 0:
         return []
 
-    # get dataframe of stream contents
+    # get stream dataframe and determine which bulks need them
     sdf = _stream_data_to_df(st)
-    seed_st = get_nslc_series(sdf)
-    # get dataframe of bulk content
-    bulk_df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-    bulk_t1 = bulk_df["utc1"].apply(float)
-    bulk_t2 = bulk_df["utc2"].apply(float)
-    seed_bulk = get_nslc_series(bulk_df)
-    # get outer array of time matches
-    is_greater = np.greater.outer(sdf["starttime"].values, bulk_t2)
-    is_less = np.less.outer(sdf["endtime"].values, bulk_t1)
-    is_in_time = ~(is_greater | is_less)
-    # determine if seeds are equal
-    matches_seed = np.equal.outer(seed_st.values, seed_bulk.values)
-    # get a list of needed values
-    needs = np.logical_and(matches_seed, is_in_time)
-    # iterate stream, return output
-    out = []
-    for num, need in enumerate(needs.T):
-        traces = [tr for tr, bo in zip(st, need) if bo]
-        new_st = obspy.Stream(traces)
-        t1, t2 = UTCDateTime(bulk_t1[num]), UTCDateTime(bulk_t2[num])
-        new = new_st.slice(starttime=t1, endtime=t2)
-        if new is None or not len(new):
-            out.append(obspy.Stream())
-            continue
-        new.merge(method=1)
-        out.append(new)
-    assert len(out) == len(bulk), "output is not the same len as stream list"
-    return out
+    needs = [filter_index(sdf, *x) for x in bulk]
+    return build_stream_list(bulk, needs, st)
 
 
 def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:

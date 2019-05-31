@@ -287,6 +287,16 @@ class TestArchiveToSDS:
 class TestStreamBulkSplit:
     """ Tests for converting a trace to a list of Streams. """
 
+    @pytest.fixture
+    def multi_stream(self):
+        """ Create two streams with different station names/channels """
+        st1 = obspy.read()
+        st2 = obspy.read()
+        for tr in st2:
+            tr.stats.station = "BOB"
+            tr.stats.channel = "HH" + tr.stats.channel[-1]
+        return st1 + st2
+
     def get_bulk_from_stream(self, st, tr_inds, times):
         """ Create a bulk argument from a stream for traces specified and
         relative times. """
@@ -381,3 +391,29 @@ class TestStreamBulkSplit:
             stats = st_out[0].stats
             out_duration = stats.endtime - stats.starttime
             assert abs(out_duration - 15) <= stats.sampling_rate * 2
+
+    def test_matching(self, multi_stream):
+        """ Bulk should also work with matching unix-style chars. """
+        st = multi_stream
+        # create bulk arguments
+        t1, t2 = st[0].stats.starttime, st[0].stats.endtime
+        id1 = st[0].id
+        net, sta, loc, chan = id1.split(".")
+        # create bulk list
+        bulk = [
+            (net, "*", loc, "??Z", t1, t2),  # match on all Z
+            ("*", "*", "*", "*", t1, t2),  # match on everything
+            ("*", "*", "*", "HH*", t1, t2),  # match on everything
+        ]
+        # get stream list
+        st_list = stream_bulk_split(st, bulk)
+        assert len(st_list) == len(bulk), "bulk and elements should match"
+        # each element should be non-empty
+        for st_out in st_list:
+            assert len(st_out)
+        # the first should contain 2 traces
+        assert len(st_list[0]) == 2
+        # the second should contain all traces
+        assert len(st_list[1]) == len(st)
+        # the third should contain 3
+        assert len(st_list[2]) == 3
