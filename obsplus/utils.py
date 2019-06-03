@@ -10,9 +10,8 @@ import sys
 import textwrap
 import threading
 import warnings
-from functools import singledispatch, wraps, lru_cache, reduce
+from functools import singledispatch, wraps, lru_cache
 from itertools import product
-from operator import add
 from pathlib import Path
 from typing import (
     Union,
@@ -26,7 +25,6 @@ from typing import (
     Set,
     TypeVar,
     Collection,
-    List,
     Iterable,
 )
 
@@ -34,7 +32,7 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from obspy import UTCDateTime as UTC, Stream
+from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
 from obspy.geodetics import gps2dist_azimuth
 from obspy.io.mseed.core import _read_mseed as mread
@@ -51,7 +49,6 @@ from obsplus.constants import (
     inventory_type,
     DISTANCE_COLUMNS,
     DISTANCE_DTYPES,
-    waveform_request_type,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
