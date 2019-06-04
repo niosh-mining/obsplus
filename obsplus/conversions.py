@@ -97,19 +97,14 @@ def convert_coords(
         Angle (in radians) to rotate the coordinates in the yz plane.
         Positive is CCW.\n
     project : dict
-        Strings for the pyproj.Proj class projection  (ex: "+init=EPSG:32611"), or a pyproj.Proj object. Keys in the
-        dictionary should be "from" and "to". Optionally can also include "preserve_units".\n
+        Strings for the pyproj.Proj class projection, or a pyproj.Proj object (ex: "+init=EPSG:32611"). Keys in the
+        dictionary should be "from" and "to"\n
 
     Returns
     -------
     points : Sequence
         Array-like object with the converted coordinates. If a DataFrame, list, or tuple were provided as input, then
         the same type will be returned. For all other formats, a numpy array will be returned.
-
-    Notes
-    -----
-    From pyproj documentation, if preserve_units is False, will force units of meters for the projections. In this
-    function, preserve_units is False by default, while in pyproj 2.0.0 onward it is True by default.
     """
     if len(
         kwargs
@@ -153,9 +148,9 @@ def convert_coords(
         if key not in VALID_KEYS:
             raise ValueError(f"Invalid conversion operation: {key}")
         elif key == "project":
-            proj = dict(**value)
-            proj["fro"] = proj.pop("from")
-            points[:, 0], points[:, 1] = project(points[:, 0], points[:, 1], **proj)
+            points[:, 0], points[:, 1] = project(
+                points[:, 0], points[:, 1], value["from"], value["to"]
+            )
         else:
             try:
                 value = float(value)
@@ -251,37 +246,17 @@ def rotate_points(
     return x_temp, y_temp
 
 
-def project(x, y, fro, to, preserve_units=False):
-    """
-    Wrapper around pyproj.transform
-
-    Parameters
-    ----------
-    x : float or list of floats (required)
-        X-coordinate(s) of point(s) to be converted
-    y : float or list of floats (required)
-        Y-coordinate(s) of point(s) to be converted
-    fro : str or pyproj.Proj (required)
-        Projection of the input data
-    to : str or pyproj.Proj (required)
-        Projection of the output data
-    preserve_units : bool (default=False)
-        From pyproj documentation: If false, will force units of meters for the projections.
-
-    Notes
-    -----
-    In this function, preserve_units is False by default, while in pyproj 2.0.0 onward it is True by default.
-    """
+def project(x, y, fro, to):
     import pyproj
 
     if not isinstance(fro, pyproj.Proj):
         try:
-            fro = pyproj.Proj(str(fro), preserve_units=preserve_units)
+            fro = pyproj.Proj(str(fro))
         except RuntimeError:
             raise ValueError(f"{fro} is not a valid projection")
     if not isinstance(to, pyproj.Proj):
         try:
-            to = pyproj.Proj(str(to), preserve_units=preserve_units)
+            to = pyproj.Proj(str(to))
         except RuntimeError:
             raise ValueError(f"{to} is not a valid projection")
     return pyproj.transform(fro, to, x, y)
