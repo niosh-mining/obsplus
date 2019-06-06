@@ -5,12 +5,15 @@ import inspect
 from functools import singledispatch
 from pathlib import Path
 
+import numpy as np
 import obspy
 from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
 from obsplus.constants import station_clientable_type
 from obsplus.interfaces import StationClient
+
+LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
 
 # create key mappings for mapping keys (used to create inventory objects
 # from various columns in the stations dataframe).
@@ -42,9 +45,21 @@ def df_to_inventory(df) -> obspy.Inventory:
         cols = list(obsplus.utils.iterate(columns))
         if not set(cols).issubset(df.columns):
             return
-        else:
-            for ind, df_sub in df.groupby(columns):
-                yield ind, df_sub
+
+        # copy df and set missing start/end times to reasonable values
+        # this is needed so they get included in a groupby
+        df = df.copy()
+        isnan = df.isna()
+        if "start_date" in columns:
+            df["start_date"] = df["start_date"].fillna(0)
+        if "end_date" in columns:
+            df["end_date"] = df["end_date"].fillna(LARGE_NUMBER)
+
+        for ind, df_sub in df.groupby(cols):
+            # replace NaN values
+            if isnan.any().any():
+                df_sub[isnan.loc[df_sub.index]] = np.nan
+            yield ind, df_sub
 
     def _get_kwargs(series, key_mapping):
         """ create the kwargs from a series and key mapping. """
@@ -56,11 +71,12 @@ def df_to_inventory(df) -> obspy.Inventory:
     sta_map = _make_key_mappings(Station)
     cha_map = _make_key_mappings(Channel)
     # next define columns groupbys should be performed on
-    net_columns = ["network", "start_date", "end_date"]
-    sta_columns = ["station"]
-    cha_columns = ["channel", "location"]
+    net_columns = ["network"]
+    sta_columns = ["station", "start_date", "end_date"]
+    cha_columns = ["channel", "location", "start_date", "end_date"]
     # Ensure input is a dataframe
     df = obsplus.stations_to_df(df)
+    # replace
     # Iterate networks and create stations
     networks = []
     for net_code, net_df in _groupby_if_exists(df, net_columns):

@@ -33,4 +33,10 @@ class TestDfToInventory:
 
     def test_new(self, df_from_inv, df_from_inv_from_df):
         """ Ensure the transformation is lossless from df side. """
-        assert len(df_from_inv_from_df) == len(df_from_inv)
+        df1, df2 = df_from_inv, df_from_inv_from_df
+        assert len(df1) == len(df2)
+        assert set(df1.columns) == set(df2.columns)
+        columns = sorted(list(df1.columns))
+        df1 = df1[columns].sort_values(columns).reset_index(drop=True)
+        df2 = df2[columns].sort_values(columns).reset_index(drop=True)
+        assert df1.equals(df2)
