@@ -124,9 +124,7 @@ def get_stations(inv: obspy.Inventory, **kwargs) -> obspy.Inventory:
             # only keep channels that meet reqs.
             sta.channels = [x for x in sta.channels if id(x) in keep_ids]
         # only keep stations that meet reqs or have channels that do
-        net.stations = [
-            x for x in net.stations if id(x) in keep_ids or len(net.stations)
-        ]
+        net.stations = [x for x in net.stations if id(x) in keep_ids or len(x.channels)]
     # only keep networks that have some stations
     inv.networks = [x for x in inv.networks if len(x.stations)]
     return inv

@@ -1,10 +1,12 @@
 """
 Tests for station utilities.
 """
+import numpy as np
 import obspy
 import pytest
 
 import obsplus
+from obsplus.constants import NSLC
 from obsplus.stations.utils import df_to_inventory
 
 
@@ -40,3 +42,19 @@ class TestDfToInventory:
         df1 = df1[columns].sort_values(columns).reset_index(drop=True)
         df2 = df2[columns].sort_values(columns).reset_index(drop=True)
         assert df1.equals(df2)
+
+    def test_NaN_in_non_time_columns(self, df_from_inv):
+        """
+        If there are NaN values in non-time these should just be interp.
+        as None.
+        """
+        df_from_inv.loc[2, "dip"] = np.NaN
+        df_from_inv.loc[3, "azimuth"] = np.NaN
+        # convert to inv
+        inv = df_to_inventory(df_from_inv)
+        # make sure values are None
+        dip_row = df_from_inv.loc[2]
+        kwargs = {x: getattr(dip_row, x) for x in NSLC}
+        breakpoint()
+        inv_sub = inv.get_stations(**kwargs)
+        assert inv_sub[0][0][0] is None
