@@ -257,10 +257,11 @@ class TestCat2Df:
 
     def test_event_description(self, df, test_catalog):
         """ ensure the event descriptions match """
-        breakpoint()
         for eve, description in zip(test_catalog, df.event_description):
             if eve.event_descriptions:
                 ed = eve.event_descriptions[0].text
+                if ed == "None":
+                    breakpoint()
             else:
                 ed = None
             assert ed == description
@@ -568,7 +569,6 @@ class TestReadPhasePicks:
         df = picks_to_df(pick)
         assert df.onset.iloc[0] == ""
         assert df.polarity.iloc[0] == ""
-
 
 
 class TestReadKemPicks:
