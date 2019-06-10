@@ -30,7 +30,7 @@ About_
 .. |Licence| image:: https://www.gnu.org/graphics/lgplv3-88x31.png
    :target: https://www.gnu.org/licenses/lgpl.html
 
-.. |Version Status| image:: https://img.shields.io/pypi/v/spype.svg
+.. |Version Status| image:: https://img.shields.io/pypi/v/obsplus.svg
    :target: https://pypi.python.org/pypi/obsplus/
 
 .. |Style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
