@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import obspy
+import pandas as pd
 from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
@@ -64,7 +65,14 @@ def df_to_inventory(df) -> obspy.Inventory:
     def _get_kwargs(series, key_mapping):
         """ create the kwargs from a series and key mapping. """
 
-        return {k: series.get(v) for k, v in key_mapping.items() if v in series}
+        out = {}
+        for k, v in key_mapping.items():
+            # skip if requested kwarg is not in the series
+            if v not in series:
+                continue
+            value = series[v]
+            out[k] = value if not pd.isnull(value) else None
+        return out
 
     # first get key_mappings
     net_map = _make_key_mappings(Network)

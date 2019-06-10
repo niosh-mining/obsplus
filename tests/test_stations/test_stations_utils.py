@@ -52,9 +52,13 @@ class TestDfToInventory:
         df_from_inv.loc[3, "azimuth"] = np.NaN
         # convert to inv
         inv = df_to_inventory(df_from_inv)
-        # make sure values are None
+        # make sure dip is None
         dip_row = df_from_inv.loc[2]
         kwargs = {x: getattr(dip_row, x) for x in NSLC}
-        breakpoint()
         inv_sub = inv.get_stations(**kwargs)
-        assert inv_sub[0][0][0] is None
+        assert inv_sub[0][0][0].dip is None
+        # make sure azimuth is None
+        dip_row = df_from_inv.loc[3]
+        kwargs = {x: getattr(dip_row, x) for x in NSLC}
+        inv_sub = inv.get_stations(**kwargs)
+        assert inv_sub[0][0][0].azimuth is None
