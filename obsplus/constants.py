@@ -16,7 +16,6 @@ from typing import (
     MutableSequence,
 )
 from types import MappingProxyType as MapProx
-
 import numpy as np
 import obspy
 import pandas as pd

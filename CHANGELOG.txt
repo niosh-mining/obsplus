@@ -13,6 +13,17 @@ obsplus master:
     * Deleted EventDescriptions whose text was set to 'None' (see #99). 
       NOTE: This change requires re-downloading the dataset to properly take 
       effect!
+  - obsplus.waveforms
+    * Utils.merge_traces now does some quick checks and simply returns the
+      input stream when no merging is the be performed (#97).
+    * Utils.stream_bulk_split now accepts unix style matching for the string
+      arguments (#97).
+  - obsplus.stations
+    * Added utility for converting a simple station dataframe into an
+      inventory (#98).
+  - testing
+    * Added stream_tester fixture which returns a testing class for common
+      stream tests, like testing is streams are almost equal (#97).
 
 
 obsplus 0.0.1:

@@ -10,9 +10,8 @@ import sys
 import textwrap
 import threading
 import warnings
-from functools import singledispatch, wraps, lru_cache, reduce
+from functools import singledispatch, wraps, lru_cache
 from itertools import product
-from operator import add
 from pathlib import Path
 from typing import (
     Union,
@@ -26,7 +25,6 @@ from typing import (
     Set,
     TypeVar,
     Collection,
-    List,
     Iterable,
 )
 
@@ -34,7 +32,7 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from obspy import UTCDateTime as UTC, Stream
+from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
 from obspy.geodetics import gps2dist_azimuth
 from obspy.io.mseed.core import _read_mseed as mread
@@ -51,7 +49,6 @@ from obsplus.constants import (
     inventory_type,
     DISTANCE_COLUMNS,
     DISTANCE_DTYPES,
-    waveform_request_type,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
@@ -628,65 +625,6 @@ def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
             if getattr(obj, code) in null_codes:
                 setattr(obj, code, replacement_value)
     return inv
-
-
-def filter_index_bulk(
-    self, bulk: List[str], index: Optional[pd.DataFrame] = None, **kwargs
-) -> Stream:
-    """
-    Get a large number of waveforms with a bulk request.
-
-    Parameters
-    ----------
-    bulk
-        A list of any number of lists containing the following:
-        (network, station, location, channel, starttime, endtime).
-    index
-        A dataframe returned by read_index. Enables calling code to only
-        read the index from disk once for repetitive calls.
-    """
-    if not bulk:  # return emtpy waveforms if empty list or None
-        return obspy.Stream()
-
-    def _func(time, ind, df):
-        """ return waveforms from df of bulk parameters """
-        breakpoint()
-        match_chars = {"*", "?", "[", "]"}
-        ar = np.ones(len(ind))  # indices of ind to use to load data
-        t1, t2 = time[0], time[1]
-        df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
-        # determine which columns use any matching or other select features
-        uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
-        match_ar = np.array(uses_matches).any(axis=0)
-        df_match = df[match_ar]
-        df_no_match = df[~match_ar]
-        # handle columns that need matches (more expensive)
-        if not df_match.empty:
-            match_bulk = df_match.to_records(index=False)
-            mar = np.array([filter_index(ind, *tuple(b)[:4]) for b in match_bulk])
-            ar = np.logical_and(ar, mar.any(axis=0))
-        # handle columns that do not need matches
-        if not df_no_match.empty:
-            nslc1 = set(get_nslc_series(df_no_match))
-            nslc2 = get_nslc_series(ind)
-            ar = np.logical_and(ar, nslc2.isin(nslc1))
-        return self._index2stream(ind[ar], t1, t2)
-
-    # get a dataframe of the bulk arguments, convert time to float
-    df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-    df["t1"] = df["utc1"].apply(float)
-    df["t2"] = df["utc2"].apply(float)
-    # read index that contains any times that might be used, or filter
-    # provided index
-    t1, t2 = df["t1"].min(), df["t2"].max()
-    if index is not None:
-        ind = index[~((index.starttime > t2) | (index.endtime < t1))]
-    else:
-        ind = self.read_index(starttime=t1, endtime=t2)
-    # groupby.apply calls two times for each time set, avoid this.
-    unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
-    streams = [_func(time, df=df, ind=ind) for time in unique_times]
-    return reduce(add, streams)
 
 
 def filter_index(
