@@ -13,6 +13,7 @@ from os.path import join, dirname, abspath, exists
 from pathlib import Path
 
 import obspy
+import numpy as np
 import pytest
 
 import obsplus
@@ -128,6 +129,45 @@ station_cache_obj = ObspyCache(INVENTORY_DIRECTORY, obspy.read_inventory)
 # -------------------- collection of test cases
 
 
+class StreamTester:
+    """ A collection of methods for testing waveforms. """
+
+    @staticmethod
+    def streams_almost_equal(st1, st2):
+        """
+        Return True if two streams are almost equal.
+        Will only look at default params for stats objects.
+        Parameters
+        ----------
+        st1
+            The first stream.
+        st2
+            The second stream.
+        """
+
+        stats_attrs = (
+            "starttime",
+            "endtime",
+            "sampling_rate",
+            "network",
+            "station",
+            "location",
+            "channel",
+        )
+
+        st1, st2 = st1.copy(), st2.copy()
+        st1.sort()
+        st2.sort()
+        for tr1, tr2 in zip(st1, st2):
+            stats1 = {x: tr1.stats[x] for x in stats_attrs}
+            stats2 = {x: tr2.stats[x] for x in stats_attrs}
+            if not stats1 == stats2:
+                return False
+            if not np.all(np.isclose(tr1.data, tr2.data)):
+                return False
+        return True
+
+
 class DataSet(typing.NamedTuple):
     """ A data class for storing info about test cases """
 
@@ -199,6 +239,12 @@ def crandall_bank(crandall_dataset):
 
 
 # ------------------------- session fixtures
+
+
+@pytest.fixture(scope="session")
+def stream_tester():
+    """ return the StreamTester. """
+    return StreamTester
 
 
 @pytest.yield_fixture(scope="module")
