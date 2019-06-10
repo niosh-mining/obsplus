@@ -202,6 +202,7 @@ class WaveBank(_Bank):
         kwargs = {"min_value": min_files_for_bar, "max_value": num_files}
         # init progress bar
         bar = get_progressbar(**kwargs) if bar is None else bar(**kwargs)
+        update_time = time.time()
         # loop over un-index files and add info to index
         updates = []
         for num, fi in enumerate(self._unindexed_file_iterator()):
@@ -213,12 +214,12 @@ class WaveBank(_Bank):
 
         if len(updates):  # flatten list and make df
             with self.lock_index():
-                self._write_update(list(chain.from_iterable(updates)))
+                self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
         return self
 
-    def _write_update(self, updates):
+    def _write_update(self, updates, update_time):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and cast to correct types
         df = pd.DataFrame.from_dict(updates)
@@ -244,7 +245,8 @@ class WaveBank(_Bank):
                 df.index += nrows
                 store.append(node, df, append=True, **self.hdf_kwargs)
             # update timestamp
-            store.put(self._time_node, pd.Series(time.time()))
+            update_time = time.time() if update_time is None else update_time
+            store.put(self._time_node, pd.Series(update_time))
             # make sure meta table also exists.
             # Note this is hear to avoid opening the store again.
             if self._meta_node not in store:
@@ -436,8 +438,12 @@ class WaveBank(_Bank):
         def _func(time, ind, df):
             """ return waveforms from df of bulk parameters """
             match_chars = {"*", "?", "[", "]"}
-            ar = np.ones(len(ind))  # indices of ind to use to load data
             t1, t2 = time[0], time[1]
+            # filter index based on start/end times
+            in_time = ~((ind["starttime"] > t2) | (ind["endtime"] < t1))
+            ind = ind[in_time]
+            # create indices used to load data
+            ar = np.ones(len(ind))  # indices of ind to use to load data
             df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
             # determine which columns use any matching or other select features
             uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]

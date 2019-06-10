@@ -1,3 +1,13 @@
+obsplus master:
+  - obsplus.bank
+    * Speed up wavebank.get_waveforms_bulk by time-filtering index before
+      determining which files to read (see #93).
+    * Update time is now set before reading files to update index (#95).
+  - obsplus.conversions
+    * Added a preserve_units flag to project and ensured forward compatibility
+      with pyproj 2.x.x.
+
+
 obsplus 0.0.1:
   - obsplus.bank
     * Speed up wavebank reads of file segments by passing start/end times
@@ -19,7 +29,7 @@ obsplus 0.0.1:
     * Added function for creating SDS archives from existing archives
       (see #35).
     * Made `Stream.get_waveforms_bulk` more efficient (see #85).
-    * Added `slice_stream_bulk` method for creating lists of sliced streams 
+    * Added `slice_stream_bulk` method for creating lists of sliced streams
       (see #85).
   - obsplus.events
     * Added utility function to create origins based on first hit station if
