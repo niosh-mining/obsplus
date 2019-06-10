@@ -257,6 +257,7 @@ class TestCat2Df:
 
     def test_event_description(self, df, test_catalog):
         """ ensure the event descriptions match """
+        breakpoint()
         for eve, description in zip(test_catalog, df.event_description):
             if eve.event_descriptions:
                 ed = eve.event_descriptions[0].text
@@ -465,7 +466,7 @@ class TestReadPhasePicks:
 
     @pytest.fixture(scope="class")
     def tcat(self, catalog_cache):
-        """ retad in a events for testing """
+        """ read in an event for testing """
         return catalog_cache[self.cat_name]
 
     @pytest.fixture(scope="class")
@@ -557,6 +558,17 @@ class TestReadPhasePicks:
         assert len(df) == 1
         ser = df.iloc[0]
         assert all([ser[i] == kwargs[i] for i in kwargs])
+
+    def test_none_onset(self):
+        """
+        Make sure Nones in the data get handled properly
+        """
+        waveform_id = ev.WaveformStreamID(station_code="A")
+        pick = ev.Pick(time=UTCDateTime(), waveform_id=waveform_id)
+        df = picks_to_df(pick)
+        assert df.onset.iloc[0] == ""
+        assert df.polarity.iloc[0] == ""
+
 
 
 class TestReadKemPicks:
