@@ -260,8 +260,6 @@ class TestCat2Df:
         for eve, description in zip(test_catalog, df.event_description):
             if eve.event_descriptions:
                 ed = eve.event_descriptions[0].text
-                if ed == "None":
-                    breakpoint()
             else:
                 ed = None
             assert ed == description
