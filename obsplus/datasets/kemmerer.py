@@ -23,6 +23,7 @@ class Kemmerer(DataSet):
     """
 
     name = "kemmerer"
+    version = "0.0.0"
 
     bulk = [("TA", "M17A", "*", "BH?"), ("AT", "M18A", "*", "BH?")]
 

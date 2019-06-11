@@ -87,6 +87,7 @@ obsplus/datasets/**/stations
 obsplus/datasets/**/events
 obsplus/datasets/**/.index
 obsplus/datasets/**/readme.txt
+obsplus/datasets/**/.version
 obsplus/**/*.mseed
 profiling/**/*.mseed
 tests/test_data/test_grid_inputs/.~*

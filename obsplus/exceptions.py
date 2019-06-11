@@ -26,3 +26,9 @@ class MissingDataFileError(FileNotFoundError):
     """
     Raised when the expected md5 hash of a file has changed.
     """
+
+
+class DataVersionError(ValueError):
+    """
+    Raised when the version of a dataset doesn't match what is expected
+    """

@@ -22,7 +22,7 @@ from obsplus.utils import md5_directory
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
-from obsplus.exceptions import FileHashChangedError, MissingDataFileError
+from obsplus.exceptions import FileHashChangedError, MissingDataFileError, DataVersionError
 
 
 base_path = Path(__file__).parent
@@ -45,11 +45,11 @@ class DataSet(abc.ABC):
     _entry_points = {}
     datasets = {}
     base_path = base_path
-    name = None
     data_loaded = False
-    # variables for hashing datafiles
+    # variables for hashing datafiles and versioning
+    _version_path = ".version"
     _hash_path = "md5_hash.json"
-    _hash_excludes = ("readme.txt", _hash_path)
+    _hash_excludes = ("readme.txt", _version_path, _hash_path)
 
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
@@ -68,8 +68,9 @@ class DataSet(abc.ABC):
 
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
-        assert hasattr(cls, "name"), "must have a name"
         assert isinstance(cls.name, str), "name must be a string"
+        assert isinstance(cls.version, str), "version must be a string of the form x.y.z"
+        assert len(cls.version.split(".")) == 3, "version must be a string of the form x.y.z"
         DataSet.datasets[cls.name.lower()] = cls
 
     # --- logic for loading and caching data
@@ -80,6 +81,8 @@ class DataSet(abc.ABC):
             self.base_path = base_path
         # create the dataset's base directory
         self.path.mkdir(exist_ok=True, parents=True)
+        # Make sure the version of the dataset is okay
+        self.check_version()
         # iterate each kind of data and download if needed
         downloaded = False
         for what in ["waveform", "event", "station"]:
@@ -100,6 +103,9 @@ class DataSet(abc.ABC):
             self.check_files()
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
+        # write a new version file
+        with open(self.path / self._version_path) as fi:
+            fi.write(self.version)
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
@@ -326,6 +332,58 @@ class DataSet(abc.ABC):
         if missing:
             msg = f"The following files are missing: \n{missing}"
             raise MissingDataFileError(msg)
+
+    def check_version(self, path=_version_path):
+        """
+        Check the version of the dataset to verify it matches the corresponding DataSet
+
+        Parameters
+        ----------
+        path
+            Expected path of the version file
+        """
+        path = self.path / path
+        redownload_msg = (f"Delete the following files/directories to re-download the dataset:/n "
+                          f"{self.event_path}/n, {self.station_path}/n, {self.waveform_path}/n, {path}/n")
+        if not path.exists():
+            # Check if the dataset has been downloaded
+            for fi in [self.event_path, self.station_path, self.waveform_path]:
+                if fi.exists():  # This is either a corrupted or old dataset
+                    raise DataVersionError(f"Dataset version is out of date. {redownload_msg}")
+                else:  # The user has deleted the necessary files and we are ready for re-download
+                    return
+        with open(path) as fi:
+            version = fi.read()
+        # Make sure the contents of the version file are semi-reasonable
+        if not len(version).split(".") == 3:
+            raise ValueError(f"Version file is corrupted for dataset: {self.name}. {redownload_msg}")
+        # Check the version number
+        if version < self.version:
+            raise DataVersionError(f"Dataset version is out of date: {version} < {self.version}. {redownload_msg}")
+        elif version > self.version:
+            warn(f"Dataset version mismatch: {version} > {self.version}. It may be necessary to redownload the dataset."
+                 f"{redownload_msg}")
+        else:
+            # All is well. Continue.
+            pass
+        return
+
+    # --- Abstract properties subclasses should implement
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """
+        Name of the dataset
+        """
+        return "my_dataset"
+
+    @property
+    @abc.abstractmethod
+    def version(self) -> str:
+        """
+        Dataset version. Should be a str of the form x.y.z
+        """
+        return "0.0.0"
 
     # --- Abstract methods subclasses should implement
 

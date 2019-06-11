@@ -10,6 +10,7 @@ import pytest
 
 import obsplus
 from obsplus.datasets.dataloader import DataSet
+from obsplus.datasets.crandall import Crandall
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.exceptions import MissingDataFileError, FileHashChangedError
 
@@ -121,7 +122,7 @@ class TestCopyDataset:
         def fail(*args, **kwargs):
             pytest.fail()  # this should never be called
 
-        # monkey patch download methods with fail to ensure they arent called
+        # monkey patch download methods with fail to ensure they aren't called
         for name in names:
             attr = f"download_{name}s"
             monkeypatch.setattr(cls, attr, fail)
@@ -200,3 +201,52 @@ class TestMD5Hash:
         # raise an error if checking for it
         with pytest.raises(FileHashChangedError):
             crandall_changed_file.check_files(check_hash=True)
+
+
+class TestVersioning:
+    """ Verify logic for checking dataset versions works """
+
+    # Fixtures
+    @pytest.fixture
+    def copied_crandall(self, tmpdir_factory):
+        """ Copy the crandall ds to a new directory, create fresh hash
+        and return. """
+        newdir = Path(tmpdir_factory.mktemp("new_ds"))
+        ds = obsplus.load_dataset("crandall").copy_to(newdir)
+        ds.create_md5_hash()
+        return ds
+
+    @pytest.fixture
+    def proper_version(self, copied_crandall):
+        """ Make sure there is a version file with the correct version number from what is attached to the DataSet """
+        version = Crandall.version
+        breakpoint()
+
+    # Tests
+    def test_version_matches(self, proper_version):
+        assert False
+
+    def test_version_greater(self):
+        # Warn the user that something isn't right
+        assert False
+
+    def test_version_less(self):
+        # Raise an exception informing the user to re-download
+        assert False
+
+    def test_no_version(self):
+        assert False
+
+    def test_version_less_but_deleted_files(self):
+        # It is at this point that the dataset should get re-downloaded and all will be well
+        assert False
+
+    def test_bogus_version(self):
+        assert False
+
+    def test_corrupt_version_file(self):
+        assert False
+
+    def test_listed_files(self):
+        # Make sure deleting the listed files actually does correctly re-download the dataset
+        assert False
