@@ -13,6 +13,10 @@ obsplus master:
     * Deleted EventDescriptions whose text was set to 'None' (see #99). 
       NOTE: This change requires re-downloading the dataset to properly take 
       effect!
+  - obsplus.datasets.dataset
+    * Renamed from obsplus.datasets.dataloader
+    * Added a version numbering scheme to DataSet to enforce that the version of 
+      a downloaded dataset matches what is required by the DataSet
 
 
 obsplus 0.0.1:
