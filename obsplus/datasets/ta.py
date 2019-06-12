@@ -16,6 +16,7 @@ class TA(DataSet):
     """
 
     name = "TA"
+    version = "0.0.0"
 
     level = "response"
     starttime = obspy.UTCDateTime("2007-02-15")
@@ -40,7 +41,7 @@ class TA(DataSet):
 
     def build_archive(self, st, starttime=None, endtime=None):
         """
-        Build the archive (dont use mass downloader for a little variety)
+        Build the archive (don't use mass downloader for a little variety)
         """
         starttime = starttime or self.starttime
         endtime = endtime or self.endtime

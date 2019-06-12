@@ -29,6 +29,7 @@ class Bingham(DataSet):
     """
 
     name = "bingham"
+    version = "0.0.0"
     time_before = 10
     time_after = 60
     # define spatial extents variables (center of pit)

@@ -4,15 +4,20 @@ Tests for the datasets
 from collections import defaultdict
 import os
 from pathlib import Path
+import shutil
+import sys
 
 import obspy
 import pytest
 
 import obsplus
 from obsplus.datasets.dataloader import DataSet
-from obsplus.datasets.crandall import Crandall
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
-from obsplus.exceptions import MissingDataFileError, FileHashChangedError
+from obsplus.exceptions import (
+    MissingDataFileError,
+    FileHashChangedError,
+    DataVersionError,
+)
 
 
 @pytest.fixture(scope="session", params=list(DataSet.datasets))
@@ -207,46 +212,124 @@ class TestVersioning:
     """ Verify logic for checking dataset versions works """
 
     # Fixtures
+    @pytest.fixture(scope="class")
+    def dataset(self):
+        """ Create a stupidly simple dataset """
+
+        class DummyDataset(DataSet):
+            name = "dummy"
+            version = "1.0.0"
+
+            def download_events(self) -> None:
+                os.makedirs(self.event_path, exist_ok=True)
+
+            def download_stations(self) -> None:
+                os.makedirs(self.station_path, exist_ok=True)
+
+            def download_waveforms(self) -> None:
+                os.makedirs(self.waveform_path, exist_ok=True)
+
+        return DummyDataset
+
     @pytest.fixture
-    def copied_crandall(self, tmpdir_factory):
-        """ Copy the crandall ds to a new directory, create fresh hash
-        and return. """
+    def dummy_dataset(self, tmpdir_factory, dataset):
+        """ Instantiate our simple dataset for the first data download """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
-        ds = obsplus.load_dataset("crandall").copy_to(newdir)
+        ds = dataset(base_path=newdir)
         ds.create_md5_hash()
         return ds
 
-    @pytest.fixture
-    def proper_version(self, copied_crandall):
+    @pytest.fixture  # These should be able to be combined somehow, I would think...
+    def proper_version(self, dummy_dataset):
         """ Make sure there is a version file with the correct version number from what is attached to the DataSet """
-        version = Crandall.version
-        breakpoint()
+        version = "1.0.0"
+        with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
+            fi.write(version)
+        return dummy_dataset
+
+    @pytest.fixture
+    def low_version(self, dummy_dataset):
+        """ Make sure the version file has a lower version number than what is attached to the DataSet"""
+        version = "0.0.0"
+        with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
+            fi.write(version)
+        return dummy_dataset
+
+    @pytest.fixture
+    def high_version(self, dummy_dataset):
+        version = "2.0.0"
+        with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
+            fi.write(version)
+        return dummy_dataset
+
+    @pytest.fixture
+    def no_version(self, dummy_dataset):
+        path = dummy_dataset.path / dummy_dataset._version_path
+        if path.exists():
+            os.remove(path)
+        return dummy_dataset
+
+    @pytest.fixture
+    def re_download(self, dummy_dataset):
+        path = dummy_dataset.path / dummy_dataset._version_path
+        if path.exists():
+            os.remove(path)
+        for path in [
+            dummy_dataset.event_path,
+            dummy_dataset.station_path,
+            dummy_dataset.waveform_path,
+        ]:
+            shutil.rmtree(path)
+        return dummy_dataset
+
+    @pytest.fixture
+    def corrupt_version_file(self, dummy_dataset):
+        with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
+            fi.write("abcd")
+        return dummy_dataset
 
     # Tests
-    def test_version_matches(self, proper_version):
-        assert False
+    def test_version_matches(self, proper_version, dataset):
+        """ Try re-loading the dataset and verify that it is possible with a matching version number """
+        dataset(base_path=proper_version.path.parent)
 
-    def test_version_greater(self):
-        # Warn the user that something isn't right
-        assert False
+    def test_version_greater(self, high_version, dataset):
+        """ Make sure a warning is issued if the version number is too high """
+        with pytest.warns(UserWarning):
+            dataset(base_path=high_version.path.parent)
 
-    def test_version_less(self):
-        # Raise an exception informing the user to re-download
-        assert False
+    def test_version_less(self, low_version, dataset):
+        """ Make sure an exception gets raised if the version number is too low """
+        with pytest.raises(DataVersionError):
+            dataset(base_path=low_version.path.parent)
 
-    def test_no_version(self):
-        assert False
+    def test_no_version(self, no_version, dataset):
+        """ Make sure an exception gets raised if the version file does not exist """
+        with pytest.raises(DataVersionError):
+            dataset(base_path=no_version.path.parent)
 
-    def test_version_less_but_deleted_files(self):
-        # It is at this point that the dataset should get re-downloaded and all will be well
-        assert False
+    def test_version_less_but_deleted_files(self, re_download, dataset):
+        """ Make sure the dataset can be re-downloaded if proper files were deleted """
+        dataset(base_path=re_download.path.parent)
 
-    def test_bogus_version(self):
-        assert False
+    def test_corrupt_version_file(self, corrupt_version_file, dataset):
+        """ Make sure a bogus version file raises """
+        with pytest.raises(ValueError):
+            dataset(base_path=corrupt_version_file.path.parent)
 
-    def test_corrupt_version_file(self):
-        assert False
-
-    def test_listed_files(self):
-        # Make sure deleting the listed files actually does correctly re-download the dataset
-        assert False
+    def test_listed_files(self, low_version, dataset):
+        """ Make sure the files listed in the exception for deletion are correct """
+        expected = {
+            str(low_version.event_path),
+            str(low_version.station_path),
+            str(low_version.waveform_path),
+            str(low_version.path / low_version._version_path),
+        }
+        try:
+            dataset(base_path=low_version.path.parent)
+        except DataVersionError as e:
+            exc_info = sys.exc_info()
+            # Do some really ugly string parsing to get the file list
+            files = str(exc_info[1]).split(":")[2].split(" ")
+            files = [x.strip("\n,") for x in files[1:]]
+            assert set(files) == expected

@@ -22,7 +22,11 @@ from obsplus.utils import md5_directory
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
 from obsplus.waveforms.utils import get_waveform_client
-from obsplus.exceptions import FileHashChangedError, MissingDataFileError, DataVersionError
+from obsplus.exceptions import (
+    FileHashChangedError,
+    MissingDataFileError,
+    DataVersionError,
+)
 
 
 base_path = Path(__file__).parent
@@ -69,8 +73,12 @@ class DataSet(abc.ABC):
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
         assert isinstance(cls.name, str), "name must be a string"
-        assert isinstance(cls.version, str), "version must be a string of the form x.y.z"
-        assert len(cls.version.split(".")) == 3, "version must be a string of the form x.y.z"
+        assert isinstance(
+            cls.version, str
+        ), "version must be a string of the form x.y.z"
+        assert (
+            len(cls.version.split(".")) == 3
+        ), "version must be a string of the form x.y.z"
         DataSet.datasets[cls.name.lower()] = cls
 
     # --- logic for loading and caching data
@@ -104,7 +112,7 @@ class DataSet(abc.ABC):
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
         # write a new version file
-        with open(self.path / self._version_path) as fi:
+        with open(self.path / self._version_path, "w") as fi:
             fi.write(self.version)
         self.data_loaded = True
         # cache loaded dataset
@@ -139,6 +147,8 @@ class DataSet(abc.ABC):
             The destination to copy the dataset. It will be created if it
             doesnt exist. If None is provided use tmpfile to create a temporary
             directory.
+        include_version
+            If True, copy the file indicating the dataset version. Primarily used for testing.
 
         Returns
         -------
@@ -206,7 +216,6 @@ class DataSet(abc.ABC):
 
     @property
     def path(self) -> Path:
-        assert self.name is not None, "subclass must define name"
         return self.base_path / self.name
 
     @property
@@ -343,26 +352,36 @@ class DataSet(abc.ABC):
             Expected path of the version file
         """
         path = self.path / path
-        redownload_msg = (f"Delete the following files/directories to re-download the dataset:/n "
-                          f"{self.event_path}/n, {self.station_path}/n, {self.waveform_path}/n, {path}/n")
+        redownload_msg = (
+            f"Delete the following files/directories to re-download the dataset:\n "
+            f"{self.event_path}\n, {self.station_path}\n, {self.waveform_path}\n, {path}\n"
+        )
         if not path.exists():
             # Check if the dataset has been downloaded
             for fi in [self.event_path, self.station_path, self.waveform_path]:
                 if fi.exists():  # This is either a corrupted or old dataset
-                    raise DataVersionError(f"Dataset version is out of date. {redownload_msg}")
+                    raise DataVersionError(
+                        f"Dataset version is out of date. {redownload_msg}"
+                    )
                 else:  # The user has deleted the necessary files and we are ready for re-download
                     return
         with open(path) as fi:
             version = fi.read()
         # Make sure the contents of the version file are semi-reasonable
-        if not len(version).split(".") == 3:
-            raise ValueError(f"Version file is corrupted for dataset: {self.name}. {redownload_msg}")
+        if not len(version.split(".")) == 3:
+            raise ValueError(
+                f"Version file is corrupted for dataset: {self.name}. {redownload_msg}"
+            )
         # Check the version number
         if version < self.version:
-            raise DataVersionError(f"Dataset version is out of date: {version} < {self.version}. {redownload_msg}")
+            raise DataVersionError(
+                f"Dataset version is out of date: {version} < {self.version}. {redownload_msg}"
+            )
         elif version > self.version:
-            warn(f"Dataset version mismatch: {version} > {self.version}. It may be necessary to redownload the dataset."
-                 f"{redownload_msg}")
+            warn(
+                f"Dataset version mismatch: {version} > {self.version}. It may be necessary to redownload the dataset."
+                f"{redownload_msg}"
+            )
         else:
             # All is well. Continue.
             pass
