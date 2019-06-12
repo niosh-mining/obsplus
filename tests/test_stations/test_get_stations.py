@@ -5,6 +5,7 @@ import obspy
 import pytest
 
 import obsplus
+from obsplus.constants import NSLC
 
 
 @pytest.fixture
@@ -52,3 +53,20 @@ class TestGetStation:
         inv = inventory.get_stations(channel="*z")
         df = obsplus.stations_to_df(inv)
         assert all([x.endswith("Z") for x in set(df.channel)])
+
+    def test_get_stations_one_channel(self, inventory):
+        """ test get stations when all kwarg are used. """
+        sta_df = obsplus.stations_to_df(inventory)
+        nslc = obsplus.utils.get_nslc_series(sta_df).iloc[0]
+        # make kwargs
+        kwargs = {x: y for x, y in zip(NSLC, nslc.split("."))}
+        # get sub inv
+        inv = inventory.get_stations(**kwargs)
+        df_out = obsplus.stations_to_df(inv)
+        assert len(df_out) == 1
+        # iterate through each net, sta, chan, etc. and check length
+        assert len(inv.networks) == 1
+        for net in inv:
+            assert len(net.stations) == 1
+            for sta in net:
+                assert len(sta.channels) == 1

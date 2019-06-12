@@ -5,12 +5,12 @@ import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List
 
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, UTCDateTime, Trace
+from obspy import Stream, UTCDateTime
 
 import obsplus
 from obsplus.constants import (
@@ -22,7 +22,7 @@ from obsplus.constants import (
     waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_nslc_series, _column_contains
+from obsplus.utils import get_nslc_series, filter_index
 
 
 # ---------- trim functions
@@ -113,29 +113,6 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     return stream.trim(starttime=t1, endtime=t2)
 
 
-def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
-    """ Create a dataframe form a sequence of traces. """
-    # create dataframe of traces and stats (use ns for all time values)
-    data = [
-        {
-            "trace": x,
-            "nslc": x.id,
-            "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
-            "start": x.stats.starttime._ns,
-            "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
-        }
-        for x in traces
-    ]
-    sortby = ["nslc", "sr", "start", "end"]
-    df = pd.DataFrame(data).sort_values(sortby)
-    # create column if trace should be merged into previous trace
-    dfs = df.shift(1)  # shift all value forward one column
-    con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
-    con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
-    df["merge_group"] = (~(con1 & con2)).cumsum()
-    return df
-
-
 def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
     """
     Collect queryable params from stream, return dataframe.
@@ -178,33 +155,22 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     if not bulk or len(st) == 0:
         return []
 
-    # get dataframe of stream contents
+    # # get dataframe of stream contents
     sdf = _stream_data_to_df(st)
-    seed_st = get_nslc_series(sdf)
-    # get dataframe of bulk content
-    bulk_df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-    bulk_t1 = bulk_df["utc1"].apply(float)
-    bulk_t2 = bulk_df["utc2"].apply(float)
-    seed_bulk = get_nslc_series(bulk_df)
-    # get outer array of time matches
-    is_greater = np.greater.outer(sdf["starttime"].values, bulk_t2)
-    is_less = np.less.outer(sdf["endtime"].values, bulk_t1)
-    is_in_time = ~(is_greater | is_less)
-    # determine if seeds are equal
-    matches_seed = np.equal.outer(seed_st.values, seed_bulk.values)
-    # get a list of needed values
-    needs = np.logical_and(matches_seed, is_in_time)
     # iterate stream, return output
     out = []
-    for num, need in enumerate(needs.T):
+    for b in bulk:
+        assert len(b) == 6, f"{b} is not a valid bulk arg, must have len 6"
+        need = filter_index(sdf, *b)
         traces = [tr for tr, bo in zip(st, need) if bo]
         new_st = obspy.Stream(traces)
-        t1, t2 = UTCDateTime(bulk_t1[num]), UTCDateTime(bulk_t2[num])
+        t1, t2 = UTCDateTime(b[-2]), UTCDateTime(b[-1])
         new = new_st.slice(starttime=t1, endtime=t2)
         if new is None or not len(new):
             out.append(obspy.Stream())
             continue
-        new.merge(method=1)
+        # if len(new) > 1:
+        new = merge_traces(new)
         out.append(new)
     assert len(out) == len(bulk), "output is not the same len as stream list"
     return out
@@ -229,7 +195,35 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     -------
     A stream with merged traces.
     """
+
+    def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
+        """ Create a dataframe form a sequence of traces. """
+        # create dataframe of traces and stats (use ns for all time values)
+        data = [
+            {
+                "trace": x,
+                "nslc": x.id,
+                "sr": np.int(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
+                "start": x.stats.starttime._ns,
+                "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
+            }
+            for x in traces
+        ]
+        sortby = ["nslc", "sr", "start", "end"]
+        df = pd.DataFrame(data).sort_values(sortby)
+        # create column if trace should be merged into previous trace
+        dfs = df.shift(1)  # shift all value forward one column
+        con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
+        con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
+        df["merge_group"] = (~(con1 & con2)).cumsum()
+        return df
+
+    # checks for early bail out, no merging if one trace or all unique ids
+    if len(st) < 2 or len({tr.id for tr in st}) == len(st):
+        return st
+
     traces = st.traces if isinstance(st, obspy.Stream) else st
+
     if not inplace:
         traces = copy.deepcopy(traces)
     df = _make_trace_df(traces)
