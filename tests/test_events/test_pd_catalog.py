@@ -29,7 +29,7 @@ from obsplus.constants import (
     STATION_MAGNITUDE_COLUMNS,
     MAGNITUDE_COLUMNS,
 )
-from obsplus.datasets.dataloader import base_path
+from obsplus.datasets.dataset import base_path
 from obsplus.events.utils import get_seed_id
 from obsplus.utils import getattrs, get_nslc_series
 

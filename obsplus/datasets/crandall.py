@@ -12,7 +12,7 @@ from obspy.clients.fdsn.mass_downloader import (
 from obspy.geodetics import kilometers2degrees
 
 from obsplus import WaveBank, events_to_df
-from obsplus.datasets.dataloader import DataSet, base_path
+from obsplus.datasets.dataset import DataSet, base_path
 from obsplus.events.utils import catalog_to_directory
 
 

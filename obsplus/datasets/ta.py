@@ -4,7 +4,7 @@ The TA dataset.
 import obspy
 
 from obsplus import WaveBank
-from obsplus.datasets.dataloader import DataSet
+from obsplus.datasets.dataset import DataSet
 from obsplus.utils import make_time_chunks
 
 

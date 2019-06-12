@@ -11,7 +11,7 @@ import obspy
 import pytest
 
 import obsplus
-from obsplus.datasets.dataloader import DataSet
+from obsplus.datasets.dataset import DataSet
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.exceptions import (
     MissingDataFileError,

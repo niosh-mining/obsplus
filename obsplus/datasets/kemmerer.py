@@ -10,7 +10,7 @@ from obspy.clients.fdsn.mass_downloader import (
 )
 
 from obsplus import EventBank
-from obsplus.datasets.dataloader import DataSet, base_path
+from obsplus.datasets.dataset import DataSet, base_path
 from obsplus.events.utils import catalog_to_directory
 
 
