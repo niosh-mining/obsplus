@@ -314,7 +314,7 @@ class TestVersioning:
 
     def test_corrupt_version_file(self, corrupt_version_file, dataset):
         """ Make sure a bogus version file raises """
-        with pytest.raises(ValueError):
+        with pytest.raises(DataVersionError):
             dataset(base_path=corrupt_version_file.path.parent)
 
     def test_listed_files(self, low_version, dataset):

@@ -3,9 +3,9 @@ Module for loading, (and downloading) data sets
 """
 import abc
 import copy
+import json
 import shutil
 import tempfile
-import json
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
@@ -18,16 +18,16 @@ import pkg_resources
 from obspy.clients.fdsn import Client
 
 from obsplus import Fetcher, WaveBank, EventBank
-from obsplus.utils import md5_directory
+from obsplus.constants import DATA_TYPES
 from obsplus.events.utils import get_event_client
-from obsplus.stations.utils import get_station_client
-from obsplus.waveforms.utils import get_waveform_client
 from obsplus.exceptions import (
     FileHashChangedError,
     MissingDataFileError,
     DataVersionError,
 )
-
+from obsplus.stations.utils import get_station_client
+from obsplus.utils import md5_directory
+from obsplus.waveforms.utils import get_waveform_client
 
 base_path = Path(__file__).parent
 
@@ -73,12 +73,8 @@ class DataSet(abc.ABC):
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
         assert isinstance(cls.name, str), "name must be a string"
-        assert isinstance(
-            cls.version, str
-        ), "version must be a string of the form x.y.z"
-        assert (
-            len(cls.version.split(".")) == 3
-        ), "version must be a string of the form x.y.z"
+        cls._validate_version_str(cls.version)
+        # Register the subclass as a dataset.
         DataSet.datasets[cls.name.lower()] = cls
 
     # --- logic for loading and caching data
@@ -93,7 +89,7 @@ class DataSet(abc.ABC):
         self.check_version()
         # iterate each kind of data and download if needed
         downloaded = False
-        for what in ["waveform", "event", "station"]:
+        for what in DATA_TYPES:
             needs_str = f"{what}s_need_downloading"
             if getattr(self, needs_str):
                 # this is the first type of data to be downloaded, run fist hook
@@ -112,8 +108,7 @@ class DataSet(abc.ABC):
             self.post_download_hook()
             # data are downloaded, but not yet loaded into memory
         # write a new version file
-        with open(self.path / self._version_path, "w") as fi:
-            fi.write(self.version)
+        self.write_version()
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
@@ -344,48 +339,78 @@ class DataSet(abc.ABC):
 
     def check_version(self, path=_version_path):
         """
-        Check the version of the dataset to verify it matches the corresponding DataSet
+        Check the version of the dataset.
+
+        Verifies the version string in the dataset class definintion matches
+        the one saved on disk.
 
         Parameters
         ----------
         path
-            Expected path of the version file
+            Expected path of the version file.
+
+        Raises
+        ------
+        DataVersionError
+            If any version problems are discovered.
         """
         path = self.path / path
         redownload_msg = (
-            f"Delete the following files/directories to re-download the dataset:\n "
-            f"{self.event_path}\n, {self.station_path}\n, {self.waveform_path}\n, {path}\n"
+            f"Delete the following files/directories to re-download the "
+            f"dataset:\n {self.event_path}\n, {self.station_path}\n, "
+            f"{self.waveform_path}\n, {path}\n"
         )
-        if not path.exists():
-            # Check if the dataset has been downloaded
-            for fi in [self.event_path, self.station_path, self.waveform_path]:
-                if fi.exists():  # This is either a corrupted or old dataset
-                    raise DataVersionError(
-                        f"Dataset version is out of date. {redownload_msg}"
-                    )
-                else:  # The user has deleted the necessary files and we are ready for re-download
-                    return
-        with open(path) as fi:
-            version = fi.read()
-        # Make sure the contents of the version file are semi-reasonable
-        if not len(version.split(".")) == 3:
-            raise ValueError(
-                f"Version file is corrupted for dataset: {self.name}. {redownload_msg}"
-            )
+        try:
+            version = self.read_data_version()
+        except DataVersionError:  # The data version cannot be read from disk
+            need_dl = (getattr(self, f"{x}s_need_downloading") for x in DATA_TYPES)
+            if not any(need_dl):  # Some of the data files need to be deleted.
+                msg = f"Dataset version is out of date. {redownload_msg}"
+                raise DataVersionError(msg)
+            else:  # The old files were deleted, we are ready for re-download
+                return
         # Check the version number
         if version < self.version:
-            raise DataVersionError(
-                f"Dataset version is out of date: {version} < {self.version}. {redownload_msg}"
-            )
+            msg = f"Dataset version is out of date: {version} < {self.version}. "
+            raise DataVersionError(msg + redownload_msg)
         elif version > self.version:
-            warn(
-                f"Dataset version mismatch: {version} > {self.version}. It may be necessary to redownload the dataset."
-                f"{redownload_msg}"
-            )
-        else:
-            # All is well. Continue.
-            pass
-        return
+            msg = f"Dataset version mismatch: {version} > {self.version}."
+            msg = msg + " It may be necessary to reload the dataset."
+            warn(msg + redownload_msg)
+        return  # All is well. Continue.
+
+    def write_version(self):
+        """ Write the version string to disk. """
+        version_path = Path(self.path) / self._version_path
+        with version_path.open("w") as fi:
+            fi.write(self.version)
+
+    def read_data_version(self):
+        """
+        Read the data version from disk.
+
+        Raise a DataVersionError if not found.
+        """
+        version_path = Path(self.path) / self._version_path
+        if not version_path.exists():
+            raise DataVersionError(f"{version_path} does not exist!")
+        with version_path.open("r") as fi:
+            version_str = fi.read()
+        self._validate_version_str(version_str)
+        return version_str
+
+    @staticmethod
+    def _validate_version_str(version_str):
+        """
+        Check the version string is of the form x.y.z.
+
+        If the version string is not valid raise DataVersionError.
+        """
+        is_str = isinstance(version_str, str)
+        has_3 = len(version_str.split(".")) == 3
+        if not (is_str and has_3):
+            msg = f"version must be a string of the form x.y.z, not {version_str}"
+            raise DataVersionError(msg)
 
     # --- Abstract properties subclasses should implement
     @property
@@ -394,7 +419,6 @@ class DataSet(abc.ABC):
         """
         Name of the dataset
         """
-        return "my_dataset"
 
     @property
     @abc.abstractmethod
@@ -402,7 +426,6 @@ class DataSet(abc.ABC):
         """
         Dataset version. Should be a str of the form x.y.z
         """
-        return "0.0.0"
 
     # --- Abstract methods subclasses should implement
 

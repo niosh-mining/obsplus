@@ -449,6 +449,10 @@ NUMPY_FLOAT_TYPES = {
     np.dtype("float128"),
 }
 
+# str for types of data
+
+DATA_TYPES = ("waveform", "station", "event")
+
 # ------------------------ wavefetcher/bank stuff
 
 # the attrs that can be overwritten temporarily
