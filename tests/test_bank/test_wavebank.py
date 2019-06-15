@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import types
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from io import StringIO
 from os.path import join
@@ -1211,7 +1212,7 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
-class TestConcurrency:
+class TestConcurrentUpdateIndex:
     """
     Tests to make sure running update index in different threads/processes.
     """
@@ -1230,10 +1231,10 @@ class TestConcurrency:
         try:
             wbank.update_index()
         except Exception as e:
-            traceback.print_tb(e.__traceback__)
-            raise e
+            return traceback.format_tb(e.__traceback__)
         else:
-            return wbank.read_index()
+            wbank.read_index()
+            return None
 
     # fixtures
     @pytest.fixture
@@ -1284,7 +1285,7 @@ class TestConcurrency:
         other """
         # get a list of exceptions that occurred
         assert len(thread_update) == self.worker_count
-        excs = [x.exception() for x in thread_update]
+        excs = [x.result() for x in thread_update]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the thread pool:\n {excs}"
@@ -1296,7 +1297,7 @@ class TestConcurrency:
         """
         assert len(process_update) == self.worker_count
         # ensure no exceptions were raised
-        excs = [x.exception() for x in process_update]
+        excs = [x.result() for x in process_update]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the process pool:\n {excs}"
