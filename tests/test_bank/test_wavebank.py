@@ -1233,6 +1233,7 @@ class TestConcurrentUpdateIndex:
         except Exception as e:
             return traceback.format_tb(e.__traceback__)
         else:
+            time.sleep(0.01)
             wbank.read_index()
             return None
 
