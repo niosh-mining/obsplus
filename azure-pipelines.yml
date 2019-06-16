@@ -1,0 +1,38 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+strategy:
+  matrix:
+    Python36:
+      python.version: '3.6'
+    Python37:
+      python.version: '3.7'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
+
+- script: |
+    conda config --set always_yes yes --set changeps1 no
+    conda config --add channels conda-forge
+    conda update -q conda
+    conda info -a
+    conda create -q -n test-environment python=$PYTHON_VERSION pytest obspy pandas xarray pytables
+    source activate test-environment
+    pip install -r tests/requirements.txt
+    pip install -e .
+  displayName: 'Install dependencies'
+
+- script: |
+    pytest --cov obsplus && pytest --nbval docs/
+    pytest
+  displayName: 'pytest'
