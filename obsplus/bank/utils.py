@@ -224,11 +224,13 @@ class _IndexCache:
                 self.bank.index_path, self.bank._index_node, where=where, **kwargs
             )
 
-        except ClosedNodeError as e:  # In multiprocessing sometimes
+        except ClosedNodeError as e:
+            # Sometimes in concurrent updates the nodes need time to open/close
             if fail_counts > 10:
                 raise e
+            # Wait a bit and try again (up to 10 times)
             time.sleep(0.1)
-            self._get_index(where, fail_counts=fail_counts + 1, **kwargs)
+            return self._get_index(where, fail_counts=fail_counts + 1, **kwargs)
 
     def clear_cache(self):
         """ removes all cached dataframes. """
