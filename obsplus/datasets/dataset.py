@@ -106,9 +106,8 @@ class DataSet(abc.ABC):
         if downloaded:
             self.check_files()
             self.post_download_hook()
-            # data are downloaded, but not yet loaded into memory
-        # write a new version file
-        self.write_version()
+            # write a new version file
+            self.write_version()
         self.data_loaded = True
         # cache loaded dataset
         if not base_path and self.name not in self._loaded_datasets:
