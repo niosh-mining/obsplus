@@ -86,12 +86,12 @@ class DataSet(abc.ABC):
         # create the dataset's base directory
         self.path.mkdir(exist_ok=True, parents=True)
         # Make sure the version of the dataset is okay
-        self.check_version()
+        version_ok = self.check_version()
         # iterate each kind of data and download if needed
         downloaded = False
         for what in DATA_TYPES:
             needs_str = f"{what}s_need_downloading"
-            if getattr(self, needs_str):
+            if getattr(self, needs_str) or (not version_ok):
                 # this is the first type of data to be downloaded, run fist hook
                 if not downloaded:
                     self.pre_download_hook()
@@ -141,8 +141,6 @@ class DataSet(abc.ABC):
             The destination to copy the dataset. It will be created if it
             doesnt exist. If None is provided use tmpfile to create a temporary
             directory.
-        include_version
-            If True, copy the file indicating the dataset version. Primarily used for testing.
 
         Returns
         -------
@@ -352,6 +350,11 @@ class DataSet(abc.ABC):
         ------
         DataVersionError
             If any version problems are discovered.
+
+        Returns
+        -------
+        version_ok : bool
+            True if the version matches what is expected.
         """
         path = self.path / path
         redownload_msg = (
@@ -363,11 +366,9 @@ class DataSet(abc.ABC):
             version = self.read_data_version()
         except DataVersionError:  # The data version cannot be read from disk
             need_dl = (getattr(self, f"{x}s_need_downloading") for x in DATA_TYPES)
-            if not any(need_dl):  # Some of the data files need to be deleted.
-                msg = f"Dataset version is out of date. {redownload_msg}"
-                raise DataVersionError(msg)
-            else:  # The old files were deleted, we are ready for re-download
-                return
+            if not any(need_dl):  # Something is a little weird
+                warn("Version file is missing or corrupt. Attempting to re-download the dataset.")
+            return False
         # Check the version number
         if version < self.version:
             msg = f"Dataset version is out of date: {version} < {self.version}. "
@@ -376,7 +377,7 @@ class DataSet(abc.ABC):
             msg = f"Dataset version mismatch: {version} > {self.version}."
             msg = msg + " It may be necessary to reload the dataset."
             warn(msg + redownload_msg)
-        return  # All is well. Continue.
+        return True  # All is well. Continue.
 
     def write_version(self):
         """ Write the version string to disk. """

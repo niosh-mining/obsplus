@@ -211,6 +211,17 @@ class TestMD5Hash:
 class TestVersioning:
     """ Verify logic for checking dataset versions works """
 
+    # Helper Functions
+    def check_dataset(self, ds, redownloaded=True):
+        if redownloaded:
+            assert ds.data_file.exists()
+            with open(ds.data_file1) as f:
+                assert f.read() == "abcd"
+        else:
+            assert not ds.data_file.exists()
+            with open(ds.data_file1) as f:
+                assert f.read() == "efgh"
+
     # Fixtures
     @pytest.fixture(scope="class")
     def dataset(self):
@@ -221,7 +232,13 @@ class TestVersioning:
             version = "1.0.0"
 
             def download_events(self) -> None:
+                self.data_file = self.event_path / "dummy_file.txt"
+                self.data_file1 = self.event_path / "dummy_file1.txt"
                 os.makedirs(self.event_path, exist_ok=True)
+                with open(self.data_file, "w") as f:
+                    f.write("test")
+                with open(self.data_file1, 'w') as f:
+                    f.write("abcd")
 
             def download_stations(self) -> None:
                 os.makedirs(self.station_path, exist_ok=True)
@@ -229,6 +246,10 @@ class TestVersioning:
             def download_waveforms(self) -> None:
                 os.makedirs(self.waveform_path, exist_ok=True)
 
+            def adjust_data(self) -> None:
+                os.remove(self.data_file)
+                with open(self.data_file1, "w") as f:
+                    f.write("efgh")
         return DummyDataset
 
     @pytest.fixture
@@ -245,6 +266,7 @@ class TestVersioning:
         version = "1.0.0"
         with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
             fi.write(version)
+        dummy_dataset.adjust_data()
         return dummy_dataset
 
     @pytest.fixture
@@ -253,6 +275,7 @@ class TestVersioning:
         version = "0.0.0"
         with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
             fi.write(version)
+        dummy_dataset.adjust_data()
         return dummy_dataset
 
     @pytest.fixture
@@ -260,6 +283,7 @@ class TestVersioning:
         version = "2.0.0"
         with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
             fi.write(version)
+        dummy_dataset.adjust_data()
         return dummy_dataset
 
     @pytest.fixture
@@ -267,6 +291,7 @@ class TestVersioning:
         path = dummy_dataset.path / dummy_dataset._version_path
         if path.exists():
             os.remove(path)
+        dummy_dataset.adjust_data()
         return dummy_dataset
 
     @pytest.fixture
@@ -283,39 +308,52 @@ class TestVersioning:
         return dummy_dataset
 
     @pytest.fixture
-    def corrupt_version_file(self, dummy_dataset):
+    def corrupt_version(self, dummy_dataset):
         with open(dummy_dataset.path / dummy_dataset._version_path, "w") as fi:
             fi.write("abcd")
+        dummy_dataset.adjust_data()
         return dummy_dataset
 
-    # Tests
+    # Tests <- It's probably possible to combine some of these, somehow...
     def test_version_matches(self, proper_version, dataset):
         """ Try re-loading the dataset and verify that it is possible with a matching version number """
         dataset(base_path=proper_version.path.parent)
+        # Make sure the data were not re-downloaded
+        self.check_dataset(proper_version, redownloaded=False)
 
     def test_version_greater(self, high_version, dataset):
         """ Make sure a warning is issued if the version number is too high """
         with pytest.warns(UserWarning):
             dataset(base_path=high_version.path.parent)
+        # Make sure the data were not re-downloaded
+        self.check_dataset(high_version, redownloaded=False)
 
     def test_version_less(self, low_version, dataset):
         """ Make sure an exception gets raised if the version number is too low """
         with pytest.raises(DataVersionError):
             dataset(base_path=low_version.path.parent)
+        # Make sure the data were not re-downloaded
+        self.check_dataset(low_version, redownloaded=False)
 
     def test_no_version(self, no_version, dataset):
-        """ Make sure an exception gets raised if the version file does not exist """
-        with pytest.raises(DataVersionError):
+        """ Make sure a missing version file will trigger a re-download """
+        with pytest.warns(UserWarning):
             dataset(base_path=no_version.path.parent)
+        # Make sure the data were re-downloaded
+        self.check_dataset(no_version, redownloaded=True)
 
-    def test_version_less_but_deleted_files(self, re_download, dataset):
+    def test_deleted_files(self, re_download, dataset):
         """ Make sure the dataset can be re-downloaded if proper files were deleted """
         dataset(base_path=re_download.path.parent)
+        # Make sure the data were re-downloaded
+        self.check_dataset(re_download, redownloaded=True)
 
-    def test_corrupt_version_file(self, corrupt_version_file, dataset):
-        """ Make sure a bogus version file raises """
-        with pytest.raises(DataVersionError):
-            dataset(base_path=corrupt_version_file.path.parent)
+    def test_corrupt_version_file(self, corrupt_version, dataset):
+        """ Make sure a bogus version file will trigger a re-download """
+        with pytest.warns(UserWarning):
+            dataset(base_path=corrupt_version.path.parent)
+        # Make sure the data were re-downloaded
+        self.check_dataset(corrupt_version, redownloaded=True)
 
     def test_listed_files(self, low_version, dataset):
         """ Make sure the files listed in the exception for deletion are correct """
@@ -333,3 +371,15 @@ class TestVersioning:
             files = str(exc_info[1]).split(":")[2].split(" ")
             files = [x.strip("\n,") for x in files[1:]]
             assert set(files) == expected
+
+    def test_doesnt_delete_extra_files(self, no_version, dataset):
+        """ Make sure an extra file that was added doesn't get harmed by the re-download process """
+        path = no_version.station_path / "test.txt"
+        with open(path, "w") as f:
+            f.write("ijkl")
+        dataset(base_path=no_version.path.parent)
+        # First make sure the data were re-downloaded
+        self.check_dataset(no_version, redownloaded=True)
+        # Now make sure the dummy file didn't get destroyed
+        with open(path) as f:
+            assert f.read() == "ijkl"
