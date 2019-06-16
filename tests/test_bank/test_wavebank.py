@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import types
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from io import StringIO
 from os.path import join
@@ -1211,7 +1212,7 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
-class TestConcurrency:
+class TestConcurrentUpdateIndex:
     """
     Tests to make sure running update index in different threads/processes.
     """
@@ -1221,12 +1222,20 @@ class TestConcurrency:
 
     def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
+        # first write some new files
         path = Path(wbank.bank_path)
         for ind in range(self.new_files):
             st = obspy.read()
             st.write(f"{path / str(ind)}.mseed", "mseed")
-        wbank.update_index()
-        return wbank.read_index()
+        # then try to update index, catch any errors and print them
+        try:
+            wbank.update_index()
+        except Exception as e:
+            return traceback.format_tb(e.__traceback__)
+        else:
+            time.sleep(0.01)
+            wbank.read_index()
+            return None
 
     # fixtures
     @pytest.fixture
@@ -1243,7 +1252,7 @@ class TestConcurrency:
             yield executor
 
     @pytest.fixture
-    def thread_update_index(self, concurrent_bank, thread_pool):
+    def thread_update(self, concurrent_bank, thread_pool):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
@@ -1260,7 +1269,7 @@ class TestConcurrency:
             yield executor
 
     @pytest.fixture
-    def process_update_index(self, concurrent_bank, process_pool):
+    def process_update(self, concurrent_bank, process_pool):
         """ run a bunch of update index operations in different processes,
         return list of results """
         concurrent_bank.update_index()
@@ -1272,24 +1281,28 @@ class TestConcurrency:
         return list(as_completed(out))
 
     # tests
-    def test_index_update_threads(self, thread_update_index):
+    def test_index_update_threads(self, thread_update):
         """ ensure the index updated and the threads didn't kill each
         other """
         # get a list of exceptions that occurred
-        assert len(thread_update_index) == self.worker_count
-        excs = [x.exception() for x in thread_update_index if x.exception() is not None]
-        assert len(excs) == 0
+        assert len(thread_update) == self.worker_count
+        excs = [x.result() for x in thread_update]
+        excs = [x for x in excs if x is not None]
+        if excs:
+            msg = f"Exceptions were raised by the thread pool:\n {excs}"
+            pytest.fail(msg)
 
-    def test_index_update_processes(self, process_update_index):
+    def test_index_update_processes(self, process_update):
         """
         Ensure the index can be updated in different processes.
         """
-        assert len(process_update_index) == self.worker_count
+        assert len(process_update) == self.worker_count
         # ensure no exceptions were raised
-        excs = [
-            x.exception() for x in process_update_index if x.exception() is not None
-        ]
-        assert len(excs) == 0
+        excs = [x.result() for x in process_update]
+        excs = [x for x in excs if x is not None]
+        if excs:
+            msg = f"Exceptions were raised by the process pool:\n {excs}"
+            pytest.fail(msg)
 
     def test_file_lock(self, concurrent_bank):
         """ Tests for the file locking mechanism. """
