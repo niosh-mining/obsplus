@@ -224,7 +224,7 @@ class _IndexCache:
                 self.bank.index_path, self.bank._index_node, where=where, **kwargs
             )
 
-        except ClosedNodeError as e:
+        except (ClosedNodeError, TypeError) as e:
             # Sometimes in concurrent updates the nodes need time to open/close
             if fail_counts > 10:
                 raise e
