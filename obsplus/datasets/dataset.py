@@ -367,7 +367,9 @@ class DataSet(abc.ABC):
         except DataVersionError:  # The data version cannot be read from disk
             need_dl = (getattr(self, f"{x}s_need_downloading") for x in DATA_TYPES)
             if not any(need_dl):  # Something is a little weird
-                warn("Version file is missing or corrupt. Attempting to re-download the dataset.")
+                warn(
+                    "Version file is missing or corrupt. Attempting to re-download the dataset."
+                )
             return False
         # Check the version number
         if version < self.version:

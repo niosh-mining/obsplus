@@ -237,7 +237,7 @@ class TestVersioning:
                 os.makedirs(self.event_path, exist_ok=True)
                 with open(self.data_file, "w") as f:
                     f.write("test")
-                with open(self.data_file1, 'w') as f:
+                with open(self.data_file1, "w") as f:
                     f.write("abcd")
 
             def download_stations(self) -> None:
@@ -250,6 +250,7 @@ class TestVersioning:
                 os.remove(self.data_file)
                 with open(self.data_file1, "w") as f:
                     f.write("efgh")
+
         return DummyDataset
 
     @pytest.fixture
