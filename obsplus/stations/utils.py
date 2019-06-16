@@ -99,7 +99,7 @@ def df_to_inventory(df) -> obspy.Inventory:
         kwargs = _get_kwargs(net_df.iloc[0], net_map)
         networks.append(Network(stations=stations, **kwargs))
 
-    return obspy.Inventory(networks=networks)
+    return obspy.Inventory(networks=networks, source=f"ObsPlus_v{obsplus.__version__}")
 
 
 @singledispatch
