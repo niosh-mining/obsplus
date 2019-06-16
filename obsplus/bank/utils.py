@@ -6,6 +6,7 @@ import itertools
 import os
 import re
 import sqlite3
+import time
 import warnings
 from functools import singledispatch
 from os.path import join
@@ -14,6 +15,8 @@ from typing import Optional, Sequence, Union
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from tables.exceptions import ClosedNodeError
+
 
 from obsplus.constants import (
     NSLC,
@@ -214,11 +217,20 @@ class _IndexCache:
         ou = str([(item, kwargs[item]) for item in keys])
         return ou
 
-    def _get_index(self, where, **kwargs):
+    def _get_index(self, where, fail_counts=0, **kwargs):
         """ read the hdf5 file """
-        return pd.read_hdf(
-            self.bank.index_path, self.bank._index_node, where=where, **kwargs
-        )
+        try:
+            return pd.read_hdf(
+                self.bank.index_path, self.bank._index_node, where=where, **kwargs
+            )
+
+        except (ClosedNodeError, TypeError) as e:
+            # Sometimes in concurrent updates the nodes need time to open/close
+            if fail_counts > 10:
+                raise e
+            # Wait a bit and try again (up to 10 times)
+            time.sleep(0.1)
+            return self._get_index(where, fail_counts=fail_counts + 1, **kwargs)
 
     def clear_cache(self):
         """ removes all cached dataframes. """
