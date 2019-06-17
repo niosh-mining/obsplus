@@ -1,9 +1,15 @@
 """
 Simple utility for DataSet.
 """
+import shutil
+import tempfile
 import textwrap
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
+
+import obsplus
+from obsplus.constants import OPSDATA_PATH
 
 
 def _create_opsdata(opsdata_path: Path):
@@ -36,7 +42,7 @@ def get_opsdata_path(opsdata_path: Optional[Path] = None) -> Path:
 
     Uses the following priorities:
 
-    1. Look for an environmental name opsdata_path, if defined return it.
+    1. Look for an environmental name OPSDATA_PATH, if defined return it.
     2. Get the opsdata_path variable from obsplus.constants and return it.
 
     Returns
@@ -44,4 +50,41 @@ def get_opsdata_path(opsdata_path: Optional[Path] = None) -> Path:
     A path to the opsdata directory.
     """
     if opsdata_path is None:
-        pass
+        opsdata_path = os.getenv("OPSDATA_PATH", OPSDATA_PATH)
+    _create_opsdata(opsdata_path)
+    return opsdata_path
+
+
+def copy_dataset(
+    dataset: Union[str, "DataSet"], destination: Optional[Union[str, Path]] = None
+) -> "DataSet":
+    """
+    Copy a dataset to a destination.
+
+    Parameters
+    ----------
+    dataset
+        The name of the dataset or a DataSet object. Supported str values are
+        in the obsplus.datasets.dataload.DATASETS dict.
+    destination
+        The destination to copy the dataset. It will be created if it
+        doesnt exist. If None is provided use tmpfile to create a temporary
+        directory.
+
+    Returns
+    -------
+    A new dataset object which refers to the copied files.
+    """
+    dataset = obsplus.load_dataset(dataset)
+    expected_path: Path = dataset.download_path
+    assert expected_path.exists(), f"{expected_path} not yet downloaded"
+    # make destination paths and copy
+    if destination is None:  # use a temp directory if none specified
+        dest_dir = Path(tempfile.mkdtemp())
+    else:
+        dest_dir = Path(destination)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / dataset.name
+    shutil.copytree(str(expected_path), str(dest))
+    # init new dataset of same class with updated base_path and return
+    return dataset.__class__(base_path=dest.parent)

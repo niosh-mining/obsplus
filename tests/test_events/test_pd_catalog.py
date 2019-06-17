@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
+import obsplus
 from obsplus import (
     events_to_df,
     picks_to_df,
@@ -29,10 +30,8 @@ from obsplus.constants import (
     STATION_MAGNITUDE_COLUMNS,
     MAGNITUDE_COLUMNS,
 )
-from obsplus.datasets.dataset import base_path
-from obsplus.events.utils import get_seed_id
-from obsplus.utils import getattrs, get_nslc_series
 
+from obsplus.utils import getattrs, get_nslc_series
 
 common_extractor_cols = {
     "agency_id",
@@ -427,17 +426,18 @@ class TestReadKemEvents:
     """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
 
     dataset_params = ["events.xml", "catalog.csv"]
+    base_path = obsplus.load_dataset("kemmerer").source_path
 
     # fixtures
     @pytest.fixture(scope="class", params=dataset_params)
     def cat_df(self, request, kem_archive):
         """ collect all the supported inputs are parametrize"""
-        return events_to_df(base_path / "kemmerer" / request.param)
+        return events_to_df(self.base_path / "kemmerer" / request.param)
 
     @pytest.fixture(scope="class")
     def catalog(self, kem_archive):
         """ return the events """
-        return obspy.read_events(str(base_path / "kemmerer" / "events.xml"))
+        return obspy.read_events(str(self.base_path / "kemmerer" / "events.xml"))
 
     # tests
     def test_len(self, cat_df, catalog):
@@ -573,7 +573,7 @@ class TestReadKemPicks:
     """ test for reading a variety of pick formats from the kemmerer
     dataset """
 
-    path = base_path / "kemmerer"
+    path = obsplus.load_dataset("kemmerer").source_path / "kemmerer"
     csv_path = path / "picks.csv"
     qml_path = str(path / "events.xml")
     qml = obspy.read_events(str(qml_path))

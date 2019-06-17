@@ -4,10 +4,13 @@ ObsPlus: A Pandas-Centric ObsPy Expansion Pack
 
 # -------------------- pull key objects to package level
 
-name = "example_pkg"
-
 # turn off chained assignment warnings (consider not doing this)
 import pandas as pd
+
+# package version
+from obsplus.version import __version__
+
+pd.options.mode.chained_assignment = None
 
 # json conversions
 from obsplus.events.json import json_to_cat, cat_to_json, cat_to_dict
@@ -35,16 +38,17 @@ from obsplus.bank.stationbank import StationBank
 # Sbank is depreciated, but better to not break codes
 Sbank = WaveBank
 
+from obsplus.structures.fetcher import Fetcher
+
 # misc functions
 from obsplus.utils import get_reference_time
 from obsplus.structures.dfextractor import DataFrameExtractor
 
-# package version
-from obsplus.version import __version__
-from obsplus.structures.fetcher import Fetcher
-
 # load datasets function
-from obsplus.datasets.dataset import load_dataset, copy_dataset, DataSet
+from obsplus.datasets.utils import copy_dataset
+from obsplus.datasets.dataset import DataSet
+
+load_dataset = DataSet.load_dataset
 
 # import xarray stuff
 from obsplus.waveforms.xarray.convert import (
@@ -52,7 +56,6 @@ from obsplus.waveforms.xarray.convert import (
     obspy_to_array,
     array_to_obspy,
 )
-
 
 # legacy code names, consider emitting a depreciation warning
 waveform2data_array = obspy_to_array
@@ -63,11 +66,7 @@ from .events.get_events import get_events
 from .stations.get_stations import get_stations
 from .waveforms.get_waveforms import get_waveforms
 
-
 # get the get_client methods into obsplus namespace
 from obsplus.waveforms.utils import get_waveform_client
 from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
-
-# mute pandas chained_assignment (think about not doing this...)
-pd.options.mode.chained_assignment = None

@@ -12,7 +12,7 @@ from obspy.clients.fdsn.mass_downloader import (
 from obspy.geodetics import kilometers2degrees
 
 from obsplus import WaveBank, events_to_df
-from obsplus.datasets.dataset import DataSet, base_path
+from obsplus.datasets.dataset import DataSet
 from obsplus.events.utils import catalog_to_directory
 
 
@@ -39,7 +39,7 @@ class Bingham(DataSet):
 
     def download_events(self):
         """ Simply copy events from base directory. """
-        cat = obspy.read_events(str(base_path / self.name / "events.xml"))
+        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
         catalog_to_directory(cat, self.event_path)
 
     def _download_bingham(self):
@@ -52,7 +52,7 @@ class Bingham(DataSet):
             maxradius=kilometers2degrees(self.max_dist),
         )
         chan_priorities = ["HH[ZNE]", "BH[ZNE]", "EL[ZNE]", "EN[ZNE]"]
-        cat = obspy.read_events(str(base_path / self.name / "events.xml"))
+        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
         df = events_to_df(cat)
         for _, row in df.iterrows():
             starttime = row.time - self.time_before

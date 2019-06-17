@@ -11,8 +11,7 @@ import pandas as pd
 import pytest
 
 import obsplus
-from obsplus import EventBank
-from obsplus import copy_dataset
+from obsplus import EventBank, copy_dataset
 from obsplus.events.utils import catalog_to_directory
 
 
