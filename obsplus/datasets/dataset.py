@@ -3,6 +3,7 @@ Module for loading, (and downloading) data sets
 """
 import abc
 import copy
+import inspect
 import json
 from collections import OrderedDict
 from distutils.dir_util import copy_tree
@@ -198,7 +199,7 @@ class DataSet(abc.ABC):
         name = name.lower()
         if name not in cls.datasets:
             # The dataset has not been discovered; try to load entry points
-            cls._load_dataset_entry_points()
+            cls._load_dataset_entry_points(name)
             if name in cls._entry_points:
                 cls._entry_points[name].load()
                 return load_dataset(name)
@@ -227,7 +228,10 @@ class DataSet(abc.ABC):
     @property
     def source_path(self) -> Path:
         """ Return a path to the directory in which this code lives. """
-        return Path(__file__).parent
+        try:
+            return Path(inspect.getfile(self.__class__)).parent
+        except (AttributeError, TypeError):
+            return Path(__file__)
 
     @property
     def data_source_path(self):
