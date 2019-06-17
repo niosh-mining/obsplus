@@ -15,7 +15,7 @@ from typing import (
     TypeVar,
     MutableSequence,
 )
-from types import MappingProxyType as MapProx
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -307,6 +307,9 @@ DIMS = ("stream_id", "seed_id", "time")
 # Small and BIG UTCDateTimes
 BIG_UTC = obspy.UTCDateTime("3000-01-01")
 SMALL_UTC = obspy.UTCDateTime("1970-01-01")
+
+# path to where obsplus datasets are stored by default
+OPSDATA_PATH = Path().home() / 'opsdata'
 
 # ------------------- type aliases (aliai?)
 
