@@ -27,6 +27,9 @@ steps:
     conda update -q conda
     conda info -a
     conda create -q -n test-environment python=$PYTHON_VERSION pytest obspy pandas xarray pytables
+ displayName: 'Create conda env'
+    
+ - bash: |
     conda activate test-environment
     pip install -r tests/requirements.txt
     pip install -e .
@@ -34,5 +37,4 @@ steps:
 
 - script: |
     pytest --cov obsplus && pytest --nbval docs/
-    pytest
   displayName: 'pytest'
