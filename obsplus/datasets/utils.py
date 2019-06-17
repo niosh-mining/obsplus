@@ -14,8 +14,9 @@ def _create_opsdata(opsdata_path: Path):
         return
     # else create the directory and add a readme.
     opsdata_path.mkdir(parents=True, exist_ok=True)
-    readme_path = opsdata_path / 'README.txt'
-    msg = textwrap.dedent("""
+    readme_path = opsdata_path / "README.txt"
+    msg = textwrap.dedent(
+        """
     This directory contains the data sets curated by the obsplus python
     package (github.com/niosh-mining/obsplus). 
     
@@ -23,8 +24,9 @@ def _create_opsdata(opsdata_path: Path):
     the name of the directory. You can load the dataset using the
     obsplus.load_dataset function and passing the name of the data set as a
     string.
-    """)
-    with readme_path.open('w') as fi:
+    """
+    )
+    with readme_path.open("w") as fi:
         fi.write(msg)
 
 
@@ -43,4 +45,3 @@ def get_opsdata_path(opsdata_path: Optional[Path] = None) -> Path:
     """
     if opsdata_path is None:
         pass
-

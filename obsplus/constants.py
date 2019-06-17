@@ -309,7 +309,7 @@ BIG_UTC = obspy.UTCDateTime("3000-01-01")
 SMALL_UTC = obspy.UTCDateTime("1970-01-01")
 
 # path to where obsplus datasets are stored by default
-OPSDATA_PATH = Path().home() / 'opsdata'
+OPSDATA_PATH = Path().home() / "opsdata"
 
 # ------------------- type aliases (aliai?)
 
