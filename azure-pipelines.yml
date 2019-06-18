@@ -27,8 +27,11 @@ steps:
 - bash: sudo chown -R $USER $CONDA
   displayName: Take ownership of conda installation
 
-
-- bash: conda create --yes --quiet --name testenv pytest obspy pandas xarray pytables
+- bash: |
+    conda config --set always_yes yes --set changeps1 no
+    conda config --add channels conda-forge
+    conda update -q conda
+    conda create --yes --quiet --name testenv pytest obspy pandas xarray pytables
   displayName: Create Anaconda environment
 
 
