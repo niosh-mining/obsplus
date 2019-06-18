@@ -32,14 +32,13 @@ steps:
     conda config --add channels conda-forge
     conda update -q conda
     conda create --yes --quiet --name testenv pytest obspy pandas xarray pytables
-  displayName: Create Anaconda environment
-
-
-- bash: |
-    source activate myEnvironment
+    source activate testenv
     pip install -r tests/requirements.txt
     pip install -e .
+  displayName: Create Anaconda environment
 
-    pytest pytest --cov obsplus && pytest --nbval docs/
+- bash: |
+    source activate testenv
+    pytest --cov obsplus && pytest --nbval docs/
   displayName: pytest
 
