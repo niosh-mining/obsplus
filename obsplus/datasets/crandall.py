@@ -12,7 +12,7 @@ from obspy.clients.fdsn.mass_downloader import (
 from obspy.geodetics import kilometers2degrees
 
 from obsplus import WaveBank, events_to_df
-from obsplus.datasets.dataloader import DataSet, base_path
+from obsplus.datasets.dataset import DataSet
 from obsplus.events.utils import catalog_to_directory
 
 
@@ -32,6 +32,7 @@ class Crandall(DataSet):
     """
 
     name = "crandall"
+    version = "0.0.1"
     # Days of interest. The collapse occurred on Aug 6th
     starttime = obspy.UTCDateTime("2007-08-06")
     endtime = obspy.UTCDateTime("2007-08-10")
@@ -44,7 +45,7 @@ class Crandall(DataSet):
 
     def download_events(self):
         """ Just copy the events into a directory. """
-        cat = obspy.read_events(str(base_path / self.name / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         catalog_to_directory(cat, self.event_path)
 
     def _download_crandall(self):
@@ -56,7 +57,7 @@ class Crandall(DataSet):
             minradius=0,
             maxradius=kilometers2degrees(self.max_dist),
         )
-        cat = obspy.read_events(str(base_path / self.name / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         df = events_to_df(cat)
         for _, row in df.iterrows():
             starttime = row.time - self.time_before

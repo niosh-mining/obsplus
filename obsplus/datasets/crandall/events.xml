@@ -7627,9 +7627,6 @@
     <event publicID="smi:local/248883">
       <preferredOriginID>smi:local/404385</preferredOriginID>
       <description>
-        <text>None</text>
-      </description>
-      <description>
         <text>LR</text>
       </description>
       <creationInfo>
@@ -8220,9 +8217,6 @@
     </event>
     <event publicID="smi:local/248887">
       <preferredOriginID>smi:local/404392</preferredOriginID>
-      <description>
-        <text>None</text>
-      </description>
       <description>
         <text>LR</text>
       </description>
@@ -10203,15 +10197,6 @@
     </event>
     <event publicID="smi:local/248882">
       <preferredOriginID>smi:local/404384</preferredOriginID>
-      <description>
-        <text>None</text>
-      </description>
-      <description>
-        <text>LR</text>
-      </description>
-      <description>
-        <text>None</text>
-      </description>
       <description>
         <text>LR</text>
       </description>

@@ -8,6 +8,24 @@ obsplus master:
   - obsplus.conversions
     * Added a preserve_units flag to project and ensured forward compatibility
       with pyproj 2.x.x.
+  - obsplus.DataFrameExtractor
+    * Fixed a bug where objects with None attributes were being represented with
+      'None' rather than '' when converted to str (see #99).
+  - obsplus.datasets.crandall
+    * Deleted EventDescriptions whose text was set to 'None' (see #99).
+      NOTE: This change requires re-downloading the dataset to properly take
+      effect!
+  - obsplus.datasets.dataset
+    * Renamed from obsplus.datasets.dataloader (#100)
+    * Added a version numbering scheme to DataSet to enforce that the version of
+      a downloaded dataset matches what is required by the DataSet (#100).
+    * Changed where the datasets are stored. By default they will be stored in
+      a directory called obspdata in the users home, but this can be changed
+      using an environmental variable (#100).
+    * Removed Dataset.Path attribute and added Dataset.download_path and
+      dataset.source_path since the two are now different (#100).
+    * Added a dataset_data_path.txt file which will remember where data have
+      been downloaded so datasets can live in multiple places (#100).
   - obsplus.waveforms
     * Utils.merge_traces now does some quick checks and simply returns the
       input stream when no merging is the be performed (#97).

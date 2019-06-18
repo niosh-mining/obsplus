@@ -13,9 +13,7 @@ import pytest
 import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
-from obsplus.datasets.dataloader import base_path
 
-KEM_PATH = base_path / "kemmerer"
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
 
@@ -180,8 +178,9 @@ class TestReadDirectoryOfInventories:
 class TestReadKemInventory:
     """ read the kemmerer inventories (csv and xml) and run tests """
 
-    csv_path = KEM_PATH / "inventory.csv"
-    sml_path = KEM_PATH / "inventory.xml"
+    kem_ds = obsplus.load_dataset("kemmerer")
+    csv_path = kem_ds.source_path / "inventory.csv"
+    sml_path = kem_ds.source_path / "inventory.xml"
     sml = obspy.read_inventory(str(sml_path))
     df = pd.read_csv(csv_path)
     supported_inputs = [sml_path, sml, df, csv_path]

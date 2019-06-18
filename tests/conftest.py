@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import obsplus
+import obsplus.datasets.utils
 import obsplus.events.utils
 
 # ------------------------- define constants
@@ -307,7 +308,7 @@ def kem_archive(kemmerer_dataset):
 @pytest.fixture(scope="session")
 def kem_fetcher():
     """ return a wavefetcher of the kemmerer dataset, download if needed """
-    return obsplus.load_dataset("kemmerer")()
+    return obsplus.load_dataset("kemmerer").get_fetcher()
 
 
 @pytest.fixture(scope="class")
@@ -330,7 +331,7 @@ def tmp_ta_dir(class_tmp_dir):
 def bingham_bank_path(tmpdir_factory):
     """ Create  bank structure using Bingham dataset """
     tmpdir = tmpdir_factory.mktemp("data")
-    obsplus.copy_dataset("bingham", tmpdir)
+    obsplus.datasets.utils.copy_dataset("bingham", tmpdir)
     return str(tmpdir)
 
 

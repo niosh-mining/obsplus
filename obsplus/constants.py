@@ -15,7 +15,7 @@ from typing import (
     TypeVar,
     MutableSequence,
 )
-from types import MappingProxyType as MapProx
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -308,6 +308,9 @@ DIMS = ("stream_id", "seed_id", "time")
 BIG_UTC = obspy.UTCDateTime("3000-01-01")
 SMALL_UTC = obspy.UTCDateTime("1970-01-01")
 
+# path to where obsplus datasets are stored by default
+OPSDATA_PATH = Path().home() / "opsdata"
+
 # ------------------- type aliases (aliai?)
 
 # The waveforms processor type
@@ -448,6 +451,10 @@ NUMPY_FLOAT_TYPES = {
     np.dtype("float64"),
     np.dtype("float128"),
 }
+
+# str for types of data
+
+DATA_TYPES = ("waveform", "station", "event")
 
 # ------------------------ wavefetcher/bank stuff
 

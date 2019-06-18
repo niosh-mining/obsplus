@@ -10,7 +10,7 @@ from obspy.clients.fdsn.mass_downloader import (
 )
 
 from obsplus import EventBank
-from obsplus.datasets.dataloader import DataSet, base_path
+from obsplus.datasets.dataset import DataSet
 from obsplus.events.utils import catalog_to_directory
 
 
@@ -23,20 +23,19 @@ class Kemmerer(DataSet):
     """
 
     name = "kemmerer"
+    version = "0.0.0"
 
     bulk = [("TA", "M17A", "*", "BH?"), ("AT", "M18A", "*", "BH?")]
 
     def download_events(self):
         """ Simply copy events from base directory. """
-        cat_path = base_path / self.name / "events.xml"
+        cat_path = self.source_path / "events.xml"
         assert cat_path.exists(), "this should ship with obsplus"
         cat = obspy.read_events(str(cat_path))
         catalog_to_directory(cat, self.event_path)
-        # update index
-        EventBank(self.event_path).update_index()
 
     def _download_kemmerer(self):
-        """ downloads both stations and """
+        """ downloads both stations and waveforms """
         for station in ["M17A", "M18A"]:
             domain = RectangularDomain(
                 minlatitude=40.0,

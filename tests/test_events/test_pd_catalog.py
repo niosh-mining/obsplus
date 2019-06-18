@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 from obspy import UTCDateTime
 
+import obsplus
 from obsplus import (
     events_to_df,
     picks_to_df,
@@ -29,10 +30,8 @@ from obsplus.constants import (
     STATION_MAGNITUDE_COLUMNS,
     MAGNITUDE_COLUMNS,
 )
-from obsplus.datasets.dataloader import base_path
-from obsplus.events.utils import get_seed_id
-from obsplus.utils import getattrs, get_nslc_series
 
+from obsplus.utils import getattrs, get_nslc_series
 
 common_extractor_cols = {
     "agency_id",
@@ -427,17 +426,18 @@ class TestReadKemEvents:
     """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
 
     dataset_params = ["events.xml", "catalog.csv"]
+    base_path = obsplus.load_dataset("kemmerer").source_path.parent
 
     # fixtures
     @pytest.fixture(scope="class", params=dataset_params)
     def cat_df(self, request, kem_archive):
         """ collect all the supported inputs are parametrize"""
-        return events_to_df(base_path / "kemmerer" / request.param)
+        return events_to_df(self.base_path / "kemmerer" / request.param)
 
     @pytest.fixture(scope="class")
     def catalog(self, kem_archive):
         """ return the events """
-        return obspy.read_events(str(base_path / "kemmerer" / "events.xml"))
+        return obspy.read_events(str(self.base_path / "kemmerer" / "events.xml"))
 
     # tests
     def test_len(self, cat_df, catalog):
@@ -465,7 +465,7 @@ class TestReadPhasePicks:
 
     @pytest.fixture(scope="class")
     def tcat(self, catalog_cache):
-        """ retad in a events for testing """
+        """ read in an event for testing """
         return catalog_cache[self.cat_name]
 
     @pytest.fixture(scope="class")
@@ -558,12 +558,22 @@ class TestReadPhasePicks:
         ser = df.iloc[0]
         assert all([ser[i] == kwargs[i] for i in kwargs])
 
+    def test_none_onset(self):
+        """
+        Make sure Nones in the data get handled properly
+        """
+        waveform_id = ev.WaveformStreamID(station_code="A")
+        pick = ev.Pick(time=UTCDateTime(), waveform_id=waveform_id)
+        df = picks_to_df(pick)
+        assert df.onset.iloc[0] == ""
+        assert df.polarity.iloc[0] == ""
+
 
 class TestReadKemPicks:
     """ test for reading a variety of pick formats from the kemmerer
     dataset """
 
-    path = base_path / "kemmerer"
+    path = obsplus.load_dataset("kemmerer").source_path
     csv_path = path / "picks.csv"
     qml_path = str(path / "events.xml")
     qml = obspy.read_events(str(qml_path))

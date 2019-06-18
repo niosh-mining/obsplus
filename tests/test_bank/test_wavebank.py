@@ -24,6 +24,7 @@ from obspy import UTCDateTime as UTC
 import obsplus
 import obsplus.bank.utils
 import obsplus.bank.wavebank as sbank
+import obsplus.datasets.utils
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
@@ -868,7 +869,9 @@ class TestPutWaveForm:
     def test_put_waveforms_to_crandall_copy(self, tmpdir):
         """ ran into issue in docs where putting data into the crandall
         copy didn't work. """
-        ds = obsplus.copy_dataset(dataset="crandall", destination=Path(tmpdir))
+        ds = obsplus.datasets.utils.copy_dataset(
+            dataset="crandall", destination=Path(tmpdir)
+        )
         bank = WaveBank(ds.waveform_client)
         bank.read_index()  # this sets cache
         st = obspy.read()

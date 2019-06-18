@@ -16,7 +16,7 @@ from obspy.core.event import Event, Origin
 
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df
-from obsplus.datasets.dataloader import DataSet
+from obsplus.datasets.dataset import DataSet
 from obsplus.utils import make_time_chunks, get_reference_time
 
 WAVEFETCHERS = []
@@ -100,7 +100,7 @@ def kem_fetcher_limited():
         "smi:local/042f78e9-6089-4ed8-8f9b-47c2189a1c75",
         "smi:local/16459ce7-69ff-4fe0-8639-a980b47498bb",
     }
-    df = pd.read_csv(kemmerer_dataset.path / "catalog.csv")
+    df = pd.read_csv(kemmerer_dataset.data_path / "catalog.csv")
     df = df[df.event_id.isin(event_ids)]
     wf = Fetcher(
         waveforms=kemmerer_dataset.waveform_client,

@@ -87,6 +87,7 @@ obsplus/datasets/**/stations
 obsplus/datasets/**/events
 obsplus/datasets/**/.index
 obsplus/datasets/**/readme.txt
+obsplus/datasets/**/.version
 obsplus/**/*.mseed
 profiling/**/*.mseed
 tests/test_data/test_grid_inputs/.~*
@@ -100,6 +101,9 @@ tests/test_data/test_grid_inputs/.~*
 # copied datasets in directory folder
 docs/api
 docs/quickref/stubs
+
+# dataset path files
+.dataset_data_path.txt
 
 # mypy
 .mypy_cache
