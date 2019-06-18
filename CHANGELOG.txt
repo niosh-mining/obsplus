@@ -1,4 +1,4 @@
-obsplus master:
+obsplus 0.0.2:
   - obsplus.bank
     * Speed up wavebank.get_waveforms_bulk by time-filtering index before
       determining which files to read (see #93).
