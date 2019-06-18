@@ -426,7 +426,7 @@ class TestReadKemEvents:
     """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
 
     dataset_params = ["events.xml", "catalog.csv"]
-    base_path = obsplus.load_dataset("kemmerer").source_path
+    base_path = obsplus.load_dataset("kemmerer").source_path.parent
 
     # fixtures
     @pytest.fixture(scope="class", params=dataset_params)
@@ -573,7 +573,7 @@ class TestReadKemPicks:
     """ test for reading a variety of pick formats from the kemmerer
     dataset """
 
-    path = obsplus.load_dataset("kemmerer").source_path / "kemmerer"
+    path = obsplus.load_dataset("kemmerer").source_path
     csv_path = path / "picks.csv"
     qml_path = str(path / "events.xml")
     qml = obspy.read_events(str(qml_path))

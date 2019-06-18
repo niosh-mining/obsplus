@@ -45,7 +45,7 @@ class Crandall(DataSet):
 
     def download_events(self):
         """ Just copy the events into a directory. """
-        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         catalog_to_directory(cat, self.event_path)
 
     def _download_crandall(self):
@@ -57,7 +57,7 @@ class Crandall(DataSet):
             minradius=0,
             maxradius=kilometers2degrees(self.max_dist),
         )
-        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         df = events_to_df(cat)
         for _, row in df.iterrows():
             starttime = row.time - self.time_before

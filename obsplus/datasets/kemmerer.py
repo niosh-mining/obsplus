@@ -29,7 +29,7 @@ class Kemmerer(DataSet):
 
     def download_events(self):
         """ Simply copy events from base directory. """
-        cat_path = self.data_source_path / "events.xml"
+        cat_path = self.source_path / "events.xml"
         assert cat_path.exists(), "this should ship with obsplus"
         cat = obspy.read_events(str(cat_path))
         catalog_to_directory(cat, self.event_path)

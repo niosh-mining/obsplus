@@ -3,6 +3,8 @@ Tests for the datasets
 """
 import os
 import shutil
+import tempfile
+import functools
 from collections import defaultdict
 from pathlib import Path
 
@@ -13,7 +15,6 @@ import obsplus
 import obsplus.datasets.utils
 from obsplus.constants import DATA_TYPES
 from obsplus.datasets.dataset import DataSet
-from obsplus.datasets.utils import get_opsdata_path
 from obsplus.exceptions import (
     MissingDataFileError,
     FileHashChangedError,
@@ -22,12 +23,14 @@ from obsplus.exceptions import (
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 
 
-def make_dummy_dataset(cls_name="dummy", cls_version="1.0.0"):
+def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
     """ Create a dummy dataset and return cls definition. """
 
     class DummyDataset(DataSet):
         name = cls_name
         version = cls_version
+
+        source_path = Path(tempfile.mkdtemp())
 
         def download_events(self) -> None:
             self.data_file = self.event_path / "dummy_file.txt"
@@ -118,7 +121,7 @@ class TestDatasets:
 
     def test_readme_created(self, new_dataset):
         """ ensure the readme was created. """
-        path = new_dataset.download_path / "readme.txt"
+        path = new_dataset.data_path / "readme.txt"
         assert path.exists()
 
     def test_new_dataset(self, tmpdir):
@@ -149,12 +152,15 @@ class TestBasic:
     def test_all_files_copied(self, kemmerer_dataset):
         """ When the download logic fires all files in the source
         should be copied. """
-        dsp = kemmerer_dataset.data_source_path
-        top_level_files = [x for x in dsp.glob("*") if not x.is_dir()]
         # iterate top level files and assert each was copied
-        for tlf in top_level_files:
-            expected = kemmerer_dataset.download_path / tlf.name
+        for tlf in kemmerer_dataset.data_files:
+            expected = kemmerer_dataset.data_path / tlf.name
             assert expected.exists()
+
+    def test_get_fetcher(self, kemmerer_dataset):
+        """ ensure a datafetcher can be created. """
+        fetcher = kemmerer_dataset.get_fetcher()
+        assert isinstance(fetcher, obsplus.Fetcher)
 
 
 class TestDatasetDownloadMemory:
@@ -163,20 +169,43 @@ class TestDatasetDownloadMemory:
     downloaded. This allows datasets to live in multiple places.
     """
 
+    expected_default_data_path = Path().home() / "opsdata"
+
     @pytest.fixture()
     def temp_opsdata_path(self, tmp_path):
         """ Temporarily set environmental varialbe of where data are stored."""
         breakpoint()
         os.environ["OPSDATA_PATH"] = str(tmp_path)
 
-    def test_datasets_remember_download(self):
+    def test_datasets_remember_download(self, tmp_path):
         """
         Datasets should remember where they have downloaded data.
 
         This enables users to store data in places other than the default.
         """
         # simply download a new dataset with a specified path. Init new
-        pass
+        NewData = make_dummy_dataset(cls_name="downloadtest")
+        newdata1 = NewData(base_path=tmp_path)
+        # the data source should share the same data_path
+        newdata2 = NewData()
+        assert newdata1.data_path == newdata2.data_path
+
+    def test_default_used_when_old_deleted(self, tmp_path):
+        """ Ensure the default is used if the saved datapath is deleted. """
+        NewData = make_dummy_dataset(cls_name="delete_old_test")
+        newdata1 = NewData(base_path=tmp_path)
+        newdata2 = NewData()
+        # these should be the same data path
+        assert newdata2.data_path == newdata1.data_path
+        # until the data path gets deleted
+        newdata1.delete_data_directory()
+        # then it should default back to normal directory
+        dataset3 = NewData()
+        assert dataset3.data_path != newdata1.data_path
+        assert self.expected_default_data_path == dataset3.data_path.parent
+        dataset3.delete_data_directory()
+
+    # def test_default_
 
 
 class TestCopyDataset:
@@ -207,7 +236,7 @@ class TestCopyDataset:
         out = obsplus.datasets.utils.copy_dataset(ds)
         assert isinstance(out, DataSet)
         assert out.name == ds.name
-        assert out.download_path != ds.download_path
+        assert out.data_path != ds.data_path
 
     def test_copy_unknown_dataset(self):
         """ ensure copying a dataset that doesn't exit raises. """
@@ -236,7 +265,7 @@ class TestMD5Hash:
     @pytest.fixture
     def crandall_deleted_file(self, copied_crandall):
         """ Delete a file """
-        path = copied_crandall.download_path
+        path = copied_crandall.data_path
         for mseed in path.rglob("*.mseed"):
             os.remove(mseed)
             break
@@ -245,7 +274,7 @@ class TestMD5Hash:
     @pytest.fixture
     def crandall_changed_file(self, copied_crandall):
         """ Change a file (after hash has already run) """
-        path = copied_crandall.download_path
+        path = copied_crandall.data_path
         for mseed in path.rglob("*.mseed"):
             st = obspy.read(str(mseed))
             for tr in st:
@@ -307,7 +336,7 @@ class TestVersioning:
         """ Make sure there is a version file with the correct version number from
         what is attached to the DataSet """
         version = "1.0.0"
-        with open(dummy_dataset.download_path / dummy_dataset._version_path, "w") as fi:
+        with dummy_dataset._version_path.open("w") as fi:
             fi.write(version)
         dummy_dataset.adjust_data()
         return dummy_dataset
@@ -316,7 +345,7 @@ class TestVersioning:
     def low_version(self, dummy_dataset):
         """ Make sure the version file has a lower version number than what is attached to the DataSet"""
         version = "0.0.0"
-        with open(dummy_dataset.download_path / dummy_dataset._version_path, "w") as fi:
+        with open(dummy_dataset._version_path, "w") as fi:
             fi.write(version)
         dummy_dataset.adjust_data()
         return dummy_dataset
@@ -324,14 +353,14 @@ class TestVersioning:
     @pytest.fixture
     def high_version(self, dummy_dataset):
         version = "2.0.0"
-        with open(dummy_dataset.download_path / dummy_dataset._version_path, "w") as fi:
+        with open(dummy_dataset._version_path, "w") as fi:
             fi.write(version)
         dummy_dataset.adjust_data()
         return dummy_dataset
 
     @pytest.fixture
     def no_version(self, dummy_dataset):
-        path = dummy_dataset.download_path / dummy_dataset._version_path
+        path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
         dummy_dataset.adjust_data()
@@ -339,7 +368,7 @@ class TestVersioning:
 
     @pytest.fixture
     def re_download(self, dummy_dataset):
-        path = dummy_dataset.download_path / dummy_dataset._version_path
+        path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
         for path in [
@@ -352,7 +381,7 @@ class TestVersioning:
 
     @pytest.fixture
     def corrupt_version(self, dummy_dataset):
-        with open(dummy_dataset.download_path / dummy_dataset._version_path, "w") as fi:
+        with open(dummy_dataset._version_path, "w") as fi:
             fi.write("abcd")
         dummy_dataset.adjust_data()
         return dummy_dataset
@@ -361,49 +390,49 @@ class TestVersioning:
     def test_version_matches(self, proper_version, dataset):
         """ Try re-loading the dataset and verify that it is possible with a
         matching version number """
-        dataset(base_path=proper_version.download_path.parent)
+        dataset(base_path=proper_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(proper_version, redownloaded=False)
 
     def test_version_greater(self, high_version, dataset):
         """ Make sure a warning is issued if the version number is too high """
         with pytest.warns(UserWarning):
-            dataset(base_path=high_version.download_path.parent)
+            dataset(base_path=high_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(high_version, redownloaded=False)
 
     def test_version_less(self, low_version, dataset):
         """ Make sure an exception gets raised if the version number is too low """
         with pytest.raises(DataVersionError):
-            dataset(base_path=low_version.download_path.parent)
+            dataset(base_path=low_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(low_version, redownloaded=False)
 
     def test_no_version(self, no_version, dataset):
         """ Make sure a missing version file will trigger a re-download """
         with pytest.warns(UserWarning):
-            dataset(base_path=no_version.download_path.parent)
+            dataset(base_path=no_version.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(no_version, redownloaded=True)
 
     def test_deleted_files(self, re_download, dataset):
         """ Make sure the dataset can be re-downloaded if proper files were deleted """
-        dataset(base_path=re_download.download_path.parent)
+        dataset(base_path=re_download.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(re_download, redownloaded=True)
 
     def test_corrupt_version_file(self, corrupt_version, dataset):
         """ Make sure a bogus version file will trigger a re-download """
         with pytest.warns(UserWarning):
-            dataset(base_path=corrupt_version.download_path.parent)
+            dataset(base_path=corrupt_version.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(corrupt_version, redownloaded=True)
 
     def test_listed_files(self, low_version, dataset):
         """ Make sure the download directory is listed in excpetion. """
-        expected = str(low_version.download_path)
+        expected = str(low_version.data_path)
         with pytest.raises(DataVersionError) as e:
-            dataset(base_path=low_version.download_path.parent)
+            dataset(base_path=low_version.data_path.parent)
         assert expected in str(e), "exception should have data path to delete."
 
     def test_doesnt_delete_extra_files(self, no_version, dataset):
@@ -413,7 +442,7 @@ class TestVersioning:
         with open(path, "w") as f:
             f.write("ijkl")
         with pytest.warns(UserWarning):  # this emits a warning
-            dataset(base_path=no_version.download_path.parent)
+            dataset(base_path=no_version.data_path.parent)
         # First make sure the data were re-downloaded
         self.check_dataset(no_version, redownloaded=True)
         # Now make sure the dummy file didn't get destroyed
@@ -421,13 +450,14 @@ class TestVersioning:
             assert f.read() == "ijkl"
 
 
-class TestDatasetUtils:
-    """ Tests for dataset utilities. """
-
-    def test_base_directory_created(self, tmp_path: Path):
-        """ Ensure the base directory is created. """
-        expected_path = tmp_path / "opsdata"
-        assert not expected_path.exists()
-        out = get_opsdata_path(expected_path)
-        assert out.exists()
-        assert (out / "README.txt").exists()
+#
+# class TestDatasetUtils:
+#     """ Tests for dataset utilities. """
+#
+#     def test_base_directory_created(self, tmp_path: Path):
+#         """ Ensure the base directory is created. """
+#         expected_path = tmp_path / "opsdata"
+#         assert not expected_path.exists()
+#         out = DataSet._get_opsdata_path(expected_path)
+#         assert out.exists()
+#         assert (out / "README.txt").exists()

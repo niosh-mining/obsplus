@@ -179,8 +179,8 @@ class TestReadKemInventory:
     """ read the kemmerer inventories (csv and xml) and run tests """
 
     kem_ds = obsplus.load_dataset("kemmerer")
-    csv_path = kem_ds.source_path / kem_ds.name / "inventory.csv"
-    sml_path = kem_ds.source_path / kem_ds.name / "inventory.xml"
+    csv_path = kem_ds.source_path / "inventory.csv"
+    sml_path = kem_ds.source_path / "inventory.xml"
     sml = obspy.read_inventory(str(sml_path))
     df = pd.read_csv(csv_path)
     supported_inputs = [sml_path, sml, df, csv_path]

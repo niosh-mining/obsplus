@@ -102,5 +102,8 @@ tests/test_data/test_grid_inputs/.~*
 docs/api
 docs/quickref/stubs
 
+# dataset path files
+.dataset_data_path.txt
+
 # mypy
 .mypy_cache

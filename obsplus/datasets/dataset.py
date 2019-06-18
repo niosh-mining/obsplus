@@ -4,13 +4,15 @@ Module for loading, (and downloading) data sets
 import abc
 import copy
 import inspect
+import os
 import json
+import shutil
 from collections import OrderedDict
 from distutils.dir_util import copy_tree
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 from warnings import warn
 
 import obspy.clients.fdsn
@@ -20,7 +22,7 @@ from obspy.clients.fdsn import Client
 import obsplus
 from obsplus import WaveBank, EventBank, copy_dataset
 from obsplus.constants import DATA_TYPES
-from obsplus.datasets.utils import get_opsdata_path
+from obsplus.datasets.utils import _create_opsdata
 from obsplus.events.utils import get_event_client
 from obsplus.exceptions import (
     FileHashChangedError,
@@ -55,9 +57,16 @@ class DataSet(abc.ABC):
     datasets = {}
     data_loaded = False
     # variables for hashing datafiles and versioning
-    _version_path = ".dataset_version.txt"
-    _hash_path = ".dataset_md5_hash.json"
-    _hash_excludes = ("readme.txt", _version_path, _hash_path)
+    _version_filename = ".dataset_version.txt"
+    _hash_filename = ".dataset_md5_hash.json"
+    # the name of the file that saves where the data file were downloaded
+    _saved_dataset_path_filename = ".dataset_data_path.txt"
+    _hash_excludes = (
+        "readme.txt",
+        _version_filename,
+        _hash_filename,
+        _saved_dataset_path_filename,
+    )
 
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
@@ -85,15 +94,40 @@ class DataSet(abc.ABC):
 
     def __init__(self, base_path=None):
         """ download and load data into memory. """
-        self.base_path = get_opsdata_path(base_path)
+        self.base_path = self._get_opsdata_path(base_path)
         # create the dataset's base directory
-        self.download_path.mkdir(exist_ok=True, parents=True)
+        self.data_path.mkdir(exist_ok=True, parents=True)
         # run the download logic if needed
         self._run_downloads()
         # cache loaded dataset
         self.data_loaded = True
         if not base_path and self.name not in self._loaded_datasets:
             self._loaded_datasets[self.name] = self.copy(deep=True)
+
+    def _get_opsdata_path(self, opsdata_path: Optional[Path] = None) -> Path:
+        """
+        Get the location where datasets are stored.
+
+        Uses the following priorities:
+
+        1. Provided Path via opsdata_path
+        2. .data_path.txt file stored in the data source
+        3. An environmental name OPSDATA_PATH
+        4. The opsdata_path variable from obsplus.constants
+
+        Returns
+        -------
+        A path to the opsdata directory.
+        """
+        if opsdata_path is None:
+            opsdata_path = getattr(self._saved_data_path, "parent", None)
+            if opsdata_path is None:
+                # next look for env variable
+                opsdata_path_default = obsplus.constants.OPSDATA_PATH
+                opsdata_path = os.getenv("OPSDATA_PATH", opsdata_path_default)
+        # ensure the data path exists
+        _create_opsdata(opsdata_path)
+        return Path(opsdata_path)
 
     def _run_downloads(self):
         """ Iterate each kind of data and download if needed. """
@@ -105,8 +139,8 @@ class DataSet(abc.ABC):
             if getattr(self, needs_str) or (not version_ok):
                 # this is the first type of data to be downloaded, run hook
                 # and copy data from data source.
-                if not downloaded and self.data_source_path.exists():
-                    copy_tree(str(self.data_source_path), str(self.download_path))
+                if not downloaded and self.source_path.exists():
+                    copy_tree(str(self.source_path), str(self.data_path))
                     self.pre_download_hook()
                 downloaded = True
                 # download data, test termination criteria
@@ -121,6 +155,8 @@ class DataSet(abc.ABC):
             self.post_download_hook()
             # write a new version file
             self.write_version()
+            # write out a new saved datafile path
+            self._save_data_path()
 
     def _load(self, what, path):
         """ Load the client-like objects from disk. """
@@ -175,10 +211,16 @@ class DataSet(abc.ABC):
 
     def _write_readme(self, filename="readme.txt"):
         """ Writes the classes docstring to a file. """
-        path = self.download_path / filename
+        path = self.data_path / filename
         if not path.exists():
             with path.open("w") as fi:
                 fi.write(str(self.__doc__))
+
+    def _save_data_path(self, path=None):
+        """ Save the path to where the data where downloaded in source folder. """
+        path = Path(path or self._path_to_saved_path_file)
+        with path.open("w") as fi:
+            fi.write(str(self.data_path))
 
     @classmethod
     def load_dataset(cls, name: Union[str, "DataSet"]) -> "DataSet":
@@ -211,6 +253,11 @@ class DataSet(abc.ABC):
         else:  # The dataset has been discovered but not loaded; just loaded
             return cls.datasets[name]()
 
+    def delete_data_directory(self):
+        """ Delete the datafiles of a dataset. """
+        dataset = DataSet.load_dataset(self)
+        shutil.rmtree(dataset.data_path)
+
     @classmethod
     def _load_dataset_entry_points(cls, name=None):
         """ load and cache the dataset entry points. """
@@ -222,33 +269,64 @@ class DataSet(abc.ABC):
     # --- prescribed Paths for data
 
     @property
-    def download_path(self) -> Path:
+    def data_path(self) -> Path:
+        """
+        Return a path to where the dataset's data was/will be downloaded.
+        """
         return self.base_path / self.name
 
     @property
     def source_path(self) -> Path:
-        """ Return a path to the directory in which this code lives. """
+        """
+        Return a path to the directory where the data files included with
+        the dataset live.
+        """
         try:
-            return Path(inspect.getfile(self.__class__)).parent
+            path = Path(inspect.getfile(self.__class__)).parent
         except (AttributeError, TypeError):
-            return Path(__file__)
+            path = Path(__file__)
+        return path / self.name
 
     @property
-    def data_source_path(self):
-        """ Return a path to the data that ships with the dataset. """
-        return self.source_path / self.name
+    def _saved_data_path(self):
+        """ Load the saved data source path, else return None """
+        expected_path = self._path_to_saved_path_file
+        if expected_path.exists():
+            loaded_path = Path(expected_path.open("r").read())
+            if loaded_path.exists():
+                return loaded_path
+        return None
+
+    @property
+    def _path_to_saved_path_file(self):
+        """
+        A path to the file which keeps track of where data are downloaded.
+        """
+        return self.source_path / self._saved_dataset_path_filename
+
+    @property
+    def _version_path(self):
+        """ A path to the saved version file. """
+        return self.data_path / self._version_filename
+
+    @property
+    @lru_cache()
+    def data_files(self) -> Tuple[Path, ...]:
+        """ Return a list of top-level files associated with the dataset. """
+        file_iterator = self.source_path.glob("*")
+        return tuple([x for x in file_iterator if not x.is_dir()])
 
     @property
     def waveform_path(self) -> Path:
-        return self.download_path / "waveforms"
+        return self.data_path / "waveforms"
 
     @property
     def event_path(self) -> Path:
-        return self.download_path / "events"
+        return self.data_path / "events"
 
     @property
     def station_path(self) -> Path:
-        return self.download_path / "stations"
+        return self.data_path / "stations"
 
     # --- checks for if each type of data is downloaded
 
@@ -305,7 +383,7 @@ class DataSet(abc.ABC):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
 
-    def create_md5_hash(self, path=_hash_path, hidden=False) -> dict:
+    def create_md5_hash(self, path=_hash_filename, hidden=False) -> dict:
         """
         Create an md5 hash of all dataset's files to ensure dataset integrity.
 
@@ -319,11 +397,11 @@ class DataSet(abc.ABC):
         hidden
             If True also include hidden files
         """
-        out = md5_directory(self.download_path, exclude="readme.txt", hidden=hidden)
+        out = md5_directory(self.data_path, exclude="readme.txt", hidden=hidden)
         if path is not None:
             # sort dict to mess less with git
             sort_dict = OrderedDict(sorted(out.items()))
-            with (self.download_path / Path(path)).open("w") as fi:
+            with (self.data_path / Path(path)).open("w") as fi:
                 json.dump(sort_dict, fi)
         return out
 
@@ -342,12 +420,12 @@ class DataSet(abc.ABC):
         """
         # TODO figure this out (data seem to have changed on IRIS' end)
         # If there is not a pre-existing hash file return
-        hash_path = Path(self.download_path / self._hash_path)
+        hash_path = Path(self.data_path / self._hash_filename)
         if not hash_path.exists():
             return
         # get old and new hash, and overlaps
         old_hash = json.load(hash_path.open())
-        current_hash = md5_directory(self.download_path, exclude=self._hash_excludes)
+        current_hash = md5_directory(self.data_path, exclude=self._hash_excludes)
         overlap = set(old_hash) & set(current_hash) - set(self._hash_excludes)
         # get any files with new hashes
         has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
@@ -384,7 +462,7 @@ class DataSet(abc.ABC):
         version_ok : bool
             True if the version matches what is expected.
         """
-        redownload_msg = f"Delete the following directory {self.download_path}"
+        redownload_msg = f"Delete the following directory {self.data_path}"
         try:
             version = self.read_data_version()
         except DataVersionError:  # The data version cannot be read from disk
@@ -404,7 +482,7 @@ class DataSet(abc.ABC):
 
     def write_version(self):
         """ Write the version string to disk. """
-        version_path = Path(self.download_path) / self._version_path
+        version_path = self._version_path
         with version_path.open("w") as fi:
             fi.write(self.version)
 
@@ -414,7 +492,7 @@ class DataSet(abc.ABC):
 
         Raise a DataVersionError if not found.
         """
-        version_path = Path(self.download_path) / self._version_path
+        version_path = self._version_path
         if not version_path.exists():
             raise DataVersionError(f"{version_path} does not exist!")
         with version_path.open("r") as fi:

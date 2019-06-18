@@ -36,25 +36,6 @@ def _create_opsdata(opsdata_path: Path):
         fi.write(msg)
 
 
-def get_opsdata_path(opsdata_path: Optional[Path] = None) -> Path:
-    """
-    Simple script to get the location where datasets are stored.
-
-    Uses the following priorities:
-
-    1. Look for an environmental name OPSDATA_PATH, if defined return it.
-    2. Get the opsdata_path variable from obsplus.constants and return it.
-
-    Returns
-    -------
-    A path to the opsdata directory.
-    """
-    if opsdata_path is None:
-        opsdata_path = os.getenv("OPSDATA_PATH", OPSDATA_PATH)
-    _create_opsdata(opsdata_path)
-    return opsdata_path
-
-
 def copy_dataset(
     dataset: Union[str, "DataSet"], destination: Optional[Union[str, Path]] = None
 ) -> "DataSet":
@@ -76,7 +57,7 @@ def copy_dataset(
     A new dataset object which refers to the copied files.
     """
     dataset = obsplus.load_dataset(dataset)
-    expected_path: Path = dataset.download_path
+    expected_path: Path = dataset.data_path
     assert expected_path.exists(), f"{expected_path} not yet downloaded"
     # make destination paths and copy
     if destination is None:  # use a temp directory if none specified

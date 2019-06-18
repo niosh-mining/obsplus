@@ -39,7 +39,7 @@ class Bingham(DataSet):
 
     def download_events(self):
         """ Simply copy events from base directory. """
-        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         catalog_to_directory(cat, self.event_path)
 
     def _download_bingham(self):
@@ -52,7 +52,7 @@ class Bingham(DataSet):
             maxradius=kilometers2degrees(self.max_dist),
         )
         chan_priorities = ["HH[ZNE]", "BH[ZNE]", "EL[ZNE]", "EN[ZNE]"]
-        cat = obspy.read_events(str(self.data_source_path / "events.xml"))
+        cat = obspy.read_events(str(self.source_path / "events.xml"))
         df = events_to_df(cat)
         for _, row in df.iterrows():
             starttime = row.time - self.time_before
