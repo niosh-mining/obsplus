@@ -24,6 +24,8 @@ obsplus master:
       using an environmental variable (#100).
     * Removed Dataset.Path attribute and added Dataset.download_path and
       dataset.source_path since the two are now different (#100).
+    * Added a dataset_data_path.txt file which will remember where data have
+      been downloaded so datasets can live in multiple places (#100).
   - obsplus.waveforms
     * Utils.merge_traces now does some quick checks and simply returns the
       input stream when no merging is the be performed (#97).
