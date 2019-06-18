@@ -312,9 +312,14 @@ class DataSet(abc.ABC):
     @property
     @lru_cache()
     def data_files(self) -> Tuple[Path, ...]:
-        """ Return a list of top-level files associated with the dataset. """
+        """
+        Return a list of top-level files associated with the dataset.
+
+        Hidden files are ignored.
+        """
         file_iterator = self.source_path.glob("*")
-        return tuple([x for x in file_iterator if not x.is_dir()])
+        files = [x for x in file_iterator if not x.is_dir()]
+        return tuple([x for x in files if not x.name.startswith(".")])
 
     @property
     def waveform_path(self) -> Path:

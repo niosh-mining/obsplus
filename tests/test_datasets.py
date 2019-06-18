@@ -171,12 +171,6 @@ class TestDatasetDownloadMemory:
 
     expected_default_data_path = Path().home() / "opsdata"
 
-    @pytest.fixture()
-    def temp_opsdata_path(self, tmp_path):
-        """ Temporarily set environmental varialbe of where data are stored."""
-        breakpoint()
-        os.environ["OPSDATA_PATH"] = str(tmp_path)
-
     def test_datasets_remember_download(self, tmp_path):
         """
         Datasets should remember where they have downloaded data.
