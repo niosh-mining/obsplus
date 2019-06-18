@@ -1,34 +1,61 @@
 """
 Tests for the datasets
 """
-from collections import defaultdict
 import os
-from pathlib import Path
 import shutil
-import sys
+from collections import defaultdict
+from pathlib import Path
 
 import obspy
 import pytest
 
 import obsplus
 import obsplus.datasets.utils
+from obsplus.constants import DATA_TYPES
 from obsplus.datasets.dataset import DataSet
 from obsplus.datasets.utils import get_opsdata_path
-from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.exceptions import (
     MissingDataFileError,
     FileHashChangedError,
     DataVersionError,
 )
+from obsplus.interfaces import WaveformClient, EventClient, StationClient
+
+
+def make_dummy_dataset(cls_name="dummy", cls_version="1.0.0"):
+    """ Create a dummy dataset and return cls definition. """
+
+    class DummyDataset(DataSet):
+        name = cls_name
+        version = cls_version
+
+        def download_events(self) -> None:
+            self.data_file = self.event_path / "dummy_file.txt"
+            self.data_file1 = self.event_path / "dummy_file1.txt"
+            os.makedirs(self.event_path, exist_ok=True)
+            with open(self.data_file, "w") as f:
+                f.write("test")
+            with open(self.data_file1, "w") as f:
+                f.write("abcd")
+
+        def download_stations(self) -> None:
+            os.makedirs(self.station_path, exist_ok=True)
+
+        def download_waveforms(self) -> None:
+            os.makedirs(self.waveform_path, exist_ok=True)
+
+        def adjust_data(self) -> None:
+            os.remove(self.data_file)
+            with open(self.data_file1, "w") as f:
+                f.write("efgh")
+
+    return DummyDataset
 
 
 @pytest.fixture(scope="session", params=list(DataSet.datasets))
 def dataset(request):
     """ laod in the datasets """
     return DataSet.datasets[request.param]
-
-
-names = ("event", "station", "waveform")
 
 
 @pytest.mark.dataset
@@ -64,7 +91,7 @@ class TestDatasets:
         def _fail(*args, **kwargs):
             pytest.fail("this should not get called!")
 
-        for name in names:
+        for name in DATA_TYPES:
             func_name = "download_" + name + "s"
             old_download_funcs[name] = getattr(ds, func_name)
             setattr(ds, func_name, _fail)
@@ -72,19 +99,19 @@ class TestDatasets:
         yield ds
         # reset monkey patching
         ds._load_funcs = old_load_funcs
-        for name in names:
+        for name in DATA_TYPES:
             func_name = "download_" + name + "s"
             setattr(ds, func_name, old_download_funcs[name])
 
     def test_clients(self, datafetcher):
         """ Each dataset should have waveform, event, and station clients """
-        for name, ctype in zip(names, self.client_types):
+        for name, ctype in zip(DATA_TYPES, self.client_types):
             obj = getattr(datafetcher, name + "_client", None)
             assert isinstance(obj, ctype) or obj is None
 
     def test_directory_created(self, new_dataset):
         """ ensure the new directory was created. """
-        for name in names:
+        for name in DATA_TYPES:
             path = getattr(new_dataset, name + "_path")
             assert path.exists()
             assert path.is_dir()
@@ -130,6 +157,28 @@ class TestBasic:
             assert expected.exists()
 
 
+class TestDatasetDownloadMemory:
+    """
+    Once downloaded datasets should remember to where they were
+    downloaded. This allows datasets to live in multiple places.
+    """
+
+    @pytest.fixture()
+    def temp_opsdata_path(self, tmp_path):
+        """ Temporarily set environmental varialbe of where data are stored."""
+        breakpoint()
+        os.environ["OPSDATA_PATH"] = str(tmp_path)
+
+    def test_datasets_remember_download(self):
+        """
+        Datasets should remember where they have downloaded data.
+
+        This enables users to store data in places other than the default.
+        """
+        # simply download a new dataset with a specified path. Init new
+        pass
+
+
 class TestCopyDataset:
     """ tests for copying datasets. """
 
@@ -144,7 +193,7 @@ class TestCopyDataset:
             pytest.fail()  # this should never be called
 
         # monkey patch download methods with fail to ensure they aren't called
-        for name in names:
+        for name in DATA_TYPES:
             attr = f"download_{name}s"
             monkeypatch.setattr(cls, attr, fail)
 
@@ -243,31 +292,7 @@ class TestVersioning:
     def dataset(self):
         """ Create a stupidly simple dataset """
 
-        class DummyDataset(DataSet):
-            name = "dummy"
-            version = "1.0.0"
-
-            def download_events(self) -> None:
-                self.data_file = self.event_path / "dummy_file.txt"
-                self.data_file1 = self.event_path / "dummy_file1.txt"
-                os.makedirs(self.event_path, exist_ok=True)
-                with open(self.data_file, "w") as f:
-                    f.write("test")
-                with open(self.data_file1, "w") as f:
-                    f.write("abcd")
-
-            def download_stations(self) -> None:
-                os.makedirs(self.station_path, exist_ok=True)
-
-            def download_waveforms(self) -> None:
-                os.makedirs(self.waveform_path, exist_ok=True)
-
-            def adjust_data(self) -> None:
-                os.remove(self.data_file)
-                with open(self.data_file1, "w") as f:
-                    f.write("efgh")
-
-        return DummyDataset
+        return make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
 
     @pytest.fixture
     def dummy_dataset(self, tmpdir_factory, dataset):

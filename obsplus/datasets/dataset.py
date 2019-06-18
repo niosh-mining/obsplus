@@ -362,7 +362,7 @@ class DataSet(abc.ABC):
             msg = f"The following files are missing: \n{missing}"
             raise MissingDataFileError(msg)
 
-    def check_version(self, path=_version_path):
+    def check_version(self):
         """
         Check the version of the dataset.
 
