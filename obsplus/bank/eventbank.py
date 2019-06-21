@@ -127,12 +127,12 @@ class EventBank(_Bank):
 
     @property
     def last_updated(self):
-        """ Return the last modified time stored in the index, else None """
+        """ Return the last modified time stored in the index, else 0.0 """
         with sql_connection(self.index_path) as con:
             try:
                 return _read_table(self._time_node, con).loc[0, "time"]
             except (pd.io.sql.DatabaseError, KeyError):  # table is empty
-                return None
+                return 0.0
 
     @property
     def _path_structure(self):
