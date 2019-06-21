@@ -757,27 +757,14 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
     -------
 
     """
-    if mtime is None:
-        # mtime doesn't need to be checked for None for every-file - this can
-        # be slow for large unindexed databases.
-        for entry in os.scandir(path):
-            if entry.is_file() and (ext is None or entry.name.endswith(ext)):
+    for entry in os.scandir(path):
+        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
+            if mtime is None or entry.stat().st_mtime >= mtime:
                 if entry.name[0] != "." or not skip_hidden:
                     yield entry.path
-            elif entry.is_dir():
-                yield from iter_files(
-                    entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
-                )
-    else:
-        for entry in os.scandir(path):
-            if entry.is_file() and (ext is None or entry.name.endswith(ext)):
-                if entry.stat().st_mtime >= mtime:
-                    if entry.name[0] != "." or not skip_hidden:
-                        yield entry.path
-            elif entry.is_dir():
-                yield from iter_files(
-                    entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
-                )
+        elif entry.is_dir():
+            yield from iter_files(entry.path, ext=ext, mtime=mtime,
+                                  skip_hidden=skip_hidden)
 
 
 def get_distance_df(
