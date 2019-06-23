@@ -39,6 +39,8 @@ class _Bank(ABC):
     bank_path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
+    use_progress_bar = True  # See PR #106 - indexing for progress bar can slow
+    # indexing process down.
     # concurrency handling features
     _lock_file_name = ".~obsplus_hdf5.lock"
     _owns_lock = False

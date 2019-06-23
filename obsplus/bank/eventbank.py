@@ -181,10 +181,7 @@ class EventBank(_Bank):
 
     @thread_lock_function()
     def update_index(
-        self,
-        bar: Optional = None,
-        min_files_for_bar: int = 100,
-        num_files: Optional[int] = None,
+        self, bar: Optional = None, min_files_for_bar: int = 100
     ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
@@ -198,15 +195,12 @@ class EventBank(_Bank):
         min_files_for_bar
             Minimum number of un-indexed files required for displaying the
             progress bar.
-        num_files
-            The number of files to be indexed - used only for bar. If not set
-            the number of files will be counted. For large databases this can
-            be a large time-sink, so you can set num_files to something
-            representative.
         """
         self._enforce_min_version()
-        if num_files is None:
+        if self.use_progress_bar:
             num_files = sum([1 for _ in self._unindexed_file_iterator()])
+        else:
+            num_files = -1
         if num_files >= min_files_for_bar:
             print(f"updating or creating event index for {self.bank_path}")
         kwargs = {"min_value": min_files_for_bar, "max_value": num_files}
