@@ -31,6 +31,7 @@ from obsplus.constants import (
     EVENT_NAME_STRUCTURE,
     EVENT_DTYPES,
     get_events_parameters,
+    bar_paramter_description,
 )
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import (
@@ -39,6 +40,7 @@ from obsplus.utils import (
     thread_lock_function,
     compose_docstring,
 )
+from obsplus.interfaces import ProgressBar
 
 # --- define static types
 
@@ -99,6 +101,7 @@ class EventBank(_Bank):
 
     namespace = "/events"
     index_name = ".index.db"  # name of index file
+    _min_files_for_bar = 50
 
     def __init__(
         self,
@@ -180,28 +183,17 @@ class EventBank(_Bank):
         return df
 
     @thread_lock_function()
-    def update_index(
-        self, bar: Optional = None, min_files_for_bar: int = 100
-    ) -> "EventBank":
+    @compose_docstring(bar_paramter_description=bar_paramter_description)
+    def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
         Parameters
         ----------
-        bar
-            An class that has an `update` and `finish` method, should behave
-            the same as the progressbar.ProgressBar class. This method provides
-            a way to override the default progress bar but is rarely needed.
-        min_files_for_bar
-            Minimum number of un-indexed files required for displaying the
-            progress bar.
+        {bar_parameter_description}
         """
-        self._enforce_min_version()
-        num_files = sum([1 for _ in self._unindexed_file_iterator()])
-        if num_files >= min_files_for_bar:
-            print(f"updating or creating event index for {self.bank_path}")
-        kwargs = {"min_value": min_files_for_bar, "max_value": num_files}
-        bar = get_progressbar(**kwargs) if bar is None else bar(**kwargs)
+        self._enforce_min_version()  # delete index if schema has changed
+        bar = self.get_progress_bar(bar)  # get ProgressBar or None
         # loop over un-index files and update
         events, update_time, paths = [], [], []
         for num, fi in enumerate(self._unindexed_file_iterator()):
@@ -213,15 +205,15 @@ class EventBank(_Bank):
                 update_time.append(getmtime(fi))
                 paths.append(fi.replace(self.bank_path, ""))
             # update progress bar
-            if bar and num % self._bar_update_interval == 0:
+            if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)
-        getattr(bar, "finish", lambda: None)()  # call finish if it exists
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(obspy.Catalog(events=events))
         df["updated"] = update_time
         df["path"] = paths
         if len(df):
             self._write_update(self._clean_dataframe(df))
+        getattr(bar, "finish", lambda: None)()  # call finish if bar exists
         return self
 
     def _clean_dataframe(self, df: pd.DataFrame):

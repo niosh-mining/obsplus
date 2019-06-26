@@ -19,7 +19,8 @@ from pandas.io.sql import DatabaseError
 
 import obsplus
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
-from obsplus.utils import iter_files
+from obsplus.interfaces import ProgressBar
+from obsplus.utils import iter_files, get_progressbar
 
 
 BankType = TypeVar("BankType", bound="_Bank")
@@ -39,6 +40,7 @@ class _Bank(ABC):
     bank_path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
+    # indexing process down.
     # concurrency handling features
     _lock_file_name = ".~obsplus_hdf5.lock"
     _owns_lock = False
@@ -50,7 +52,9 @@ class _Bank(ABC):
     # the minimum obsplus version. If not met delete index and re-index
     # bump when database schema change.
     _min_version = "0.0.0"
+    # status bar attributes
     _bar_update_interval = 50  # number of files before updating bar
+    _min_files_for_bar = 100  # min number of files before using bar enabled
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
@@ -224,3 +228,33 @@ class _Bank(ABC):
             with suppress(FileNotFoundError):
                 os.unlink(self.lock_file_path)
             self._owns_lock = False
+
+    def get_progress_bar(self, bar=None) -> Optional[ProgressBar]:
+        """
+        Return a progress bar instance based on bar parameter.
+
+        If bar is False, return None.
+        If bar is None return default Bar
+        If bar is a subclass of ProgressBar, init class and set max_values.
+        If bar is an instance of ProgressBar, return it.
+        """
+        # conditions to bail out early
+        if bar is False:  # False indicates no bar is to be used
+            return None
+        elif isinstance(bar, ProgressBar):  # bar is already instantiated
+            return bar
+        # next, count number of files
+        num_files = sum([1 for _ in self._unindexed_file_iterator()])
+        if num_files < self._min_files_for_bar:  # not enough files to use bar
+            return None
+        # instantiate bar and return
+        print(f"updating or creating event index for {self.bank_path}")
+        kwargs = {"min_value": self._min_files_for_bar, "max_value": num_files}
+        # an instance should be init'ed
+        if isinstance(bar, type) and issubclass(bar, ProgressBar):
+            return bar(**kwargs)
+        elif bar is None:
+            return get_progressbar(**kwargs)
+        else:
+            msg = f"{bar} is not a valid input for get_progress_bar"
+            raise ValueError(msg)

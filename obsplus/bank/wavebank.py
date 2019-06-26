@@ -33,6 +33,7 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     utc_time_type,
     get_waveforms_parameters,
+    bar_paramter_description,
 )
 from obsplus.utils import (
     compose_docstring,
@@ -123,6 +124,7 @@ class WaveBank(_Bank):
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
     min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
+    _min_files_for_bar = 5000  # number of files before progress bar kicks in
 
     # ----------------------------- setup stuff
 
@@ -178,30 +180,17 @@ class WaveBank(_Bank):
         )
 
     @thread_lock_function()
-    def update_index(
-        self, bar: Optional = None, min_files_for_bar: int = 5000
-    ) -> "WaveBank":
+    @compose_docstring(bar_paramter_description=bar_paramter_description)
+    def update_index(self, bar: Optional = None) -> "WaveBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
         Parameters
         ----------
-        bar
-            An class that has an `update` and `finish` method, should behave
-            the same as the progressbar.ProgressBar class. This method provides
-            a way to override the default progress bar and is used only for
-            hooking this class into larger (graphical) systems.
-        min_files_for_bar
-            Minimum number of un-indexed files required for using the
-            progress bar.
+        {bar_parameter_description}
         """
-        self._enforce_min_version()
-        num_files = sum([1 for _ in self._unindexed_file_iterator()])
-        if num_files >= min_files_for_bar:
-            print(f"updating or creating waveform index for {self.bank_path}")
-        kwargs = {"min_value": min_files_for_bar, "max_value": num_files}
-        # init progress bar
-        bar = get_progressbar(**kwargs) if bar is None else bar(**kwargs)
+        self._enforce_min_version()  # delete index if schema has changed
+        bar = self.get_progress_bar(bar)  # get progress bar
         update_time = time.time()
         # loop over un-index files and add info to index
         updates = []
@@ -210,13 +199,13 @@ class WaveBank(_Bank):
             # update bar
             if bar and num % self._bar_update_interval == 0:
                 bar.update(num)
-        getattr(bar, "finish", lambda: None)()  # call finish if applicable
-
+        # push updates to index
         if len(updates):  # flatten list and make df
             with self.lock_index():
                 self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
+        getattr(bar, "finish", lambda: None)()  # finish bar
         return self
 
     def _write_update(self, updates, update_time):
