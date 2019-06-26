@@ -6,6 +6,7 @@ import os
 
 import obspy
 import obspy.core.event as ev
+from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 import numpy as np
 import pandas as pd
 import pytest
@@ -253,6 +254,23 @@ class TestReadIndexQueries:
         """ assert bad query param will raise """
         with pytest.raises(ValueError):
             bing_ebank.read_index(minradius=20)
+
+    def test_query_circular(self, bing_ebank):
+        latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
+        df = bing_ebank.read_index(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
+        for lat, lon in zip(df["latitude"], df["longitude"]):
+            dist, _, _ = gps2dist_azimuth(latitude, longitude, lat, lon)
+            assert minradius <= kilometer2degrees(dist) <= maxradius
+
+    def test_query_circular_bad_params(self, bing_ebank):
+        """Check that latitude, longitude can't be used with minlatitude etc"""
+        with pytest.raises(ValueError):
+            bing_ebank.read_index(latitude=12, minlatitude=13)
 
     def test_no_none_strs(self, bing_ebank):
         """

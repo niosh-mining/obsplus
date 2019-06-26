@@ -1,3 +1,6 @@
+obsplus.master:
+  - obsplus.bank
+    * Add support for circular searches.
 obsplus 0.0.2:
   - obsplus.bank
     * Speed up wavebank.get_waveforms_bulk by time-filtering index before

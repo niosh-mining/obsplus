@@ -523,6 +523,16 @@ minlongitude: float, optional
     Limit to events with a longitude larger than the specified minimum.
 maxlongitude: float, optional
     Limit to events with a longitude smaller than the specified maximum.
+latitude: float, optional
+    Specify the latitude to be used for a radius search.
+longitude: float, optional
+    Specify the longitude to the used for a radius search.
+minradius: float, optional
+    Limit to events within the specified minimum number of degrees from 
+    the geographic point defined by the latitude and longitude parameters.
+maxradius: float, optional
+    Limit to events within the specified maximum number of degrees from 
+    the geographic point defined by the latitude and longitude parameters.
 mindepth: float, optional
     Limit to events with depth, in kilometers, larger than the specified
     minimum.
