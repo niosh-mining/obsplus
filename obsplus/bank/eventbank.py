@@ -289,7 +289,11 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = self.bank_path + self.read_index(columns="path", **kwargs).path
+        # Needs to read in latitude and longitude to support circular queries.
+        paths = (
+            self.bank_path
+            + self.read_index(columns=["path", "latitude", "longitude"], **kwargs).path
+        )
         cats = (obspy.read_events(x) for x in paths)
         try:
             return reduce(add, cats)

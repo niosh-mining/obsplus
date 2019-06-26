@@ -314,6 +314,21 @@ class TestGetEvents:
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
         assert cat == catalog.get_events(starttime=t1, endtime=t2)
 
+    def test_query_circular(self, bing_ebank, catalog):
+        latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
+        cat = bing_ebank.get_events(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
+        assert cat == catalog.get_events(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
+
     def test_issue_30(self, crandall_dataset):
         """ ensure eventid can accept a numpy array. see #30. """
         ds = crandall_dataset
