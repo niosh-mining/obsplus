@@ -4,7 +4,7 @@ Class for interacting with events on a filesystem.
 
 import time
 import warnings
-from functools import reduce
+from functools import reduce, partial
 from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
@@ -25,6 +25,7 @@ from obsplus.bank.utils import (
     _read_table,
     _get_tables,
     _drop_rows,
+    _try_read_catalog,
 )
 from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
@@ -45,11 +46,11 @@ COLUMN_TYPES = dict(EVENT_DTYPES)
 COLUMN_TYPES.pop("stations", None)
 COLUMN_TYPES["path"] = str
 STR_COLUMNS = {i for i, v in COLUMN_TYPES.items() if issubclass(v, str)}
+INT_COLUMNS = {i for i, v in COLUMN_TYPES.items() if v is int}
 
 # unsupported query options
 
 UNSUPPORTED_QUERY_OPTIONS = set()
-
 
 # int_cols = {key for key, val in column_types.items() if val is int}
 
@@ -174,17 +175,12 @@ class EventBank(_Bank):
                 df = _read_table(self._index_node, con, **kwargs)
             except pd.io.sql.DatabaseError:  # empty or no db, return empty index
                 df = pd.DataFrame(columns=list(COLUMN_TYPES))
-        # coerce datatypes
-        dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
-        df = df.astype(dtype=dtype)
-        # replace "None" with None on str columns
-        str_cols = STR_COLUMNS & set(df.columns)
-        df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [None])
+        df = self._prepare_dataframe(df)
         if len(circular_kwargs) >= 3:
             # Requires at least latitude, longitude and min or max radius
             circular_ids = _get_ids(df, circular_kwargs)
             df = df[df.event_id.isin(circular_ids)]
-        return df.set_index("event_id")
+        return df
 
     @compose_docstring(bar_paramter_description=bar_paramter_description)
     def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
@@ -200,7 +196,7 @@ class EventBank(_Bank):
         # loop over un-index files and update
         events, update_time, paths = [], [], []
         for num, fi in enumerate(self._unindexed_file_iterator()):
-            cat = try_read_catalog(fi, format=self.format)
+            cat = _try_read_catalog(fi, format=self.format)
             if cat is None:
                 continue
             for event in cat:
@@ -215,26 +211,33 @@ class EventBank(_Bank):
         df["updated"] = update_time
         df["path"] = paths
         if len(df):
-            self._write_update(self._clean_dataframe(df))
+            self._write_update(self._prepare_dataframe(df))
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
         return self
 
-    def _clean_dataframe(self, df: pd.DataFrame):
-        """ clean the dataframe by casting add dtypes """
+    def _prepare_dataframe(self, df: pd.DataFrame):
+        """
+        Fill missing values and casting data types.
+        """
+        # replace "None" with empty string for str columns
+        str_cols = STR_COLUMNS & set(df.columns)
+        df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [""])
         # fill dummy int values
-        for row, dtype in COLUMN_TYPES.items():
-            if dtype is int:
-                df[row] = df[row].fillna(-999)
-        # cast types and set index
-        df = df.astype(COLUMN_TYPES)[list(COLUMN_TYPES)]
-        return df.set_index("event_id")
+        int_cols = INT_COLUMNS & set(df.columns)
+        df.loc[:, int_cols] = df.loc[:, int_cols].fillna(-999)
+        # get expected datatypes
+        dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
+        # order columns, set types, reset index
+        return df[list(dtype)].astype(dtype=dtype).reset_index(drop=True)
 
     def _write_update(self, df: pd.DataFrame):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and cast to correct types
         assert not df.duplicated().any(), "update index has duplicate entries"
 
-        current = self.read_index(event_id=set(df.index))
+        # set both dfs to use index of event_id
+        df = df.set_index("event_id")
+        current = self.read_index(event_id=set(df.index)).set_index("event_id")
         indicies_to_update = set(current.index) & set(df.index)
 
         # populate index store and update metadata
@@ -275,14 +278,10 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        # Needs to read in latitude and longitude to support circular queries.
-        paths = (
-            self.bank_path
-            + self.read_index(columns=["path", "latitude", "longitude"], **kwargs).path
-        )
-        cats = (obspy.read_events(x) for x in paths)
+        read_func = partial(_try_read_catalog, format=self.format)
+        paths = self.bank_path + self.read_index(columns="path", **kwargs).path
         try:
-            return reduce(add, cats)
+            return reduce(add, self._map(read_func, paths.values))
         except TypeError:  # empty events
             return obspy.Catalog()
 
@@ -305,11 +304,10 @@ class EventBank(_Bank):
         events = [catalog] if isinstance(catalog, ev.Event) else catalog
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]
-        df = self.read_index(event_id=event_ids)
-        index = set(df.index)
+        df = self.read_index(event_id=event_ids).set_index("event_id")
         for event in events:
             rid = str(event.resource_id)
-            if rid in index:  # event needs to be updated
+            if rid in df.index:  # event needs to be updated
                 path = self.bank_path + df.loc[rid, "path"]
                 assert exists(path)
                 event.write(path, self.format)
