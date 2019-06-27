@@ -53,7 +53,6 @@ INT_COLUMNS = {i for i, v in COLUMN_TYPES.items() if v is int}
 
 UNSUPPORTED_QUERY_OPTIONS = set()
 
-
 # int_cols = {key for key, val in column_types.items() if val is int}
 
 
@@ -199,8 +198,6 @@ class EventBank(_Bank):
         ----------
         {bar_parameter_description}
         """
-        self._enforce_min_version()  # delete index if schema has changed
-
         def func(path):
             """ Function to yield events, update_time and paths. """
             cat = _try_read_catalog(path, format=self.format)
