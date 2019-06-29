@@ -941,7 +941,7 @@ def md5_directory(
             if fnmatch.fnmatch(sub_path.name, exc):
                 keep = False
                 break
-        if sub_path.name.startswith("."):
+        if not hidden and sub_path.name.startswith("."):
             keep = False
         if keep:
             out[str(sub_path.relative_to(path))] = md5(sub_path)

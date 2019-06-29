@@ -8,8 +8,7 @@ import tempfile
 import time
 import traceback
 import types
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
-from collections import Counter
+from concurrent.futures import as_completed, ProcessPoolExecutor
 from os.path import join
 from pathlib import Path
 
@@ -576,12 +575,6 @@ class TestGetWaveforms:
         bank.update_index()
         return bank
 
-    @pytest.fixture()
-    def thread_executor(self):
-        """ create a threadpool executor and return it. """
-        with ThreadPoolExecutor() as executor:
-            yield executor
-
     # tests
     def test_attr(self, ta_bank_index):
         """ test that the bank class has the get_waveforms attr """
@@ -652,22 +645,6 @@ class TestGetWaveforms:
         assert len(df) == 3
         st = bank.get_waveforms()
         assert len(st) == 3
-
-    def test_executor_get_waveforrms(self, thread_executor, ta_bank, monkeypatch):
-        """ Ensure the thread pool map function is used for reading waveforms. """
-        counter = Counter()
-        old_map = thread_executor.map
-
-        def new_map(*args, **kwargs):
-            counter.update({"calls": 1})
-            return old_map(*args, **kwargs)
-
-        monkeypatch.setattr(thread_executor, "map", new_map)
-        monkeypatch.setattr(ta_bank, "executor", thread_executor)
-
-        # get events, ensure map is used
-        _ = ta_bank.get_waveforms()
-        assert counter["calls"], "the executors map function was not called"
 
 
 class TestGetBulkWaveforms:
@@ -1249,6 +1226,31 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
+class TestConcurrentReads:
+    """
+    Tests for concurrent reads.
+    """
+
+    @pytest.fixture
+    def wbank_executor(self, ta_bank, monkeypatch, instrumented_thread_executor):
+        """ Return a wavebank with an instrumented executor. """
+        monkeypatch.setattr(ta_bank, "executor", instrumented_thread_executor)
+        os.remove(ta_bank.index_path)
+        return ta_bank
+
+    def test_concurrent_get_waveforms(self, wbank_executor):
+        """ Ensure conccurent get_waveforms uses executor. """
+        _ = wbank_executor.get_waveforms()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+    def test_concurrent_update_index(self, wbank_executor):
+        """ Ensure updating index can be performed with executor. """
+        _ = wbank_executor.update_index()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+
 class TestConcurrentUpdateIndex:
     """
     Tests to make sure running update index in different threads/processes.
@@ -1275,12 +1277,6 @@ class TestConcurrentUpdateIndex:
         self.func(wbank)
         return wbank
 
-    @pytest.fixture(scope="class")
-    def thread_pool(self):
-        """ return a thread pool """
-        with ThreadPoolExecutor(self.worker_count) as executor:
-            yield executor
-
     @pytest.fixture
     def thread_read(self, concurrent_bank, thread_pool):
         """ run a bunch of update index operations in different threads,
@@ -1289,7 +1285,7 @@ class TestConcurrentUpdateIndex:
         concurrent_bank.update_index()
         func = functools.partial(self.func, wbank=concurrent_bank)
         for _ in range(self.worker_count):
-            out.append(thread_pool.submit(func))
+            out.append(thread_executor.submit(func))
         return list(as_completed(out))
 
     @pytest.fixture(scope="class")

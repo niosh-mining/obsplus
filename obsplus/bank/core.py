@@ -1,7 +1,6 @@
 """
 Bank ABC
 """
-import gc
 import os
 import threading
 import time
@@ -12,6 +11,7 @@ from os.path import join
 from pathlib import Path
 from typing import Optional, TypeVar
 
+import gc
 import numpy as np
 import pandas as pd
 import tables
@@ -21,8 +21,6 @@ import obsplus
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils import iter_files, get_progressbar
-from obsplus.constants import CPU_COUNT
-
 
 BankType = TypeVar("BankType", bound="_Bank")
 
@@ -126,8 +124,8 @@ class _Bank(ABC):
                 warnings.warn(msg)
                 os.remove(self.index_path)
 
-    def _unindexed_file_iterator(self):
-        """ return an iterator of potential unindexed waveform files """
+    def _unindexed_iterator(self):
+        """ return an iterator of potential unindexed files """
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
         last_updated = self.last_updated  # this needs db so only call once
@@ -135,6 +133,30 @@ class _Bank(ABC):
             mtime = last_updated - 0.001
         # return file iterator
         return iter_files(self.bank_path, ext=self.ext, mtime=mtime)
+
+    def _measured_unindexed_iterator(self, bar: Optional[ProgressBar] = None):
+        """
+        A generator to yield un-indexed files and update progress bar.
+
+        Parameters
+        ----------
+        bar
+            Any object with an update method.
+
+        Returns
+        -------
+
+        """
+        # get progress bar
+        bar = self.get_progress_bar(bar)
+        # get the iterator
+        for num, path in enumerate(self._unindexed_iterator()):
+            # update bar if count is in update interval
+            if bar is not None and num % self._bar_update_interval == 0:
+                bar.update(num)
+            yield path
+        # finish progress bar
+        getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 
     def _make_meta_table(self):
         """ get a dataframe of meta info """
@@ -177,7 +199,7 @@ class _Bank(ABC):
         elif isinstance(bar, ProgressBar):  # bar is already instantiated
             return bar
         # next, count number of files
-        num_files = sum([1 for _ in self._unindexed_file_iterator()])
+        num_files = sum([1 for _ in self._unindexed_iterator()])
         if num_files < self._min_files_for_bar:  # not enough files to use bar
             return None
         # instantiate bar and return
@@ -194,7 +216,7 @@ class _Bank(ABC):
 
     def _map(self, func, args, chunksize=None):
         """
-        Map the args to function, using executor if defined else performed
+        Map the args to function, using executor if defined else perform
         in serial.
         """
         if self.executor is not None:

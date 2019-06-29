@@ -194,27 +194,31 @@ class EventBank(_Bank):
         {bar_parameter_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
-        bar = self.get_progress_bar(bar)  # get ProgressBar or None
 
-        events, update_time, paths = [], [], []
-        for num, fi in enumerate(self._unindexed_file_iterator()):
-            cat = _try_read_catalog(fi, format=self.format)
+        def func(path):
+            """ Function to yield events, update_time and paths. """
+            cat = _try_read_catalog(path, format=self.format)
+            update_time = getmtime(path)
+            path = path.replace(self.bank_path, "")
+            return cat, update_time, path
+
+        # create iterator  and lists for storing output
+        update_time = time.time()
+        iterator = self._measured_unindexed_iterator(bar)
+        events, update_times, paths = [], [], []
+        for cat, mtime, path in self._map(func, iterator):
             if cat is None:
                 continue
             for event in cat:
                 events.append(event)
-                update_time.append(getmtime(fi))
-                paths.append(fi.replace(self.bank_path, ""))
-            # update progress bar
-            if bar is not None and num % self._bar_update_interval == 0:
-                bar.update(num)
+                update_times.append(mtime)
+                paths.append(path)
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(obspy.Catalog(events=events))
-        df["updated"] = update_time
+        df["updated"] = update_times
         df["path"] = paths
         if len(df):
-            self._write_update(self._prepare_dataframe(df))
-        getattr(bar, "finish", lambda: None)()  # call finish if bar exists
+            self._write_update(self._prepare_dataframe(df), update_time)
         return self
 
     def _prepare_dataframe(self, df: pd.DataFrame):
@@ -232,7 +236,7 @@ class EventBank(_Bank):
         # order columns, set types, reset index
         return df[list(dtype)].astype(dtype=dtype).reset_index(drop=True)
 
-    def _write_update(self, df: pd.DataFrame):
+    def _write_update(self, df: pd.DataFrame, update_time=None):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and cast to correct types
         assert not df.duplicated().any(), "update index has duplicate entries"
@@ -254,8 +258,9 @@ class EventBank(_Bank):
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
             with warnings.catch_warnings():  # ignore pandas collection warning
+                timestamp = update_time or time.time()
                 warnings.simplefilter("ignore")
-                dft = pd.DataFrame(time.time(), index=[0], columns=["time"])
+                dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
                 dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None

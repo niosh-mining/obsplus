@@ -444,24 +444,25 @@ class TestProgressBar:
 class TestConcurrency:
     """ Tests for using an executor for concurrency. """
 
-    @pytest.fixture()
-    def thread_executor(self):
-        """ create a threadpool executor and return it. """
-        with ThreadPoolExecutor() as executor:
-            yield executor
+    @pytest.fixture
+    def ebank_executor(self, ebank, instrumented_thread_executor, monkeypatch):
+        """ Attach the instrument threadpool executor to ebank. """
+        monkeypatch.setattr(ebank, "executor", instrumented_thread_executor)
+        return ebank
 
-    def test_executor_get_events(self, thread_executor, ebank, monkeypatch):
+    def test_executor_get_events(self, ebank_executor):
         """ Ensure the threadpool map function is used for reading events. """
-        counter = Counter()
-        old_map = thread_executor.map
-
-        def new_map(*args, **kwargs):
-            counter.update({"calls": 1})
-            return old_map(*args, **kwargs)
-
-        monkeypatch.setattr(thread_executor, "map", new_map)
-        monkeypatch.setattr(ebank, "executor", thread_executor)
-
         # get events, ensure map is used
-        _ = ebank.get_events()
-        assert counter["calls"], "the executors map function was not called"
+        _ = ebank_executor.get_events()
+        counter = getattr(ebank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) == 1
+
+    def test_executor_index_events(self, ebank_executor):
+        """ Ensure threadpool map is used for updating the index. """
+        try:
+            os.remove(ebank_executor.index_path)
+        except FileNotFoundError:
+            pass
+        ebank_executor.update_index()
+        counter = getattr(ebank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) == 1

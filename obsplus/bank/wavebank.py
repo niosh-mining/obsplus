@@ -187,21 +187,15 @@ class WaveBank(_Bank):
         {bar_parameter_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
-        bar = self.get_progress_bar(bar)  # get progress bar
         update_time = time.time()
-        # loop over un-index files and add info to index
-        updates = []
-        for num, fi in enumerate(self._unindexed_file_iterator()):
-            updates.append(_summarize_wave_file(fi, format=self.format))
-            # update bar
-            if bar and num % self._bar_update_interval == 0:
-                bar.update(num)
-        # push updates to index
-        if len(updates):  # flatten list and make df
+        # create a function for the mapping and apply
+        func = partial(_summarize_wave_file, format=self.format)
+        updates = list(self._map(func, self._measured_unindexed_iterator(bar)))
+        # push updates to index if any were found
+        if len(updates):
             self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
-        getattr(bar, "finish", lambda: None)()  # finish bar
         return self
 
     def _write_update(self, updates, update_time):
