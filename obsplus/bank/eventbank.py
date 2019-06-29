@@ -34,6 +34,7 @@ from obsplus.constants import (
     EVENT_DTYPES,
     get_events_parameters,
     bar_paramter_description,
+    CPU_COUNT,
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
@@ -52,6 +53,7 @@ INT_COLUMNS = {i for i, v in COLUMN_TYPES.items() if v is int}
 # unsupported query options
 
 UNSUPPORTED_QUERY_OPTIONS = set()
+
 
 # int_cols = {key for key, val in column_types.items() if val is int}
 
@@ -205,6 +207,7 @@ class EventBank(_Bank):
             path = path.replace(self.bank_path, "")
             return cat, update_time, path
 
+        self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
         iterator = self._measured_unindexed_iterator(bar)

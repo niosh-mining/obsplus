@@ -22,6 +22,7 @@ import obsplus
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils import iter_files, get_progressbar
+from obsplus.constants import CPU_COUNT
 
 BankType = TypeVar("BankType", bound="_Bank")
 

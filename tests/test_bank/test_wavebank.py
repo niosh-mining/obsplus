@@ -6,9 +6,9 @@ import pathlib
 import shutil
 import tempfile
 import time
-import traceback
 import types
-from concurrent.futures import as_completed, ProcessPoolExecutor
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from os.path import join
 from pathlib import Path
 
@@ -25,7 +25,7 @@ import obsplus.bank.wavebank as sbank
 import obsplus.datasets.utils
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
-from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import make_time_chunks, iter_files, get_reference_time
 
 
@@ -575,6 +575,12 @@ class TestGetWaveforms:
         bank.update_index()
         return bank
 
+    @pytest.fixture()
+    def thread_executor(self):
+        """ create a threadpool executor and return it. """
+        with ThreadPoolExecutor() as executor:
+            yield executor
+
     # tests
     def test_attr(self, ta_bank_index):
         """ test that the bank class has the get_waveforms attr """
@@ -645,6 +651,22 @@ class TestGetWaveforms:
         assert len(df) == 3
         st = bank.get_waveforms()
         assert len(st) == 3
+
+    def test_executor_get_waveforrms(self, thread_executor, ta_bank, monkeypatch):
+        """ Ensure the thread pool map function is used for reading waveforms. """
+        counter = Counter()
+        old_map = thread_executor.map
+
+        def new_map(*args, **kwargs):
+            counter.update({"calls": 1})
+            return old_map(*args, **kwargs)
+
+        monkeypatch.setattr(thread_executor, "map", new_map)
+        monkeypatch.setattr(ta_bank, "executor", thread_executor)
+
+        # get events, ensure map is used
+        _ = ta_bank.get_waveforms()
+        assert counter["calls"], "the executors map function was not called"
 
 
 class TestGetBulkWaveforms:
