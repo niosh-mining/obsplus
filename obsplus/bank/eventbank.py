@@ -33,6 +33,7 @@ from obsplus.constants import (
     EVENT_DTYPES,
     get_events_parameters,
     bar_paramter_description,
+    CPU_COUNT,
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
@@ -51,6 +52,7 @@ INT_COLUMNS = {i for i, v in COLUMN_TYPES.items() if v is int}
 # unsupported query options
 
 UNSUPPORTED_QUERY_OPTIONS = set()
+
 
 # int_cols = {key for key, val in column_types.items() if val is int}
 
@@ -193,7 +195,7 @@ class EventBank(_Bank):
         """
         self._enforce_min_version()  # delete index if schema has changed
         bar = self.get_progress_bar(bar)  # get ProgressBar or None
-        # loop over un-index files and update
+
         events, update_time, paths = [], [], []
         for num, fi in enumerate(self._unindexed_file_iterator()):
             cat = _try_read_catalog(fi, format=self.format)
@@ -278,10 +280,11 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        read_func = partial(_try_read_catalog, format=self.format)
         paths = self.bank_path + self.read_index(columns="path", **kwargs).path
+        read_func = partial(_try_read_catalog, format=self.format)
+        kwargs = dict(chunksize=len(paths) // CPU_COUNT)
         try:
-            return reduce(add, self._map(read_func, paths.values))
+            return reduce(add, self._map(read_func, paths.values, **kwargs))
         except TypeError:  # empty events
             return obspy.Catalog()
 

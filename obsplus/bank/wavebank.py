@@ -34,6 +34,7 @@ from obsplus.constants import (
     utc_time_type,
     get_waveforms_parameters,
     bar_paramter_description,
+    CPU_COUNT,
 )
 from obsplus.utils import (
     compose_docstring,
@@ -655,14 +656,16 @@ class WaveBank(_Bank):
         # get abs path to each datafame
         files: pd.Series = (self.bank_path + index.path).unique()
         # iterate the files to read and try to load into waveforms
-        stt = obspy.Stream()
         kwargs = dict(
             format=self.format,
             starttime=obspy.UTCDateTime(starttime) if starttime else None,
             endtime=obspy.UTCDateTime(endtime) if endtime else None,
         )
-        for st in (_try_read_stream(x, **kwargs) for x in files):
-            if st is not None and len(st):
+        func = partial(_try_read_stream, **kwargs)
+
+        stt = obspy.Stream()
+        for st in self._map(func, files, chunksize=len(files) // CPU_COUNT):
+            if st is not None:
                 stt += st
         # sort out nullish nslc codes
         stt = replace_null_nlsc_codes(stt)

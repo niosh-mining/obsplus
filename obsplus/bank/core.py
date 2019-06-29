@@ -21,6 +21,7 @@ import obsplus
 from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils import iter_files, get_progressbar
+from obsplus.constants import CPU_COUNT
 
 
 BankType = TypeVar("BankType", bound="_Bank")
@@ -191,12 +192,12 @@ class _Bank(ABC):
             msg = f"{bar} is not a valid input for get_progress_bar"
             raise ValueError(msg)
 
-    def _map(self, func, args):
+    def _map(self, func, args, chunksize=None):
         """
         Map the args to function, using executor if defined else performed
         in serial.
         """
         if self.executor is not None:
-            return self.executor.map(func, args)
+            return self.executor.map(func, args, chunksize=chunksize)
         else:
             return (func(x) for x in args)
