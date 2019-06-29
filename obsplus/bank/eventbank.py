@@ -4,6 +4,7 @@ Class for interacting with events on a filesystem.
 
 import time
 import warnings
+from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
 from os.path import exists
@@ -92,10 +93,14 @@ class EventBank(_Bank):
     ext
         The extension on the files. Can be used to avoid parsing non-event
         files.
-    cache_size : int
+    cache_size
         The number of queries to store. Avoids having to read the index of
         the database multiple times for queries involving the same start and
         end times.
+    executor
+        An executor with the same interface as concurrent.futures.Executor,
+        the map method of the executor will be used for reading files and
+        updating indices.
     """
 
     namespace = "/events"
@@ -110,6 +115,7 @@ class EventBank(_Bank):
         cache_size: int = 5,
         format="quakeml",
         ext=".xml",
+        executor: Optional[Executor] = None,
     ):
         """ Initialize an instance. """
         if isinstance(base_path, EventBank):
@@ -124,6 +130,7 @@ class EventBank(_Bank):
         self.path_structure = ps
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns
+        self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
 

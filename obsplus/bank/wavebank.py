@@ -4,6 +4,7 @@ A local database for waveform formats.
 import os
 import time
 from collections import defaultdict
+from concurrent.futures import Executor
 from functools import partial, reduce
 from itertools import chain
 from operator import add
@@ -105,9 +106,14 @@ class WaveBank(_Bank):
         If True this bank will share an index with other processes, one or
         more of which may perform update_index operations. When used a simple
         file locking mechanism attempts to compensate for shortcomings in
-        HDF5 stores lack of concurrency support. This is not needed if all
-        processes are only going to read from the bank, nor is it bulletproof,
-        but it should help avoid some issues with a few concurrent processes.
+        HDF5 store's lack of concurrency support. This is not needed if all
+        processes are only reading from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a small number of concurrent
+        processes.
+    executor
+        An executor with the same interface as concurrent.futures.Executor,
+        the map method of the executor will be used for reading files and
+        updating indices.
     """
 
     # index columns and types
@@ -137,6 +143,7 @@ class WaveBank(_Bank):
         format="mseed",
         ext=None,
         concurrent_updates=False,
+        executor: Optional[Executor] = None,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -148,6 +155,7 @@ class WaveBank(_Bank):
         # get waveforms structure based on structures of path and filename
         self.path_structure = path_structure or WAVEFORM_STRUCTURE
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
+        self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
         self._concurrent = concurrent_updates
