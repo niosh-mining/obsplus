@@ -837,6 +837,43 @@ def get_distance_df(
     return df[list(DISTANCE_COLUMNS)]
 
 
+def calculate_distance(latitude: float, longitude: float, df, degrees=True):
+    """
+    Calculate the distance from all events in the dataframe to a set point.
+
+    Parameters
+    ----------
+    latitude
+        Latitude in degrees for point to calculate distance from
+    longitude
+        Longitude in degrees for point to calculate distance from
+    df
+        DataFrame to compute distances for. Must have columns titles
+        "latitude" and "longitude"
+    degrees
+        Whether to return distance in degrees (default) or in kilometers.
+    """
+
+    def _degrees_dist_func(_df):
+        return np.sqrt(
+            ((latitude % 180) - (_df["latitude"] % 180)) ** 2
+            + ((longitude % 360) - (_df["longitude"] % 360)) ** 2
+        )
+
+    def _km_dist_func(_df):
+        dist, _, _ = gps2dist_azimuth(
+            lat1=latitude, lon1=longitude, lat2=_df["latitude"], lon2=_df["longitude"]
+        )
+        return dist / 1000
+
+    if degrees:
+        _dist_func = _degrees_dist_func
+    else:
+        _dist_func = _km_dist_func
+
+    return df.apply(_dist_func, axis=1, result_type="reduce")
+
+
 @lru_cache(maxsize=2500)
 def get_regex(nslc_str):
     """ Compile, and cache regex for str queries. """

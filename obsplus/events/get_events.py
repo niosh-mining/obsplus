@@ -8,7 +8,6 @@ import numpy as np
 import obspy
 import pandas as pd
 from obspy.clients.fdsn import Client
-from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
 
@@ -88,7 +87,7 @@ def _get_ids(df, kwargs) -> set:
     df = df[filt]
     filt = np.ones(len(df)).astype(bool)
     if circular_kwargs:
-        radius = calculate_distance(
+        radius = obsplus.utils.calculate_distance(
             latitude=circular_kwargs["latitude"],
             longitude=circular_kwargs["longitude"],
             df=df,
@@ -101,34 +100,6 @@ def _get_ids(df, kwargs) -> set:
         df = df[filt]
     limit = kwargs.get("limit", len(df))
     return set(df.event_id[:limit])
-
-
-def calculate_distance(latitude: float, longitude: float, df, degrees=True):
-    """
-    Calculate the distance from all events in the dataframe to a set point.
-
-    Parameters
-    ----------
-    latitude
-        Latitude in degrees for point to calculate distance from
-    longitude
-        Longitude in degrees for point to calculate distance from
-    df
-        DataFrame to compute distances for. Must have columns titles
-        "latitude" and "longitude"
-    degrees
-        Whether to return distance in degrees (default) or in kilometers.
-    """
-
-    def _dist_func(_df):
-        dist, _, _ = gps2dist_azimuth(
-            lat1=latitude, lon1=longitude, lat2=_df["latitude"], lon2=_df["longitude"]
-        )
-        if degrees:
-            return kilometer2degrees(dist / 1000.0)
-        return dist / 1000
-
-    return df.apply(_dist_func, axis=1, result_type="reduce")
 
 
 def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
