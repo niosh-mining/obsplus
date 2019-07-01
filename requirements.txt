@@ -3,6 +3,7 @@ pandas >= 0.23.3
 obspy >= 1.1.0
 progressbar2
 xarray >= 0.10.9
+geographiclib
 cloudpickle
 scipy
 tables

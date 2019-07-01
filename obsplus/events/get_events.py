@@ -51,11 +51,16 @@ def _get_ids(df, kwargs) -> set:
     # To speed circular searches up apply an initial box filter
     circular_kwargs, kwargs = _sanitize_circular_search(**kwargs)
     if "maxradius" in circular_kwargs.keys():
+        # Make the approximated box a bit bigger to cope with flattening.
         box = {
-            "minlatitude": circular_kwargs["latitude"] - circular_kwargs["maxradius"],
-            "maxlatitude": circular_kwargs["latitude"] + circular_kwargs["maxradius"],
-            "minlongitude": circular_kwargs["longitude"] - circular_kwargs["maxradius"],
-            "maxlongitude": circular_kwargs["longitude"] + circular_kwargs["maxradius"],
+            "minlatitude": circular_kwargs["latitude"]
+            - (1.2 * circular_kwargs["maxradius"]),
+            "maxlatitude": circular_kwargs["latitude"]
+            + (1.2 * circular_kwargs["maxradius"]),
+            "minlongitude": circular_kwargs["longitude"]
+            - (1.2 * circular_kwargs["maxradius"]),
+            "maxlongitude": circular_kwargs["longitude"]
+            + (1.2 * circular_kwargs["maxradius"]),
         }
         for key, value in box.items():
             current_value = kwargs.get(key, None)

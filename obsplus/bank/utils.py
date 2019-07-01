@@ -150,12 +150,7 @@ def _summarize_event(
     name_struct
     """
     res_id = str(event.resource_id)
-    out = {
-        "ext": EVENT_EXT,
-        "event_id": res_id,
-        "event_id_short": res_id[-5:],
-        "event_id_end": res_id.split("/")[-1],
-    }
+    out = {"ext": EVENT_EXT, "event_id": res_id, "event_id_short": res_id[-5:]}
     t1 = _get_event_origin_time(event)
     out.update(_get_time_values(t1))
     path_struct = path_struct or EVENT_PATH_STRUCTURE

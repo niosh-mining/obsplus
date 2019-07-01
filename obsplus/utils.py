@@ -32,9 +32,10 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from geographiclib.geodesic import Geodesic
 from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
-from obspy.geodetics import gps2dist_azimuth
+from obspy.geodetics.base import gps2dist_azimuth, WGS84_A, WGS84_F
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 from progressbar import ProgressBar
@@ -769,6 +770,8 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
 def get_distance_df(
     entity_1: Union[event_type, inventory_type],
     entity_2: Union[event_type, inventory_type],
+    a: float = WGS84_A,
+    f: float = WGS84_F,
 ) -> pd.DataFrame:
     """
     Create a dataframe of distances and azimuths from events to stations.
@@ -781,6 +784,10 @@ def get_distance_df(
     entity_2
         An object from which latitude, longitude and depth are
         extractable.
+    a
+        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
+    f
+        Flattening of planetary body (usually Earth). Defaults to WGS84.
 
     Notes
     -----
@@ -799,7 +806,7 @@ def get_distance_df(
         """
         Function to get distances and azimuths from pairs of coordinates
         """
-        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
+        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2], a=a, f=f)[:2]
         z_diff = tup2[2] - tup1[2]
         dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
         out = dict(
@@ -837,7 +844,14 @@ def get_distance_df(
     return df[list(DISTANCE_COLUMNS)]
 
 
-def calculate_distance(latitude: float, longitude: float, df, degrees=True):
+def calculate_distance(
+    latitude: float,
+    longitude: float,
+    df,
+    degrees: bool = True,
+    a: float = WGS84_A,
+    f: float = WGS84_F,
+) -> pd.Series:
     """
     Calculate the distance from all events in the dataframe to a set point.
 
@@ -852,13 +866,27 @@ def calculate_distance(latitude: float, longitude: float, df, degrees=True):
         "latitude" and "longitude"
     degrees
         Whether to return distance in degrees (default) or in kilometers.
+    a
+        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
+    f
+        Flattening of planetary body (usually Earth). Defaults to WGS84.
+
+    Returns
+    -------
+    A series of distances indexed in the same way as the input dataframe.
     """
+    if latitude > 90 or latitude < -90:
+        raise ValueError("Latitude of Point 1 out of bounds! (-90 <= lat1 <=90)")
 
     def _degrees_dist_func(_df):
-        return np.sqrt(
-            ((latitude % 180) - (_df["latitude"] % 180)) ** 2
-            + ((longitude % 360) - (_df["longitude"] % 360)) ** 2
-        )
+        if _df["latitude"] > 90 or _df["latitude"] < -90:
+            raise ValueError(
+                "Latitude in dataframe out of bounds! "
+                "(-90 <= {0} <=90)".format(_df["latitude"])
+            )
+        return Geodesic(a=a, f=f).Inverse(
+            latitude, longitude, _df["latitude"], _df["longitude"]
+        )["a12"]
 
     def _km_dist_func(_df):
         dist, _, _ = gps2dist_azimuth(
