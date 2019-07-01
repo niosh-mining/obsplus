@@ -1,6 +1,16 @@
-obsplus.master:
+obsplus master:
   - obsplus.bank
-    * Add support for circular searches.
+    * Refactored logic for getting bank progress bars, now can use instances
+      of obsplus.interfaces.ProgressBar to avoid counting files twice
+      and for further customizability (see #106).
+    * Removed min_file_for_bar argument in favor of class attribute of
+      _min_files_for_bar (see #106).
+    * Add support for circular searches on EventBank (see #110)
+  - obsplus.interfaces
+    * Added ProgressBar for defining classes compatible with how obsplus
+      uses progress bar, modeled after the ProgressBar class from the
+      progressbar2 library (see #106).
+
 obsplus 0.0.2:
   - obsplus.bank
     * Speed up wavebank.get_waveforms_bulk by time-filtering index before

@@ -4,13 +4,11 @@ import glob
 import os
 import pathlib
 import shutil
-import sys
 import tempfile
 import time
-import types
 import traceback
+import types
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
-from io import StringIO
 from os.path import join
 from pathlib import Path
 
@@ -646,39 +644,6 @@ class TestGetWaveforms:
         assert len(df) == 3
         st = bank.get_waveforms()
         assert len(st) == 3
-
-
-class TestUpdateBar:
-    """ tests for the update bar and hook """
-
-    class Bar:
-        def __init__(self, max_value=100, min_value=None):
-            self.out = dict(count=0)
-            self.max = max
-
-        def update(self, current):
-            self.out["count"] += 1
-
-        def finish(self):
-            pass
-
-        def __call__(self, *args, **kwargs):
-            return self
-
-    def test_update_hook(self, ta_bank_no_index):
-        """ test custom bar works """
-        bar = self.Bar()
-        ta_bank_no_index.update_index(bar=bar, min_files_for_bar=0)
-        assert bar.out["count"] > 0
-
-    def test_update_bar_default(self, ta_bank_no_index, monkeypatch):
-        """ ensure the default progress bar shows up. """
-        stringio = StringIO()
-        monkeypatch.setattr(sys, "stdout", stringio)
-        ta_bank_no_index.update_index(min_files_for_bar=0)
-        stringio.seek(0)
-        out = stringio.read()
-        assert "updating or creating" in out
 
 
 class TestGetBulkWaveforms:

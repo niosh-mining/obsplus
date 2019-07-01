@@ -556,3 +556,16 @@ contributor: str, optional
     Limit to events contributed by a specified contributor.
 updatedafter: obspy.UTCDateTime or valid input to such, optional
     Limit to events updated after the specified time."""
+
+# the description for the parameter 'bar' in the bank `update_index` methods.
+bar_paramter_description = """
+bar
+    This parameter controls if a progress bar will be used for this
+    function call. Its behavior is dependent on the `bar` parameter:
+        False - Dont use a progress bar
+        None - Use the default progress bar
+        ProgressBar - a custom implementation of progress bar is used.
+        
+    If a custom progress bar is to be used, it must have an `update`
+    and `finish` method.
+"""

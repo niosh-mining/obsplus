@@ -1,8 +1,10 @@
 """
 tests for event wavebank
 """
-from pathlib import Path
 import os
+import sys
+from pathlib import Path
+from io import StringIO
 
 import obspy
 import obspy.core.event as ev
@@ -126,29 +128,6 @@ class TestBankBasics:
         cat = obspy.read_events()
         df = ebank_with_bad_files.read_index()
         assert len(cat) == len(df)
-
-    def test_custom_bar(self, ebank_with_bad_files):
-        """ ensure a custom update bar function works. """
-
-        class Bar:
-            called = False
-
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def update(self, num):
-                self.__class__.called = True
-
-            def finish(self):
-                pass
-
-        # set the interval to 1 to ensure it gets called
-        ebank_with_bad_files._bar_update_interval = 1
-        # remove old index, update with custom bar function
-        os.remove(ebank_with_bad_files.index_path)
-        with pytest.warns(UserWarning):
-            ebank_with_bad_files.update_index(bar=Bar, min_files_for_bar=1)
-        assert Bar.called
 
     def test_service_version(self, bing_ebank):
         """ The get_service_version method should return obsplus version """
@@ -367,3 +346,91 @@ class TestPutEvents:
         assert len(index1) == len(index2)
         index_lat = index2.loc[index2.index == str(eve.resource_id), "latitude"]
         assert index_lat.iloc[0] == new_lat
+
+
+class TestProgressBar:
+    """ Tests for the progress bar functionality of banks. """
+
+    @pytest.fixture
+    def custom_bar(self):
+        """ return a custom bar implementation. """
+
+        class Bar:
+            called = False
+
+            def __init__(self, *args, **kwargs):
+                self.finished = False
+
+            def update(self, num):
+                self.__class__.called = True
+
+            def finish(self):
+                self.finished = True
+                pass
+
+        return Bar
+
+    @pytest.fixture()
+    def bar_ebank(self, ebank, monkeypatch):
+        """ return an event bank specifically for testing ProgressBar. """
+        # set the interval and min files to 1 to ensure bar gets called
+        monkeypatch.setattr(ebank, "_bar_update_interval", 1)
+        monkeypatch.setattr(ebank, "_min_files_for_bar", 1)
+        # move the index to make sure there are files to update
+        index_path = Path(ebank.index_path)
+        if index_path.exists():
+            os.remove(index_path)
+        return ebank
+
+    @pytest.fixture()
+    def bar_ebank_bad_file(self, bar_ebank):
+        """ Add a waveform file to ensure ProgressBar doesnt choke. """
+        path = Path(bar_ebank.bank_path)
+        st = obspy.read()
+        st.write(str(path / "waveform.xml"), "mseed")
+        return bar_ebank
+
+    def test_custom_bar_class(self, bar_ebank, custom_bar):
+        """ Ensure a custom update bar function works. """
+        bar_ebank.update_index(bar=custom_bar)
+        assert custom_bar.called
+
+    def test_custom_bar_instances(self, bar_ebank, custom_bar):
+        """ Ensure passing an instance to bar will simply use instance. """
+        bar = custom_bar()
+        assert not bar.finished
+        bar_ebank.update_index(bar=bar)
+        assert bar.finished
+
+    def test_bad_file_raises_warning(self, bar_ebank_bad_file, custom_bar):
+        """ Ensure a bad files raises warning but doesn't kill progress. """
+        with pytest.warns(UserWarning):
+            bar_ebank_bad_file.update_index(custom_bar)
+
+    def test_false_disables_bar(self, bar_ebank, monkeypatch):
+        """ Passing False for bar argument should disable it. """
+        # we ensure the default bar isnt by monkey patching the util to get it
+        state = {"called": False}
+
+        def new_get_bar(*args, **kwargs):
+            state["called"] = True
+            obsplus.utils.get_progressbar(*args, **kwargs)
+
+        monkeypatch.setattr(obsplus.utils, "get_progressbar", new_get_bar)
+
+        bar_ebank.update_index(bar=False)
+        assert state["called"] is False
+
+    def test_bad_value_raises(self, bar_ebank):
+        """ Passing an unsupported value to bar should raise. """
+        with pytest.raises(ValueError):
+            bar_ebank.update_index(bar="unsupported")
+
+    def test_update_bar_default(self, bar_ebank, monkeypatch):
+        """ Ensure the default progress bar shows up. """
+        stringio = StringIO()
+        monkeypatch.setattr(sys, "stdout", stringio)
+        bar_ebank.update_index()
+        stringio.seek(0)
+        out = stringio.read()
+        assert "updating or creating" in out

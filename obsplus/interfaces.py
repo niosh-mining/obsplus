@@ -4,7 +4,7 @@ Some common interfaces for event/client types.
 Note: These are used instead of the ones in obspy.clients.base so the subclass
 hooks can be used.
 """
-from abc import ABC
+from abc import ABC, abstractmethod
 import obspy
 
 
@@ -54,6 +54,22 @@ class BankType(ABC, _MethodChecker):
     """ an object that looks like a bank """
 
     required_methods = {"read_index"}
+
+
+class ProgressBar(ABC, _MethodChecker):
+    """
+    A class that behaves like the progressbar2.ProgressBar class.
+    """
+
+    required_methods: set = {"update", "finish"}
+
+    @abstractmethod
+    def update(self, value=None, force=False, **kwargs):
+        """ Called when updating the progress bar. """
+
+    @abstractmethod
+    def finish(self, **kwargs):
+        """ Puts the progress bar in the finished state. """
 
 
 # register virtual subclasses

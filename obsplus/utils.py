@@ -764,7 +764,9 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
                 if entry.name[0] != "." or not skip_hidden:
                     yield entry.path
         elif entry.is_dir():
-            yield from iter_files(entry.path, ext=ext, mtime=mtime)
+            yield from iter_files(
+                entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
+            )
 
 
 def get_distance_df(
