@@ -34,7 +34,6 @@ from obsplus.constants import (
     EVENT_DTYPES,
     get_events_parameters,
     bar_paramter_description,
-    CPU_COUNT,
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError

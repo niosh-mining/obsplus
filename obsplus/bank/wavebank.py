@@ -35,7 +35,6 @@ from obsplus.constants import (
     utc_time_type,
     get_waveforms_parameters,
     bar_paramter_description,
-    CPU_COUNT,
 )
 from obsplus.utils import (
     compose_docstring,
