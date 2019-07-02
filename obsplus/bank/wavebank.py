@@ -35,7 +35,6 @@ from obsplus.constants import (
     utc_time_type,
     get_waveforms_parameters,
     bar_paramter_description,
-    CPU_COUNT,
 )
 from obsplus.utils import (
     compose_docstring,
@@ -666,7 +665,8 @@ class WaveBank(_Bank):
         func = partial(_try_read_stream, **kwargs)
 
         stt = obspy.Stream()
-        for st in self._map(func, files, chunksize=len(files) // CPU_COUNT):
+        chunksize = len(files) / self._max_workers
+        for st in self._map(func, files, chunksize=chunksize):
             if st is not None:
                 stt += st
         # sort out nullish nslc codes

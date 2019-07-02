@@ -10,6 +10,7 @@ from contextlib import contextmanager, suppress
 from os.path import join
 from pathlib import Path
 from typing import Optional, TypeVar
+from obsplus.constants import CPU_COUNT
 
 import gc
 import numpy as np
@@ -213,6 +214,20 @@ class _Bank(ABC):
         else:
             msg = f"{bar} is not a valid input for get_progress_bar"
             raise ValueError(msg)
+
+    @property
+    def _max_workers(self):
+        """
+        Return the max number of workers allowed by the executor.
+
+        If the Executor has no attribute `_max_workers` use the number of
+        CPUs instead. If there is no executor assigned to bank instance
+        return 1.
+        """
+        executor = getattr(self, "executor", None)
+        if executor is not None:
+            return getattr(executor, "_max_workers", CPU_COUNT)
+        return 1
 
     def _map(self, func, args, chunksize=None):
         """
