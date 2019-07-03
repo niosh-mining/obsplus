@@ -52,7 +52,7 @@ jobs:
     displayName: pytest
 
 
-- job: 'macOS: 10.14'
+- job: 'macOS'
   pool:
     vmImage: 'macos-10.14'
   strategy:
