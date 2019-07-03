@@ -1207,8 +1207,12 @@ class TestGetGaps:
         """
         wbank = gappy_and_contiguous_bank
         index = wbank.read_index()
-        uptime_df = wbank.get_uptime_df()
-        breakpoint()
+        uptime = wbank.get_uptime_df()
+        # make sure the same seed ids are in the index as uptime df
+        seeds_from_index = set(obsplus.utils.get_nslc_series(index))
+        seeds_from_uptime = set(obsplus.utils.get_nslc_series(uptime))
+        assert seeds_from_index == seeds_from_uptime
+        assert not uptime.isnull().any().any()
 
 
 class TestBadInputs:
