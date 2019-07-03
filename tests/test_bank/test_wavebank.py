@@ -297,7 +297,8 @@ class TestBankBasics:
         """
         with pytest.raises(ValueError) as e:
             ta_bank.read_index(starttime=10, endtime=1)
-        assert "starttime cannot be greater than endtime" in str(e)
+        e_msg = str(e.value.args[0])
+        assert "starttime cannot be greater than endtime" in e_msg
 
     def test_correct_endtime_in_index(self, default_bank):
         """ ensure the index has times consistent with traces in waveforms """

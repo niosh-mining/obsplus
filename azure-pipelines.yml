@@ -50,4 +50,3 @@ jobs:
       source activate $(env_name)
       pytest --cov obsplus && pytest --nbval docs/
     displayName: pytest
-
