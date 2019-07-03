@@ -1093,20 +1093,23 @@ class TestGetGaps:
 
     overlap = 0
 
-    # fixtures
-    @pytest.fixture(scope="class")
-    def gappy_dir(self, class_tmp_dir):
-        """ create a directory that has gaps in it """
-        new_dir = join(class_tmp_dir, "temp1")
-        ardir = ArchiveDirectory(
-            new_dir,
+    def _make_gappy_archive(self, path):
+        """ Create the gappy archive defined by params in class. """
+        ArchiveDirectory(
+            path,
             self.start,
             self.end,
             self.sampling_rate,
             gaps=self.gaps,
             overlap=self.overlap,
-        )
-        ardir.create_directory()
+        ).create_directory()
+        return path
+
+    # fixtures
+    @pytest.fixture(scope="class")
+    def gappy_dir(self, class_tmp_dir):
+        """ create a directory that has gaps in it """
+        self._make_gappy_archive(join(class_tmp_dir, "temp1"))
         return class_tmp_dir
 
     @pytest.fixture(scope="class")
@@ -1119,6 +1122,18 @@ class TestGetGaps:
         bank._index_cache = obsplus.bank.utils._IndexCache(bank, 5)
         bank.update_index()
         return bank
+
+    @pytest.fixture()
+    def gappy_and_contiguous_bank(self, tmp_path):
+        """ Create a directory with gaps and continuous data """
+        # first create directory with gaps
+        self._make_gappy_archive(tmp_path)
+        # first write data with no gaps
+        st = obspy.read()
+        for num, tr in enumerate(st):
+            tr.stats.station = "GOOD"
+            tr.write(str(tmp_path / f"good_{num}.mseed"), "mseed")
+        return WaveBank(tmp_path).update_index()
 
     @pytest.fixture(scope="class")
     def empty_bank(self):
@@ -1184,6 +1199,16 @@ class TestGetGaps:
         bank = kem_fetcher.waveform_client
         df = bank.get_uptime_df()
         assert (df["uptime"] == df["duration"]).all()
+
+    def test_gappy_and_contiguous_uptime(self, gappy_and_contiguous_bank):
+        """
+        Ensure when there are gappy streams and continguous streams
+        get_uptime still returns correct results.
+        """
+        wbank = gappy_and_contiguous_bank
+        index = wbank.read_index()
+        uptime_df = wbank.get_uptime_df()
+        breakpoint()
 
 
 class TestBadInputs:
