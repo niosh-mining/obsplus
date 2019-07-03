@@ -199,7 +199,7 @@ def ta_index(ta_bank_index):
 
 
 @pytest.fixture
-def default_bank(tmpdir):
+def default_wbank(tmpdir):
     """ create a  directory out of the traces in default waveforms, init bank """
     base = Path(tmpdir)
     st = obspy.read()
@@ -234,19 +234,19 @@ class TestBankBasics:
         return sbank.WaveBank(ta_bank.bank_path)
 
     @pytest.fixture
-    def default_bank_low_version(self, default_bank):
+    def default_bank_low_version(self, default_wbank):
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version
         negative_version = "0.0.-1"
         version = obsplus.__version__
         obsplus.__version__ = negative_version
         # write index with negative version
-        os.remove(default_bank.index_path)
-        default_bank.update_index()
-        assert default_bank._index_version == negative_version
+        os.remove(default_wbank.index_path)
+        default_wbank.update_index()
+        assert default_wbank._index_version == negative_version
         # restore correct version
         obsplus.__version__ = version
-        return default_bank
+        return default_wbank
 
     # tests
     def test_type(self, ta_bank):
@@ -299,9 +299,9 @@ class TestBankBasics:
             ta_bank.read_index(starttime=10, endtime=1)
         assert "starttime cannot be greater than endtime" in str(e)
 
-    def test_correct_endtime_in_index(self, default_bank):
+    def test_correct_endtime_in_index(self, default_wbank):
         """ ensure the index has times consistent with traces in waveforms """
-        index = default_bank.read_index()
+        index = default_wbank.read_index()
         st = obspy.read()
         starttimes = [tr.stats.starttime.timestamp for tr in st]
         endtimes = [tr.stats.endtime.timestamp for tr in st]
@@ -309,9 +309,9 @@ class TestBankBasics:
         assert min(starttimes) == index.starttime.min()
         assert max(endtimes) == index.endtime.max()
 
-    def test_bank_can_init_bank(self, default_bank):
+    def test_bank_can_init_bank(self, default_wbank):
         """ WaveBank should be able to take a Wavebank as an input arg. """
-        bank = obsplus.WaveBank(default_bank)
+        bank = obsplus.WaveBank(default_wbank)
         assert isinstance(bank, obsplus.WaveBank)
 
     def test_stream_is_not_instance(self):
@@ -346,10 +346,10 @@ class TestBankBasics:
         bank.put_waveforms(obspy.read())
         assert len(bank.read_index()) == 3
 
-    def test_update_index_returns_self(self, default_bank):
+    def test_update_index_returns_self(self, default_wbank):
         """ ensure update index returns the instance for chaining. """
-        out = default_bank.update_index()
-        assert out is default_bank
+        out = default_wbank.update_index()
+        assert out is default_wbank
 
 
 class TestEmptyBank:
@@ -1137,6 +1137,11 @@ class TestGetGaps:
         """ return the uptime dataframe from the gappy bank """
         return gappy_bank.get_uptime_df()
 
+    @pytest.fixture()
+    def uptime_default(self, default_wbank):
+        """ return the uptime from the default stream bank. """
+        return default_wbank.get_uptime_df()
+
     # tests
     def test_gaps_length(self, gap_df):
         """ ensure each of the gaps shows up in df """
@@ -1148,13 +1153,24 @@ class TestGetGaps:
             dif = abs(df.gap_duration - self.durations)
             assert (dif < (1.5 * self.sampling_rate)).all()
 
-    def test_uptime_df(self, uptime_df):
+    def test_gappy_uptime_df(self, uptime_df):
         """ ensure the uptime df is of correct type and accurate """
         assert isinstance(uptime_df, pd.DataFrame)
         gap_duration = sum([x[1] - x[0] for x in self.gaps])
         duration = self.end - self.start
         uptime_percent = (duration - gap_duration) / duration
         assert (abs(uptime_df["availability"] - uptime_percent) < 0.001).all()
+
+    def test_uptime_default(self, uptime_default):
+        """
+        Ensure the uptime of the basic bank (no gaps) has expected times/channels.
+        """
+        df = uptime_default
+        st = obspy.read()
+        assert not df.empty, "uptime df is empty"
+        assert len(df) == len(st)
+        assert {tr.id for tr in st} == set(obsplus.utils.get_nslc_series(df))
+        assert (df["gap_duration"] == 0).all()
 
     def test_empty_directory(self, empty_bank):
         """ ensure an empty bank get_gaps returns and empty df with expected
