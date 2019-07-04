@@ -5,16 +5,17 @@ import copy
 import glob
 import os
 import shutil
-import sys
 import tempfile
 import typing
+import warnings
 from os.path import basename
 from os.path import join, dirname, abspath, exists
 from pathlib import Path
 
-import obspy
 import numpy as np
+import obspy
 import pytest
+from obspy.core.event.base import ResourceIdentifier
 
 import obsplus
 import obsplus.datasets.utils
@@ -44,13 +45,21 @@ inventories = glob.glob(join(INVENTORY_DIRECTORY, "*"))
 # init a dict for storing event id and events objects in
 eve_id_cache = {}
 
-# add the package path to sys.path so imports are from repo
-sys.path.insert(0, PKG_PATH)
-
-import obsplus
-
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
+
+
+# Monkey patch the resource_id to avoid emmitting millions of warnings
+# TODO Remove this when obspy 1.2 is released
+
+
+def _func(*args, kwargs):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ResourceIdentifier._get_similar_referred_object(*args, **kwargs)
+
+
+ResourceIdentifier._get_similar_referred_object = _func
 
 
 # ------------------------------ helper functions
