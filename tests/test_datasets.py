@@ -423,11 +423,11 @@ class TestVersioning:
         self.check_dataset(corrupt_version, redownloaded=True)
 
     def test_listed_files(self, low_version, dataset):
-        """ Make sure the download directory is listed in excpetion. """
+        """ Make sure the download directory is listed in exception. """
         expected = str(low_version.data_path)
         with pytest.raises(DataVersionError) as e:
             dataset(base_path=low_version.data_path.parent)
-        assert expected in str(e), "exception should have data path to delete."
+        assert expected in str(e.value.args[0])
 
     def test_doesnt_delete_extra_files(self, no_version, dataset):
         """ Make sure an extra file that was added doesn't get harmed by the

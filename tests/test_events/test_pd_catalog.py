@@ -311,7 +311,7 @@ class TestCat2DfPreferreds:
 
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
-        """ call the catalog2df method, return result"""
+        """ call the catalog2df method, return result """
         out = events_to_df(test_catalog.copy())
         out.reset_index(inplace=True, drop=True)
         return out
