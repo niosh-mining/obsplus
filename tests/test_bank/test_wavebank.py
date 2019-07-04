@@ -1186,7 +1186,7 @@ class TestConcurrentUpdateIndex:
     Tests to make sure running update index in different threads/processes.
     """
 
-    worker_count = 4
+    worker_count = 3
     new_files = 1
 
     def func(self, wbank):
@@ -1202,7 +1202,7 @@ class TestConcurrentUpdateIndex:
         except Exception as e:
             return traceback.format_tb(e.__traceback__)
         else:
-            time.sleep(0.01)
+            time.sleep(0.01 + np.random.rand() / 10)
             wbank.read_index()
             return None
 
