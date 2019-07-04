@@ -57,7 +57,7 @@ old_func = ResourceIdentifier._get_similar_referred_object
 def _func(*args, **kwargs):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        old_func(*args, **kwargs)
+        return old_func(*args, **kwargs)
 
 
 ResourceIdentifier._get_similar_referred_object = _func
