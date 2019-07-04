@@ -57,7 +57,7 @@ class TestTrimEventStream:
         end times exceeds the supplied trim tolerance """
         with pytest.raises(ValueError) as e:
             trim_event_stream(stream_with_short_end[0], trim_tolerance=2.0)
-        assert "trim tolerance" in str(e)
+        assert "trim tolerance" in str(e.value.args[0])
 
     def test_fragmented_stream(self, fragmented_stream):
         """ test with streams that are fragmented """

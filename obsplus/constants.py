@@ -446,10 +446,10 @@ NUMPY_FLOAT_TYPES = {
     np.float32,
     np.float64,
     np.float16,
-    np.float128,
+    # np.float128,  # windows raises error with this float type
     np.dtype("float32"),
     np.dtype("float64"),
-    np.dtype("float128"),
+    # np.dtype("float128"),
 }
 
 # str for types of data
