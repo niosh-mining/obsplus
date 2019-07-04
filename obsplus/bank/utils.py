@@ -151,8 +151,8 @@ def _summarize_event(
     """
     res_id = str(event.resource_id)
     out = {
-        "ext": EVENT_EXT, 
-        "event_id": res_id, 
+        "ext": EVENT_EXT,
+        "event_id": res_id,
         "event_id_short": res_id[-5:],
         "event_id_end": res_id.split("/")[-1],
     }
