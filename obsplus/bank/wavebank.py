@@ -398,7 +398,9 @@ class WaveBank(_Bank):
             gap_total_df = pd.DataFrame(avail[list(NSLC)])
             gap_total_df["gap_duration"] = 0.0
         # merge gap dataframe with availability dataframe, add uptime and %
-        df = pd.merge(avail, gap_total_df)
+        df = pd.merge(avail, gap_total_df, how="outer")
+        # fill any Nan in gap_duration with  0
+        df.loc[:, "gap_duration"] = df["gap_duration"].fillna(0.0)
         df["uptime"] = df.duration - df.gap_duration
         df["availability"] = df["uptime"] / df["duration"]
         return df
