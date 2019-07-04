@@ -39,7 +39,6 @@ from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
     to_timestamp,
-    get_progressbar,
     thread_lock_function,
     get_nslc_series,
     filter_index,
