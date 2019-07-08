@@ -32,12 +32,12 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from geographiclib.geodesic import Geodesic
 from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
 from obspy.geodetics.base import gps2dist_azimuth, WGS84_A, WGS84_F
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from obspy.taup.taup_geo import calc_dist
 from progressbar import ProgressBar
 
 import obsplus
@@ -867,7 +867,7 @@ def calculate_distance(
         DataFrame to compute distances for. Must have columns titles
         "latitude" and "longitude"
     degrees
-        Whether to return distance in degrees (default) or in kilometers.
+        Whether to return distance in degrees (default) or in meters.
     a
         Radius of planetary body (usually Earth) in m. Defaults to WGS84.
     f
@@ -875,10 +875,12 @@ def calculate_distance(
 
     Returns
     -------
-    A series of distances indexed in the same way as the input dataframe.
+    A series of distances (in degrees if `degrees=True` or meters) indexed in
+    the same way as the input dataframe.
     """
     if latitude > 90 or latitude < -90:
         raise ValueError("Latitude of Point 1 out of bounds! (-90 <= lat1 <=90)")
+    _a = a / 1000  # calc_dist needs this in km, but other things use m - convert once.
 
     def _degrees_dist_func(_df):
         if _df["latitude"] > 90 or _df["latitude"] < -90:
@@ -886,15 +888,20 @@ def calculate_distance(
                 "Latitude in dataframe out of bounds! "
                 "(-90 <= {0} <=90)".format(_df["latitude"])
             )
-        return Geodesic(a=a, f=f).Inverse(
-            latitude, longitude, _df["latitude"], _df["longitude"]
-        )["a12"]
+        return calc_dist(
+            source_latitude_in_deg=latitude,
+            source_longitude_in_deg=longitude,
+            receiver_latitude_in_deg=_df["latitude"],
+            receiver_longitude_in_deg=_df["longitude"],
+            radius_of_planet_in_km=_a,
+            flattening_of_planet=f,
+        )
 
     def _km_dist_func(_df):
         dist, _, _ = gps2dist_azimuth(
             lat1=latitude, lon1=longitude, lat2=_df["latitude"], lon2=_df["longitude"]
         )
-        return dist / 1000
+        return dist
 
     if degrees:
         _dist_func = _degrees_dist_func

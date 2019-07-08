@@ -4,6 +4,8 @@ Module for adding a get_events method to obspy events.
 
 import inspect
 
+from typing import Tuple
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -20,7 +22,14 @@ CLIENT_SUPPORTED = set(inspect.signature(Client.get_events).parameters)
 SUPPORTED_PARAMS = CLIENT_SUPPORTED - UNSUPPORTED_PARAMS
 
 
-def _sanitize_circular_search(**kwargs):
+def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:
+    """
+    Check for clashes between circular-search and box-search kwargs.
+
+    returns
+    -------
+    Two separate dictionaries of the circular kwargs and everything else.
+    """
     if CIRCULAR_PARAMS.intersection(kwargs):
         if NONCIRCULAR_PARAMS.intersection(kwargs):
             raise ValueError(
