@@ -7,6 +7,7 @@ import obspy
 import pandas as pd
 import pytest
 from obspy.core.event import CreationInfo
+from obspy.geodetics import gps2dist_azimuth
 
 
 # ---------------------- module fixtures
@@ -75,6 +76,31 @@ class TestGetEvents:
         cat2 = catalog.get_events(minlatitude=None, maxlatitude=None)
         assert len(cat1) == len(cat2)
         assert cat1 == cat2
+
+    def test_radius_degrees(self, catalog):
+        """ ensure the max_radius works with degrees specified. """
+        lat, lon = 39.342, 41.044
+        cat = catalog.get_events(latitude=lat, longitude=lon, maxradius=8)
+        # For the example catalog there should be exactly 2 events included
+        assert len(cat) == 2
+
+    def test_max_min_radius_m(self, catalog):
+        """ Ensure max and min radius work in m (ie when degrees=False). """
+        minrad = 10_000
+        maxrad = 800_000
+        lat, lon = 39.342, 41.044
+        kwargs = dict(
+            latitude=lat,
+            longitude=lon,
+            minradius=minrad,
+            maxradius=maxrad,
+            degrees=False,
+        )
+        df = catalog.get_events(**kwargs).get_event_summary()
+        for _, row in df.iterrows():
+            args = (row.latitude, row.longitude, lat, lon)
+            dist, _, _ = gps2dist_azimuth(*args)
+            assert minrad < dist < maxrad
 
 
 class TestGetEventSummary:

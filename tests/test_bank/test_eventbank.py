@@ -244,7 +244,7 @@ class TestReadIndexQueries:
         )
         for lat, lon in zip(df["latitude"], df["longitude"]):
             dist, _, _ = gps2dist_azimuth(latitude, longitude, lat, lon)
-            assert minradius <= kilometer2degrees(dist) <= maxradius
+            assert minradius <= kilometer2degrees(dist / 1000.0) <= maxradius
 
     def test_query_circular_bad_params(self, bing_ebank):
         """Check that latitude, longitude can't be used with minlatitude etc"""

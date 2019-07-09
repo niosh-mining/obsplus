@@ -555,7 +555,12 @@ offset: int, optional
 contributor: str, optional
     Limit to events contributed by a specified contributor.
 updatedafter: obspy.UTCDateTime or valid input to such, optional
-    Limit to events updated after the specified time."""
+    Limit to events updated after the specified time.
+degrees: int, default True
+    If False, the parameters maxradius and minradius are specified in m
+    rather than degrees. Note: this parameter may not be supported by
+    non-obsplus event clients. 
+"""
 
 # the description for the parameter 'bar' in the bank `update_index` methods.
 bar_paramter_description = """
