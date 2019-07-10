@@ -34,9 +34,10 @@ import obspy.core.event as ev
 import pandas as pd
 from obspy import UTCDateTime as UTC
 from obspy.core.inventory import Station, Channel
-from obspy.geodetics import gps2dist_azimuth
+from obspy.geodetics.base import gps2dist_azimuth, WGS84_A, WGS84_F
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from obspy.taup.taup_geo import calc_dist
 from progressbar import ProgressBar
 
 import obsplus
@@ -771,6 +772,8 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
 def get_distance_df(
     entity_1: Union[event_type, inventory_type],
     entity_2: Union[event_type, inventory_type],
+    a: float = WGS84_A,
+    f: float = WGS84_F,
 ) -> pd.DataFrame:
     """
     Create a dataframe of distances and azimuths from events to stations.
@@ -783,6 +786,10 @@ def get_distance_df(
     entity_2
         An object from which latitude, longitude and depth are
         extractable.
+    a
+        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
+    f
+        Flattening of planetary body (usually Earth). Defaults to WGS84.
 
     Notes
     -----
@@ -801,7 +808,7 @@ def get_distance_df(
         """
         Function to get distances and azimuths from pairs of coordinates
         """
-        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2])[:2]
+        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2], a=a, f=f)[:2]
         z_diff = tup2[2] - tup1[2]
         dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
         out = dict(
@@ -837,6 +844,71 @@ def get_distance_df(
     # make sure index is named
     df.index.names = ("id1", "id2")
     return df[list(DISTANCE_COLUMNS)]
+
+
+def calculate_distance(
+    latitude: float,
+    longitude: float,
+    df,
+    degrees: bool = True,
+    a: float = WGS84_A,
+    f: float = WGS84_F,
+) -> pd.Series:
+    """
+    Calculate the distance from all events in the dataframe to a set point.
+
+    Parameters
+    ----------
+    latitude
+        Latitude in degrees for point to calculate distance from
+    longitude
+        Longitude in degrees for point to calculate distance from
+    df
+        DataFrame to compute distances for. Must have columns titles
+        "latitude" and "longitude"
+    degrees
+        Whether to return distance in degrees (default) or in meters.
+    a
+        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
+    f
+        Flattening of planetary body (usually Earth). Defaults to WGS84.
+
+    Returns
+    -------
+    A series of distances (in degrees if `degrees=True` or meters) indexed in
+    the same way as the input dataframe.
+    """
+    if latitude > 90 or latitude < -90:
+        raise ValueError("Latitude of Point 1 out of bounds! (-90 <= lat1 <=90)")
+    _a = a / 1000  # calc_dist needs this in km, but other things use m - convert once.
+
+    def _degrees_dist_func(_df):
+        if _df["latitude"] > 90 or _df["latitude"] < -90:
+            raise ValueError(
+                "Latitude in dataframe out of bounds! "
+                "(-90 <= {0} <=90)".format(_df["latitude"])
+            )
+        return calc_dist(
+            source_latitude_in_deg=latitude,
+            source_longitude_in_deg=longitude,
+            receiver_latitude_in_deg=_df["latitude"],
+            receiver_longitude_in_deg=_df["longitude"],
+            radius_of_planet_in_km=_a,
+            flattening_of_planet=f,
+        )
+
+    def _km_dist_func(_df):
+        dist, _, _ = gps2dist_azimuth(
+            lat1=latitude, lon1=longitude, lat2=_df["latitude"], lon2=_df["longitude"]
+        )
+        return dist
+
+    if degrees:
+        _dist_func = _degrees_dist_func
+    else:
+        _dist_func = _km_dist_func
+
+    return df.apply(_dist_func, axis=1, result_type="reduce")
 
 
 @lru_cache(maxsize=2500)

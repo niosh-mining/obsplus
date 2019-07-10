@@ -8,6 +8,7 @@ from io import StringIO
 
 import obspy
 import obspy.core.event as ev
+from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 import numpy as np
 import pandas as pd
 import pytest
@@ -233,6 +234,23 @@ class TestReadIndexQueries:
         with pytest.raises(ValueError):
             bing_ebank.read_index(minradius=20)
 
+    def test_query_circular(self, bing_ebank):
+        latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
+        df = bing_ebank.read_index(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
+        for lat, lon in zip(df["latitude"], df["longitude"]):
+            dist, _, _ = gps2dist_azimuth(latitude, longitude, lat, lon)
+            assert minradius <= kilometer2degrees(dist / 1000.0) <= maxradius
+
+    def test_query_circular_bad_params(self, bing_ebank):
+        """Check that latitude, longitude can't be used with minlatitude etc"""
+        with pytest.raises(ValueError):
+            bing_ebank.read_index(latitude=12, minlatitude=13)
+
     def test_no_none_strs(self, bing_ebank):
         """
         There shouldn't be any None strings in the df.
@@ -274,6 +292,21 @@ class TestGetEvents:
         t1 = obspy.UTCDateTime("2010-01-01")
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
         assert cat == catalog.get_events(starttime=t1, endtime=t2)
+
+    def test_query_circular(self, bing_ebank, catalog):
+        latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
+        cat = bing_ebank.get_events(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
+        assert cat == catalog.get_events(
+            latitude=latitude,
+            longitude=longitude,
+            maxradius=minradius,
+            minradius=maxradius,
+        )
 
     def test_issue_30(self, crandall_dataset):
         """ ensure eventid can accept a numpy array. see #30. """

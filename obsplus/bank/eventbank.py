@@ -17,6 +17,7 @@ import pandas as pd
 
 import obsplus
 import obsplus.events.pd
+from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.bank.core import _Bank
 from obsplus.bank.utils import (
     _IndexCache,
@@ -52,7 +53,7 @@ STR_COLUMNS = {i for i, v in COLUMN_TYPES.items() if issubclass(v, str)}
 
 # unsupported query options
 
-UNSUPPORTED_QUERY_OPTIONS = {"minradius", "maxradius"}
+UNSUPPORTED_QUERY_OPTIONS = set()
 
 
 # int_cols = {key for key, val in column_types.items() if val is int}
@@ -169,18 +170,26 @@ class EventBank(_Bank):
             unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
             msg = f"Query parameters {unsupported_options} are not supported"
             raise ValueError(msg)
+        # Circular search requires work to be done on the dataframe - we need
+        # to get the whole dataframe then calculate the distances and search in
+        # that
+        circular_kwargs, kwargs = _sanitize_circular_search(**kwargs)
         with sql_connection(self.index_path) as con:
             try:
-                df = _read_table(self._index_node, con, **kwargs).set_index("event_id")
+                df = _read_table(self._index_node, con, **kwargs)
             except pd.io.sql.DatabaseError:  # empty or no db, return empty index
-                df = pd.DataFrame(columns=list(COLUMN_TYPES)).set_index("event_id")
+                df = pd.DataFrame(columns=list(COLUMN_TYPES))
         # coerce datatypes
         dtype = {i: COLUMN_TYPES[i] for i in set(COLUMN_TYPES) & set(df.columns)}
         df = df.astype(dtype=dtype)
         # replace "None" with None on str columns
         str_cols = STR_COLUMNS & set(df.columns)
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [None])
-        return df
+        if len(circular_kwargs) >= 3:
+            # Requires at least latitude, longitude and min or max radius
+            circular_ids = _get_ids(df, circular_kwargs)
+            df = df[df.event_id.isin(circular_ids)]
+        return df.set_index("event_id")
 
     @thread_lock_function()
     @compose_docstring(bar_paramter_description=bar_paramter_description)
@@ -272,7 +281,11 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = self.bank_path + self.read_index(columns="path", **kwargs).path
+        # Needs to read in latitude and longitude to support circular queries.
+        paths = (
+            self.bank_path
+            + self.read_index(columns=["path", "latitude", "longitude"], **kwargs).path
+        )
         cats = (obspy.read_events(x) for x in paths)
         try:
             return reduce(add, cats)
