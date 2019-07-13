@@ -25,6 +25,9 @@ mapping_keys = {
 }
 
 
+type_mappings = {"start_date": obspy.UTCDateTime, "end_date": obspy.UTCDateTime}
+
+
 def df_to_inventory(df) -> obspy.Inventory:
     """
     Create a simple inventory from a dataframe.
@@ -64,14 +67,18 @@ def df_to_inventory(df) -> obspy.Inventory:
 
     def _get_kwargs(series, key_mapping):
         """ create the kwargs from a series and key mapping. """
-
         out = {}
         for k, v in key_mapping.items():
             # skip if requested kwarg is not in the series
             if v not in series:
                 continue
             value = series[v]
-            out[k] = value if not pd.isnull(value) else None
+            value = value if not pd.isnull(value) else None
+            # if the type needs to be cast to something else
+            if k in type_mappings and value is not None:
+                value = type_mappings[k](value)
+            out[k] = value
+
         return out
 
     # first get key_mappings
