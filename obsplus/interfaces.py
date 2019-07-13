@@ -18,45 +18,49 @@ def add_func_name(my_set: set):
     return _wrap
 
 
-class _MethodChecker:
+class _MethodChecker(type):
     """ class for checking if methods exist """
 
     required_methods: set = set()
 
-    @classmethod
     def __subclasshook__(cls, C):
         methods = {x for B in C.__mro__ for x in B.__dict__}
         if cls.required_methods.issubset(methods):
             return True
-        else:
-            return NotImplemented
+        return NotImplemented
+
+    # def __instancecheck__(cls, instance):
+    #     if set(cls.required_methods).issubset(dir(instance)):
+    #         return True
+    #     return super().__instancecheck__(cls, instance)
+    #     # return NotImplemented
 
 
-class EventClient(ABC, _MethodChecker):
+class EventClient(metaclass=_MethodChecker):
     """ The event client interface """
 
     required_methods = {"get_events"}
 
 
-class WaveformClient(ABC, _MethodChecker):
+class WaveformClient(metaclass=_MethodChecker):
     """ The waveform client interface"""
 
     required_methods = {"get_waveforms"}
 
 
-class StationClient(ABC, _MethodChecker):
+class StationClient(metaclass=_MethodChecker):
     """ The station client interface """
 
     required_methods = {"get_stations"}
 
 
-class BankType(ABC, _MethodChecker):
+class BankType(metaclass=_MethodChecker):
     """ an object that looks like a bank """
 
     required_methods = {"read_index"}
 
 
-class ProgressBar(ABC, _MethodChecker):
+class ProgressBar(metaclass=_MethodChecker):
     """
     A class that behaves like the progressbar2.ProgressBar class.
     """
@@ -73,6 +77,6 @@ class ProgressBar(ABC, _MethodChecker):
 
 
 # register virtual subclasses
-WaveformClient.register(obspy.Stream)
-EventClient.register(obspy.Catalog)
-StationClient.register(obspy.Inventory)
+# WaveformClient.register(obspy.Stream)
+# EventClient.register(obspy.Catalog)
+# StationClient.register(obspy.Inventory)

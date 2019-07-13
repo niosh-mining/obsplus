@@ -5,7 +5,10 @@ import obspy
 import pytest
 
 import obsplus
+import pandas as pd
 from obsplus.constants import NSLC
+
+from obsplus.stations.utils import df_to_inventory
 
 
 @pytest.fixture
@@ -14,6 +17,39 @@ def inventory():
 
 
 class TestGetStation:
+    @pytest.fixture
+    def inv_issue_115(self):
+        """ Get an inventory for testing issue 115. """
+
+        sta1 = dict(
+            network="LF",
+            location="",
+            station="BOB",
+            channel="HHZ",
+            start_date="2019-01-01",
+            enddate="2100-01-01",
+            sample_rate=250,
+            latitude=0,
+            longitude=0,
+            elevation=0,
+            depth=0,
+        )
+        sta2 = dict(
+            network="01",
+            location="",
+            station="01",
+            channel="BHZ",
+            start_date="2019-01-01",
+            enddate="2100-01-01",
+            sample_rate=1000,
+            latitude=0,
+            longitude=0,
+            elevation=0,
+            depth=0,
+        )
+
+        return df_to_inventory(pd.DataFrame([sta1, sta2]))
+
     def test_inv_has_get_stations(self, inventory):
         """ get stations should have been monkey patched to stations """
         assert hasattr(inventory, "get_stations")
@@ -70,3 +106,11 @@ class TestGetStation:
             assert len(net.stations) == 1
             for sta in net:
                 assert len(sta.channels) == 1
+
+    def test_get_stations_issue_115(self, inv_issue_115):
+        """ Test that issue 115 is fixed. """
+        # first filter on channel, then ensure the channels and stations
+        # without that channel get removed
+        out = inv_issue_115.get_stations(channel="HHZ")
+        assert len(out) == 1, "there should now be one network"
+        assert len(out[0]) == 1, "and one station"

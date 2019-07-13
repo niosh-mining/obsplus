@@ -13,6 +13,14 @@ from obsplus.stations.utils import df_to_inventory
 class TestDfToInventory:
     """ Tests for converting a dataframe to an obspy Inventory. """
 
+    @staticmethod
+    def _assert_dates_are_utc_or_none(obj):
+        """ assert the start_date and end_date are UTC instances or None """
+        start = getattr(obj, "start_date", None)
+        end = getattr(obj, "end_date", None)
+        for attr in [start, end]:
+            assert isinstance(attr, obspy.UTCDateTime) or attr is None
+
     @pytest.fixture
     def df_from_inv(self):
         """ convert the default inventory to a df and return. """
@@ -42,6 +50,16 @@ class TestDfToInventory:
         df1 = df1[columns].sort_values(columns).reset_index(drop=True)
         df2 = df2[columns].sort_values(columns).reset_index(drop=True)
         assert df1.equals(df2)
+
+    def test_dates_are_utc_datetime_objects(self, inv_from_df):
+        """
+        All the dates should be either None or instances of UTCDateTime.
+        """
+        for net in inv_from_df:
+            for sta in net:
+                self._assert_dates_are_utc_or_none(sta)
+                for cha in sta:
+                    self._assert_dates_are_utc_or_none(cha)
 
     def test_NaN_in_non_time_columns(self, df_from_inv):
         """

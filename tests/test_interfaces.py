@@ -26,6 +26,9 @@ class TestEventClient:
     def test_fdsn_isinstance(self, iris_client):
         """ ensure the client is an instance of EventClient """
         assert isinstance(iris_client, EventClient)
+        breakpoint()
+        isinstance(10, EventClient)
+
         assert not isinstance(10, EventClient)
 
     def test_fdsn_issubclass(self):
@@ -63,6 +66,22 @@ class TestWaveformClient:
         wavebank = bingham_dataset.waveform_client
         assert isinstance(wavebank, WaveformClient)
         assert issubclass(WaveBank, WaveformClient)
+
+    def test_cls_with_getattr(self, bingham_dataset):
+        """
+        A class that returns objects for the appropriate attributes
+        with getattr rather than explicit methods should still be a
+        subclass/instances.
+        """
+        wavebank = bingham_dataset.waveform_client
+
+        class MockWaveform:
+            def __getattr__(self, item):
+                if item == "get_waveforms":
+                    return wavebank.get_waveforms
+                raise AttributeError(f"No such attribute {item}")
+
+        assert isinstance(MockWaveform(), WaveformClient)
 
 
 class TestStationClient:
