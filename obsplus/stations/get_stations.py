@@ -80,6 +80,7 @@ def _keep_obj(obj, **kwargs) -> bool:
     the required attrs and meet the requirements.
     """
     assert set(PARAMS).issuperset(set(kwargs))
+    met_requirement = False  # switch if any requirements have been met
     for parameter, requirement in kwargs.items():
         attr, oper = PARAMS[parameter], OPERATORS[parameter]
         # add network, station, channel codes if applicable
@@ -87,7 +88,9 @@ def _keep_obj(obj, **kwargs) -> bool:
             value = getattr(obj, attr)
             if not oper(value, requirement):
                 return False
-    return True
+            else:
+                met_requirement = True
+    return met_requirement
 
 
 def _filter(obj, cls, **kwargs):

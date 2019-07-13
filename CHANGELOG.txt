@@ -10,6 +10,9 @@ obsplus master:
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
       progressbar2 library (see #106).
+  - obsplus.stations
+    * Fixed issue where networks and stations could be left un-pruned when
+      querying on channel (see #115).
 
 obsplus 0.0.2:
   - obsplus.bank
