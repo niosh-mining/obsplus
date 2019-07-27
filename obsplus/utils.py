@@ -438,30 +438,6 @@ def get_progressbar(
     return bar
 
 
-def thread_lock_function(lock=None):
-    """
-    A decorator for locking a function that should never be run by more than
-    one thread.
-
-    Parameters
-    ----------
-    lock
-        An RLock or Lock object from the threading module, or an object that
-        has the same interface.
-    """
-    lock = lock or threading.RLock()
-
-    def _decorator(func):
-        @wraps(func)
-        def _wrapper(*args, **kwargs):
-            with lock:
-                return func(*args, **kwargs)
-
-        return _wrapper
-
-    return _decorator
-
-
 def iterate(obj):
     """
     Return an iterable from any object.
