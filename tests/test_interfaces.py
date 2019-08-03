@@ -29,6 +29,7 @@ class TestEventClient:
         assert not isinstance(10, EventClient)
 
     def test_fdsn_issubclass(self):
+        issubclass(str, EventClient)
         assert issubclass(Client, EventClient)
         assert not issubclass(str, EventClient)
 
@@ -100,6 +101,11 @@ class TestBar:
 
         assert issubclass(MyBar, ProgressBar)
         assert isinstance(MyBar(), ProgressBar)
+        # the class should not be an instance
+        isinstance(MyBar, ProgressBar)
+        assert not isinstance(MyBar, ProgressBar)
+        # the instance should not be a subclass
+        assert not issubclass(MyBar(), ProgressBar)
 
     def test_malformed_progress_bar(self):
         """
