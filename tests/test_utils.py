@@ -12,7 +12,7 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
-from obsplus.constants import NSLC, NULL_NSLC_CODES, DISTANCE_COLUMNS
+from obsplus.constants import NSLC, NULL_SEED_CODES, DISTANCE_COLUMNS
 from obsplus.utils import (
     compose_docstring,
     yield_obj_parent_attr,
@@ -149,7 +149,7 @@ class TestDocsting:
         assert len(base_spaces) == 12
 
 
-class TestReplaceNullNSLCCodes:
+class TestReplaceNullSeedCodes:
     """ tests for replacing nulish NSLC codes for various objects. """
 
     @pytest.fixture
@@ -178,7 +178,7 @@ class TestReplaceNullNSLCCodes:
         ev1 = cat[0]
         # make a pick
         picks = []
-        for val in NULL_NSLC_CODES:
+        for val in NULL_SEED_CODES:
             wid = make_wid(loc=val)
             picks.append(ev.Pick(waveform_id=wid, time=obspy.UTCDateTime()))
         ev1.picks.extend(picks)
@@ -201,7 +201,7 @@ class TestReplaceNullNSLCCodes:
             for code in NSLC:
                 code1 = getattr(tr1.stats, code)
                 code2 = getattr(tr2.stats, code)
-                if code1 in NULL_NSLC_CODES:
+                if code1 in NULL_SEED_CODES:
                     assert code2 == ""
                 else:
                     assert code1 == code2
@@ -216,7 +216,7 @@ class TestReplaceNullNSLCCodes:
     def test_inventory(self, null_inventory):
         def _valid_code(code):
             """ return True if the code is valid. """
-            return code not in NULL_NSLC_CODES
+            return code not in NULL_SEED_CODES
 
         inv = obsplus.utils.replace_null_nlsc_codes(null_inventory)
 

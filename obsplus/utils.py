@@ -43,7 +43,7 @@ import obsplus
 from obsplus.constants import (
     event_time_type,
     NSLC,
-    NULL_NSLC_CODES,
+    NULL_SEED_CODES,
     wave_type,
     event_type,
     inventory_type,
@@ -538,7 +538,7 @@ def compose_docstring(**kwargs):
     return _wrap
 
 
-def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
+def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Series:
     """
     Create a series of seed_ids from a dataframe with required columns.
 
@@ -577,7 +577,7 @@ any_type = TypeVar("any_type")
 
 @singledispatch
 def replace_null_nlsc_codes(
-    obspy_object: any_type, null_codes=NULL_NSLC_CODES, replacement_value=""
+    obspy_object: any_type, null_codes=NULL_SEED_CODES, replacement_value=""
 ) -> any_type:
     """
     Iterate an obspy object and replace nullish nslc codes with some value.
@@ -603,14 +603,14 @@ def replace_null_nlsc_codes(
 
 
 @replace_null_nlsc_codes.register(obspy.Stream)
-def _replace_null_stream(st, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_null_stream(st, null_codes=NULL_SEED_CODES, replacement_value=""):
     for tr in st:
         _replace_null_trace(tr, null_codes, replacement_value)
     return st
 
 
 @replace_null_nlsc_codes.register(obspy.Trace)
-def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_null_trace(tr, null_codes=NULL_SEED_CODES, replacement_value=""):
     for code in NSLC:
         val = getattr(tr.stats, code)
         if val in null_codes:
@@ -621,7 +621,7 @@ def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
 @replace_null_nlsc_codes.register(obspy.Inventory)
 @replace_null_nlsc_codes.register(Station)
 @replace_null_nlsc_codes.register(Channel)
-def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_inv_nulls(inv, null_codes=NULL_SEED_CODES, replacement_value=""):
     for code in ["location_code", "code"]:
         for obj, _, _ in yield_obj_parent_attr(inv, has_attr=code):
             if getattr(obj, code) in null_codes:
@@ -913,9 +913,9 @@ def calculate_distance(
 
 
 @lru_cache(maxsize=2500)
-def get_regex(nslc_str):
+def get_regex(seed_str):
     """ Compile, and cache regex for str queries. """
-    return fnmatch.translate(nslc_str)  # translate to re
+    return fnmatch.translate(seed_str)  # translate to re
 
 
 def md5(path: Union[str, Path]):

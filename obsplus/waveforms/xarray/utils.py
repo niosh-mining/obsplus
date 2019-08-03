@@ -16,6 +16,7 @@ import xarray as xr
 
 from obsplus.constants import DIMS, AGG_LEVEL_MAP, TIME_PRECISION, NSLC, xr_type
 from obsplus.waveforms.xarray import ops_method
+from obsplus.utils import get_seed_id_series
 
 
 def keep_attrs(func: Callable[..., xr_type]):
@@ -159,7 +160,7 @@ def _trim_array(dar: xr.DataArray):  # , trim_coord: str,
     return out
 
 
-def get_nslc_df(dar: xr.DataArray):
+def get_seed_id_df(dar: xr.DataArray) -> pd.DataFrame:
     """ return a dataframe with network station location channel
     from seed_id on a detex data array"""
     ser = dar.seed_id.to_pandas() if isinstance(dar, xr.DataArray) else dar
@@ -186,7 +187,7 @@ def stack_seed(dar: xr.DataArray, level) -> xr.DataArray:
     # This is super ugly, and much harder than it should be.
     # get dataframe of seed levels
     assert level in NSLC
-    df = get_nslc_df(dar)
+    df = get_seed_id_df(dar)
     # create multi-index and swap out old seed_id for multi-level
     ind = pd.MultiIndex.from_arrays(
         (df[level].values, df.index.values), names=(level, "sid")
@@ -282,7 +283,7 @@ def seed_sel_from_series(ser: Union[pd.Series, xr_type], seed_id):
 
     """
     ms = pd.Series({item: val for item, val in zip(NSLC, seed_id.split("."))})
-    df = get_nslc_df(ser)
+    df = get_seed_id_df(ser)
     # iter the match series and filter data array
     bool_ms = df.network.astype(bool)
     for ind, val in ms.items():
@@ -316,7 +317,7 @@ def iter_seed(dar: xr.DataArray, level: str):
     """
     assert level in NSLC, f"level argument not valid must be in {NSLC}"
     assert "seed_id" in dar.dims, "data array must have seed_id in dims"
-    df = get_nslc_df(dar)
+    df = get_seed_id_df(dar)
     uniques = df[level].unique()
     for unique in uniques:
         bool_ser = df[level] == unique

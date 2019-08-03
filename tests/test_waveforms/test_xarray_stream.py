@@ -19,7 +19,7 @@ from obsplus.waveforms.xarray import netcdf2array
 from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
 from obsplus.waveforms.xarray.io import read_pickle
 from obsplus.waveforms.xarray.signal import array_irfft, array_rfft
-from obsplus.waveforms.xarray.utils import get_nslc_df, sel_sid, pad_time
+from obsplus.waveforms.xarray.utils import get_seed_id_df, sel_sid, pad_time
 
 rand = np.random.RandomState(13)
 
@@ -1065,7 +1065,7 @@ class TestIterSeed:
     def test_iter_station(self, many_sid_array):
         """ ensure iterstation works """
         for dar in many_sid_array.ops.iter_seed("station"):
-            df = get_nslc_df(dar)
+            df = get_seed_id_df(dar)
             assert len(df.station.unique()) == 1
 
 
@@ -1088,14 +1088,14 @@ class TestGetSid:
     # tests
     def test_sliced_by_one_seed(self, sliced_by_seed):
         """ ensure only the selected seed is taken """
-        df = get_nslc_df(sliced_by_seed)
+        df = get_seed_id_df(sliced_by_seed)
         assert len(df) == 1
         expected = set([self.default_seed_id])
         assert expected == set(sliced_by_seed.seed_id.values)
 
     def test_slice_by_wild(self, sliced_by_wildcard):
         """ ensure the wildcard sloce works """
-        df = get_nslc_df(sliced_by_wildcard)
+        df = get_seed_id_df(sliced_by_wildcard)
         assert set(df.channel.values) == set(["EHZ"])
 
     def test_network_channel_filter(self, bingham_dar):
@@ -1216,7 +1216,7 @@ class TestSeedStacking:
         it can be unstacked.
         """
         # get a dataframe which splits network, station, location, and chan
-        seed_df = get_nslc_df(crandall_data_array)
+        seed_df = get_seed_id_df(crandall_data_array)
         # iterate each level and stack, then unstack
         for level in seed_df.columns:
             dar1 = crandall_data_array.copy()
