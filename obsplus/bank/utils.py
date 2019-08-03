@@ -397,6 +397,19 @@ def _try_read_stream(stream_path, format=None, **kwargs):
     return None
 
 
+def _try_read_catalog(catalog_path, **kwargs):
+    """ Try to read a events from file, if it raises return None """
+    read = READ_DICT.get(kwargs.pop("format", None), obspy.read_events)
+    try:
+        cat = read(catalog_path, **kwargs)
+    except Exception:
+        warnings.warn(f"obspy failed to read {catalog_path}")
+    else:
+        if cat is not None and len(cat):
+            return cat
+    return None
+
+
 @singledispatch
 def get_inventory(inventory: Union[str, Inventory]):
     """

@@ -4,6 +4,7 @@ A local database for waveform formats.
 import os
 import time
 from collections import defaultdict
+from concurrent.futures import Executor
 from functools import partial, reduce
 from itertools import chain
 from operator import add
@@ -104,9 +105,14 @@ class WaveBank(_Bank):
         If True this bank will share an index with other processes, one or
         more of which may perform update_index operations. When used a simple
         file locking mechanism attempts to compensate for shortcomings in
-        HDF5 stores lack of concurrency support. This is not needed if all
-        processes are only going to read from the bank, nor is it bulletproof,
-        but it should help avoid some issues with a few concurrent processes.
+        HDF5 store's lack of concurrency support. This is not needed if all
+        processes are only reading from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a small number of concurrent
+        processes.
+    executor
+        An executor with the same interface as concurrent.futures.Executor,
+        the map method of the executor will be used for reading files and
+        updating indices.
     """
 
     # index columns and types
@@ -136,6 +142,7 @@ class WaveBank(_Bank):
         format="mseed",
         ext=None,
         concurrent_updates=False,
+        executor: Optional[Executor] = None,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -147,6 +154,7 @@ class WaveBank(_Bank):
         # get waveforms structure based on structures of path and filename
         self.path_structure = path_structure or WAVEFORM_STRUCTURE
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
+        self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
         self._concurrent = concurrent_updates
@@ -186,21 +194,15 @@ class WaveBank(_Bank):
         {bar_parameter_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
-        bar = self.get_progress_bar(bar)  # get progress bar
         update_time = time.time()
-        # loop over un-index files and add info to index
-        updates = []
-        for num, fi in enumerate(self._unindexed_file_iterator()):
-            updates.append(_summarize_wave_file(fi, format=self.format))
-            # update bar
-            if bar and num % self._bar_update_interval == 0:
-                bar.update(num)
-        # push updates to index
-        if len(updates):  # flatten list and make df
+        # create a function for the mapping and apply
+        func = partial(_summarize_wave_file, format=self.format)
+        updates = list(self._map(func, self._measured_unindexed_iterator(bar)))
+        # push updates to index if any were found
+        if len(updates):
             self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
-        getattr(bar, "finish", lambda: None)()  # finish bar
         return self
 
     def _write_update(self, updates, update_time):
@@ -655,14 +657,17 @@ class WaveBank(_Bank):
         # get abs path to each datafame
         files: pd.Series = (self.bank_path + index.path).unique()
         # iterate the files to read and try to load into waveforms
-        stt = obspy.Stream()
         kwargs = dict(
             format=self.format,
             starttime=obspy.UTCDateTime(starttime) if starttime else None,
             endtime=obspy.UTCDateTime(endtime) if endtime else None,
         )
-        for st in (_try_read_stream(x, **kwargs) for x in files):
-            if st is not None and len(st):
+        func = partial(_try_read_stream, **kwargs)
+
+        stt = obspy.Stream()
+        chunksize = len(files) / self._max_workers
+        for st in self._map(func, files, chunksize=chunksize):
+            if st is not None:
                 stt += st
         # sort out nullish nslc codes
         stt = replace_null_nlsc_codes(stt)

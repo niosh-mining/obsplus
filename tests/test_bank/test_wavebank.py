@@ -6,9 +6,10 @@ import pathlib
 import shutil
 import tempfile
 import time
-import traceback
 import types
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+
 from os.path import join
 from pathlib import Path
 
@@ -25,7 +26,7 @@ import obsplus.bank.wavebank as sbank
 import obsplus.datasets.utils
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
-from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import make_time_chunks, iter_files, get_reference_time
 
 
@@ -1226,6 +1227,31 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
+class TestConcurrentReads:
+    """
+    Tests for concurrent reads.
+    """
+
+    @pytest.fixture
+    def wbank_executor(self, ta_bank, monkeypatch, instrumented_thread_executor):
+        """ Return a wavebank with an instrumented executor. """
+        monkeypatch.setattr(ta_bank, "executor", instrumented_thread_executor)
+        os.remove(ta_bank.index_path)
+        return ta_bank
+
+    def test_concurrent_get_waveforms(self, wbank_executor):
+        """ Ensure conccurent get_waveforms uses executor. """
+        _ = wbank_executor.get_waveforms()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+    def test_concurrent_update_index(self, wbank_executor):
+        """ Ensure updating index can be performed with executor. """
+        _ = wbank_executor.update_index()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+
 class TestConcurrentUpdateIndex:
     """
     Tests to make sure running update index in different threads/processes.
@@ -1252,21 +1278,15 @@ class TestConcurrentUpdateIndex:
         self.func(wbank)
         return wbank
 
-    @pytest.fixture(scope="class")
-    def thread_pool(self):
-        """ return a thread pool """
-        with ThreadPoolExecutor(self.worker_count) as executor:
-            yield executor
-
     @pytest.fixture
-    def thread_read(self, concurrent_bank, thread_pool):
+    def thread_read(self, concurrent_bank, thread_executor):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
         concurrent_bank.update_index()
         func = functools.partial(self.func, wbank=concurrent_bank)
         for _ in range(self.worker_count):
-            out.append(thread_pool.submit(func))
+            out.append(thread_executor.submit(func))
         return list(as_completed(out))
 
     @pytest.fixture(scope="class")

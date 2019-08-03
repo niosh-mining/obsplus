@@ -3,8 +3,11 @@ tests for event wavebank
 """
 import os
 import sys
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Executor
 from pathlib import Path
 from io import StringIO
+
 
 import obspy
 import obspy.core.event as ev
@@ -210,24 +213,24 @@ class TestReadIndexQueries:
         eve_id = str(catalog[0].resource_id)
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
-        assert eve_id in df.index
+        assert eve_id in set(df["event_id"])
 
     def test_query_resource_id(self, bing_ebank, catalog):
         """ test query on a resource id """
         eve_id = catalog[0].resource_id
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
-        assert str(eve_id) in df.index
+        assert str(eve_id) in set(df["event_id"])
 
     def test_query_event_ids(self, bing_ebank, catalog):
         """
         test querying multiple ids (specifically using something other
         than a list)
         """
-        eve_ids = bing_ebank.read_index().iloc[0:2].index
+        eve_ids = bing_ebank.read_index()["event_id"].iloc[0:2]
         df = bing_ebank.read_index(eventid=eve_ids)
         assert len(df) == 2
-        assert df.index.isin(eve_ids).all()
+        assert df["event_id"].isin(eve_ids).all()
 
     def test_bad_param_raises(self, bing_ebank):
         """ assert bad query param will raise """
@@ -257,7 +260,7 @@ class TestReadIndexQueries:
         These should have been replaced with proper None values.
         """
         df = bing_ebank.read_index()
-        assert not "None" in df.values
+        assert "None" not in df.values
 
     def test_event_description_as_set(self, ebank):
         """
@@ -273,7 +276,7 @@ class TestReadIndexQueries:
             df1 = df_raw[df_raw["event_description"].isin(df_filt)]
             df2 = ebank.read_index(event_description=filt)
             assert len(df1) == len(df2)
-            assert df1.equals(df2)
+            assert df1.reset_index(drop=True).equals(df2.reset_index(drop=True))
 
 
 class TestGetEvents:
@@ -312,8 +315,8 @@ class TestGetEvents:
         """ ensure eventid can accept a numpy array. see #30. """
         ds = crandall_dataset
         ebank = obsplus.EventBank(ds.event_path)
-        # get first two indices
-        inds = ebank.read_index().index[0:2]
+        # get first two event_ids
+        inds = ebank.read_index()["event_id"].values[0:2]
         # query with inds as np array
         assert len(ebank.get_events(eventid=np.array(inds))) == 2
 
@@ -335,6 +338,7 @@ class TestPutEvents:
         """ modify and event and ensure index is updated """
         index1 = bing_ebank.read_index()
         eve = catalog[0]
+        rid = str(eve.resource_id)
         # modify event
         old_lat = eve.origins[0].latitude
         new_lat = old_lat + 0.15
@@ -343,8 +347,9 @@ class TestPutEvents:
         bing_ebank.put_events(eve)
         # read index, ensure event_ids are unique and have correct values
         index2 = bing_ebank.read_index()
+        assert not index2["event_id"].duplicated().any()
         assert len(index1) == len(index2)
-        index_lat = index2.loc[index2.index == str(eve.resource_id), "latitude"]
+        index_lat = index2.loc[index2["event_id"] == rid, "latitude"]
         assert index_lat.iloc[0] == new_lat
 
 
@@ -434,3 +439,30 @@ class TestProgressBar:
         stringio.seek(0)
         out = stringio.read()
         assert "updating or creating" in out
+
+
+class TestConcurrency:
+    """ Tests for using an executor for concurrency. """
+
+    @pytest.fixture
+    def ebank_executor(self, ebank, instrumented_thread_executor, monkeypatch):
+        """ Attach the instrument threadpool executor to ebank. """
+        monkeypatch.setattr(ebank, "executor", instrumented_thread_executor)
+        return ebank
+
+    def test_executor_get_events(self, ebank_executor):
+        """ Ensure the threadpool map function is used for reading events. """
+        # get events, ensure map is used
+        _ = ebank_executor.get_events()
+        counter = getattr(ebank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) == 1
+
+    def test_executor_index_events(self, ebank_executor):
+        """ Ensure threadpool map is used for updating the index. """
+        try:
+            os.remove(ebank_executor.index_path)
+        except FileNotFoundError:
+            pass
+        ebank_executor.update_index()
+        counter = getattr(ebank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) == 1
