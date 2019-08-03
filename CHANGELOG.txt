@@ -7,6 +7,8 @@ obsplus master:
       _min_files_for_bar (see #106).
     * Add support for circular searches on EventBank (see #110).
     * Removed concurrent update features for WaveBank (see #117).
+    * Add support for using concurrent.futures Executors to speed up indexing
+      and reading files (see #108).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
