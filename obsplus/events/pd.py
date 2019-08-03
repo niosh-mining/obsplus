@@ -439,7 +439,7 @@ def _magnitudes_from_event_bank(event_bank):
 
 @magnitudes_to_df.extractor(dtypes=MAGNITUDE_DTYPES)
 def _magnitudes_extractor(mag):
-    return _obj_extractor(mag, MAGNITUDE_DTYPES, nslc=False, error_obj="mag_errors")
+    return _obj_extractor(mag, MAGNITUDE_DTYPES, seed_id=False, error_obj="mag_errors")
 
 
 # -------------- Internal functions for extracting event info
@@ -468,14 +468,14 @@ def _objs_from_event_bank(event_bank, extractor):
     return extractor(event_bank.get_events())
 
 
-def _obj_extractor(obj, dtypes, nslc=True, error_obj=None):
+def _obj_extractor(obj, dtypes, seed_id=True, error_obj=None):
     """ extract common information from event object """
     # extract attributes that are floats/str
     overlap = set(obj.__dict__) & set(dtypes)
     base = {i: getattr(obj, i) for i in overlap}
     # get waveform_id stuff (seed_id, network, station, location, channel), if applicable
-    if nslc:
-        base.update(_get_nslc(obj))
+    if seed_id:
+        base.update(_get_seed_id(obj))
     # extract error info, if applicable
     if error_obj:
         errors = obj.__dict__[error_obj]
@@ -520,7 +520,7 @@ def _get_uncertainty(errors):
     }
 
 
-def _get_nslc(obj):
+def _get_seed_id(obj):
     """ Strip nslc info for an extractor """
     seed_id = get_seed_id(obj)
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}

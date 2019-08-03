@@ -385,7 +385,7 @@ basic_types = Optional[Union[int, float, str, bool]]
 
 
 # null quantities for nslc codes
-NULL_NSLC_CODES = (None, "--", "None", "nan", "null", np.nan)
+NULL_SEED_CODES = (None, "--", "None", "nan", "null", np.nan)
 
 # parts of the origin that should have float values
 ORIGIN_FLOATS = {"latitude", "longitude", "depth"}

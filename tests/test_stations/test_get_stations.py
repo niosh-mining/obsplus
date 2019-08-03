@@ -93,7 +93,7 @@ class TestGetStation:
     def test_get_stations_one_channel(self, inventory):
         """ test get stations when all kwarg are used. """
         sta_df = obsplus.stations_to_df(inventory)
-        nslc = obsplus.utils.get_nslc_series(sta_df).iloc[0]
+        nslc = obsplus.utils.get_seed_id_series(sta_df).iloc[0]
         # make kwargs
         kwargs = {x: y for x, y in zip(NSLC, nslc.split("."))}
         # get sub inv

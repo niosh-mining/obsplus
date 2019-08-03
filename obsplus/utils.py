@@ -9,7 +9,7 @@ import re
 import sys
 import textwrap
 import warnings
-from functools import singledispatch, lru_cache
+from functools import singledispatch, lru_cache, wraps, partial
 from itertools import product
 from pathlib import Path
 from typing import (
@@ -43,7 +43,7 @@ import obsplus
 from obsplus.constants import (
     event_time_type,
     NSLC,
-    NULL_NSLC_CODES,
+    NULL_SEED_CODES,
     wave_type,
     event_type,
     inventory_type,
@@ -54,6 +54,24 @@ from obsplus.constants import (
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
+
+
+def deprecated_callable(func=None, replacement_str=None):
+    fname = str(getattr(func, "__name__", func))
+
+    if callable(func):
+
+        @wraps(func)
+        def _wrap(*args, **kwargs):
+            msg = f"{fname} is deprecated and will be removed in a future release."
+            if replacement_str:
+                msg += f" Please use {replacement_str} instead."
+            warnings.warn(msg)
+            return func(*args, **kwargs)
+
+        return _wrap
+    else:
+        return partial(deprecated_callable, replacement_str=replacement_str)
 
 
 def yield_obj_parent_attr(
@@ -520,9 +538,12 @@ def compose_docstring(**kwargs):
     return _wrap
 
 
-def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
+def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Series:
     """
-    Create a series of seed_ids from a dataframe with nslc columns.
+    Create a series of seed_ids from a dataframe with required columns.
+
+    The seed id series contains strings of the form:
+        network.station.location.channel
 
     Any "nullish" values (defined by the parameter null_codes) will be
     replaced with an empty string.
@@ -530,14 +551,14 @@ def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
     Parameters
     ----------
     df
-        Any Dataframe that has str columns named:
+        Any Dataframe that has columns with str dtype named:
             network, station, location, channel
     null_codes
         Codes which should be replaced with a blank string.
 
     Returns
     -------
-    A series of concatenated nslc codes.
+    A series of concatenated seed_ids codes.
     """
     assert set(NSLC).issubset(df.columns), f"dataframe must have columns {NSLC}"
     replace_dict = {x: "" for x in null_codes}
@@ -546,12 +567,17 @@ def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
     return net + "." + sta + "." + loc + "." + chan
 
 
+@deprecated_callable()
+def get_nslc_series(*args, **kwargs) -> pd.Series:
+    return get_seed_id_series(*args, **kwargs)
+
+
 any_type = TypeVar("any_type")
 
 
 @singledispatch
 def replace_null_nlsc_codes(
-    obspy_object: any_type, null_codes=NULL_NSLC_CODES, replacement_value=""
+    obspy_object: any_type, null_codes=NULL_SEED_CODES, replacement_value=""
 ) -> any_type:
     """
     Iterate an obspy object and replace nullish nslc codes with some value.
@@ -577,14 +603,14 @@ def replace_null_nlsc_codes(
 
 
 @replace_null_nlsc_codes.register(obspy.Stream)
-def _replace_null_stream(st, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_null_stream(st, null_codes=NULL_SEED_CODES, replacement_value=""):
     for tr in st:
         _replace_null_trace(tr, null_codes, replacement_value)
     return st
 
 
 @replace_null_nlsc_codes.register(obspy.Trace)
-def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_null_trace(tr, null_codes=NULL_SEED_CODES, replacement_value=""):
     for code in NSLC:
         val = getattr(tr.stats, code)
         if val in null_codes:
@@ -595,7 +621,7 @@ def _replace_null_trace(tr, null_codes=NULL_NSLC_CODES, replacement_value=""):
 @replace_null_nlsc_codes.register(obspy.Inventory)
 @replace_null_nlsc_codes.register(Station)
 @replace_null_nlsc_codes.register(Channel)
-def _replace_inv_nulls(inv, null_codes=NULL_NSLC_CODES, replacement_value=""):
+def _replace_inv_nulls(inv, null_codes=NULL_SEED_CODES, replacement_value=""):
     for code in ["location_code", "code"]:
         for obj, _, _ in yield_obj_parent_attr(inv, has_attr=code):
             if getattr(obj, code) in null_codes:
@@ -887,9 +913,9 @@ def calculate_distance(
 
 
 @lru_cache(maxsize=2500)
-def get_regex(nslc_str):
+def get_regex(seed_str):
     """ Compile, and cache regex for str queries. """
-    return fnmatch.translate(nslc_str)  # translate to re
+    return fnmatch.translate(seed_str)  # translate to re
 
 
 def md5(path: Union[str, Path]):
