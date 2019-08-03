@@ -1279,7 +1279,7 @@ class TestConcurrentUpdateIndex:
         return wbank
 
     @pytest.fixture
-    def thread_read(self, concurrent_bank, thread_pool):
+    def thread_read(self, concurrent_bank, thread_executor):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []

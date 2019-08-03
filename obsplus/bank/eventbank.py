@@ -199,6 +199,7 @@ class EventBank(_Bank):
         ----------
         {bar_parameter_description}
         """
+
         def func(path):
             """ Function to yield events, update_time and paths. """
             cat = _try_read_catalog(path, format=self.format)

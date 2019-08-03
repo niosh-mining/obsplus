@@ -8,8 +8,8 @@ import os
 import re
 import sys
 import textwrap
-import threading
-from functools import singledispatch, wraps, lru_cache
+import warnings
+from functools import singledispatch, lru_cache
 from itertools import product
 from pathlib import Path
 from typing import (
@@ -163,6 +163,19 @@ def make_time_chunks(
             t2 = utc2 + overlap
         yield (utc1, t2)
         utc1 += duration  # add duration
+
+
+def try_read_catalog(catalog_path, **kwargs):
+    """ Try to read a events from file, if it raises return None """
+    read = READ_DICT.get(kwargs.pop("format", None), obspy.read_events)
+    try:
+        cat = read(catalog_path, **kwargs)
+    except Exception:
+        warnings.warn(f"obspy failed to read {catalog_path}")
+    else:
+        if cat is not None and len(cat):
+            return cat
+    return None
 
 
 def order_columns(
