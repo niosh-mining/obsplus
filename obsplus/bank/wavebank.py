@@ -39,7 +39,6 @@ from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
     to_timestamp,
-    thread_lock_function,
     get_nslc_series,
     filter_index,
     replace_null_nlsc_codes,
@@ -160,7 +159,6 @@ class WaveBank(_Bank):
         Return the last modified time stored in the index, else None.
         """
         self.ensure_bank_path_exists()
-        self.block_on_index_lock()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -178,7 +176,6 @@ class WaveBank(_Bank):
             data_columns=list(self.index_float),
         )
 
-    @thread_lock_function()
     @compose_docstring(bar_paramter_description=bar_paramter_description)
     def update_index(self, bar: Optional = None) -> "WaveBank":
         """
@@ -200,8 +197,7 @@ class WaveBank(_Bank):
                 bar.update(num)
         # push updates to index
         if len(updates):  # flatten list and make df
-            with self.lock_index():
-                self._write_update(list(chain.from_iterable(updates)), update_time)
+            self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
         getattr(bar, "finish", lambda: None)()  # finish bar
@@ -247,12 +243,11 @@ class WaveBank(_Bank):
         """
         if not Path(self.index_path).exists():
             return
-        with self.lock_index():
-            with pd.HDFStore(self.index_path) as store:
-                # add metadata if not in store
-                if self._meta_node not in store:
-                    meta = self._make_meta_table()
-                    store.put(self._meta_node, meta, format="table")
+        with pd.HDFStore(self.index_path) as store:
+            # add metadata if not in store
+            if self._meta_node not in store:
+                meta = self._make_meta_table()
+                store.put(self._meta_node, meta, format="table")
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -296,7 +291,6 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
-        self.block_on_index_lock()
         try:
             return pd.read_hdf(self.index_path, self._meta_node)
         except (FileNotFoundError, ValueError, KeyError):

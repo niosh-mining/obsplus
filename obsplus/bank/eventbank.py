@@ -17,7 +17,6 @@ import pandas as pd
 
 import obsplus
 import obsplus.events.pd
-from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.bank.core import _Bank
 from obsplus.bank.utils import (
     _IndexCache,
@@ -34,14 +33,10 @@ from obsplus.constants import (
     get_events_parameters,
     bar_paramter_description,
 )
+from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import (
-    try_read_catalog,
-    get_progressbar,
-    thread_lock_function,
-    compose_docstring,
-)
 from obsplus.interfaces import ProgressBar
+from obsplus.utils import try_read_catalog, compose_docstring
 
 # --- define static types
 
@@ -191,7 +186,6 @@ class EventBank(_Bank):
             df = df[df.event_id.isin(circular_ids)]
         return df.set_index("event_id")
 
-    @thread_lock_function()
     @compose_docstring(bar_paramter_description=bar_paramter_description)
     def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
         """

@@ -1237,25 +1237,18 @@ class TestConcurrentUpdateIndex:
     def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
         # first write some new files
-        path = Path(wbank.bank_path)
-        for ind in range(self.new_files):
-            st = obspy.read()
-            st.write(f"{path / str(ind)}.mseed", "mseed")
-        # then try to update index, catch any errors and print them
         try:
-            wbank.update_index()
-        except Exception as e:
-            return traceback.format_tb(e.__traceback__)
-        else:
-            time.sleep(0.01 + np.random.rand() / 10)
             wbank.read_index()
-            return None
+        except Exception as e:
+            return str(e)
 
     # fixtures
     @pytest.fixture
     def concurrent_bank(self, tmpdir):
         """ Make a temporary bank and index it. """
-        wbank = WaveBank(str(tmpdir), concurrent_updates=True)
+        st = obspy.read()
+        st.write(str(Path(tmpdir) / "test.mseed"), "mseed")
+        wbank = WaveBank(str(tmpdir)).update_index()
         self.func(wbank)
         return wbank
 
@@ -1266,7 +1259,7 @@ class TestConcurrentUpdateIndex:
             yield executor
 
     @pytest.fixture
-    def thread_update(self, concurrent_bank, thread_pool):
+    def thread_read(self, concurrent_bank, thread_pool):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
@@ -1283,7 +1276,7 @@ class TestConcurrentUpdateIndex:
             yield executor
 
     @pytest.fixture
-    def process_update(self, concurrent_bank, process_pool):
+    def process_read(self, concurrent_bank, process_pool):
         """ run a bunch of update index operations in different processes,
         return list of results """
         concurrent_bank.update_index()
@@ -1295,35 +1288,28 @@ class TestConcurrentUpdateIndex:
         return list(as_completed(out))
 
     # tests
-    def test_index_update_threads(self, thread_update):
+    def test_index_read_thread(self, thread_read):
         """ ensure the index updated and the threads didn't kill each
         other """
         # get a list of exceptions that occurred
-        assert len(thread_update) == self.worker_count
-        excs = [x.result() for x in thread_update]
+        assert len(thread_read) == self.worker_count
+        excs = [x.result() for x in thread_read]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the thread pool:\n {excs}"
             pytest.fail(msg)
 
-    def test_index_update_processes(self, process_update):
+    def test_index_read_process(self, process_read):
         """
         Ensure the index can be updated in different processes.
         """
-        assert len(process_update) == self.worker_count
+        assert len(process_read) == self.worker_count
         # ensure no exceptions were raised
-        excs = [x.result() for x in process_update]
+        excs = [x.result() for x in process_read]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the process pool:\n {excs}"
             pytest.fail(msg)
-
-    def test_file_lock(self, concurrent_bank):
-        """ Tests for the file locking mechanism. """
-        newbank = WaveBank(concurrent_bank)
-        with concurrent_bank.lock_index():
-            with pytest.raises(BankIndexLockError):
-                newbank.block_on_index_lock(0.01, 1)
 
 
 class TestSelectDoesntReturnSuperset:
