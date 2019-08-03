@@ -22,7 +22,7 @@ from obsplus.constants import (
     waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_nslc_series, filter_index
+from obsplus.utils import get_seed_id_series, filter_index
 
 
 # ---------- trim functions
@@ -388,7 +388,7 @@ def archive_to_sds(
     ts1 = index.starttime.min() if not starttime else starttime
     t1 = _nearest_day(ts1)
     t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
-    nslcs = get_nslc_series(index).unique()
+    nslcs = get_seed_id_series(index).unique()
     # iterate over nslc and get data for selected channel
     for nslc in nslcs:
         nslc_dict = {n: v for n, v in zip(NSLC, nslc.split("."))}

@@ -31,7 +31,7 @@ from obsplus.constants import (
     MAGNITUDE_COLUMNS,
 )
 
-from obsplus.utils import getattrs, get_nslc_series
+from obsplus.utils import getattrs, get_seed_id_series
 
 common_extractor_cols = {
     "agency_id",
@@ -604,7 +604,7 @@ class TestReadKemPicks:
         """ ensure valid seed_ids were created. """
         # recreate seed_id and make sure columns are equal
         df = pick_df
-        seed = get_nslc_series(pick_df)
+        seed = get_seed_id_series(pick_df)
         assert (seed == df["seed_id"]).all()
 
 

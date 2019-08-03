@@ -40,7 +40,7 @@ from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
     to_timestamp,
-    get_nslc_series,
+    get_seed_id_series,
     filter_index,
     replace_null_nlsc_codes,
     _column_contains,
@@ -443,8 +443,8 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, mar.any(axis=0))
             # handle columns that do not need matches
             if not df_no_match.empty:
-                nslc1 = set(get_nslc_series(df_no_match))
-                nslc2 = get_nslc_series(ind)
+                nslc1 = set(get_seed_id_series(df_no_match))
+                nslc2 = get_seed_id_series(ind)
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
@@ -673,7 +673,7 @@ class WaveBank(_Bank):
         stt = replace_null_nlsc_codes(stt)
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
-        nslc = set(get_nslc_series(index))
+        nslc = set(get_seed_id_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
         stt = self._prep_output_stream(stt, starttime, endtime, attach_response)

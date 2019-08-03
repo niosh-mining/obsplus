@@ -9,7 +9,7 @@ import re
 import sys
 import textwrap
 import warnings
-from functools import singledispatch, lru_cache
+from functools import singledispatch, lru_cache, wraps, partial
 from itertools import product
 from pathlib import Path
 from typing import (
@@ -54,6 +54,24 @@ from obsplus.constants import (
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 # make a dict of functions for reading waveforms
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
+
+
+def deprecated_callable(func=None, replacement_str=None):
+    fname = str(getattr(func, "__name__", func))
+
+    if callable(func):
+
+        @wraps(func)
+        def _wrap(*args, **kwargs):
+            msg = f"{fname} is deprecated and will be removed in a future release."
+            if replacement_str:
+                msg += f" Please use {replacement_str} instead."
+            warnings.warn(msg)
+            return func(*args, **kwargs)
+
+        return _wrap
+    else:
+        return partial(deprecated_callable, replacement_str=replacement_str)
 
 
 def yield_obj_parent_attr(
@@ -520,9 +538,12 @@ def compose_docstring(**kwargs):
     return _wrap
 
 
-def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
+def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
     """
-    Create a series of seed_ids from a dataframe with nslc columns.
+    Create a series of seed_ids from a dataframe with required columns.
+
+    The seed id series contains strings of the form:
+        network.station.location.channel
 
     Any "nullish" values (defined by the parameter null_codes) will be
     replaced with an empty string.
@@ -530,20 +551,25 @@ def get_nslc_series(df: pd.DataFrame, null_codes=NULL_NSLC_CODES) -> pd.Series:
     Parameters
     ----------
     df
-        Any Dataframe that has str columns named:
+        Any Dataframe that has columns with str dtype named:
             network, station, location, channel
     null_codes
         Codes which should be replaced with a blank string.
 
     Returns
     -------
-    A series of concatenated nslc codes.
+    A series of concatenated seed_ids codes.
     """
     assert set(NSLC).issubset(df.columns), f"dataframe must have columns {NSLC}"
     replace_dict = {x: "" for x in null_codes}
     nslc = df[list(NSLC)].astype(str).replace(replace_dict)
     net, sta, loc, chan = [nslc[x] for x in NSLC]
     return net + "." + sta + "." + loc + "." + chan
+
+
+@deprecated_callable()
+def get_nslc_series(*args, **kwargs) -> pd.Series:
+    return get_seed_id_series(*args, **kwargs)
 
 
 any_type = TypeVar("any_type")

@@ -1186,7 +1186,7 @@ class TestGetGaps:
         st = obspy.read()
         assert not df.empty, "uptime df is empty"
         assert len(df) == len(st)
-        assert {tr.id for tr in st} == set(obsplus.utils.get_nslc_series(df))
+        assert {tr.id for tr in st} == set(obsplus.utils.get_seed_id_series(df))
         assert (df["gap_duration"] == 0).all()
 
     def test_empty_directory(self, empty_bank):
@@ -1211,8 +1211,8 @@ class TestGetGaps:
         index = wbank.read_index()
         uptime = wbank.get_uptime_df()
         # make sure the same seed ids are in the index as uptime df
-        seeds_from_index = set(obsplus.utils.get_nslc_series(index))
-        seeds_from_uptime = set(obsplus.utils.get_nslc_series(uptime))
+        seeds_from_index = set(obsplus.utils.get_seed_id_series(index))
+        seeds_from_uptime = set(obsplus.utils.get_seed_id_series(uptime))
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 
