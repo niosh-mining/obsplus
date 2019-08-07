@@ -10,7 +10,7 @@ from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 
 import obspy
 import obspy.core.event as ev
@@ -190,14 +190,18 @@ class EventBank(_Bank):
             df = df[df.event_id.isin(circular_ids)]
         return df
 
-    @compose_docstring(bar_paramter_description=bar_paramter_description)
-    def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
+    @compose_docstring(bar_parameter_description=bar_paramter_description)
+    def update_index(
+        self, bar: Optional[ProgressBar] = None, paths: Optional[Iterable] = None
+    ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
         Parameters
         ----------
         {bar_parameter_description}
+        paths
+            Paths to update for - if not set, all paths will be scanned.
         """
 
         def func(path):
@@ -210,7 +214,7 @@ class EventBank(_Bank):
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
-        iterator = self._measured_unindexed_iterator(bar)
+        iterator = paths or self._measured_unindexed_iterator(bar)
         events, update_times, paths = [], [], []
         for cat, mtime, path in self._map(func, iterator):
             if cat is None:
@@ -319,12 +323,14 @@ class EventBank(_Bank):
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]
         df = self.read_index(event_id=event_ids).set_index("event_id")
+        paths = []
         for event in events:
             rid = str(event.resource_id)
             if rid in df.index:  # event needs to be updated
                 path = self.bank_path + df.loc[rid, "path"]
                 assert exists(path)
                 event.write(path, self.format)
+                paths.append(path)
             else:  # event file does not yet exist
                 path = _summarize_event(
                     event,
@@ -334,7 +340,10 @@ class EventBank(_Bank):
                 ppath = (Path(self.bank_path) / path).absolute()
                 ppath.parent.mkdir(parents=True, exist_ok=True)
                 event.write(str(ppath), self.format)
+                paths.append(str(ppath))
         if update_index:
-            self.update_index()  # parse newly saved files and update index
+            self.update_index()  # Completely update index.
+        else:
+            self.update_index(paths=paths)  # Parse *only* the new events
 
     get_event_summary = read_index
