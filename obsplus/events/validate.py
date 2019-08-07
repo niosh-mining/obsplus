@@ -103,19 +103,18 @@ validator("obsplus", Event)(replace_null_nlsc_codes)
 
 
 @validator("obsplus", Event)
-def check_picks(event: Event, **kwargs):
+def check_duplicate_picks(event: Event, **kwargs):
     """
-    Checks for errors with phase picks on each station
-    This function will check for duplicate picks on each station (i.e. more
-    than one P or S per station), if there are any S or IAML picks before
-    P picks on each station, and if there are more than one IAML pick per
-    channel.
+    Ensure there are no picks with the same phases on the same channels.
     """
+    # first get dataframe of picks
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
+    event_id = str(event.resource_id)
 
-    def dup_picks(phase_hint, df=pdf, event_id=event.resource_id.id, on="station"):
-        df = df.loc[df.phase_hint == phase_hint]
+    def dup_picks(phase_hint, on="station"):
+        """ function for checking """
+        df = pdf.loc[pdf.phase_hint == phase_hint]
         bad = df.loc[df[on].duplicated()][on].tolist()
         assert len(bad) == 0, (
             f"Duplicate {phase_hint} picks found\n"
@@ -123,38 +122,45 @@ def check_picks(event: Event, **kwargs):
             f"{on}/s: {bad}"
         )
 
-    def pick_order(g, sp, ap, event_id=event.resource_id.id):
-        # Check P before S
-        temp = {"P", "S"}
-        if temp.issubset(g.phase_hint):
-            p_pick = g.loc[g.phase_hint == "P"].iloc[0]
-            s_pick = g.loc[g.phase_hint == "S"].iloc[0]
-            if p_pick.time > s_pick.time:
-                sp.append(g.name)
-        # Check P before IAML
-        temp = {"P", "IAML"}
-        if temp.issubset(g.phase_hint):
-            p_pick = g.loc[g.phase_hint == "P"].iloc[0]
-            amp_picks = g.loc[g.phase_hint == "IAML"]
-            bad = []
-            for _, amp in amp_picks.iterrows():
-                if p_pick.time > amp.time:
-                    breakpoint()
-                    bad.append(amp.seed_id)
-            ap.extend(bad)
-
     # Checking for duplicated picks
     dup_picks("P")
     dup_picks("S")
     dup_picks("IAML", on="seed_id")
+    dup_picks("AML", on="seed_id")
+
+
+@validator("obsplus", Event)
+def check_pick_order(event: Event, **kwargs):
+    """
+    Ensure:
+        1. There are no S picks before P picks on any station
+        2. There are no amplitude picks before P picks on any station
+    """
+    pdf = obsplus.picks_to_df(event)
+    pdf = pdf.loc[pdf.evaluation_status != "rejected"]
+
+    def pick_order(g, sp, ap, event_id=event.resource_id.id):
+        # get sub dfs with phases of interest
+        p_picks = g[g["phase_hint"].str.upper() == "P"]
+        s_picks = g[g["phase_hint"].str.upper() == "S"]
+        amp_picks = g[g["phase_hint"].str.endswith("AML")]
+        # there should be one P/S pick
+        assert len(p_picks) <= 1 and len(s_picks) <= 1
+        # first check that P is less than S, if not append to name of bad
+        if len(p_picks) and len(s_picks):
+            if s_picks.iloc[0]["time"] < p_picks.iloc[0]["time"]:
+                sp.append(g.name)
+        # next check all amplitude picks are after P
+        if len(p_picks) and len(amp_picks):
+            ptime = p_picks.iloc[0]["time"]
+            bad_amp_picks = amp_picks[amp_picks["time"] < ptime]
+            ap.extend(list(bad_amp_picks["seed_id"]))
 
     # Checking that picks are in acceptable order
-    gb = pdf.groupby("station")
-    sp = []
-    ap = []
+    gb, sp, ap = pdf.groupby("station"), [], []
     gb.apply(pick_order, sp, ap)
     assert len(sp) == 0, "S pick found before P pick:\n" f"station/s: {sp}"
-    assert len(ap) == 0, "IAML pick found before P pick:\n" f"seed_id/s: {ap}"
+    assert len(ap) == 0, "amplitude pick found before P pick:\n" f"seed_id/s: {ap}"
 
 
 @validator("obsplus", Event)

@@ -205,7 +205,7 @@ class TestValidateCatalog:
         pick.time = pick.time + 60
         cat[0].picks.append(pick)
         with pytest.raises(AssertionError):
-            obsplus.events.validate.check_picks(cat)
+            obsplus.events.validate.check_duplicate_picks(cat)
 
     def test_s_before_p(self, cat1):
         """ ensure raise if any s picks are before p picks """
@@ -214,7 +214,7 @@ class TestValidateCatalog:
         # pick[3] is a s pick and pick[2] is a p pick
         cat[0].picks[3].time = cat[0].picks[2].time - 60
         with pytest.raises(AssertionError):
-            obsplus.events.validate.check_picks(cat)
+            obsplus.events.validate.check_pick_order(cat)
 
     def test_nullish_codes_replaced(self, cat_nullish_nslc_codes):
         """ Nullish location codes should be replace with empty strings. """
@@ -254,10 +254,12 @@ class TestValidateCatalog:
     def test_amp_filts(self, cat1):
         """ ensure raise if unexpected filter used """
         cat = cat1.copy()
+        amp = cat[0].amplitudes[0]
         # Assigning bad filter to an amplitude
         good_filt = "smi:local/Wood_Anderson_Simulation"
         bad_filt = "smi:local/Sean_Anderson_Simulation"
-        cat[0].amplitudes[0].filter_id.id = bad_filt
+        rid = ResourceIdentifier(bad_filt, referred_object=amp)
+        amp.filter_id = rid
         with pytest.raises(AssertionError):
             validate_catalog(cat, filt_amps=good_filt)
 
