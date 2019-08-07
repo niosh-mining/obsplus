@@ -43,8 +43,10 @@ class TestValidateBasics:
             outdist["test1"] += 1
 
         @validator(self.validate_namespace, Thing2)
-        def second_validator(obj):
+        def second_validator(obj, some_kwarg=None):
             outdist["test2"] += 1
+            if some_kwarg:
+                raise ValueError(f"some_kwarg: {some_kwarg}")
 
         @validator(self.validate_namespace, Thing3)
         def third_validator(obj):
@@ -65,7 +67,7 @@ class TestValidateBasics:
     def test_thing_two(self, registered_validators):
         """
         An instance of thing 3 should trigger all the validators since it
-        is  a subclass of thing1 and thing2.
+        is a subclass of thing1 and thing2.
         """
         validate(Thing3(), self.validate_namespace)
         for a in range(1, 4):
@@ -81,3 +83,8 @@ class TestValidateBasics:
         df = validate(Thing4(), self.validate_namespace, report=True)
         assert len(df) == 1
         assert not df["passed"].iloc[0]
+
+    def test_kwargs_passed(self, registered_validators):
+        """ Ensure the kwargs get passed to individual validators. """
+        with pytest.raises(ValueError) as e:
+            validate(Thing2(), self.validate_namespace, some_kwarg=True)
