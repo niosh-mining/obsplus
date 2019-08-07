@@ -238,28 +238,16 @@ class TestAttachNewOrigin:
     def append_origin_catalog(self, origin_pack):
         """ attach the new origin to the first event without index """
         cat1, cat2, origin = origin_pack
-        cat11 = cat1.copy()
-        cat22 = cat2.copy()
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
-        # try:
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
-        # except:
-        #     breakpoint()
-        #     validate_catalog(cat11[0])
-        #     validate_catalog(cat22[0])
-        #     attach_new_origin(cat11[0], cat22[0], origin, preferred=True)
-
-        # validate_catalog(cat1)
         return cat1
 
     @pytest.fixture(scope="function")
     def insert_origin_catalog(self, origin_pack):
         """ insert the origin to overwrite old origin """
         cat1, cat2, origin = origin_pack
-
         # ensure origin is a modified version of cat2's first origin
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
-
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True, index=0)
         validate_catalog(cat1)
         return cat1

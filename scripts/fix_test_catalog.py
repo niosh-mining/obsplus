@@ -19,6 +19,10 @@ if __name__ == "__main__":
 
     cat = obspy.read_events(str(cat_path))
 
+    # remove all amplitudes
+    picks = cat[0].picks
+    cat[0].picks = [x for x in picks if not x.phase_hint == "IAML"]
+
     # get duplicated event ids
     pdf = obsplus.picks_to_df(cat)
     pdf = pdf[pdf["evaluation_status"] != "rejected"]
