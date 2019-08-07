@@ -241,13 +241,13 @@ class TestAttachNewOrigin:
         cat11 = cat1.copy()
         cat22 = cat2.copy()
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
-        try:
-            attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
-        except:
-            breakpoint()
-            validate_catalog(cat11[0])
-            validate_catalog(cat22[0])
-            attach_new_origin(cat11[0], cat22[0], origin, preferred=True)
+        # try:
+        attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
+        # except:
+        #     breakpoint()
+        #     validate_catalog(cat11[0])
+        #     validate_catalog(cat22[0])
+        #     attach_new_origin(cat11[0], cat22[0], origin, preferred=True)
 
         # validate_catalog(cat1)
         return cat1

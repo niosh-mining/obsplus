@@ -139,6 +139,7 @@ def check_picks(event: Event, **kwargs):
             bad = []
             for _, amp in amp_picks.iterrows():
                 if p_pick.time > amp.time:
+                    breakpoint()
                     bad.append(amp.seed_id)
             ap.extend(bad)
 
