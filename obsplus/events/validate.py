@@ -1,5 +1,5 @@
 """
-Functions for validating obspy events objects
+Functions for validating events according to the obsplus flavor.
 """
 from typing import Union
 

@@ -36,6 +36,7 @@ class TestValidateBasics:
 
     @pytest.fixture
     def registered_validators(self, temporary_validate_space):
+        # A simple dict for storing count of how often validators are called
         outdist = defaultdict(int)
 
         @validator(self.validate_namespace, Thing1)
@@ -56,6 +57,15 @@ class TestValidateBasics:
         def fourth_validator(obj):
             """ This validator should fail. """
             assert False
+
+        @validator(self.validate_namespace, (Thing1, Thing2))
+        def multiple_cls_validator(obj):
+            """ A validator for testing tuples of classes. """
+            outdist["multiple_validate"] += 1
+
+        # register the same validator again for each class
+        validator(self.validate_namespace, Thing1)(multiple_cls_validator)
+        validator(self.validate_namespace, Thing2)(multiple_cls_validator)
 
         yield outdist
 
@@ -88,3 +98,11 @@ class TestValidateBasics:
         """ Ensure the kwargs get passed to individual validators. """
         with pytest.raises(ValueError) as e:
             validate(Thing2(), self.validate_namespace, some_kwarg=True)
+
+    def test_validators_work_once(self, registered_validators):
+        """
+        Ensure validators registered for multiple classes get called just once
+        for subclasses of each.
+        """
+        validate(Thing3(), self.validate_namespace)
+        assert registered_validators["multiple_validate"] == 1

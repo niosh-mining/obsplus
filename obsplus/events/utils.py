@@ -403,12 +403,12 @@ def get_utc_path(
 
 def get_seed_id(obj: catalog_component) -> str:
     """
-    Get the NSLC associated with a station-specific object
+    Get the NSLC associated with an station-specific object.
 
     Parameters
     ----------
     obj
-        The object for which to retrieve the SCNL. Can be anything that
+        The object for which to retrieve the seed id. Can be anything that
         has a waveform_id attribute or refers to an object with a
         waveform_id attribute.
 

@@ -16,10 +16,11 @@ from obsplus.exceptions import ValidationNameError
 from obsplus.utils import yield_obj_parent_attr, iterate
 
 # The validator state is of the form:
-# {"namespace": {cls: [validator1, validator2, ...], ...}, ...}
+# {"namespace": {cls: {id1: validator1, id2: validator2, ...], ...}, ...}
+# where id is the id of the validator (eg returned by id(validator))
 
 
-_VALIDATOR_STATE = dict(validators=defaultdict(lambda: defaultdict(list)))
+_VALIDATOR_STATE = dict(validators=defaultdict(lambda: defaultdict(dict)))
 
 
 def _create_decompose_func():
@@ -48,7 +49,7 @@ def _temp_validate_namespace():
     """
     old_validators = _VALIDATOR_STATE["validators"]
     old_decomposer = _VALIDATOR_STATE["decomposer"]
-    _VALIDATOR_STATE["validators"] = defaultdict(lambda: defaultdict(list))
+    _VALIDATOR_STATE["validators"] = defaultdict(lambda: defaultdict(dict))
     _VALIDATOR_STATE["decomposer"] = _create_decompose_func()
     yield
     _VALIDATOR_STATE["validators"] = old_validators
@@ -66,6 +67,8 @@ def decomposer(cls):
     Parameters
     ----------
     cls
+        The class the registered decomposer is to act on. Can be a tuple
+        of classes.
 
     Returns
     -------
@@ -99,7 +102,7 @@ def validator(namespace: str, cls: type):
     def _wrap(func):
         # register function and return it
         state = _VALIDATOR_STATE["validators"]
-        state[namespace][cls].append(func)
+        state[namespace][cls][id(func)] = func
         return func
 
     return _wrap
@@ -116,10 +119,10 @@ def _get_validators(namespace):
 
 def _get_validate_obj_intersection(validators, obj_tree):
     """ get the intersection between validators and obj_tree. """
-    validators_to_run = defaultdict(list)
+    validators_to_run = defaultdict(dict)
     for cls1, cls2 in product(obj_tree, validators):
         if issubclass(cls1, cls2):
-            validators_to_run[cls1].extend(validators[cls2])
+            validators_to_run[cls1].update(validators[cls2])
     return validators_to_run
 
 
@@ -173,8 +176,9 @@ def validate(
     validators = _get_validate_obj_intersection(validators_raw, obj_tree)
     # iterate over each validator run it.
     reports = []
-    for cls, validate_funcs in validators.items():
-        for validator, obj in product(validate_funcs, obj_tree.get(cls, [])):
+    for cls, validate_func_dict in validators.items():
+        funcs = validate_func_dict.values()
+        for validator, obj in product(funcs, obj_tree.get(cls, [])):
             # get the main arg and any addition requested kwargs
             arg, *wanted_args = list(inspect.signature(validator).parameters)
             vkwargs = {x: kwargs[x] for x in set(wanted_args) & set(kwargs)}
