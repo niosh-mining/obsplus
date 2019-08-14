@@ -9,7 +9,7 @@ import obspy
 import pandas as pd
 import numpy as np
 from obspy import Stream, UTCDateTime as UTC
-from obsplus.utils import _column_contains, get_nslc_series, filter_index
+from obsplus.utils import _column_contains, get_seed_id_series, filter_index
 from obsplus.waveforms.utils import _stream_data_to_df
 
 from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC
@@ -91,8 +91,8 @@ def get_waveforms_bulk(st: Stream, bulk: List[str], **kwargs) -> Stream:
             ar = np.logical_and(ar, mar.any(axis=0))
         # handle columns that do not need matches
         if not df_no_match.empty:
-            nslc1 = set(get_nslc_series(df_no_match))
-            nslc2 = get_nslc_series(ind)
+            nslc1 = set(get_seed_id_series(df_no_match))
+            nslc2 = get_seed_id_series(ind)
             ar = np.logical_and(ar, nslc2.isin(nslc1))
         # get a list of used traces, combine and trim
         st = obspy.Stream([x for x, y in zip(st, ar) if y])

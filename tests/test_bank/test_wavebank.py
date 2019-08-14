@@ -6,9 +6,10 @@ import pathlib
 import shutil
 import tempfile
 import time
-import traceback
 import types
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+
 from os.path import join
 from pathlib import Path
 
@@ -25,7 +26,7 @@ import obsplus.bank.wavebank as sbank
 import obsplus.datasets.utils
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC
-from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils import make_time_chunks, iter_files, get_reference_time
 
 
@@ -1185,7 +1186,7 @@ class TestGetGaps:
         st = obspy.read()
         assert not df.empty, "uptime df is empty"
         assert len(df) == len(st)
-        assert {tr.id for tr in st} == set(obsplus.utils.get_nslc_series(df))
+        assert {tr.id for tr in st} == set(obsplus.utils.get_seed_id_series(df))
         assert (df["gap_duration"] == 0).all()
 
     def test_empty_directory(self, empty_bank):
@@ -1210,8 +1211,8 @@ class TestGetGaps:
         index = wbank.read_index()
         uptime = wbank.get_uptime_df()
         # make sure the same seed ids are in the index as uptime df
-        seeds_from_index = set(obsplus.utils.get_nslc_series(index))
-        seeds_from_uptime = set(obsplus.utils.get_nslc_series(uptime))
+        seeds_from_index = set(obsplus.utils.get_seed_id_series(index))
+        seeds_from_uptime = set(obsplus.utils.get_seed_id_series(uptime))
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 
@@ -1226,6 +1227,31 @@ class TestBadInputs:
             sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
+class TestConcurrentReads:
+    """
+    Tests for concurrent reads.
+    """
+
+    @pytest.fixture
+    def wbank_executor(self, ta_bank, monkeypatch, instrumented_thread_executor):
+        """ Return a wavebank with an instrumented executor. """
+        monkeypatch.setattr(ta_bank, "executor", instrumented_thread_executor)
+        os.remove(ta_bank.index_path)
+        return ta_bank
+
+    def test_concurrent_get_waveforms(self, wbank_executor):
+        """ Ensure conccurent get_waveforms uses executor. """
+        _ = wbank_executor.get_waveforms()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+    def test_concurrent_update_index(self, wbank_executor):
+        """ Ensure updating index can be performed with executor. """
+        _ = wbank_executor.update_index()
+        counter = getattr(wbank_executor.executor, "_counter", {})
+        assert counter.get("map", 0) > 0
+
+
 class TestConcurrentUpdateIndex:
     """
     Tests to make sure running update index in different threads/processes.
@@ -1237,43 +1263,30 @@ class TestConcurrentUpdateIndex:
     def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
         # first write some new files
-        path = Path(wbank.bank_path)
-        for ind in range(self.new_files):
-            st = obspy.read()
-            st.write(f"{path / str(ind)}.mseed", "mseed")
-        # then try to update index, catch any errors and print them
         try:
-            wbank.update_index()
-        except Exception as e:
-            return traceback.format_tb(e.__traceback__)
-        else:
-            time.sleep(0.01 + np.random.rand() / 10)
             wbank.read_index()
-            return None
+        except Exception as e:
+            return str(e)
 
     # fixtures
     @pytest.fixture
     def concurrent_bank(self, tmpdir):
         """ Make a temporary bank and index it. """
-        wbank = WaveBank(str(tmpdir), concurrent_updates=True)
+        st = obspy.read()
+        st.write(str(Path(tmpdir) / "test.mseed"), "mseed")
+        wbank = WaveBank(str(tmpdir)).update_index()
         self.func(wbank)
         return wbank
 
-    @pytest.fixture(scope="class")
-    def thread_pool(self):
-        """ return a thread pool """
-        with ThreadPoolExecutor(self.worker_count) as executor:
-            yield executor
-
     @pytest.fixture
-    def thread_update(self, concurrent_bank, thread_pool):
+    def thread_read(self, concurrent_bank, thread_executor):
         """ run a bunch of update index operations in different threads,
         return list of results """
         out = []
         concurrent_bank.update_index()
         func = functools.partial(self.func, wbank=concurrent_bank)
         for _ in range(self.worker_count):
-            out.append(thread_pool.submit(func))
+            out.append(thread_executor.submit(func))
         return list(as_completed(out))
 
     @pytest.fixture(scope="class")
@@ -1283,7 +1296,7 @@ class TestConcurrentUpdateIndex:
             yield executor
 
     @pytest.fixture
-    def process_update(self, concurrent_bank, process_pool):
+    def process_read(self, concurrent_bank, process_pool):
         """ run a bunch of update index operations in different processes,
         return list of results """
         concurrent_bank.update_index()
@@ -1295,35 +1308,28 @@ class TestConcurrentUpdateIndex:
         return list(as_completed(out))
 
     # tests
-    def test_index_update_threads(self, thread_update):
+    def test_index_read_thread(self, thread_read):
         """ ensure the index updated and the threads didn't kill each
         other """
         # get a list of exceptions that occurred
-        assert len(thread_update) == self.worker_count
-        excs = [x.result() for x in thread_update]
+        assert len(thread_read) == self.worker_count
+        excs = [x.result() for x in thread_read]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the thread pool:\n {excs}"
             pytest.fail(msg)
 
-    def test_index_update_processes(self, process_update):
+    def test_index_read_process(self, process_read):
         """
         Ensure the index can be updated in different processes.
         """
-        assert len(process_update) == self.worker_count
+        assert len(process_read) == self.worker_count
         # ensure no exceptions were raised
-        excs = [x.result() for x in process_update]
+        excs = [x.result() for x in process_read]
         excs = [x for x in excs if x is not None]
         if excs:
             msg = f"Exceptions were raised by the process pool:\n {excs}"
             pytest.fail(msg)
-
-    def test_file_lock(self, concurrent_bank):
-        """ Tests for the file locking mechanism. """
-        newbank = WaveBank(concurrent_bank)
-        with concurrent_bank.lock_index():
-            with pytest.raises(BankIndexLockError):
-                newbank.block_on_index_lock(0.01, 1)
 
 
 class TestSelectDoesntReturnSuperset:

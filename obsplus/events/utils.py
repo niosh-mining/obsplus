@@ -28,7 +28,7 @@ from obsplus.constants import (
     event_clientable_type,
 )
 from obsplus.interfaces import EventClient
-from obsplus.utils import yield_obj_parent_attr, get_reference_time, get_nslc_series
+from obsplus.utils import yield_obj_parent_attr, get_reference_time, get_seed_id_series
 
 
 def duplicate_events(
@@ -284,7 +284,7 @@ def make_origins(
     cat = [events] if isinstance(events, Event) else events
     # load inv dataframe and make sure it has a seed_id column
     df = obsplus.stations_to_df(inventory)
-    nslc_series = get_nslc_series(df)
+    nslc_series = get_seed_id_series(df)
     for event in cat:
         if not event.origins:  # make new origin
             picks = event.picks_to_df()

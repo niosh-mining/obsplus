@@ -4,6 +4,7 @@ A local database for waveform formats.
 import os
 import time
 from collections import defaultdict
+from concurrent.futures import Executor
 from functools import partial, reduce
 from itertools import chain
 from operator import add
@@ -39,8 +40,7 @@ from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
     to_timestamp,
-    thread_lock_function,
-    get_nslc_series,
+    get_seed_id_series,
     filter_index,
     replace_null_nlsc_codes,
     _column_contains,
@@ -105,9 +105,14 @@ class WaveBank(_Bank):
         If True this bank will share an index with other processes, one or
         more of which may perform update_index operations. When used a simple
         file locking mechanism attempts to compensate for shortcomings in
-        HDF5 stores lack of concurrency support. This is not needed if all
-        processes are only going to read from the bank, nor is it bulletproof,
-        but it should help avoid some issues with a few concurrent processes.
+        HDF5 store's lack of concurrency support. This is not needed if all
+        processes are only reading from the bank, nor is it bulletproof,
+        but it should help avoid some issues with a small number of concurrent
+        processes.
+    executor
+        An executor with the same interface as concurrent.futures.Executor,
+        the map method of the executor will be used for reading files and
+        updating indices.
     """
 
     # index columns and types
@@ -137,6 +142,7 @@ class WaveBank(_Bank):
         format="mseed",
         ext=None,
         concurrent_updates=False,
+        executor: Optional[Executor] = None,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -148,6 +154,7 @@ class WaveBank(_Bank):
         # get waveforms structure based on structures of path and filename
         self.path_structure = path_structure or WAVEFORM_STRUCTURE
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
+        self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
         self._concurrent = concurrent_updates
@@ -160,7 +167,6 @@ class WaveBank(_Bank):
         Return the last modified time stored in the index, else None.
         """
         self.ensure_bank_path_exists()
-        self.block_on_index_lock()
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
@@ -178,7 +184,6 @@ class WaveBank(_Bank):
             data_columns=list(self.index_float),
         )
 
-    @thread_lock_function()
     @compose_docstring(bar_paramter_description=bar_paramter_description)
     def update_index(self, bar: Optional = None) -> "WaveBank":
         """
@@ -189,22 +194,15 @@ class WaveBank(_Bank):
         {bar_parameter_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
-        bar = self.get_progress_bar(bar)  # get progress bar
         update_time = time.time()
-        # loop over un-index files and add info to index
-        updates = []
-        for num, fi in enumerate(self._unindexed_file_iterator()):
-            updates.append(_summarize_wave_file(fi, format=self.format))
-            # update bar
-            if bar and num % self._bar_update_interval == 0:
-                bar.update(num)
-        # push updates to index
-        if len(updates):  # flatten list and make df
-            with self.lock_index():
-                self._write_update(list(chain.from_iterable(updates)), update_time)
+        # create a function for the mapping and apply
+        func = partial(_summarize_wave_file, format=self.format)
+        updates = list(self._map(func, self._measured_unindexed_iterator(bar)))
+        # push updates to index if any were found
+        if len(updates):
+            self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
             self._index_cache.clear_cache()
-        getattr(bar, "finish", lambda: None)()  # finish bar
         return self
 
     def _write_update(self, updates, update_time):
@@ -247,12 +245,11 @@ class WaveBank(_Bank):
         """
         if not Path(self.index_path).exists():
             return
-        with self.lock_index():
-            with pd.HDFStore(self.index_path) as store:
-                # add metadata if not in store
-                if self._meta_node not in store:
-                    meta = self._make_meta_table()
-                    store.put(self._meta_node, meta, format="table")
+        with pd.HDFStore(self.index_path) as store:
+            # add metadata if not in store
+            if self._meta_node not in store:
+                meta = self._make_meta_table()
+                store.put(self._meta_node, meta, format="table")
 
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
@@ -296,7 +293,6 @@ class WaveBank(_Bank):
         """
         Read the metadata table.
         """
-        self.block_on_index_lock()
         try:
             return pd.read_hdf(self.index_path, self._meta_node)
         except (FileNotFoundError, ValueError, KeyError):
@@ -447,8 +443,8 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, mar.any(axis=0))
             # handle columns that do not need matches
             if not df_no_match.empty:
-                nslc1 = set(get_nslc_series(df_no_match))
-                nslc2 = get_nslc_series(ind)
+                nslc1 = set(get_seed_id_series(df_no_match))
+                nslc2 = get_seed_id_series(ind)
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
@@ -661,20 +657,23 @@ class WaveBank(_Bank):
         # get abs path to each datafame
         files: pd.Series = (self.bank_path + index.path).unique()
         # iterate the files to read and try to load into waveforms
-        stt = obspy.Stream()
         kwargs = dict(
             format=self.format,
             starttime=obspy.UTCDateTime(starttime) if starttime else None,
             endtime=obspy.UTCDateTime(endtime) if endtime else None,
         )
-        for st in (_try_read_stream(x, **kwargs) for x in files):
-            if st is not None and len(st):
+        func = partial(_try_read_stream, **kwargs)
+
+        stt = obspy.Stream()
+        chunksize = len(files) / self._max_workers
+        for st in self._map(func, files, chunksize=chunksize):
+            if st is not None:
                 stt += st
         # sort out nullish nslc codes
         stt = replace_null_nlsc_codes(stt)
         # filter out any traces not in index (this can happen when files hold
         # multiple traces).
-        nslc = set(get_nslc_series(index))
+        nslc = set(get_seed_id_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
         stt = self._prep_output_stream(stt, starttime, endtime, attach_response)

@@ -22,7 +22,6 @@ obsplus.utils
       order_columns
       read_file
       register_func
-      thread_lock_function
       to_timestamp
       try_read_catalog
       yield_obj_parent_attr

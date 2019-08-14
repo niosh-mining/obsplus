@@ -2,6 +2,7 @@
 Constants used throughout obsplus
 """
 import concurrent.futures
+from os import cpu_count
 from collections import OrderedDict
 from pathlib import Path
 from typing import (
@@ -311,6 +312,9 @@ SMALL_UTC = obspy.UTCDateTime("1970-01-01")
 # path to where obsplus datasets are stored by default
 OPSDATA_PATH = Path().home() / "opsdata"
 
+# Number of cores
+CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
+
 # ------------------- type aliases (aliai?)
 
 # The waveforms processor type
@@ -379,8 +383,9 @@ basic_types = Optional[Union[int, float, str, bool]]
 
 # -------------------------- events validation constants
 
+
 # null quantities for nslc codes
-NULL_NSLC_CODES = (None, "--", "None", "nan", "null", np.nan)
+NULL_SEED_CODES = (None, "--", "None", "nan", "null", np.nan)
 
 # parts of the origin that should have float values
 ORIGIN_FLOATS = {"latitude", "longitude", "depth"}
