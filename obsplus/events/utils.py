@@ -75,6 +75,7 @@ def catalog_to_directory(
     file_format: str = "quakeml",
     ext="xml",
     event_bank_index=True,
+    check_duplicates=True,
 ) -> None:
     """
     Parse a catalog and save each event to a time-based directory structure.
@@ -100,6 +101,9 @@ def catalog_to_directory(
         The extention to add to each file.
     event_bank_index
         If True, create an event bank index on the newly created directory.
+    check_duplicates
+        If True check other events that may have the same resource id and
+        merge any duplicate events.
     """
     if isinstance(cat, (str, Path)):
         cat = obspy.read_events(str(cat))
@@ -114,13 +118,14 @@ def catalog_to_directory(
         event_path = Path(get_event_path(event, str(path), ext=ext))
         path.parent.mkdir(parents=True, exist_ok=True)
         # determine if another event exists with same id, if so use its path
-        rid = str(event.resource_id)[-5:]
-        possible_duplicate = list(event_path.parent.glob(f"*{rid}{ext}")) or []
-        for duplicate_path in possible_duplicate:
-            new_event = obspy.read_events(str(duplicate_path))[0]
-            if new_event.resource_id == event.resource_id:
-                event_path = duplicate_path
-                break
+        if check_duplicates:
+            rid = str(event.resource_id)[-5:]
+            possible_duplicate = list(event_path.parent.glob(f"*{rid}{ext}"))
+            for duplicate_path in possible_duplicate or []:
+                new_event = obspy.read_events(str(duplicate_path))[0]
+                if new_event.resource_id == event.resource_id:
+                    event_path = duplicate_path
+                    break
         event.write(str(event_path), file_format)
     if event_bank_index:
         obsplus.EventBank(path).update_index()
