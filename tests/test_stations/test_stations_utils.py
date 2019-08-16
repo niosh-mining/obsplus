@@ -37,6 +37,34 @@ class TestDfToInventory:
         """ Is this getting confusing yet?"""
         return obsplus.stations_to_df(inv_from_df)
 
+    @pytest.fixture
+    def df_with_response(self):
+        """
+        Add response information to the dataframe.
+
+        Note: The datalogger is probably not correct for the test station.
+        It is just to ensure the NRL can be used to get a response.
+        """
+        _inv = obsplus.load_dataset("bingham").station_client.get_stations()
+        inv = _inv.select(station="NOQ")
+        df = obsplus.stations_to_df(inv)
+
+        # set instrument str
+        sensor_keys = ("Nanometrics", "Trillium 120 Horizon")
+        # get digitizer keys
+        datalogger_keys = (
+            "Nanometrics",
+            "Centaur",
+            "1 Vpp (40)",
+            "Off",
+            "Linear phase",
+            "100",
+        )
+        # keep one as a tuple and convert the other to str
+        df["sensor_keys"] = [sensor_keys for _ in range(len(df))]
+        df["datalogger_keys"] = "__".join(datalogger_keys)
+        return df
+
     def test_type(self, inv_from_df):
         """ An inv should have been returned. """
         assert isinstance(inv_from_df, obspy.Inventory)
@@ -80,3 +108,12 @@ class TestDfToInventory:
         kwargs = {x: getattr(dip_row, x) for x in NSLC}
         inv_sub = inv.get_stations(**kwargs)
         assert inv_sub[0][0][0].azimuth is None
+
+    def test_response(self, df_with_response):
+        """ Ensure the NRL is used to pull responses. """
+        inv = df_to_inventory(df_with_response)
+        assert isinstance(inv, obspy.Inventory)
+        for net in inv:
+            for sta in net:
+                for chan in sta:
+                    assert chan.response is not None
