@@ -63,6 +63,8 @@ class TestDfToInventory:
         # keep one as a tuple and convert the other to str
         df["sensor_keys"] = [sensor_keys for _ in range(len(df))]
         df["datalogger_keys"] = "__".join(datalogger_keys)
+        # drop seed id
+        df = df.drop(columns="seed_id")
         return df
 
     def test_type(self, inv_from_df):
@@ -109,6 +111,7 @@ class TestDfToInventory:
         inv_sub = inv.get_stations(**kwargs)
         assert inv_sub[0][0][0].azimuth is None
 
+    @pytest.mark.requires_network
     def test_response(self, df_with_response):
         """ Ensure the NRL is used to pull responses. """
         inv = df_to_inventory(df_with_response)

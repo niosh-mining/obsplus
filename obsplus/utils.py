@@ -223,13 +223,12 @@ def order_columns(
     """
     if df.empty:
         return pd.DataFrame(columns=required_columns)
-    # add any extra columns if needed
-    if not set(df.columns).issuperset(required_columns):
-        df = df.reindex(columns=required_columns)
     # make sure required columns are there
     column_set = set(df.columns)
     extra_cols = sorted(list(column_set - set(required_columns)))
     new_cols = list(required_columns) + extra_cols
+    # add any extra (blank) columns if needed and sort
+    df = df.reindex(columns=new_cols)
     # cast network, station, location, channel, to str
     if dtype:
         used = set(dtype) & set(df.columns)
@@ -239,8 +238,7 @@ def order_columns(
             df = df.replace(replace)
         except Exception:
             pass
-    assert column_set == set(new_cols)
-    return df[new_cols]
+    return df
 
 
 def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
