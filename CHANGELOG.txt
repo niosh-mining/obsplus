@@ -18,6 +18,8 @@ obsplus master:
       querying on channel (see #115).
   - obsplus.utils
     * Deprecate get_nslc_series in favor of get_seed_id_series (#120).
+  - obsplus.events
+    * Dataframe_to_inventory can now fetch NRL responses (#125).
 
 obsplus 0.0.2:
   - obsplus.bank
