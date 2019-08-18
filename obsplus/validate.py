@@ -6,11 +6,12 @@ from collections import defaultdict
 from contextlib import contextmanager
 from functools import singledispatch
 from itertools import product
-from typing import Optional, Union
+from typing import Optional, Dict
 
-import obspy
-import obspy.core.event as ev
 import pandas as pd
+from obspy import Stream, Trace, Catalog, Inventory
+from obspy.core.inventory.util import BaseNode
+from obspy.core.util import AttribDict
 
 from obsplus.exceptions import ValidationNameError
 from obsplus.utils import yield_obj_parent_attr, iterate
@@ -18,16 +19,17 @@ from obsplus.utils import yield_obj_parent_attr, iterate
 # The validator state is of the form:
 # {"namespace": {cls: {id1: validator1, id2: validator2, ...], ...}, ...}
 # where id is the id of the validator (eg returned by id(validator))
-
-
 _VALIDATOR_STATE = dict(validators=defaultdict(lambda: defaultdict(dict)))
+
+
+# Get a listing of all classes associated with obspy's
 
 
 def _create_decompose_func():
     """ Create a single dispatch function for decomposing objects. """
 
     @singledispatch
-    def decompose(obj):
+    def _decompose(obj):
         """
         Decompose an object into its constitutive parts.
 
@@ -36,7 +38,7 @@ def _create_decompose_func():
         """
         return {type(obj): [obj]}
 
-    return decompose
+    return _decompose
 
 
 _VALIDATOR_STATE["decomposer"] = _create_decompose_func()
@@ -117,6 +119,11 @@ def _get_validators(namespace):
     return validator_namespaces[namespace]
 
 
+def _get_decomposer():
+    """ Get the current decomposer. """
+    return _VALIDATOR_STATE["decomposer"]
+
+
 def _get_validate_obj_intersection(validators, obj_tree):
     """ get the intersection between validators and obj_tree. """
     validators_to_run = defaultdict(dict)
@@ -171,7 +178,7 @@ def validate(
     """
     # get validators and decompose object to testable parts.
     validators_raw = _get_validators(namespace)
-    obj_tree = _VALIDATOR_STATE["decomposer"](obj)
+    obj_tree = decompose(obj)
     # get validators to run on obj_tree
     validators = _get_validate_obj_intersection(validators_raw, obj_tree)
     # iterate over each validator run it.
@@ -190,11 +197,25 @@ def validate(
     return pd.DataFrame(reports)
 
 
-# register common decomposers
+def decompose(obj) -> Dict[type, object]:
+    """
+    Decompose an object into a dict of {class: [instance1, instance2, ...]}.
+
+    Parameters
+    ----------
+    obj
+        The object to decompose.
+
+    Returns
+    -------
+    A dict of class definitions (keys) and lists of instances (values).
+    """
+    return _get_decomposer()(obj)
 
 
-@decomposer((obspy.Catalog, ev.Event))
-def _decompose_event_or_catalog(events):
+# default decomposer for obspy stuff
+@decomposer((Catalog, AttribDict, BaseNode, Inventory, Stream, Trace))
+def _decompose_generic(events):
     """ Decompose an event or a catalog. """
     out = defaultdict(list)
     for obj, parent, attr in yield_obj_parent_attr(events):

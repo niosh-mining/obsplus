@@ -3,10 +3,15 @@ Tests for the validate module.
 """
 from collections import defaultdict
 
+import numpy as np
+import obspy
+import obspy.core.event as ev
 import pytest
+from obspy.core.inventory import Inventory, Network, Station
+from obspy.core.stream import Stream, Trace
 
-from obsplus.validate import _temp_validate_namespace, validator, validate
-from obsplus.exceptions import ValidationNameError, ValidationError
+import obsplus
+from obsplus.validate import _temp_validate_namespace, validator, validate, decompose
 
 
 class Thing1:
@@ -106,3 +111,35 @@ class TestValidateBasics:
         """
         validate(Thing3(), self.validate_namespace)
         assert registered_validators["multiple_validate"] == 1
+
+
+class TestDecompose:
+    """ Tests for decomposing objects into their respective classes. """
+
+    def test_decompose_catalog(self):
+        """ ensure the catalog, and friends, can be decomposed. """
+        test_cls = (ev.Catalog, ev.Event, ev.Origin, ev.Pick, ev.Amplitude)
+        cat = obspy.read_events()
+        for obj, _, _ in obsplus.utils.yield_obj_parent_attr(cat):
+            out = decompose(obj)
+            if isinstance(obj, test_cls):
+                assert len(out) > 1
+
+    def test_decompose_inventory(self):
+        """ Ensure an inventory (and children) can be decomposed. """
+        # Ensure the inventory is broken down
+        inv = obspy.read_inventory()
+        out = decompose(inv)
+        assert len(out) > 1
+        # make sure some of the expected classes are there.
+        assert {Network, Station, Inventory}.issubset(set(out))
+        # next test some of the subcomponents
+        objs = (inv, inv[0], inv[0][0], inv[0][0][0])
+        for obj in objs:
+            assert len(decompose(obj)) > 1
+
+    def test_decompose_stream(self):
+        """ Ensure a stream is decomposed in a sensible way. """
+        out = decompose(obspy.read())
+        expected = {Stream, Trace, np.ndarray}
+        assert expected.issubset(set(out))
