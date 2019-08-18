@@ -143,3 +143,45 @@ class TestDecompose:
         out = decompose(obspy.read())
         expected = {Stream, Trace, np.ndarray}
         assert expected.issubset(set(out))
+
+
+class TestDocumentationCase:
+    """ Tests for the validator case in the documentation. """
+
+    namespace = "_testdoc_case"
+
+    @pytest.fixture(scope="class")
+    def validators(self):
+        @validator(self.namespace, ev.Event)
+        def ensure_events_have_four_picks(event):
+            picks = event.picks
+            assert len(picks) >= 4
+
+        @validator(self.namespace, ev.Origin)
+        def ensure_preferred_origin_set(origin):
+            assert origin.latitude is not None
+            assert origin.longitude is not None
+
+    @pytest.fixture
+    def bad_catalog(self):
+        """ Create a catalog which will fail both validators. """
+        cat = obspy.read_events()
+        for event in cat:
+            event.picks = []
+            for origin in event.origins:
+                origin.latitude = None
+                origin.longitude = None
+        return cat
+
+    @pytest.fixture
+    def validation_report(self, validators, bad_catalog):
+        """ return the report of the validators. """
+        return validate(bad_catalog, self.namespace, report=True)
+
+    def test_validation_runs(self, validation_report):
+        """ Ensure the validators ran the expected number of times. """
+        df = validation_report
+        picks = df["validator"] == "ensure_events_have_four_picks"
+        assert picks.sum() == 3
+        origin_set = df["validator"] == "ensure_preferred_origin_set"
+        assert origin_set.sum() == 3

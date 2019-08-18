@@ -104,7 +104,9 @@ def validator(namespace: str, cls: type):
     def _wrap(func):
         # register function and return it
         state = _VALIDATOR_STATE["validators"]
-        state[namespace][cls][id(func)] = func
+        # get the name of the function for hashing; if not found use id
+        name = getattr(func, "__name__", id(func))
+        state[namespace][cls][name] = func
         return func
 
     return _wrap
