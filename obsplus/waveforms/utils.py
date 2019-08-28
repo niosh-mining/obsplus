@@ -24,6 +24,9 @@ from obsplus.constants import (
 from obsplus.interfaces import WaveformClient
 from obsplus.utils import get_seed_id_series, filter_index
 
+# The keys for simple stats
+SIMPLE_STATS = list(NSLC) + ["sampling_rate", "starttime", "endtime"]
+
 
 # ---------- trim functions
 
@@ -133,6 +136,20 @@ def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
     return df
 
 
+def _get_bulk(bulk):
+    """ Private function to reformat the bulk """
+    # Convert dataframe to bulk input
+    if bulk is None:
+        return []
+    if isinstance(bulk, pd.DataFrame):
+        cols = list(NSLC) + ["starttime", "endtime"]
+        assert set(cols).issubset(
+            bulk.columns
+        ), f"A bulk dataframe must have the following columns: {cols}"
+        return list(bulk[cols].to_records(index=False))
+    return bulk
+
+
 def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Stream]:
     """
     Split a stream into a list of streams that meet requirements in bulk.
@@ -152,6 +169,7 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     List of traces, each meeting the corresponding request in bulk.
     """
     # return nothing if empty bulk or stream args
+    bulk = _get_bulk(bulk)
     if not bulk or len(st) == 0:
         return []
 
@@ -159,17 +177,16 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
     sdf = _stream_data_to_df(st)
     # iterate stream, return output
     out = []
-    for b in bulk:
-        assert len(b) == 6, f"{b} is not a valid bulk arg, must have len 6"
-        need = filter_index(sdf, *b)
+    for barg in bulk:
+        assert len(barg) == 6, f"{barg} is not a valid bulk arg, must have len 6"
+        need = filter_index(sdf, *barg)
         traces = [tr for tr, bo in zip(st, need) if bo]
         new_st = obspy.Stream(traces)
-        t1, t2 = UTCDateTime(b[-2]), UTCDateTime(b[-1])
+        t1, t2 = UTCDateTime(barg[-2]), UTCDateTime(barg[-1])
         new = new_st.slice(starttime=t1, endtime=t2)
         if new is None or not len(new):
             out.append(obspy.Stream())
             continue
-        # if len(new) > 1:
         new = merge_traces(new)
         out.append(new)
     assert len(out) == len(bulk), "output is not the same len as stream list"
@@ -467,3 +484,93 @@ def _get_waveclient_from_path(path):
         return get_waveform_client(obsplus.WaveBank(path))
     else:
         return get_waveform_client(obspy.read(str(path)))
+
+
+def assert_streams_almost_equal(
+    st1: obspy.Stream,
+    st2: obspy.Stream,
+    basic_stats: bool = True,
+    atol: float = 1e-05,
+    rtol: float = 1e-08,
+    equal_nan: bool = True,
+    allow_off_by_one: bool = False,
+) -> None:
+    """
+    Assert that two streams are almost equal else raise helpful exceptions.
+
+    Parameters
+    ----------
+    st1
+        The first stream
+    st2
+        The second stream
+    basic_stats
+        If True, only compare basic stats of the streams including:
+        network, station, location, channel, starttime, endtime
+    atol
+        The absolute tolerance parameter
+    rtol
+        The relative tolerance parameter
+    equal_nan
+        If True evaluate NaNs as equal
+    allow_off_by_one
+        If True, allow the arrays and time alignments to be off by one sample.
+
+    Notes
+    -------
+    See numpy.allclose for description of atol and rtol paramter.
+
+    Raises
+    ------
+    AssertionError if streams are not about equal.
+    """
+    st1.sort(), st2.sort()
+    if len(st1) != len(st2):
+        assert 0, "streams do not have the same number of traces"
+    for tr1, tr2 in zip(st1, st2):
+        args = (tr1, tr2, basic_stats, atol, rtol, equal_nan, allow_off_by_one)
+        _assert_traces_almost_equal(*args)
+
+
+def _assert_traces_almost_equal(
+    tr1: obspy.Trace,
+    tr2: obspy.Trace,
+    basic_stats: bool = True,
+    atol: float = 1e-05,
+    rtol: float = 1e-08,
+    equal_nan: bool = True,
+    allow_off_by_one=False,
+) -> None:
+    """ Assert that traces are equal. """
+    # work with stats
+    sta1 = {x: tr1.stats[x] for x in SIMPLE_STATS} if basic_stats else tr1.stats
+    sta2 = {x: tr2.stats[x] for x in SIMPLE_STATS} if basic_stats else tr2.stats
+    if not sta1 == sta2:
+        stats_equal = False
+        # see if the start and end times are within one sample rate
+        if allow_off_by_one:
+            times = ("starttime", "endtime")
+            sta1_new = {i: v for i, v in sta1.items() if i not in times}
+            sta2_new = {i: v for i, v in sta2.items() if i not in times}
+            if sta1["sampling_rate"] == sta2["sampling_rate"]:
+                sr = sta1["sampling_rate"]
+                t1_diff = abs(sta1["starttime"] - sta2["starttime"])
+                t2_diff = abs(sta1["endtime"] - sta2["starttime"])
+                if t1_diff < sr and t2_diff < sr and sta1_new == sta2_new:
+                    stats_equal = True
+        if not stats_equal:
+            msg = f"Stats are not the same for the traces: \n{sta1}\n{sta2}"
+            assert 0, msg
+    # now check the arrays
+    ars = sorted([tr1.data, tr2.data], key=lambda x: len(x))
+    kwargs = dict(atol=atol, rtol=rtol, equal_nan=equal_nan)
+    close = np.allclose(ars[0], ars[1], **kwargs)
+    if not close and allow_off_by_one:
+        # If the arrays are within 2 samples of each other in length
+        if abs(len(ars[0]) - len(ars[1])) <= 2:
+            sub_ar = ars[0][1:-1]
+            # slide the smaller array over the larger, return true if found
+            for i in range(len(ars[1]) - len(ars[0]) + 3):
+                if np.allclose(sub_ar, ars[1][i : i + len(sub_ar)], **kwargs):
+                    close = True
+    assert close, "Data of traces are not nearly equal"

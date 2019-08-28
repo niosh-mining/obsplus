@@ -51,7 +51,6 @@ eve_id_cache = {}
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
 
-
 # Monkey patch the resource_id to avoid emmitting millions of warnings
 # TODO Remove this when obspy 1.2 is released
 old_func = ResourceIdentifier._get_similar_referred_object
@@ -133,11 +132,27 @@ def collect_catalogs():
     return out
 
 
+def internet_available():
+    """ Test if internet resources are available. """
+    import socket
+
+    address = "8.8.8.8"
+    port = 53
+    try:
+        socket.setdefaulttimeout(1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((address, port))
+        return True
+    except socket.error:
+        return False
+
+
 cat_dict = collect_catalogs()
 waveform_cache_obj = ObspyCache("waveforms", obspy.read)
 event_cache_obj = ObspyCache("qml_files", obspy.read_events)
 test_catalog_cache_obj = ObspyCache(CATALOG_DIRECTORY, obspy.read_events)
 station_cache_obj = ObspyCache(INVENTORY_DIRECTORY, obspy.read_inventory)
+has_internet = internet_available()
 
 
 # -------------------- collection of test cases
@@ -245,6 +260,18 @@ def bingham_dataset():
 def bingham_inventory(bingham_dataset):
     """ load the bingham tests case """
     return bingham_dataset.station_client
+
+
+@pytest.fixture()
+def bingham_catalog(bingham_dataset):
+    """ load the bingham tests case """
+    return bingham_dataset.event_client.get_events().copy()
+
+
+@pytest.fixture()
+def bingham_stream(bingham_dataset):
+    """ load the bingham tests case """
+    return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
 @pytest.fixture(scope="session")
@@ -465,8 +492,26 @@ def pytest_addoption(parser):
         default=False,
         help="enable dataset tests",
     )
+    parser.addoption(
+        "--network",
+        action="store_true",
+        dest="network",
+        default=has_internet,
+        help="run tests that require a network connection",
+    )
 
 
-def pytest_configure(config):
-    if not config.option.datasets:
-        setattr(config.option, "markexpr", "not dataset")
+def pytest_collection_modifyitems(config, items):
+    marks = {}
+    if not config.getoption("--datasets"):
+        msg = "needs --dataset option to run"
+        marks["dataset"] = pytest.mark.skip(reason=msg)
+    if not config.getoption("--network"):
+        msg = "needs an active network connection to run"
+        marks["requires_network"] = pytest.mark.skip(reason=msg)
+
+    for item in items:
+        marks_to_apply = set(marks)
+        item_marks = set(item.keywords)
+        for mark_name in marks_to_apply & item_marks:
+            item.add_marker(marks[mark_name])

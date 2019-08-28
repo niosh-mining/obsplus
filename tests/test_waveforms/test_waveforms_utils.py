@@ -17,6 +17,7 @@ from obsplus.waveforms.utils import (
     archive_to_sds,
     merge_traces,
     stream_bulk_split,
+    assert_streams_almost_equal,
 )
 
 
@@ -297,6 +298,15 @@ class TestStreamBulkSplit:
             tr.stats.channel = "HH" + tr.stats.channel[-1]
         return st1 + st2
 
+    @pytest.fixture
+    def bing_pick_bulk(self, bingham_catalog):
+        """ Create a dataframe from the bingham picks. """
+        picks = obsplus.picks_to_df(bingham_catalog)
+        df = picks[list(NSLC)]
+        df["starttime"] = picks["time"] - 1.011
+        df["endtime"] = picks["time"] + 7.011
+        return df
+
     def get_bulk_from_stream(self, st, tr_inds, times):
         """ Create a bulk argument from a stream for traces specified and
         relative times. """
@@ -391,3 +401,67 @@ class TestStreamBulkSplit:
             stats = st_out[0].stats
             out_duration = stats.endtime - stats.starttime
             assert abs(out_duration - 15) <= stats.sampling_rate * 2
+
+    def test_input_from_df(self, bing_pick_bulk, bingham_stream, bingham_dataset):
+        """ Ensure bulk can be formed from a dataframe. """
+        st_client = bingham_dataset.waveform_client
+        st_list = stream_bulk_split(bingham_stream, bing_pick_bulk)
+        for st1, (_, ser) in zip(st_list, bing_pick_bulk.iterrows()):
+            st2 = st_client.get_waveforms(*ser.to_list())
+            assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
+
+
+class TestAssertWaveformsEqual:
+    """ Tests for asserting waveforms are equal. """
+
+    @pytest.fixture
+    def streams(self):
+        return obspy.read(), obspy.read()
+
+    def test_unequal_len(self, streams):
+        """ Traces are not equal if the number of traces is not equal. """
+        st1, st2 = streams
+        st2.traces = st2.traces[:-1]
+        with pytest.raises(AssertionError):
+            assert_streams_almost_equal(st1, st2)
+
+    def test_processing_different(self, streams):
+        """ If processing of stats is different streams should be equal. """
+        st1, st2 = streams
+        st1.detrend("linear").detrend("linear")
+        st2.detrend("linear")
+        # This should not raise
+        assert_streams_almost_equal(st1, st2)
+        # but this should
+        with pytest.raises(AssertionError):
+            assert_streams_almost_equal(st1, st2, basic_stats=False)
+
+    def test_basic_stats_different(self, streams):
+        """ Ensure when basic stats are different streams are not almost equal. """
+        st1, st2 = streams
+        for tr in st1:
+            tr.stats.station = "bob"
+        with pytest.raises(AssertionError):
+            assert_streams_almost_equal(st1, st2)
+        with pytest.raises(AssertionError):
+            assert_streams_almost_equal(st1, st2, basic_stats=False)
+
+    def test_off_arrays(self, streams):
+        """ If the arrays are slightly perturbed they should still be equal. """
+        st1, st2 = streams
+        for tr in st1:
+            norm = np.max(abs(tr.data) * 100)
+            tr.data += np.random.random(len(tr.data)) / norm
+
+    def test_off_by_one(self, bingham_dataset, bingham_stream):
+        """ Tests for allowing off by one errors """
+        bank = bingham_dataset.waveform_client
+        # get query parameters (these were found by accident)
+        t1 = obspy.UTCDateTime(2013, 4, 11, 4, 58, 50, 259000)
+        t2 = obspy.UTCDateTime(2013, 4, 11, 4, 58, 58, 281000)
+        params = ["UU", "NOQ", "01", "HHN", t1, t2]
+        # get waveforms from the wavebank and the streams
+        st1 = bank.get_waveforms(*params)
+        st2 = bingham_stream.get_waveforms(*params)
+        # this should not raise
+        assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
