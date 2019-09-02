@@ -411,7 +411,7 @@ class TestStreamBulkSplit:
             assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
 
-class TestAssertWaveformsEqual:
+class TestAssertStreamsAlmostEqual:
     """ Tests for asserting waveforms are equal. """
 
     @pytest.fixture
