@@ -23,6 +23,8 @@ obsplus master:
       defining and running validators on python objects. Replaced the old
       event validation (see #122).
     * Added the validators created in (#64) to PR (#122).
+  - obsplus.events
+    * Dataframe_to_inventory can now fetch NRL responses (#125).
 
 obsplus 0.0.2:
   - obsplus.bank

@@ -2,7 +2,7 @@
 Utilities for working with inventories.
 """
 import inspect
-from functools import singledispatch
+from functools import singledispatch, lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -24,16 +24,26 @@ mapping_keys = {
     Network: {"code": "network"},
 }
 
-
 type_mappings = {"start_date": obspy.UTCDateTime, "end_date": obspy.UTCDateTime}
 
 
 def df_to_inventory(df) -> obspy.Inventory:
     """
-    Create a simple inventory from a dataframe.
+    Create a station inventory from a dataframe.
 
-    The dataframe must have the same columns as the once produced by
-    :func:`obsplus.stations_to_df`.
+    Parameters
+    ----------
+    df
+        A dataframe which must have the same columns as the once produced by
+        :func:`obsplus.stations_to_df`.
+
+    Notes
+    -----
+    The dataframe can also contain columns named "sensor_keys" and
+    "datalogger_keys" which will indicate the response information should
+    be fetched suing obspy's ability to interact with the nominal response
+    library. Each of these columns should either contain tuples or strings
+    where the keys are separated by double underscores (__).
     """
 
     def _make_key_mappings(cls):
@@ -81,6 +91,39 @@ def df_to_inventory(df) -> obspy.Inventory:
 
         return out
 
+    @lru_cache()
+    def get_nrl():
+        """ Initiate a nominal response library object. """
+        from obspy.clients.nrl import NRL
+
+        return NRL()
+
+    @lru_cache()
+    def get_response(datalogger_keys, sensor_keys):
+        nrl = get_nrl()
+        kwargs = dict(datalogger_keys=datalogger_keys, sensor_keys=sensor_keys)
+        return nrl.get_response(**kwargs)
+
+    def _get_resp_key(key):
+        """ Get response keys from various types. """
+        if isinstance(key, str) or key is None:
+            return tuple((key or "").split("__"))
+        else:
+            return tuple(key)
+
+    def _maybe_add_inventory(series, channel_kwargs):
+        """ Maybe add the response information if required columns exist. """
+        # bail out of required columns do not exist
+        if not {"sensor_keys", "datalogger_keys"}.issubset(set(series.index)):
+            return
+        # determine if both required columns are populated, else bail out
+        sensor_keys = _get_resp_key(series["sensor_keys"])
+        datalogger_keys = _get_resp_key(series["datalogger_keys"])
+        if not (sensor_keys and datalogger_keys):
+            return
+        # at this point all the required info for resp lookup should be there
+        channel_kwargs["response"] = get_response(datalogger_keys, sensor_keys)
+
     # first get key_mappings
     net_map = _make_key_mappings(Network)
     sta_map = _make_key_mappings(Station)
@@ -91,7 +134,6 @@ def df_to_inventory(df) -> obspy.Inventory:
     cha_columns = ["channel", "location", "start_date", "end_date"]
     # Ensure input is a dataframe
     df = obsplus.stations_to_df(df)
-    # replace
     # Iterate networks and create stations
     networks = []
     for net_code, net_df in _groupby_if_exists(df, net_columns):
@@ -99,7 +141,10 @@ def df_to_inventory(df) -> obspy.Inventory:
         for st_code, sta_df in _groupby_if_exists(net_df, sta_columns):
             channels = []
             for ch_code, ch_df in _groupby_if_exists(sta_df, cha_columns):
-                kwargs = _get_kwargs(ch_df.iloc[0], cha_map)
+                chan_series = ch_df.iloc[0]
+                kwargs = _get_kwargs(chan_series, cha_map)
+                # try to add the inventory
+                _maybe_add_inventory(chan_series, kwargs)
                 channels.append(Channel(**kwargs))
             kwargs = _get_kwargs(sta_df.iloc[0], sta_map)
             stations.append(Station(channels=channels, **kwargs))
