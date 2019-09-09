@@ -25,6 +25,10 @@ obsplus master:
     * Added the validators created in (#64) to PR (#122).
   - obsplus.events
     * Dataframe_to_inventory can now fetch NRL responses (#125).
+  - obsplus.waveforms
+    * Added assert_streams_almost_equal method (see #128).
+    * The function obsplus.waveforms.stream_split_bulk now has more flexible
+      inputs (see #128).
 
 obsplus 0.0.2:
   - obsplus.bank
