@@ -183,13 +183,14 @@ class TestReadKemInventory:
     sml_path = kem_ds.source_path / "inventory.xml"
     sml = obspy.read_inventory(str(sml_path))
     df = pd.read_csv(csv_path)
-    supported_inputs = [sml_path, sml, df, csv_path]
+    supported_inputs = ["sml_path", "sml", "csv_path", "df"]
 
     # fixtures
     @pytest.fixture(scope="class", params=supported_inputs)
     def inv_df(self, request):
         """ collect all the supported inputs are parametrize"""
-        return stations_to_df(request.param)
+        name = request.param
+        return stations_to_df(getattr(self, name))
 
     # tests
     def test_size(self, inv_df):
