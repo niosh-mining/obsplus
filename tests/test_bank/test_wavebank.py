@@ -7,8 +7,7 @@ import shutil
 import tempfile
 import time
 import types
-from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from concurrent.futures import as_completed, ProcessPoolExecutor
 
 from os.path import join
 from pathlib import Path
@@ -930,7 +929,7 @@ class TestBadWaveforms:
         # create 100 empty files
         for a in range(100):
             new_file_path = new_path / f"{a}.mseed"
-            with new_file_path.open("wb") as fi:
+            with new_file_path.open("wb"):
                 pass
         # remove old index if it exists
         index_path = new_path / (Path(ta_bank.index_path).name)

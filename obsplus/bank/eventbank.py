@@ -38,7 +38,7 @@ from obsplus.constants import (
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
-from obsplus.utils import try_read_catalog, compose_docstring
+from obsplus.utils import compose_docstring
 
 # --- define static types
 

@@ -3,13 +3,7 @@ Functions for validating obspy events objects
 """
 from typing import Union, Optional
 
-from obspy.core.event import (
-    Catalog,
-    Event,
-    ResourceIdentifier,
-    QuantityError,
-    WaveformStreamID,
-)
+from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
 import obsplus
 from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS

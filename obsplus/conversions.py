@@ -1,6 +1,7 @@
 """
-This module contains an experimental functions for converting coordinate systems. The interfaces for these functions
-likely will not change, but the functions may be moved.
+This module contains an experimental functions for converting coordinate
+systems. The interfaces for these functions likely will not change,
+but the functions may be moved.
 """
 
 from copy import copy
@@ -43,14 +44,17 @@ def convert_coords(
     Parameters
     ----------
     points : Array-like
-        List of points to be converted. Can take a variety of formats, including tuples, lists, pandas DataFrames,
-        and numpy arrays as long as they can be arranged into a numpy array with three columns for the X, Y, and Z
-        coordinates.
+        List of points to be converted. Can take a variety of formats,
+        including tuples, lists, pandas DataFrames, and numpy arrays as long
+        as they can be arranged into a numpy array with three columns for
+        the X, Y, and Z coordinates.
     conversion : list-like or callable
-        A set of instructions or callable for the coordinate conversion. If instructions are provided, they should
-        be arrange in a two-dimensional list-like structure of key-value pairs (i.e., [["scale_x", 0.3048], ["scale_y",
-        0.3048]]). See notes for acceptable keywords. If a callable is provided, it should take a three-column numpy
-        array as input and output.
+        A set of instructions or callable for the coordinate conversion. If
+        instructions are provided, they should be arrange in a two-dimensional
+        list-like structure of key-value pairs (i.e., [["scale_x", 0.3048],
+        ["scale_y", 0.3048]]). See notes for acceptable keywords. If a callable
+        is provided, it should take a three-column numpy array as input and
+        output.
     conversion_kwargs : dict, optional
         Used if conversion is a callable. kwargs to be passed to the callable.
 
@@ -69,8 +73,9 @@ def convert_coords(
     z_out : str, optional
         Name of the output z-coordinate column (default="z_conv")
     inplace : bool, optional
-        Indicates whether the coordinate conversion should be done on the DataFrame in place or a new DataFrame should
-        be returned. (Only when a DataFrame is provided as input.) (default=False)
+        Indicates whether the coordinate conversion should be done on the
+        DataFrame in place or a new DataFrame should be returned. (Only when
+        a DataFrame is provided as input.) (default=False)
 
     Notes
     -----
@@ -97,19 +102,22 @@ def convert_coords(
         Angle (in radians) to rotate the coordinates in the yz plane.
         Positive is CCW.\n
     project : dict
-        Strings for the pyproj.Proj class projection  (ex: "+init=EPSG:32611"), or a pyproj.Proj object. Keys in the
-        dictionary should be "from" and "to". Optionally can also include "preserve_units".\n
+        Strings for the pyproj.Proj class projection  (ex: "+init=EPSG:32611"),
+        or a pyproj.Proj object. Keys in the dictionary should be "from" and
+        "to". Optionally can also include "preserve_units".\n
 
     Returns
     -------
     points : Sequence
-        Array-like object with the converted coordinates. If a DataFrame, list, or tuple were provided as input, then
-        the same type will be returned. For all other formats, a numpy array will be returned.
+        Array-like object with the converted coordinates. If a DataFrame, list,
+        or tuple were provided as input, then the same type will be returned.
+        For all other formats, a numpy array will be returned.
 
     Notes
     -----
-    From pyproj documentation, if preserve_units is False, will force units of meters for the projections. In this
-    function, preserve_units is False by default, while in pyproj 2.0.0 onward it is True by default.
+    From pyproj documentation, if preserve_units is False, will force units of
+    meters for the projections. In this function, preserve_units is False by
+    default, while in pyproj 2.0.0 onward it is True by default.
     """
     if len(
         kwargs
@@ -133,7 +141,8 @@ def convert_coords(
             points = np.array(points)
         if not (len(points.shape) == 2 and points.shape[1] == 3):
             raise TypeError(
-                "Callable coordinate conversion must return a numpy array with 3 columns"
+                "Callable coordinate conversion must return a numpy "
+                "array with 3 columns"
             )
         return points
 
@@ -266,11 +275,13 @@ def project(x, y, fro, to, preserve_units=False):
     to : str or pyproj.Proj (required)
         Projection of the output data
     preserve_units : bool (default=False)
-        From pyproj documentation: If false, will force units of meters for the projections.
+        From pyproj documentation: If false, will force units of meters for the
+        projections.
 
     Notes
     -----
-    In this function, preserve_units is False by default, while in pyproj 2.0.0 onward it is True by default.
+    In this function, preserve_units is False by default, while in pyproj 2.0.0
+    onward it is True by default.
     """
     import pyproj
 

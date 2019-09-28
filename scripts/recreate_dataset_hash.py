@@ -1,7 +1,6 @@
 """
 Recreates the hash files for the datasets.
 """
-import obspy
 import obsplus
 
 dataset_names = ("bingham", "crandall", "TA", "kemmerer")

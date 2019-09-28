@@ -9,7 +9,6 @@ import tempfile
 import typing
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from collections import Counter
 from os.path import basename
 from os.path import join, dirname, abspath, exists
 from pathlib import Path

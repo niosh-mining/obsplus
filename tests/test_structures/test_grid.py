@@ -106,13 +106,19 @@ class TestGrid:
 
     # --- Tests
     def test_gp_velmod(self, velocity_model, inputs):
-        """Make sure the bounds and values of a velocity model are correct when defining using number of grid points"""
+        """
+        Make sure the bounds and values of a velocity model are correct when
+        defining using number of grid points.
+        """
         check_grid_bounds(
             velocity_model, inputs["origin"], inputs["spacing"], inputs["num_gps"]
         )
 
     def test_cell_velmod(self, velocity_model_num_cells, inputs):
-        """Make sure the bounds and values of a velocity model are correct when defining using number of grid points"""
+        """
+        Make sure the bounds and values of a velocity model are correct when
+        defining using number of grid points.
+        """
         check_grid_bounds(
             velocity_model_num_cells,
             inputs["origin"],
@@ -343,13 +349,18 @@ class TestValueRetrieval:
         assert np.isclose(values, values[0]).all()
 
     def test_get_point_bilinear(self, topo_map):
-        """Get a value right in the middle of the grid and verify that it is semi-sane"""
+        """
+        Get a value right in the middle of the grid and verify that it is
+        semi-sane.
+        """
         point = (5.5, 2.5)
         val = topo_map[0].get_value(point, interpolate=True)
         assert np.isclose(val, 6.5)
 
     def test_get_point_trilinear(self, topo_map):
-        """Get a value right in the middle of the grid and verify it is semi-sane"""
+        """
+        Get a value right in the middle of the grid and verify it is semi-sane.
+        """
         # linearly vary the values in a grid with depth
         for num in range(topo_map[1].values.shape[2]):
             topo_map[1].values[:, :, num] = num
@@ -358,7 +369,10 @@ class TestValueRetrieval:
         assert np.isclose(val, 1.5)
 
     def test_get_point_outside(self, topo_map):
-        """ Verify correct behavior if getting value for a point outside a grid when interpolate=True """
+        """
+        Verify correct behavior if getting value for a point outside a grid when
+        interpolate=True.
+        """
         point = (20, 20, 20)
         val = topo_map[1].get_value(point, interpolate=True)
         assert np.isclose(val, 4)

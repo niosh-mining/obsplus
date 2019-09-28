@@ -405,8 +405,8 @@ class TestReadEvents:
     def events_rejected_picks(self, bingham_dataset):
         """ return a events that has all rejected picks """
         cat = bingham_dataset.event_client.get_events().copy()
-        for ev in cat:
-            for pick in ev.picks:
+        for event in cat:
+            for pick in event.picks:
                 pick.evaluation_status = "rejected"
         return cat
 

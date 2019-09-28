@@ -9,7 +9,6 @@ from obspy.clients.fdsn.mass_downloader import (
     MassDownloader,
 )
 
-from obsplus import EventBank
 from obsplus.datasets.dataset import DataSet
 from obsplus.events.utils import catalog_to_directory
 

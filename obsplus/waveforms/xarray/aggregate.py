@@ -153,8 +153,11 @@ def bin_array(dar: xr_type, bins: np.ndarray, raise_on_limit: bool = True) -> xr
         if np.any(np.logical_or(dar.values < b_min, dar.values > b_max)):
             msg = f"values in {dar} are out of bounds with {bins}"
             raise ValueError(msg)
+
     # perform binning
-    func = lambda x: np.histogram(x, bins=bins)[0]
+    def func(x):
+        return np.histogram(x, bins=bins)[0]
+
     binned = np.apply_along_axis(func, -1, dar.values)
     # create/return new data array
     dims = tuple(list(dar.dims)[:-1] + ["bin"])

@@ -3,18 +3,15 @@ tests for event wavebank
 """
 import os
 import sys
-from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Executor
-from pathlib import Path
 from io import StringIO
+from pathlib import Path
 
-
+import numpy as np
 import obspy
 import obspy.core.event as ev
-from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
-import numpy as np
 import pandas as pd
 import pytest
+from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
 from obsplus import EventBank, copy_dataset

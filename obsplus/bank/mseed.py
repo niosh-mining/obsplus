@@ -5,8 +5,11 @@ Contains hacked bits from obspy's mseed module.
 
 Copyrights to obspy developers still apply.
 """
+import os
+import warnings
 
-from obspy.io.mseed.core import *
+import numpy as np
+from obspy.io.mseed.core import DATATYPES, C, clibmseed
 
 
 def _get_lil(mseed_object):

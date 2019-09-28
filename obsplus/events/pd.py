@@ -473,7 +473,7 @@ def _obj_extractor(obj, dtypes, seed_id=True, error_obj=None):
     # extract attributes that are floats/str
     overlap = set(obj.__dict__) & set(dtypes)
     base = {i: getattr(obj, i) for i in overlap}
-    # get waveform_id stuff (seed_id, network, station, location, channel), if applicable
+    # get waveform_id stuff (seed_id, network, station, location, channel)
     if seed_id:
         base.update(_get_seed_id(obj))
     # extract error info, if applicable

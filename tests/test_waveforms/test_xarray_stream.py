@@ -651,10 +651,6 @@ class TestTrimArray:
         new_start = out.starttime
         assert np.all((new_start - old_start) == 10)
 
-    def test_trim_on_p_time(self, crandall_trimed_on_p_time):
-        """ ensure the pick is about in the same sample spacing. """
-        dar = crandall_trimed_on_p_time
-
     # common tests
     def test_starttimes_intacted(self, all_trimmed_dar):
         """ the starttimes should all be floats (non-nan) """
