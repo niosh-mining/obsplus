@@ -7,7 +7,7 @@ from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
 import obsplus
 from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
-from obsplus.utils import yield_obj_parent_attr, replace_null_nlsc_codes
+from obsplus.utils import yield_obj_parent_attr, replace_null_nlsc_codes, iterate
 from obsplus.validate import validator, validate
 
 CATALOG_VALIDATORS = []
@@ -103,10 +103,13 @@ validator("obsplus", Event)(replace_null_nlsc_codes)
 
 
 @validator("obsplus", Event)
-def check_duplicate_picks(event: Event, **kwargs):
+def check_duplicate_picks(event: Event):
     """
     Ensure there are no picks with the same phases on the same channels.
     """
+    # A dict of {phase: column that cant be duplicated}
+    phase_duplicates = {"IAML": "seed_id", "AML": "seed_id"}
+
     # first get dataframe of picks
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
@@ -122,15 +125,12 @@ def check_duplicate_picks(event: Event, **kwargs):
             f"{on}/s: {bad}"
         )
 
-    # Checking for duplicated picks
-    dup_picks("P")
-    dup_picks("S")
-    dup_picks("IAML", on="seed_id")
-    dup_picks("AML", on="seed_id")
+    for phase_hint in pdf["phase_hint"].unique():
+        dup_picks(phase_hint, on=phase_duplicates.get(phase_hint, "station"))
 
 
 @validator("obsplus", Event)
-def check_pick_order(event: Event, **kwargs):
+def check_pick_order(event: Event,):
     """
     Ensure:
         1. There are no S picks before P picks on any station
@@ -164,7 +164,7 @@ def check_pick_order(event: Event, **kwargs):
 
 
 @validator("obsplus", Event)
-def check_p_lims(event: Event, p_lim=None, **kwargs):
+def check_p_lims(event: Event, p_lim=None):
     """
     Check for P picks that aren't within p_lim of the median pick (if provided)
     """
@@ -181,9 +181,9 @@ def check_p_lims(event: Event, p_lim=None, **kwargs):
 
 
 @validator("obsplus", Event)
-def check_amp_lims(event: Event, amp_lim=None, **kwargs):
+def check_amp_lims(event: Event, amp_lim=None):
     """
-    Check for amplitudes that aren't below amp_lim (if provided)
+    Check for amplitudes that aren't below amp_lim (if provided).
     """
     if amp_lim is not None:
         bad = []
@@ -197,57 +197,63 @@ def check_amp_lims(event: Event, amp_lim=None, **kwargs):
                 bad.append(nslc)
         assert len(bad) == 0, (
             "Above limit amplitude found:\n"
-            f"event_id: {event.resource_id.id}, "
+            f"event_id: {str(event.resource_id)}, "
             f"seed_id/s: {bad}"
         )
 
 
 @validator("obsplus", Event)
-def check_amp_filts(event: Event, filt_amps=None, **kwargs):
+def check_amp_filter_ids(event: Event, filt_amps=None):
     """
-    Check that all amplitudes have a specified filter id (if provided)
+    Check that all amplitudes have codes in filt_amps
     """
-    if filt_amps is not None:
-        if type(filt_amps) is ResourceIdentifier:
-            filt_amps = filt_amps.id
-        bad = []
-        bad_filters = []
-        for amp in event.amplitudes:
-            if amp.filter_id.id != filt_amps:
-                wid = amp.waveform_id
-                nslc = (
-                    f"{wid.network_code}.{wid.station_code}."
-                    f"{wid.location_code}.{wid.channel_code}"
-                )
-                bad.append(nslc)
-                if amp.filter_id.id not in bad_filters:
-                    bad_filters.append(amp.filter_id.id)
-        assert len(bad) == 0, (
-            "Unexpected amplitude filter found:\n"
-            f"event_id: {event.resource_id.id}, "
-            f"seed_id/s: {bad}, "
-            f"filters_used: {set(bad_filters)}"
-        )
+    filt_amps = set(str(x) for x in iterate(filt_amps))
+    # There is no amplitude specified
+    if not filt_amps:
+        return
+    bad = []
+    bad_filters = []
+    for amp in event.amplitudes:
+        if str(amp.filter_id) not in filt_amps:
+            wid = amp.waveform_id
+            nslc = (
+                f"{wid.network_code}.{wid.station_code}."
+                f"{wid.location_code}.{wid.channel_code}"
+            )
+            bad.append(nslc)
+            if amp.filter_id.id not in bad_filters:
+                bad_filters.append(amp.filter_id.id)
+    assert len(bad) == 0, (
+        "Unexpected amplitude filter found:\n"
+        f"event_id: {str(event.resource_id)}, "
+        f"seed_id/s: {bad}, "
+        f"filters_used: {set(bad_filters)}"
+    )
 
 
 @validator("obsplus", Event)
-def check_z_amps(event: Event, no_z_amps=False, **kwargs):
+def check_amps_on_z_component(
+    event: Event, no_z_amps=False, phase_hints=("AML", "IAML")
+):
     """
-    Check for IAML picks on Z channels (if no_z_amps is True)
+    Check for amplitude picks on Z channels (if no_z_amps is True)
     """
-    if no_z_amps:
-        df = obsplus.picks_to_df(event)
-        df = df.loc[(df.evaluation_status != "rejected") & (df.phase_hint == "IAML")]
-        bad = df.loc[df.channel.str.endswith("Z")].seed_id.tolist()
-        assert len(bad) == 0, (
-            "Amplitude pick on Z axis found:\n"
-            f"event_id: {event.resource_id.id}, "
-            f"seed_id/s: {bad}"
-        )
+    if not no_z_amps:
+        return
+    df = obsplus.picks_to_df(event)
+    con1 = df.evaluation_status != "rejected"
+    con2 = df.phase_hint.isin(phase_hints)
+    con3 = df["channel"].str.endswith("Z")
+    _df = df.loc[con1 & con2 & con3]
+    assert len(df) == 0, (
+        "Amplitude pick on Z axis found:\n"
+        f"event_id: {str(event.resource_id)}, "
+        f"seed_id/s: {_df['seed_id'].tolist()}"
+    )
 
 
 @validator("obsplus", Event)
-def check_amp_times(event: Event, **kwargs):
+def check_amp_times_contain_pick_time(event: Event):
     """
     Check for amplitudes times that don't match the referenced pick time
     """
