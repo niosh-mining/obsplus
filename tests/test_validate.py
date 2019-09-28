@@ -101,7 +101,7 @@ class TestValidateBasics:
 
     def test_kwargs_passed(self, registered_validators):
         """ Ensure the kwargs get passed to individual validators. """
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError):
             validate(Thing2(), self.validate_namespace, some_kwarg=True)
 
     def test_validators_work_once(self, registered_validators):
