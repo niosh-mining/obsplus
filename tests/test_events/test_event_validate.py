@@ -261,10 +261,10 @@ class TestValidateCatalog:
         rid = ResourceIdentifier(bad_filt, referred_object=amp)
         amp.filter_id = rid
         with pytest.raises(AssertionError):
-            validate_catalog(cat, filt_amps=good_filt)
+            validate_catalog(cat, filter_ids=good_filt)
 
     def test_z_amps(self, cat1):
-        """ ensure raise if there are any IAML picks on Z axis """
+        """ Raise if there are any amplitude picks on Z axis """
         cat = cat1.copy()
         # Assigning iaml pick to a z channel
         # picks[23] is a known iaml pick

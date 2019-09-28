@@ -1,7 +1,7 @@
 """
 Functions for validating events according to the obsplus flavor.
 """
-from typing import Union
+from typing import Union, Optional, Collection
 
 from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
@@ -19,14 +19,6 @@ def _none_or_type(obj, type_check):
         return True
     else:
         return isinstance(obj, type_check)
-
-
-def catalog_validator(func):
-    """ register a catalog_validator function, which should take a single
-    events as the only arguments. If the check fails an exception should
-    be raised """
-    CATALOG_VALIDATORS.append(func)
-    return func
 
 
 @validator("obsplus", Event)
@@ -203,18 +195,20 @@ def check_amp_lims(event: Event, amp_lim=None):
 
 
 @validator("obsplus", Event)
-def check_amp_filter_ids(event: Event, filt_amps=None):
+def check_amp_filter_ids(
+    event: Event, filter_ids: Optional[Union[str, Collection[str]]] = None
+):
     """
-    Check that all amplitudes have codes in filt_amps
+    Check that all amplitudes have codes in filter_ids.
     """
-    filt_amps = set(str(x) for x in iterate(filt_amps))
+    filter_ids = set(str(x) for x in iterate(filter_ids))
     # There is no amplitude specified
-    if not filt_amps:
+    if not filter_ids:
         return
     bad = []
     bad_filters = []
     for amp in event.amplitudes:
-        if str(amp.filter_id) not in filt_amps:
+        if str(amp.filter_id) not in filter_ids:
             wid = amp.waveform_id
             nslc = (
                 f"{wid.network_code}.{wid.station_code}."
@@ -236,7 +230,7 @@ def check_amps_on_z_component(
     event: Event, no_z_amps=False, phase_hints=("AML", "IAML")
 ):
     """
-    Check for amplitude picks on Z channels (if no_z_amps is True)
+    Check for amplitude picks on Z channels (if no_z_amps is True).
     """
     if not no_z_amps:
         return
