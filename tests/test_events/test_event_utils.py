@@ -461,7 +461,7 @@ class TestGetSeedId:
 
     def test_no_seed_id(self):
         """Make sure raises AttributeError if no seed info found"""
-        with pytest.raises(AttributeError):
+        with pytest.raises(AssertionError):
             obsplus.events.utils.get_seed_id(obspy.core.event.Pick())
 
     def test_unsupported(self):

@@ -1,5 +1,5 @@
 """
-Functions that were too small to put into their own module
+General utility functions which are not specific to one data type.
 """
 
 import copy
@@ -408,12 +408,12 @@ def get_utc_path(
 
 def get_seed_id(obj: catalog_component) -> str:
     """
-    Get the NSLC associated with a station-specific object
+    Get the NSLC associated with an station-specific object.
 
     Parameters
     ----------
     obj
-        The object for which to retrieve the SCNL. Can be anything that
+        The object for which to retrieve the seed id. Can be anything that
         has a waveform_id attribute or refers to an object with a
         waveform_id attribute.
 
@@ -444,7 +444,8 @@ def get_seed_id(obj: catalog_component) -> str:
             except (TypeError, AttributeError):
                 raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
     # If it makes it this far, it could not find a non-None attribute
-    raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
+    # raise assertion error so this still works in validators
+    assert 0, f"Unable to fetch a seed id for {obj.resource_id}"
 
 
 def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:

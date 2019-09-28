@@ -1,6 +1,7 @@
 """
-This module contains an experimental functions for converting coordinate systems. The interfaces for these functions
-likely will not change, but the functions may be moved.
+This module contains an experimental functions for converting coordinate systems.
+The interfaces for these functions likely will not change, but the functions may
+be moved.
 """
 
 from copy import copy

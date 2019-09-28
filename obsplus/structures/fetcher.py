@@ -438,7 +438,6 @@ class Fetcher:
         """
         out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
         if out is None:
-            breakpoint()
             out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
 
         if callable(self.stream_processor):

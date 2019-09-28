@@ -217,7 +217,6 @@ class TestAttachNewOrigin:
         object that will be attached to the first events """
         cat1 = merge_catalogs_function[0].copy()
         cat2 = merge_catalogs_function[1].copy()
-        validate_catalog(cat2)
         origin = cat2[0].preferred_origin() or cat2[0].origins[-1]
         origin.time += 1.0
         origin.latitude *= 1.05
@@ -229,6 +228,9 @@ class TestAttachNewOrigin:
         origin_pick_id = {x.pick_id.id for x in origin.arrivals}
         pick_ids = {x.resource_id.id for x in cat2[0].picks}
         assert origin_pick_id.issubset(pick_ids)
+        # ensure there is nothing invalid about the catalogs
+        validate_catalog(cat1)
+        validate_catalog(cat2)
 
         return cat1, cat2, origin
 
@@ -236,21 +238,16 @@ class TestAttachNewOrigin:
     def append_origin_catalog(self, origin_pack):
         """ attach the new origin to the first event without index """
         cat1, cat2, origin = origin_pack
-        # cat1 = cat1.copy()
-        # cat2 = cat2.copy()
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
-        # validate_catalog(cat1)
         return cat1
 
     @pytest.fixture(scope="function")
     def insert_origin_catalog(self, origin_pack):
         """ insert the origin to overwrite old origin """
         cat1, cat2, origin = origin_pack
-
         # ensure origin is a modified version of cat2's first origin
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
-
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True, index=0)
         validate_catalog(cat1)
         return cat1
