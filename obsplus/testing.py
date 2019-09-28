@@ -1,5 +1,5 @@
 """
-Simple utilities used for testing
+Simple utilities used for testing.
 """
 from collections import Counter
 from contextlib import contextmanager

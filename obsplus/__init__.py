@@ -17,7 +17,7 @@ from obsplus.events.json import json_to_cat, cat_to_json, cat_to_dict
 from obsplus.events.utils import bump_creation_version, duplicate_events, get_preferred
 
 # events validation and version bumping
-from obsplus.events.validate import catalog_validator, validate_catalog
+from obsplus.events.validate import validate_catalog
 
 # pandas conversions
 from obsplus.stations.pd import stations_to_df

@@ -4,7 +4,7 @@ Tests for validation logic.
 
 import obspy
 import pytest
-from obspy.core.event import ResourceIdentifier, WaveformStreamID
+from obspy.core.event import ResourceIdentifier, WaveformStreamID, TimeWindow
 
 import obsplus
 import obsplus.events.validate
@@ -32,7 +32,8 @@ class TestValidateCatalog:
     are no resource_ids referring to non-existent events, etc."""
 
     # helper functions
-    def preferreds_are_set(self, cat):
+    def preferred_ids_are_set(self, cat):
+        """ Return True if preferred ids are set. """
         for eve in cat:
             if len(eve.origins):
                 assert eve.preferred_origin_id is not None
@@ -142,7 +143,7 @@ class TestValidateCatalog:
         """ cleared preferreds should be reset to last in list"""
         cat = cat1_cleared_preferreds
         validate_catalog(cat)
-        self.preferreds_are_set(cat)
+        self.preferred_ids_are_set(cat)
         # make sure it is the last ones in the list
         ev = cat[0]
         if len(ev.origins):
@@ -156,7 +157,7 @@ class TestValidateCatalog:
         """ ensure preferred still point to correct (not last) origins/mags """
         cat = cat1_preferred_cache_empty
         validate_catalog(cat)
-        self.preferreds_are_set(cat)
+        self.preferred_ids_are_set(cat)
         # ensure the preferred are still the first
         if len(cat[0].origins):
             first_origin = cat[0].origins[0]
@@ -198,15 +199,6 @@ class TestValidateCatalog:
         """ ensure the method can also be called on an event """
         validate_catalog(cat1[0])
 
-    def test_s_before_p(self, cat1):
-        """ ensure raise if any s picks are before p picks """
-        cat = cat1.copy()
-        # Set s time before p time
-        # pick[3] is a s pick and pick[2] is a p pick
-        cat[0].picks[3].time = cat[0].picks[2].time - 60
-        with pytest.raises(AssertionError):
-            obsplus.events.validate.check_picks(cat)
-
     def test_duplicate_picks(self, cat1):
         """ ensure raise if there are more than one p or s pick per station """
         cat = cat1.copy()
@@ -215,7 +207,16 @@ class TestValidateCatalog:
         pick.time = pick.time + 60
         cat[0].picks.append(pick)
         with pytest.raises(AssertionError):
-            obsplus.events.validate.check_picks(cat)
+            obsplus.events.validate.check_duplicate_picks(cat)
+
+    def test_s_before_p(self, cat1):
+        """ ensure raise if any s picks are before p picks """
+        cat = cat1.copy()
+        # Set s time before p time
+        # pick[3] is a s pick and pick[2] is a p pick
+        cat[0].picks[3].time = cat[0].picks[2].time - 60
+        with pytest.raises(AssertionError):
+            obsplus.events.validate.check_pick_order(cat)
 
     def test_nullish_codes_replaced(self, cat_nullish_nslc_codes):
         """ Nullish location codes should be replace with empty strings. """
@@ -223,30 +224,83 @@ class TestValidateCatalog:
         for obj, _, _ in yield_obj_parent_attr(**kwargs):
             assert obj.location_code == ""
 
+    def test_iaml_before_p(self, cat1):
+        """
+        ensure raise if there are any iaml picks that are before p picks
+        """
+        cat = cat1.copy()
+        # Moving a iaml time before p time on the same station
+        # picks[23] is a known iaml pick
+        # picks[2] is a known p pick
+        cat[0].picks[23].time = cat[0].picks[2].time - 60
+        with pytest.raises(AssertionError):
+            validate_catalog(cat)
 
-class TestAddValidator:
-    """ ensure validators can be added """
+    def test_p_lims(self, cat1):
+        """ ensure raise if there are any outlying P picks """
+        cat = cat1.copy()
+        # Assigning p pick an outlying time (1 hour off)
+        # picks[2] is a known p pick
+        cat[0].picks[2].time = cat[0].picks[2].time + 60 * 60
+        with pytest.raises(AssertionError):
+            validate_catalog(cat, p_lim=30 * 60)
 
-    counter1 = 0
+    def test_amp_lims(self, cat1):
+        """ ensure raise if there are any above limit amplitudes picks """
+        cat = cat1.copy()
+        # Assigning an amplitude an above limit value
+        cat[0].amplitudes[0].generic_amplitude = 1
+        with pytest.raises(AssertionError):
+            validate_catalog(cat, amp_lim=0.5)
 
-    @pytest.fixture()
-    def add_validator(self):
-        """ temp add a validator that increments the counter """
+    def test_amp_filts(self, cat1):
+        """ ensure raise if unexpected filter used """
+        cat = cat1.copy()
+        amp = cat[0].amplitudes[0]
+        # Assigning bad filter to an amplitude
+        good_filt = "smi:local/Wood_Anderson_Simulation"
+        bad_filt = "smi:local/Sean_Anderson_Simulation"
+        rid = ResourceIdentifier(bad_filt, referred_object=amp)
+        amp.filter_id = rid
+        with pytest.raises(AssertionError):
+            validate_catalog(cat, filter_ids=good_filt)
 
-        @obsplus.catalog_validator
-        def tick_counter1(catalog):
-            self.counter1 += 1
+    def test_z_amps(self, cat1):
+        """ Raise if there are any amplitude picks on Z axis """
+        cat = cat1.copy()
+        # Assigning iaml pick to a z channel
+        # picks[23] is a known iaml pick
+        cat[0].picks[23].waveform_id.channel_code = "HHZ"
+        with pytest.raises(AssertionError):
+            validate_catalog(cat, no_z_amps=True)
 
-        yield
-        obsplus.events.validate.CATALOG_VALIDATORS.remove(tick_counter1)
+    def test_amp_times(self, cat1):
+        """
+        ensure raise if there are any amplitude times that don't match it's
+        referred pick time
+        """
+        cat = cat1.copy()
+        # Assigning bad time window to an amplitude
+        pick = cat[0].amplitudes[0].pick_id.get_referred_object()
+        tw = TimeWindow(begin=0, end=0.5, reference=pick.time + 10)
+        cat[0].amplitudes[0].time_window = tw
+        with pytest.raises(AssertionError):
+            validate_catalog(cat)
 
-    @pytest.fixture
-    def val_cat(self, cat1, add_validator):
-        """ validate the events exactly once, return result """
-        return validate_catalog(cat1)
-
-    # tests
-    def test_registered_function_ran_once(self, val_cat):
-        """ ensure the ticker went up once """
-        assert self.counter1 == 1
-        assert isinstance(val_cat, obspy.Catalog)
+    def test_duplicate_picks_ok_if_rejected(self, cat1):
+        """
+        Rejected picks should not count against duplicated
+        """
+        cat = cat1.copy()
+        # get first non-rejected pick
+        for pick in cat1[0].picks:
+            if pick.evaluation_status != "rejected":
+                pick = pick.copy()
+                break
+        else:
+            raise ValueError("all picks rejected")
+        pick.resource_id = obspy.core.event.ResourceIdentifier(referred_object=pick)
+        pick.evaluation_status = "rejected"
+        cat[0].picks.append(pick)
+        # this should not raise
+        validate_catalog(cat)

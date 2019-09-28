@@ -32,3 +32,15 @@ class DataVersionError(ValueError):
     """
     Raised when the version of a dataset doesn't match what is expected
     """
+
+
+class ValidationError(ValueError):
+    """
+    Raised when something goes wrong with object validation.
+    """
+
+
+class ValidationNameError(ValidationError, KeyError):
+    """
+    Raised when a namespace with no validators is used.
+    """

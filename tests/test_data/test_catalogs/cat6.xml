@@ -1407,6 +1407,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/85767e6a-6029-4667-b19b-3d22786cee6e">
         <time>
@@ -1447,6 +1448,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/2a393bdb-0447-478f-9d72-67949cc565ef">
         <time>
