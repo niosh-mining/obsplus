@@ -198,8 +198,6 @@ def prune_events(events: catalog_or_event) -> Catalog:
     for event in events:
         event = event.copy()
         validate_catalog(event)
-        import obsplus
-
         obsplus.debug = True
         edges, rejected_rid, rejected_opa = _get_edges_rids_opa(event)
         df = pd.DataFrame(edges, columns=["parent", "child"])

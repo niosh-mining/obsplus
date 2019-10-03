@@ -13,7 +13,8 @@ from obsplus.events.validate import validate_catalog
 
 if __name__ == "__main__":
     cat_path = Path(
-        "/media/data/Gits/obsplus/tests/test_data/qml2merge/2016-10-15T02-27-50/2016-10-15T02-27-50_2.xml"
+        "/media/data/Gits/obsplus/tests/test_data/qml2merge/"
+        "2016-10-15T02-27-50/2016-10-15T02-27-50_2.xml"
     )
     assert cat_path.exists()
 

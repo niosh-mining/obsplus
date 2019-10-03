@@ -2,27 +2,20 @@
 Bank ABC
 """
 import os
-import threading
-import time
 import warnings
 from abc import ABC, abstractmethod
-from contextlib import contextmanager, suppress
 from os.path import join
 from pathlib import Path
 from typing import Optional, TypeVar
-from obsplus.constants import CPU_COUNT
 
-import gc
-import numpy as np
 import pandas as pd
-import tables
 from pandas.io.sql import DatabaseError
 
 import obsplus
-from obsplus.exceptions import BankDoesNotExistError, BankIndexLockError
+from obsplus.constants import CPU_COUNT
+from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils import iter_files, get_progressbar
-from obsplus.constants import CPU_COUNT
 
 BankType = TypeVar("BankType", bound="_Bank")
 

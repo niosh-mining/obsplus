@@ -43,7 +43,7 @@ class TestGetWaveforms:
 
     def test_none_times(self, stream):
         """ Ensure starttime/endtime can be None. """
-        st = stream.get_waveforms("*", "*", "*", "*", None, None)
+        stream.get_waveforms("*", "*", "*", "*", None, None)
 
 
 class TestGetWaveformsBulk:

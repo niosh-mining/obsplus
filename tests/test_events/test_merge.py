@@ -1,13 +1,11 @@
 """
 
 """
-import glob
 from glob import glob
 from os.path import join
 
 import obspy
 import pytest
-from obspy.core.event import ResourceIdentifier
 
 from obsplus import validate_catalog
 from obsplus.events.merge import merge_events, attach_new_origin

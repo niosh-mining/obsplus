@@ -10,7 +10,7 @@ name: $(Date:yyyyMMdd)$(Rev:.r)
 variables:
   env_name: testenv
   conda_args: --yes --quiet --name $(env_name)
-  conda_packages: pytest obspy pandas xarray pytables
+  conda_packages: pytest obspy pandas xarray pytables flake8 flake8-black
 
 jobs:
 
@@ -45,6 +45,11 @@ jobs:
       pip install -r tests/requirements.txt
       pip install -e .
     displayName: Create Anaconda environment
+
+  - bash: |
+      source activate $(env_name)
+      flake8
+    displayName: flake8
 
   - bash: |
       source activate $(env_name)
@@ -83,6 +88,11 @@ jobs:
       pip install -r tests/requirements.txt
       pip install -e .
     displayName: Create Anaconda environment
+
+  - bash: |
+      source activate $(env_name)
+      flake8
+    displayName: flake8
 
   - bash: |
       source activate $(env_name)

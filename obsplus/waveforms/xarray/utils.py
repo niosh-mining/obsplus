@@ -16,7 +16,6 @@ import xarray as xr
 
 from obsplus.constants import DIMS, AGG_LEVEL_MAP, TIME_PRECISION, NSLC, xr_type
 from obsplus.waveforms.xarray import ops_method
-from obsplus.utils import get_seed_id_series
 
 
 def keep_attrs(func: Callable[..., xr_type]):

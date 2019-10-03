@@ -533,10 +533,10 @@ latitude: float, optional
 longitude: float, optional
     Specify the longitude to the used for a radius search.
 minradius: float, optional
-    Limit to events within the specified minimum number of degrees from 
+    Limit to events within the specified minimum number of degrees from
     the geographic point defined by the latitude and longitude parameters.
 maxradius: float, optional
-    Limit to events within the specified maximum number of degrees from 
+    Limit to events within the specified maximum number of degrees from
     the geographic point defined by the latitude and longitude parameters.
 mindepth: float, optional
     Limit to events with depth, in kilometers, larger than the specified
@@ -564,7 +564,7 @@ updatedafter: obspy.UTCDateTime or valid input to such, optional
 degrees: int, default True
     If False, the parameters maxradius and minradius are specified in m
     rather than degrees. Note: this parameter may not be supported by
-    non-obsplus event clients. 
+    non-obsplus event clients.
 """
 
 # the description for the parameter 'bar' in the bank `update_index` methods.
@@ -575,7 +575,7 @@ bar
         False - Dont use a progress bar
         None - Use the default progress bar
         ProgressBar - a custom implementation of progress bar is used.
-        
+
     If a custom progress bar is to be used, it must have an `update`
     and `finish` method.
 """

@@ -6,11 +6,10 @@ import warnings
 from collections import OrderedDict
 from typing import Optional
 
-import obspy
 from obspy.core.event import Catalog, Origin, Event
 
-from obsplus.events.utils import bump_creation_version
 from obsplus import validate_catalog
+from obsplus.events.utils import bump_creation_version
 
 
 def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:

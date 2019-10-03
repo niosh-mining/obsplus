@@ -4,12 +4,10 @@ Simple utility for DataSet.
 import shutil
 import tempfile
 import textwrap
-import os
 from pathlib import Path
 from typing import Optional, Union
 
 import obsplus
-from obsplus.constants import OPSDATA_PATH
 
 
 def _create_opsdata(opsdata_path: Path):
@@ -24,8 +22,8 @@ def _create_opsdata(opsdata_path: Path):
     msg = textwrap.dedent(
         """
     This directory contains the data sets curated by the obsplus python
-    package (github.com/niosh-mining/obsplus). 
-    
+    package (github.com/niosh-mining/obsplus).
+
     Each sub-directory contains a single data set and the data set's name is
     the name of the directory. You can load the dataset using the
     obsplus.load_dataset function and passing the name of the data set as a
@@ -37,8 +35,9 @@ def _create_opsdata(opsdata_path: Path):
 
 
 def copy_dataset(
-    dataset: Union[str, "DataSet"], destination: Optional[Union[str, Path]] = None
-) -> "DataSet":
+    dataset: Union[str, "obsplus.DataSet"],
+    destination: Optional[Union[str, Path]] = None,
+) -> "obsplus.DataSet":
     """
     Copy a dataset to a destination.
 

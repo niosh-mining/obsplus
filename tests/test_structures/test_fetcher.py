@@ -7,11 +7,9 @@ import os
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import obspy
 import pandas as pd
 import pytest
-from obspy.clients.fdsn import Client
 from obspy.core.event import Event, Origin
 
 import obsplus

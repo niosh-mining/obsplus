@@ -4,7 +4,6 @@ Tests for the datasets
 import os
 import shutil
 import tempfile
-import functools
 from collections import defaultdict
 from pathlib import Path
 
@@ -337,7 +336,10 @@ class TestVersioning:
 
     @pytest.fixture
     def low_version(self, dummy_dataset):
-        """ Make sure the version file has a lower version number than what is attached to the DataSet"""
+        """
+        Make sure the version file has a lower version number than what is
+        attached to the DataSet.
+        """
         version = "0.0.0"
         with open(dummy_dataset._version_path, "w") as fi:
             fi.write(version)

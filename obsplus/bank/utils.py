@@ -15,8 +15,8 @@ from typing import Optional, Sequence, Union
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy import Inventory
 from tables.exceptions import ClosedNodeError
-
 
 from obsplus.constants import (
     NSLC,
@@ -26,8 +26,6 @@ from obsplus.constants import (
     EVENT_NAME_STRUCTURE,
 )
 from obsplus.utils import _get_event_origin_time, READ_DICT
-from obspy import Inventory
-
 from .mseed import summarize_mseed
 
 # --- sensible defaults

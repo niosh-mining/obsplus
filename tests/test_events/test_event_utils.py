@@ -358,10 +358,10 @@ class TestGetPreferred:
         rid = str(ev.ResourceIdentifier())
         event.preferred_origin_id = rid
         # It should now return None
-        with pytest.warns(UserWarning) as w:
+        with pytest.warns(UserWarning):
             assert get_preferred(event, "origin") is None
         # but if init_empty it should return an empty origin
-        with pytest.warns(UserWarning) as w:
+        with pytest.warns(UserWarning):
             ori = get_preferred(event, "origin", init_empty=True)
         assert isinstance(ori, ev.Origin)
 
@@ -433,7 +433,9 @@ class TestMakeOrigins:
                 assert origin.depth is not None
 
     def test_correct_origin_time(self, strange_picks_added_origins):
-        """ make sure newly attached origin used the correct pick to get the location """
+        """
+        Ensure newly attached origin used the correct pick to get the location.
+        """
         ori = strange_picks_added_origins[0].origins[0]
         time = strange_picks_added_origins[1].time
         assert ori.time == time

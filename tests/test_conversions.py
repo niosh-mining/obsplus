@@ -105,7 +105,10 @@ class TestCoordinateConversion:
         assert np.isclose(points[0][0], 0.3048 * 0.001)
 
     def test_conversion_single_point_tuple(self):
-        """ Verify it is possible to convert coordinates (from a tuple containing a single point) """
+        """
+        Verify it is possible to convert coordinates (from a tuple containing
+        a single point).
+        """
         point = (1, 2, 3)
         point = obsplus.conversions.convert_coords(
             point, conversion=conversions["convert_to_km"]
@@ -140,7 +143,10 @@ class TestCoordinateConversion:
         assert np.isclose(points[0][0], 0.3048 * 0.001)
 
     def test_conversion_single_point_list(self):
-        """ Verify it is possible to convert coordinates (from a list containing a single point) """
+        """
+        Verify it is possible to convert coordinates (from a list containing
+        a single point)
+        """
         point = [1, 2, 3]
         point = obsplus.conversions.convert_coords(
             point, conversion=conversions["convert_to_km"]
@@ -175,10 +181,7 @@ class TestCoordinateConversion:
 
     def test_conversion_project(self, points):
         """Verify it is possible to convert station coords to grid coords"""
-        try:
-            import pyproj
-        except ModuleNotFoundError:
-            pytest.skip("pyproj is not installed on this machine. Skipping.")
+        pytest.importorskip("pyproj", reason="test requires pyproj")
         df = obsplus.conversions.convert_coords(
             points, conversion=conversions["test_project"], x_in="X", y_in="Y", z_in="Z"
         )

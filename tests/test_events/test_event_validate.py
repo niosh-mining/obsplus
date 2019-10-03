@@ -1,4 +1,6 @@
-from os.path import join
+"""
+Tests for validation logic.
+"""
 
 import obspy
 import pytest
