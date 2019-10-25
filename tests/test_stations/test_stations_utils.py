@@ -5,8 +5,10 @@ import numpy as np
 import obspy
 import pytest
 
+import pandas as pd
+
 import obsplus
-from obsplus.constants import NSLC
+from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
 from obsplus.stations.utils import df_to_inventory
 
 
@@ -36,6 +38,41 @@ class TestDfToInventory:
     def df_from_inv_from_df(self, inv_from_df):
         """ Is this getting confusing yet?"""
         return obsplus.stations_to_df(inv_from_df)
+
+    @pytest.fixture
+    def dummy_df(self):
+        """ df 'inventory' with odd data types for the NSLC columns """
+        return pd.DataFrame(
+            [
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    40.0,
+                    -111.0,
+                    2000,
+                    0,
+                    250,
+                    "2019-01-01",
+                    "2020-01-01",
+                ],
+                [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    40.0,
+                    -111.0,
+                    2000,
+                    0,
+                    250,
+                    "2020-01-01",
+                    "2200-01-01",
+                ],
+            ],
+            columns=DF_TO_INV_COLUMNS,
+        )
 
     @pytest.fixture
     def df_with_response(self):
@@ -70,6 +107,17 @@ class TestDfToInventory:
     def test_type(self, inv_from_df):
         """ An inv should have been returned. """
         assert isinstance(inv_from_df, obspy.Inventory)
+
+    def test_column_dtypes(self, dummy_df):
+        """ Make sure data types get set (particularly for NSLC columns) """
+        inv = df_to_inventory(dummy_df)
+        for network in inv.networks:
+            assert network.code == "1"
+            for station in network:
+                assert station.code == "1"
+            for channel in station:
+                assert channel.code == "1"
+                assert channel.location_code == "1"
 
     def test_new(self, df_from_inv, df_from_inv_from_df):
         """ Ensure the transformation is lossless from df side. """
