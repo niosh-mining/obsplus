@@ -13,7 +13,6 @@ from obspy.core.inventory import Channel, Station, Network
 import obsplus
 from obsplus.constants import station_clientable_type, NSLC
 from obsplus.interfaces import StationClient
-from obsplus.utils import order_columns
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
 
