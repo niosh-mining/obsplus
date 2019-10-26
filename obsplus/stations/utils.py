@@ -125,6 +125,8 @@ def df_to_inventory(df) -> obspy.Inventory:
         channel_kwargs["response"] = get_response(datalogger_keys, sensor_keys)
 
     # Deal with pandas dtype weirdness
+    # TODO remove this when custom column functions are supported by DataFrame
+    #  Extractor (part of the big refactor in #131)
     for col in NSLC:
         df[col] = df[col].astype(str).str.replace(".0", "")
 
