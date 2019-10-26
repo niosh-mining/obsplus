@@ -42,37 +42,10 @@ class TestDfToInventory:
     @pytest.fixture
     def dummy_df(self):
         """ df 'inventory' with odd data types for the NSLC columns """
-        return pd.DataFrame(
-            [
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    40.0,
-                    -111.0,
-                    2000,
-                    0,
-                    250,
-                    "2019-01-01",
-                    "2020-01-01",
-                ],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    40.0,
-                    -111.0,
-                    2000,
-                    0,
-                    250,
-                    "2020-01-01",
-                    "2200-01-01",
-                ],
-            ],
-            columns=DF_TO_INV_COLUMNS,
-        )
+        numerics = [1.0, 1.0, 1.0, 1.0, 40.0, -111.0, 2000, 0, 250]
+        row1 = numerics + ["2019-01-01", "2020-01-01"]
+        row2 = numerics + ["2020-01-01", "2200-01-01"]
+        return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS)
 
     @pytest.fixture
     def df_with_response(self):
