@@ -11,7 +11,7 @@ import pandas as pd
 from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
-from obsplus.constants import station_clientable_type
+from obsplus.constants import station_clientable_type, NSLC
 from obsplus.interfaces import StationClient
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
@@ -123,6 +123,12 @@ def df_to_inventory(df) -> obspy.Inventory:
             return
         # at this point all the required info for resp lookup should be there
         channel_kwargs["response"] = get_response(datalogger_keys, sensor_keys)
+
+    # Deal with pandas dtype weirdness
+    # TODO remove this when custom column functions are supported by DataFrame
+    #  Extractor (part of the big refactor in #131)
+    for col in NSLC:
+        df[col] = df[col].astype(str).str.replace(".0", "")
 
     # first get key_mappings
     net_map = _make_key_mappings(Network)

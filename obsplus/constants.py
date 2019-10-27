@@ -66,6 +66,22 @@ STATION_DTYPES = OrderedDict(
 
 STATION_COLUMNS = tuple(STATION_DTYPES)
 
+DF_TO_INV_DTYPES = OrderedDict(
+    network=str,
+    station=str,
+    location=str,
+    channel=str,
+    latitude=float,
+    longitude=float,
+    elevation=float,
+    depth=float,
+    sample_rate=float,
+    start_date=float,
+    end_date=float,
+)
+
+DF_TO_INV_COLUMNS = tuple(DF_TO_INV_DTYPES)
+
 # columns required for event_data
 EVENT_DTYPES = OrderedDict(
     time=float,

@@ -86,7 +86,7 @@ class TestGetEvents:
 
     def test_max_min_radius_m(self, catalog):
         """ Ensure max and min radius work in m (ie when degrees=False). """
-        minrad = 10_000
+        minrad = 10000
         maxrad = 800_000
         lat, lon = 39.342, 41.044
         kwargs = dict(
