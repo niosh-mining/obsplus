@@ -11,7 +11,7 @@ import pandas as pd
 from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
-from obsplus.constants import station_clientable_type, NSLC
+from obsplus.constants import station_clientable_type, SMALLDT64, LARGEDT64, NSLC
 from obsplus.interfaces import StationClient
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
@@ -64,10 +64,13 @@ def df_to_inventory(df) -> obspy.Inventory:
         # this is needed so they get included in a groupby
         df = df.copy()
         isnan = df.isna()
+        default_start = pd.Timestamp(SMALLDT64)
+        default_end = pd.Timestamp(LARGEDT64)
+
         if "start_date" in columns:
-            df["start_date"] = df["start_date"].fillna(0)
+            df["start_date"] = df["start_date"].fillna(default_start)
         if "end_date" in columns:
-            df["end_date"] = df["end_date"].fillna(LARGE_NUMBER)
+            df["end_date"] = df["end_date"].fillna(default_end)
 
         for ind, df_sub in df.groupby(cols):
             # replace NaN values
@@ -111,7 +114,7 @@ def df_to_inventory(df) -> obspy.Inventory:
         else:
             return tuple(key)
 
-    def _maybe_add_inventory(series, channel_kwargs):
+    def _maybe_add_response(series, channel_kwargs):
         """ Maybe add the response information if required columns exist. """
         # bail out of required columns do not exist
         if not {"sensor_keys", "datalogger_keys"}.issubset(set(series.index)):
@@ -150,7 +153,7 @@ def df_to_inventory(df) -> obspy.Inventory:
                 chan_series = ch_df.iloc[0]
                 kwargs = _get_kwargs(chan_series, cha_map)
                 # try to add the inventory
-                _maybe_add_inventory(chan_series, kwargs)
+                _maybe_add_response(chan_series, kwargs)
                 channels.append(Channel(**kwargs))
             kwargs = _get_kwargs(sta_df.iloc[0], sta_map)
             stations.append(Station(channels=channels, **kwargs))

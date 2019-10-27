@@ -13,6 +13,7 @@ import pytest
 import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
+from obsplus.utils import is_time
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
@@ -32,13 +33,13 @@ class TestInv2Df:
         assert hasattr(test_inventory, "to_df")
 
     def test_output(self, invdf):
+        """ Simple check on station outputs. """
         assert isinstance(invdf, pd.DataFrame)
         assert len(invdf)
         assert STA_COLUMNS.issubset(invdf.columns)
         for ind, row in invdf.iterrows():
             t1, t2 = row.start_date, row.end_date
-            assert isinstance(t1, float)
-            assert isinstance(t2, float) or row.end_date is None
+            assert is_time(t1) and is_time(t2)
             assert isinstance(row.seed_id, str)
 
     def test_to_df_method(self):
@@ -48,6 +49,10 @@ class TestInv2Df:
         df = inv.to_df()
         assert isinstance(df, pd.DataFrame)
         assert len(chans) == len(df)
+
+    def test_time_columns(self, invdf):
+        """ ensure the times are np.datetime instances. """
+        pass
 
 
 class TestReadInventory:
@@ -204,8 +209,8 @@ class TestReadKemInventory:
 
     def test_datetime_columns(self, inv_df):
         """ start_date and end_date should be UTCDateTime objects """
-        assert all([isinstance(x, np.float) for x in inv_df["start_date"]])
-        assert all([isinstance(x, np.float) for x in inv_df["end_date"]])
+        assert all([is_time(x) for x in inv_df["start_date"]])
+        assert all([is_time(x) for x in inv_df["end_date"]])
 
 
 class TestReadDataFrame:

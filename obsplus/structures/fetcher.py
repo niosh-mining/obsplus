@@ -13,7 +13,6 @@ from obspy import Stream, UTCDateTime
 
 from obsplus import events_to_df, stations_to_df, picks_to_df
 from obsplus.bank.wavebank import WaveBank
-from obsplus.events.utils import get_event_client
 from obsplus.constants import (
     waveform_clientable_type,
     event_clientable_type,
@@ -25,22 +24,25 @@ from obsplus.constants import (
     EVENT_WAVEFORM_PATH_STRUCTURE,
     WAVEFORM_STRUCTURE,
     get_waveforms_parameters,
+    LARGEDT64,
 )
+from obsplus.events.utils import get_event_client
 from obsplus.stations.utils import get_station_client
-from obsplus.waveforms.utils import get_waveform_client
 from obsplus.utils import (
     make_time_chunks,
     register_func,
     get_reference_time,
     filter_index,
     compose_docstring,
+    to_datetime64,
+    to_timedelta64,
 )
+from obsplus.waveforms.utils import get_waveform_client
 
 EventStream = namedtuple("EventStream", "event_id stream")
-far_out_time = UTCDateTime("2525-01-01").timestamp
 
 
-# ---------------------- Wavefetcher constructor stuff
+# ---------------------- fetcher constructor stuff
 
 
 def _enable_swaps(cls):
@@ -189,6 +191,7 @@ class Fetcher:
             Data representing stations, from which a client or dataframe
             can be inferred.
         """
+        # a dict for filling missing values in station df
         try:
             self.station_client = get_station_client(stations)
         except TypeError:
@@ -196,17 +199,18 @@ class Fetcher:
         try:
             self.station_df = stations_to_df(stations)
         except TypeError:
-            # if unable to get station info from stations try events
+            # if unable to get station info from stations waveform client
             try:
-                self.station_df = stations_to_df(self.event_client)
+                self.station_df = stations_to_df(self.waveform_client)
             except TypeError:
-                # if no events try waveform client
+                #  if no waveforms try events
                 try:
-                    self.station_df = stations_to_df(self.waveform_client)
+                    self.station_df = stations_to_df(self.event_client)
                 except TypeError:
                     self.station_df = None
 
     # ------------------------ continuous data fetching methods
+
     @compose_docstring(get_waveforms_parameters=get_waveforms_parameters)
     def get_waveforms(self, *args, **kwargs) -> Stream:
         """
@@ -327,8 +331,8 @@ class Fetcher:
         obspy.Stream
         """
         assert reference.lower() in self.reference_funcs
-        tb = time_before if time_before is not None else self.time_before
-        ta = time_after if time_after is not None else self.time_after
+        tb = to_timedelta64(time_before, default=self.time_before)
+        ta = to_timedelta64(time_after, default=self.time_after)
         assert (tb is not None) and (ta is not None)
         # get reference times
         event_ids = self.event_df.event_id.values
@@ -343,8 +347,9 @@ class Fetcher:
             get_bulk_wf = self._get_bulk_wf
         # iterate each event in the events and yield the waveform
         for event_id in event_ids:
-            ser = reftimes[event_id]
-            bulk_args = self._get_bulk_arg(starttime=ser - tb, endtime=ser + ta)
+            # make sure ser is either a single datetime or a series of datetimes
+            ti_ = to_datetime64(reftimes[event_id])
+            bulk_args = self._get_bulk_arg(starttime=ti_ - tb, endtime=ti_ + ta)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))
             except Exception:
@@ -418,11 +423,11 @@ class Fetcher:
         -------
         obspy.Stream
         """
-        tbefore = self.time_before if time_before is None else time_before
-        tafter = self.time_after if time_after is None else time_after
+        tbefore = to_timedelta64(time_before, default=self.time_before)
+        tafter = to_timedelta64(time_after, default=self.time_after)
         assert (tbefore is not None) and (tafter is not None)
         # get the reference time from the object
-        time = get_reference_time(time_arg)
+        time = to_datetime64(get_reference_time(time_arg))
         t1 = time - tbefore
         t2 = time + tafter
         return self.get_waveforms(starttime=t1, endtime=t2, **kwargs)
@@ -451,12 +456,13 @@ class Fetcher:
         station_df = self.station_df.copy()
         inv = station_df[filter_index(station_df, **kwargs)]
         # replace None/Nan with larger number
-        null_inds = inv["end_date"].isnull()
-        inv.loc[null_inds, "end_date"] = far_out_time
+        inv.loc[inv["end_date"].isnull(), "end_date"] = LARGEDT64
+        inv["end_date"] = inv["end_date"].astype("datetime64[ns]")
         # remove station/channels that dont have data for requested time
-        starttime = starttime if starttime is not None else inv.start_date.min()
-        endtime = endtime if endtime is not None else inv.end_date.max()
+        starttime = to_datetime64(starttime, default=inv["start_date"].min())
+        endtime = to_datetime64(endtime, default=inv["end_date"].max())
         con1, con2 = (inv["start_date"] > endtime), (inv["end_date"] < starttime)
+
         inv = inv[~(con1 | con2)]
         df = inv[list(NSLC)]
         if df.empty:  # return empty list if no data found
@@ -464,9 +470,9 @@ class Fetcher:
         df.loc[:, "starttime"] = starttime
         df.loc[:, "endtime"] = endtime
         # remove any rows that don't have defined start/end times
-        df = df[(~df.starttime.isnull()) & (~df.endtime.isnull())]
+        out = df[(~df["starttime"].isnull()) & (~df["endtime"].isnull())]
         # convert to list of tuples and return
-        return [tuple(x) for x in df.to_records(index=False)]
+        return [tuple(x) for x in out.to_records(index=False)]
 
     def download_waveforms(
         self,

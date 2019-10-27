@@ -25,6 +25,7 @@ from typing import (
     TypeVar,
     Collection,
     Iterable,
+    Mapping,
 )
 
 import numpy as np
@@ -42,6 +43,8 @@ from progressbar import ProgressBar
 import obsplus
 from obsplus.constants import (
     event_time_type,
+    column_function_map_type,
+    utc_able_type,
     NSLC,
     NULL_SEED_CODES,
     wave_type,
@@ -49,6 +52,10 @@ from obsplus.constants import (
     inventory_type,
     DISTANCE_COLUMNS,
     DISTANCE_DTYPES,
+    TIME_COLUMNS,
+    time_types,
+    SMALLDT64,
+    LARGEDT64,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
@@ -143,14 +150,18 @@ def get_instances(*args, **kwargs):
 
 
 def make_time_chunks(
-    utc1, utc2, duration, overlap=0.0
+    utc1: utc_able_type,
+    utc2: utc_able_type,
+    duration: Union[float, int],
+    overlap: Union[float, int] = 0.0,
 ) -> Generator[Tuple[obspy.UTCDateTime, obspy.UTCDateTime], None, None]:
     """
     Yield time intervals fitting in given datetime range.
 
-    Function to take two utc date time objects and create a generator to
+    Function takes two utc date time objects and create a generator to
     yield all time in between by intervals of duration. Overlap is number
-    of seconds at end of file
+    of seconds segment n will overlap into segment n + 1.
+
     Parameters
     ----------
     utc1 : obspy.UTCDateTime compatible object
@@ -161,6 +172,7 @@ def make_time_chunks(
         The duration of each chunk
     overlap : float
         The overlap each chunk should have (added at end)
+
     Yields
     -------
     (time1, time2)
@@ -172,8 +184,8 @@ def make_time_chunks(
     >>> out = make_time_chunks(t1, t2, 3600)
     >>> assert out == [t1, t1 + 3600, t2]
     """
-    utc1 = obspy.UTCDateTime(utc1)
-    utc2 = obspy.UTCDateTime(utc2)
+    utc1 = to_utc(utc1)
+    utc2 = to_utc(utc2)
     overlap = overlap or 0.0
     while utc1 < utc2:
         t2 = utc1 + duration + overlap
@@ -196,11 +208,36 @@ def try_read_catalog(catalog_path, **kwargs):
     return None
 
 
+def apply_funcs_to_columns(
+    df: pd.DataFrame, funcs: Optional[column_function_map_type]
+) -> pd.DataFrame:
+    """
+    Apply callables to columns.
+
+    Parameters
+    ----------
+    df
+        The input dataframe.
+    funcs
+        A mapping of {column_name, function_to_apply}.
+
+    Returns
+    -------
+    A new dataframe with the columns replaced with output of the function.
+    """
+    if funcs is not None:
+        df = df.copy()
+        for col in set(df.columns) & set(funcs):
+            df[col] = funcs[col](df[col])
+    return df
+
+
 def order_columns(
     df: pd.DataFrame,
     required_columns: Sequence,
-    dtype: Optional[Dict[str, type]] = None,
-    replace: Optional[dict] = None,
+    dtype: Optional[Mapping[str, type]] = None,
+    replace: Optional[Mapping] = None,
+    drop_columns: bool = False,
 ):
     """
     Given a dataframe, assert that required columns are in the df, then
@@ -210,29 +247,33 @@ def order_columns(
     Parameters
     ----------
     df
-        A dataframe
+        The input dataframe.
     required_columns
-        A sequence that contains the column names
+        A sequence that contains the column names.
     dtype
-        A dictionary of dtypes
+        A dictionary of dtypes.
     replace
-        Input passed to DataFrame.Replace
+        Input passed to DataFrame.Replace.
+    drop_columns
+        If True drop columns not in required_columns.
     Returns
     -------
     pd.DataFrame
     """
-    if df.empty:
-        return pd.DataFrame(columns=required_columns)
+    # if df.empty:
+    #     return pd.DataFrame(columns=required_columns)
     # make sure required columns are there
     column_set = set(df.columns)
     extra_cols = sorted(list(column_set - set(required_columns)))
+    if drop_columns:  # dont include extras if drop_columns
+        extra_cols = []
     new_cols = list(required_columns) + extra_cols
     # add any extra (blank) columns if needed and sort
     df = df.reindex(columns=new_cols)
     # cast network, station, location, channel, to str
     if dtype:
-        used = set(dtype) & set(df.columns)
-        df = df.astype({i: dtype[i] for i in used})
+        dtypes = {i: dtype[i] for i in set(dtype) & set(df.columns)}
+        df = df.astype(dtypes)
     if replace:
         try:
             df = df.replace(replace)
@@ -326,7 +367,9 @@ def _get_event_origin_time(event):
     except IndexError:
         por = None
     if por is not None:
-        assert por.time is not None, f"bad time found on {por}"
+        if por.time is None:
+            msg = f"no origin time found on {por}"
+            raise ValueError(msg)
         return get_reference_time(por.time)
     # else try using picks
     elif event.picks:
@@ -526,7 +569,7 @@ def compose_docstring(**kwargs):
             for line in lines:
                 # determine number of spaces used before matching character
                 spaces = line.split(search_value)[0]
-                # ensure only spaces preceed search value
+                # ensure only spaces precede search value
                 assert set(spaces) == {" "}
                 new = {key: textwrap.indent(textwrap.dedent(value), spaces)}
                 docstring = docstring.replace(line, line.format(**new))
@@ -546,7 +589,7 @@ def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Serie
     Any "nullish" values (defined by the parameter null_codes) will be
     replaced with an empty string.
 
-    Parameters
+    6Parameters
     ----------
     df
         Any Dataframe that has columns with str dtype named:
@@ -728,8 +771,8 @@ def filter_df(df: pd.DataFrame, **kwargs) -> np.array:
 def _filter_starttime_endtime(df, starttime=None, endtime=None):
     """ Filter dataframe on starttime and endtime. """
     bool_index = np.ones(len(df), dtype=bool)
-    t1 = UTC(starttime).timestamp if starttime is not None else -1 * np.inf
-    t2 = UTC(endtime).timestamp if endtime is not None else np.inf
+    t1 = to_datetime64(starttime) if starttime is not None else SMALLDT64
+    t2 = to_datetime64(endtime) if endtime is not None else LARGEDT64
     # get time columns
     start_col = getattr(df, "starttime", getattr(df, "start_date", None))
     end_col = getattr(df, "endtime", getattr(df, "end_date", None))
@@ -989,3 +1032,151 @@ def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
     """ Test if a str series contains any values in a sequence """
     safe_matches = {re.escape(x) for x in str_sequence}
     return ser.str.contains("|".join(safe_matches)).values
+
+
+# --- functions for dealing with time conversions (ugh)
+
+
+@singledispatch
+def to_datetime64(value: utc_able_type, default=pd.NaT) -> np.datetime64:
+    """
+    Convert time value to a numpy datetime64.
+
+    Parameters
+    ----------
+    value
+        Any Value that can be interpreted as a time.
+    default
+        A value to return if value is null. Default
+    """
+    if pd.isnull(value) or not value:
+        if not pd.isnull(default):
+            return to_datetime64(default)
+        return default
+    elif isinstance(value, np.datetime64):
+        return value
+    elif isinstance(value, pd.Timestamp):
+        return value.to_numpy()
+    try:
+        utc = obspy.UTCDateTime(value)
+        return np.datetime64(utc._ns, "ns")
+    # the UTCDateTime is too big or small, convert
+    except (SystemError, OverflowError):
+        new = LARGEDT64 if np.sign(utc._ns) > 0 else SMALLDT64
+        msg = (
+            f"{utc} is too large to represent with a int64 with ns precision,"
+            f" downgrading to {new}"
+        )
+        warnings.warn(msg)
+        return new
+
+
+@to_datetime64.register(pd.Series)
+def _series_to_datetime(value, default=pd.NaT):
+    """ Convert a series to datetimes """
+    return value.apply(to_datetime64, default=default)
+
+
+@to_datetime64.register(np.ndarray)
+def _ndarray_to_datetime64(value, default=pd.NaT):
+    """ Convert an array to datetimes. """
+    ns = np.array([to_datetime64(x, default=default) for x in value])
+    return pd.to_datetime(ns, unit="ns").values
+
+
+@to_datetime64.register(list)
+@to_datetime64.register(tuple)
+def _sequence_to_datetime64(value, default=pd.NaT):
+    out = [to_datetime64(x, default=default) for x in value]
+    seq_type = type(value)
+    return seq_type(out)
+
+
+def to_utc(value: utc_able_type) -> obspy.UTCDateTime:
+    """
+    Convert a value to a UTCDateTime object.
+
+    Parameters
+    ----------
+    value
+        Any value readable by ~:class:`obspy.UTCDateTime` or
+        ~:class:`numpy.datetime64`.
+    """
+    ns = to_datetime64(value).astype("datetime64[ns]").astype(int)
+    return obspy.UTCDateTime(ns=int(ns))
+
+
+def to_timedelta64(
+    value: Union[float, int], default=np.timedelta64(0, "s")
+) -> np.timedelta64:
+    """
+    Convert a value to a timedelta[ns].
+
+    Numpy does not gracefully handle non-ints so we need to do some rounding
+    first.
+
+    Parameters
+    ----------
+    value
+        A float or an int to convert to datetime.
+
+    default
+        The default to return if the input value is not truthy.
+    """
+    try:
+        return np.timedelta64(value, "s")
+    except (ValueError, TypeError):
+        if not value:
+            return default
+        ns = to_utc(value)._ns
+        return np.timedelta64(ns, "ns")
+
+
+@compose_docstring(time_keys=str(TIME_COLUMNS))
+def dict_times_to_npdatetimes(
+    input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
+) -> Dict[str, Any]:
+    """
+    Ensure time values in input_dict are converted to np.datetime64.
+
+    Parameters
+    ----------
+    input_dict
+        A dict that may contain time representations.
+    time_keys
+        A sequence of keys to search for and convert to np.datetime64.
+        Defaults are:
+        {time_keys}
+    """
+    out = dict(input_dict)
+    for time_key in set(input_dict) & set(time_keys):
+        out[time_key] = to_datetime64(out[time_key])
+    return out
+
+
+@compose_docstring(time_keys=str(TIME_COLUMNS))
+def dict_times_to_ns(
+    input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
+) -> Dict[str, Any]:
+    """
+    Ensure time values in input_dict are converted to ints (ns).
+
+    Parameters
+    ----------
+    input_dict
+        A dict that may contain time representations.
+    time_keys
+        A sequence of keys to search for and convert to np.datetime64.
+        Defaults are:
+        {time_keys}
+    """
+    out = dict(input_dict)
+    for time_key in set(input_dict) & set(time_keys):
+        if not isinstance(out[time_key], int):  # assume ints are ns
+            out[time_key] = to_datetime64(out[time_key]).astype(int)
+    return out
+
+
+def is_time(obj):
+    """ return True if an object is a time type. """
+    return isinstance(obj, time_types) or pd.isnull(obj)

@@ -4,10 +4,20 @@ Tests for the bank-specific utilities
 import os
 import tempfile
 
+import numpy as np
 import obspy
 import pytest
+import pandas as pd
+from obspy import UTCDateTime as UTC
 
-from obsplus.bank.utils import _summarize_trace, _summarize_event, _try_read_stream
+from obsplus.bank.utils import (
+    _summarize_trace,
+    _summarize_event,
+    _try_read_stream,
+    summarize_mseed,
+    summarize_generic_stream,
+)
+from obsplus.constants import NSLC
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +59,6 @@ class TestStreamPathStructure:
         return _summarize_trace(waveform_cache_trace, path_struct=struct_string)
 
     # general tests
-
     def test_output(self, output):
         """ test that a dict was returned with required keys when bank
         is called"""
@@ -74,20 +83,6 @@ class TestEventPathStructure:
         assert _summarize_event(ev)["path"] == expected
 
 
-#
-# class TestInventoryStructure:
-#     """ test for stations path """
-#
-#     def test_basic(self):
-#         path = PathStructure()
-#         # get an stations with 1 channel
-#         inv = obspy.read_inventory()
-#         chan = inv.get_contents()['channel'][0]
-#         n, s, l, c = chan.split('.')
-#         inv2 = inv.select(network=n, station=s, location=l, channel=c)
-#         #
-#         out_path = path(inv2)
-#
 class TestReadStream:
     """ test the read waveforms function """
 
@@ -114,3 +109,68 @@ class TestReadStream:
         """ make sure the waveforms file can be read in """
         st = _try_read_stream(stream_file)
         assert isinstance(st, obspy.Stream)
+
+
+class TestSummarizeStreams:
+    """ tests for summarizing streams. """
+
+    start = UTC("2017-09-20T01-00-00")
+    end = UTC("2017-09-20T02-00-00")
+    gap_start = UTC("2017-09-20T01-25-35")
+    gap_end = UTC("2017-09-20T01-25-40")
+
+    def clean_dataframe(self, df):
+        for id_code in NSLC:
+            df[id_code] = (
+                df[id_code].astype(str).str.replace("b'", "").str.replace("'", "")
+            )
+        for time_col in ["starttime", "endtime"]:
+            df[time_col] = df[time_col].astype("datetime64[ns]")
+        return df[sorted(df.columns)]
+
+    @pytest.fixture
+    def gappy_stream(self):
+        """ Create a very simple mseed with one gap, return it. """
+        stats = dict(
+            network="UU",
+            station="ELU",
+            location="01",
+            channel="ELZ",
+            sampling_rate=1,
+            starttime=self.start,
+        )
+        len1 = int(self.gap_start - self.start)
+        # create first trace
+        ar1 = np.random.rand(len1)
+        tr1 = obspy.Trace(data=ar1, header=stats)
+        assert tr1.stats.endtime <= self.gap_start
+        # create second trace
+        len2 = int(self.end - self.gap_end)
+        ar2 = np.random.rand(len2)
+        stats2 = dict(stats)
+        stats2.update({"starttime": self.gap_end})
+        tr2 = obspy.Trace(data=ar2, header=stats2)
+        # assemble traces make sure gap is there
+        assert tr2.stats.starttime >= self.gap_end
+        st = obspy.Stream(traces=[tr1, tr2])
+        gaps = st.get_gaps()
+        assert len(gaps) == 1
+        return st
+
+    @pytest.fixture
+    def gappy_mseed_path(self, gappy_stream, tmp_path):
+        out_path = tmp_path / "out.mseed"
+        gappy_stream.write(str(out_path), format="mseed")
+        return out_path
+
+    def test_summarize_mseed(self, gappy_stream, gappy_mseed_path):
+        """
+        Summarize mseed should return the same answer as the generic
+        summary function.
+        """
+        summary_1 = summarize_mseed(str(gappy_mseed_path))
+        df1 = self.clean_dataframe(pd.DataFrame(summary_1))
+        summary_2 = summarize_generic_stream(str(gappy_mseed_path))
+        df2 = self.clean_dataframe(pd.DataFrame(summary_2))
+        assert len(df1) == len(df2)
+        assert (df1 == df2).all().all()

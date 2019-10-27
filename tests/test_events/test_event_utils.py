@@ -8,6 +8,7 @@ from pathlib import Path
 import obspy
 import obspy.core.event as ev
 import pytest
+import numpy as np
 from obspy.core.event import Comment, ResourceIdentifier
 
 import obsplus
@@ -438,7 +439,8 @@ class TestMakeOrigins:
         """
         ori = strange_picks_added_origins[0].origins[0]
         time = strange_picks_added_origins[1].time
-        assert ori.time == time
+        t1, t2 = ori.time.timestamp, time.timestamp
+        assert np.isclose(t1, t2)
 
 
 class TestGetSeedId:

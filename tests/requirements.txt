@@ -6,3 +6,4 @@ nbval
 twine
 flake8
 flake8-black
+flake8-breakpoint

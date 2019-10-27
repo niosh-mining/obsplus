@@ -10,7 +10,9 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
+import numpy as np
 from obspy import UTCDateTime
+
 
 import obsplus
 from obsplus import (
@@ -29,9 +31,9 @@ from obsplus.constants import (
     AMPLITUDE_COLUMNS,
     STATION_MAGNITUDE_COLUMNS,
     MAGNITUDE_COLUMNS,
+    EVENT_DTYPES,
 )
-
-from obsplus.utils import getattrs, get_seed_id_series
+from obsplus.utils import getattrs, get_seed_id_series, to_datetime64
 
 common_extractor_cols = {
     "agency_id",
@@ -71,7 +73,7 @@ def pick_generator(scnls):
     return picks
 
 
-def arr_generator(picks):
+def make_arrivals(picks):
     counter = 1
     params = {"phase": "P"}
     arrivals = []
@@ -100,7 +102,7 @@ def arr_generator(picks):
     return arrivals
 
 
-def amp_generator(scnls=None, picks=None):
+def make_amplitudes(scnls=None, picks=None):
     counter = 1
     amps = []
     scnls = scnls or []
@@ -223,6 +225,21 @@ def mag_generator(mag_types):
     return mags
 
 
+def floatify_dict(some_dict):
+    """
+    Iterate a dict and convert all TimeStamps to floats. Then round all floats
+    to nearest 4 decimals.
+    """
+    out = {}
+    for i, v in some_dict.items():
+        if isinstance(v, pd.Timestamp):
+            v = v.timestamp()
+        if isinstance(v, float):
+            v = np.round(v, 4)
+        out[i] = v
+    return out
+
+
 # --------------- tests
 
 
@@ -235,7 +252,8 @@ class TestCat2Df:
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
         """ call the catalog2df method, return result"""
-        return events_to_df(test_catalog.copy())
+        cat = test_catalog.copy()
+        return events_to_df(cat)
 
     # tests
     def test_method_exists(self, test_catalog):
@@ -260,7 +278,7 @@ class TestCat2Df:
             if eve.event_descriptions:
                 ed = eve.event_descriptions[0].text
             else:
-                ed = None
+                ed = ""
             assert ed == description
 
     def test_str(self):
@@ -274,8 +292,13 @@ class TestCat2Df:
         cols = df.columns
         assert "event_id" in cols
 
+    def test_column_datatypes(self, df):
+        """ Ensure the expected columns are numpy datetime objects. """
+        expected = df.astype(EVENT_DTYPES).dtypes
+        assert (expected == df.dtypes).all()
 
-class TestCat2DfPreferreds:
+
+class TestCat2DfPreferredThings:
     """ Make sure the preferred origins/mags show up in the df """
 
     # fixtures
@@ -325,13 +348,13 @@ class TestCat2DfPreferreds:
             assert origin.longitude == row.longitude
             assert origin.time == obspy.UTCDateTime(row.time)
 
-    def test_magnitudes(self, df, preferred_magnitudes):
+    def test_magnitudes(self, df, preferred_magnitudes, test_catalog):
         """ ensure the origins are correct """
         for ind, row in df.iterrows():
             mag = preferred_magnitudes[ind]
             assert mag.mag == row.magnitude
             mtype1 = str(row.magnitude_type).upper()
-            mtype2 = str(mag.magnitude_type).upper()
+            mtype2 = str(mag.magnitude_type or "").upper()
             assert mtype1 == mtype2
 
 
@@ -535,12 +558,12 @@ class TestReadPhasePicks:
     def test_picks_no_origin(self, picks_no_origin):
         """ ensure not having an origin time returns min of picks per event. """
         df = picks_no_origin
-        assert (df.event_time == df.time.min()).all()
+        assert (df["event_time"] == df["time"].min()).all()
 
     def test_unique_event_time_no_origin(self, bingham_cat_only_picks):
         """ Ensure events with no origin don't all return the same time. """
         df = picks_to_df(bingham_cat_only_picks)
-        assert len(df.event_time.unique()) == len(df.event_id.unique())
+        assert len(df["event_time"].unique()) == len(df["event_id"].unique())
 
     def test_read_uncertainty(self):
         """
@@ -619,14 +642,14 @@ class TestReadArrivals:
         eve1.preferred_origin_id = eve1.origins[0].resource_id
         picks = pick_generator(scnls1)
         eve1.picks = picks
-        eve1.preferred_origin().arrivals = arr_generator(picks)
+        eve1.preferred_origin().arrivals = make_arrivals(picks)
         scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
         eve2 = ev.Event()
         eve2.origins.append(ev.Origin(time=UTCDateTime()))
         eve2.preferred_origin_id = eve2.origins[0].resource_id
         picks = pick_generator(scnls2)
         eve2.picks = picks
-        eve2.preferred_origin().arrivals = arr_generator(picks)
+        eve2.preferred_origin().arrivals = make_arrivals(picks)
         cat.events = [eve1, eve2]
         return cat
 
@@ -683,7 +706,7 @@ class TestReadArrivals:
 
     def test_values(self, ser_dict, arr_dict):
         """ make sure the values of the first arrival are as expected """
-        assert ser_dict == arr_dict
+        assert floatify_dict(ser_dict) == floatify_dict(arr_dict)
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
@@ -710,11 +733,11 @@ class TestReadAmplitudes:
         eve1 = ev.Event()
         eve1.origins.append(ev.Origin(time=UTCDateTime()))
         eve1.picks = pick_generator(scnls1)
-        eve1.amplitudes = amp_generator(picks=eve1.picks)
+        eve1.amplitudes = make_amplitudes(picks=eve1.picks)
         scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
         eve2 = ev.Event()
         eve2.origins.append(ev.Origin(time=UTCDateTime()))
-        eve2.amplitudes = amp_generator(scnls=scnls2)
+        eve2.amplitudes = make_amplitudes(scnls=scnls2)
         cat.events = [eve1, eve2]
         return cat
 
@@ -780,10 +803,10 @@ class TestReadAmplitudes:
 
     def test_values(self, ser_dict, amp_dict):
         """ make sure the values of the first amplitude are as expected """
-        assert ser_dict == amp_dict
+        assert floatify_dict(ser_dict) == floatify_dict(amp_dict)
 
     def test_creation_time(self, amplitude, amp_series):
-        assert amp_series["creation_time"] == obspy.UTCDateTime(
+        assert amp_series["creation_time"] == to_datetime64(
             amplitude.creation_info.creation_time
         )
         assert amp_series["author"] == amplitude.creation_info.author
@@ -806,7 +829,7 @@ class TestReadStationMagnitudes:
         cat = ev.Catalog()
         eve1 = ev.Event()
         eve1.origins.append(ev.Origin(time=UTCDateTime()))
-        eve1.amplitudes = amp_generator(scnls1)
+        eve1.amplitudes = make_amplitudes(scnls1)
         eve1.station_magnitudes = sm_generator(amplitudes=eve1.amplitudes)
         scnls2 = ["UK.STA3..HHZ", "UK.STA4..HHZ", "UK.STA5..HHZ"]
         eve2 = ev.Event()
@@ -881,7 +904,7 @@ class TestReadStationMagnitudes:
 
     def test_values(self, ser_dict, sm_dict):
         """ make sure the values of the first station magnitude are as expected """
-        assert ser_dict == sm_dict
+        assert floatify_dict(ser_dict) == floatify_dict(sm_dict)
 
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
@@ -959,7 +982,7 @@ class TestReadMagnitudes:
 
     def test_values(self, ser_dict, mag_dict):
         """ make sure the values of the first station magnitude are as expected """
-        assert ser_dict == mag_dict
+        assert floatify_dict(ser_dict) == floatify_dict(mag_dict)
 
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):

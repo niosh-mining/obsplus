@@ -9,7 +9,13 @@ import obspy
 import pandas as pd
 import numpy as np
 from obspy import Stream, UTCDateTime as UTC
-from obsplus.utils import _column_contains, get_seed_id_series, filter_index
+from obsplus.utils import (
+    _column_contains,
+    get_seed_id_series,
+    filter_index,
+    to_datetime64,
+    to_utc,
+)
 from obsplus.waveforms.utils import _stream_data_to_df
 
 from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC
@@ -96,14 +102,14 @@ def get_waveforms_bulk(st: Stream, bulk: List[str], **kwargs) -> Stream:
             ar = np.logical_and(ar, nslc2.isin(nslc1))
         # get a list of used traces, combine and trim
         st = obspy.Stream([x for x, y in zip(st, ar) if y])
-        return st.slice(starttime=UTC(t1), endtime=UTC(t2))
+        return st.slice(starttime=to_utc(t1), endtime=to_utc(t2))
 
     # get a dataframe of stream contents
     index = _stream_data_to_df(st)
-    # get a dataframe of the bulk arguments, convert time to float
+    # get a dataframe of the bulk arguments, convert time to datetime64
     df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-    df["t1"] = df["utc1"].apply(float)
-    df["t2"] = df["utc2"].apply(float)
+    df["t1"] = df["utc1"].apply(to_datetime64)
+    df["t2"] = df["utc2"].apply(to_datetime64)
     t1, t2 = df["t1"].min(), df["t2"].max()
     # filter index and streams to be as short as possible
     needed = ~((index.starttime > t2) | (index.endtime < t1))

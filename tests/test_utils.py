@@ -19,6 +19,7 @@ from obsplus.utils import (
     filter_index,
     filter_df,
     get_distance_df,
+    to_datetime64,
 )
 
 
@@ -245,7 +246,7 @@ class TestFilterDf:
     def test_filter_index(self, crandall_dataset):
         """ Tests for filtering index with filter index function. """
         # this is mainly here to test the time filtering, because the bank
-        # operations pass this of to the HDF5 kernel.
+        # operations pass this off to the HDF5 kernel.
         index = crandall_dataset.waveform_client.read_index(network="UU")
         t1 = index.starttime.mean()
         t2 = index.endtime.max()
@@ -349,6 +350,52 @@ class TestMisc:
         out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
+
+
+class TestToNumpyDateTime:
+    """ Tests for converting UTC-able objects to numpy datetime 64. """
+
+    def test_simple(self):
+        """ Test converting simple UTCDateTimable things """
+        test_input = ("2019-01-10 11-12", obspy.UTCDateTime("2019-01-10T12-12"), 100)
+        expected = np.array([obspy.UTCDateTime(x)._ns for x in test_input])
+        out = np.array(to_datetime64(test_input)).astype(int)
+        assert np.equal(expected, out).all()
+
+    def test_with_nulls(self):
+        """ Test for handling nulls. """
+        test_input = (np.NaN, None, "", 15)
+        out = np.array(to_datetime64(test_input))
+        # first make sure empty values worked
+        assert pd.isnull(out[:3]).all()
+        assert out[-1].astype(int) == obspy.UTCDateTime(15)._ns
+
+    def test_npdatetime64_as_input(self):
+        """ This should also work on np.datetime64. """
+        test_input = np.array((np.datetime64(1000, "s"), np.datetime64(100, "ns")))
+        out = to_datetime64(test_input)
+        assert isinstance(out, np.ndarray)
+        assert (test_input == out).all()
+
+    def test_pandas_timestamp(self):
+        """ Timestamps should also work. """
+        kwargs = dict(year=2019, month=10, day=11, hour=12)
+        ts = pd.Timestamp(**kwargs)
+        out = to_datetime64((ts,))
+        expected_out = (ts.to_datetime64(),)
+        assert out == expected_out
+
+    def test_utc_to_large(self):
+        too_big = obspy.UTCDateTime("2600-01-01")
+        with pytest.warns(UserWarning):
+            out = to_datetime64(too_big)
+        assert pd.Timestamp(out).year == 2262
+
+    def test_series_to_datetimes(self):
+        """ Series should be convertible to datetimes. """
+        ser = pd.Series([10, "2010-01-01"])
+        out = to_datetime64(ser)
+        assert isinstance(out, pd.Series)
 
 
 class TestDistanceDataframe:

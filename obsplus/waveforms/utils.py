@@ -22,7 +22,7 @@ from obsplus.constants import (
     waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_seed_id_series, filter_index
+from obsplus.utils import get_seed_id_series, filter_index, to_utc
 
 
 # ---------- trim functions
@@ -124,13 +124,14 @@ def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
     Returns
     -------
     """
+    dtypes = {"starttime": "datetime64[ns]", "endtime": "datetime64[ns]"}
     st_contents = [
-        tr.id.split(".") + [tr.stats.starttime.timestamp, tr.stats.endtime.timestamp]
+        tr.id.split(".") + [tr.stats.starttime._ns, tr.stats.endtime._ns]
         for tr in stream
     ]
     columns = ["network", "station", "location", "channel", "starttime", "endtime"]
     df = pd.DataFrame(st_contents, columns=columns)
-    return df
+    return df.astype(dtypes)
 
 
 def _get_bulk(bulk):
@@ -179,7 +180,7 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         need = filter_index(sdf, *barg)
         traces = [tr for tr, bo in zip(st, need) if bo]
         new_st = obspy.Stream(traces)
-        t1, t2 = UTCDateTime(barg[-2]), UTCDateTime(barg[-1])
+        t1, t2 = to_utc(barg[-2]), to_utc(barg[-1])
         new = new_st.slice(starttime=t1, endtime=t2)
         if new is None or not len(new):
             out.append(obspy.Stream())

@@ -10,12 +10,13 @@ from pathlib import Path
 import obspy
 import pandas as pd
 import pytest
+import numpy as np
 from obspy.core.event import Event, Origin
 
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils import make_time_chunks, get_reference_time
+from obsplus.utils import make_time_chunks, get_reference_time, to_datetime64
 
 WAVEFETCHERS = []
 
@@ -142,7 +143,7 @@ class TestGeneric:
         wf1, wf2 = copied_fetcher
         inv_df = wf1.station_df
         start = inv_df.start_date.min()
-        end = start + 15
+        end = start + np.timedelta64(15, "s")
         # ensure the same data is returned
         ew1 = wf1.get_waveforms(starttime=start, endtime=end)
         ew2 = wf2.get_waveforms(starttime=start, endtime=end)
@@ -673,7 +674,7 @@ class TestFilterInventoryByAvailability:
         return fetcher._get_bulk_arg(starttime=self.t1 + 10, endtime=self.t2)
 
     @pytest.fixture
-    def bulk_arg_none_enddate(self, inv_with_none):
+    def bulk_arg_none_end_date(self, inv_with_none):
         """ return the bulk args from an inv with None endate """
         fetcher = Fetcher(None, stations=inv_with_none)
         return fetcher._get_bulk_arg(starttime=self.t0, endtime=self.t1)
@@ -694,9 +695,9 @@ class TestFilterInventoryByAvailability:
         assert ba[1] == ser.station
         assert ba[3] == ser.channel
 
-    def test_none_endtimes_are_used(self, bulk_arg_none_enddate, inv_with_none):
+    def test_none_endtimes_are_used(self, bulk_arg_none_end_date, inv_with_none):
         """ ensure any channels with enddates of None are not filtered out """
-        assert len(bulk_arg_none_enddate) == len(inv_with_none)
+        assert len(bulk_arg_none_end_date) == len(inv_with_none)
 
     def test_empty_stream_from_before_start(self, fetcher):
         """ ensure when data is requested before stations starttime that an
@@ -707,8 +708,8 @@ class TestFilterInventoryByAvailability:
 
 
 class TestGetEventData:
-    t1 = obspy.UTCDateTime("2009-04-01").timestamp
-    t2 = obspy.UTCDateTime("2009-04-04").timestamp
+    t1 = to_datetime64("2009-04-01")
+    t2 = to_datetime64("2009-04-04")
 
     path = "eventwaveforms/{year}/{julday}"
 

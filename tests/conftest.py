@@ -146,6 +146,20 @@ def internet_available():
         return False
 
 
+def load_and_update_dataset(name):
+    """
+    Update and load a dataset.
+    """
+    client_names = [f"{x}_client" for x in ["waveform", "event", "station"]]
+    # load dataset
+    ds = obsplus.load_dataset(name)
+    # then iterate each client and call update index
+    for cname in client_names:
+        client = getattr(ds, cname)
+        getattr(client, "update_index", lambda: None)()
+    return ds
+
+
 cat_dict = collect_catalogs()
 waveform_cache_obj = ObspyCache("waveforms", obspy.read)
 event_cache_obj = ObspyCache("qml_files", obspy.read_events)
@@ -240,19 +254,20 @@ def instrumented_thread_executor(thread_executor):
 @pytest.fixture(scope="session")
 def ta_dataset():
     """ Load the small TA test case into a dataset """
-    return obsplus.load_dataset("TA")
+    return load_and_update_dataset("TA")
 
 
 @pytest.fixture(scope="session")
 def kemmerer_dataset():
     """ Load the kemmerer test case """
-    return obsplus.load_dataset("kemmerer")
+    return load_and_update_dataset("kemmerer")
 
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
     """ load the bingham dataset """
-    return obsplus.load_dataset("bingham")
+    ds = load_and_update_dataset("bingham")
+    return ds
 
 
 @pytest.fixture(scope="session")
@@ -264,7 +279,9 @@ def bingham_inventory(bingham_dataset):
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
     """ load the bingham tests case """
-    return bingham_dataset.event_client.get_events().copy()
+    cat = bingham_dataset.event_client.get_events()
+    assert len(cat), "catalog is empty"
+    return cat
 
 
 @pytest.fixture()
@@ -283,7 +300,7 @@ def bingham_stream_dict(bingham_dataset):
 @pytest.fixture(scope="session")
 def crandall_dataset():
     """ load the crandall canyon dataset. """
-    return obsplus.load_dataset("crandall")
+    return load_and_update_dataset("crandall")
 
 
 @pytest.fixture(scope="session")

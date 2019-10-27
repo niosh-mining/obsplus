@@ -15,6 +15,8 @@ import xarray as xr
 
 import obsplus
 from obsplus import obspy_to_array_dict, obspy_to_array
+from obsplus.constants import EMPTYTD64
+from obsplus.utils import to_datetime64, to_utc
 from obsplus.waveforms.xarray import netcdf2array
 from obsplus.waveforms.xarray.aggregate import aggregate, bin_array
 from obsplus.waveforms.xarray.io import read_pickle
@@ -501,10 +503,10 @@ class TestAttachPicks:
         cat = dar.attrs["events"]
         for ev in cat:
             rid = ev.resource_id
-            time = ev.origins[-1].time.timestamp
+            time = to_datetime64(ev.origins[-1].time)
             dd = dar[dar.stream_id == rid]
-            assert (dd.origin_time.values - time == 0).all()
-            assert ((dd.starttime.values - time) < 100).all()
+            assert dd.origin_time.values - time == EMPTYTD64
+            assert ((dd.starttime.values - to_utc(time).timestamp) < 100).all()
 
     def test_starttime_pick_separation(self, dar_attached_picks):
         """ ensure the picks are close to starttime """

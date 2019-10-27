@@ -26,6 +26,7 @@ from obsplus.bank.utils import (
     _summarize_wave_file,
     _try_read_stream,
     get_inventory,
+    summarizing_functions,
 )
 from obsplus.constants import (
     NSLC,
@@ -35,19 +36,22 @@ from obsplus.constants import (
     utc_time_type,
     get_waveforms_parameters,
     bar_paramter_description,
+    WAVEFORM_DTYPES,
+    WAVEFORM_DTYPES_INPUT,
+    EMPTYTD64,
 )
 from obsplus.utils import (
     compose_docstring,
     make_time_chunks,
-    to_timestamp,
+    to_datetime64,
     get_seed_id_series,
     filter_index,
     replace_null_nlsc_codes,
     _column_contains,
+    order_columns,
+    to_utc,
 )
 from obsplus.waveforms.utils import merge_traces
-
-# from obsplus.interfaces import WaveformClient
 
 # No idea why but this needs to be here to avoid problems with pandas
 assert tables.get_hdf5_version()
@@ -118,17 +122,21 @@ class WaveBank(_Bank):
     # index columns and types
     metadata_columns = "last_updated path_structure name_structure".split()
     index_str = tuple(NSLC)
-    index_float = ("starttime", "endtime")
-    index_columns = tuple(list(index_str) + list(index_float) + ["path"])
+    index_ints = ("starttime", "endtime", "sampling_period")
+    index_columns = tuple(list(index_str) + list(index_ints) + ["path"])
     columns_no_path = index_columns[:-1]
     gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
     # other defaults
-    buffer = 10.111  # the time before and after the desired times to pull
+    # the time before and after the desired times to pull
+    buffer = np.timedelta64(1_000_000_000, "ns")
+    # buffer = 10.111
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
     min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
     _min_files_for_bar = 5000  # number of files before progress bar kicks in
+    _dtypes_input = WAVEFORM_DTYPES_INPUT
+    _dtypes_output = WAVEFORM_DTYPES
 
     # ----------------------------- setup stuff
 
@@ -158,6 +166,8 @@ class WaveBank(_Bank):
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
         self._concurrent = concurrent_updates
+        # enforce min version upon init
+        self._enforce_min_version()
 
     # ----------------------- index related stuff
 
@@ -181,7 +191,7 @@ class WaveBank(_Bank):
             complib=self._complib,
             complevel=self._complevel,
             format="table",
-            data_columns=list(self.index_float),
+            data_columns=list(self.index_ints),
         )
 
     @compose_docstring(bar_paramter_description=bar_paramter_description)
@@ -196,29 +206,23 @@ class WaveBank(_Bank):
         self._enforce_min_version()  # delete index if schema has changed
         update_time = time.time()
         # create a function for the mapping and apply
-        func = partial(_summarize_wave_file, format=self.format)
+        func = partial(
+            _summarize_wave_file,
+            format=self.format,
+            summarizer=summarizing_functions.get(self.format, None),
+        )
         updates = list(self._map(func, self._measured_unindexed_iterator(bar)))
         # push updates to index if any were found
         if len(updates):
             self._write_update(list(chain.from_iterable(updates)), update_time)
             # clear cache out when new traces are added
-            self._index_cache.clear_cache()
+            self.clear_cache()
         return self
 
     def _write_update(self, updates, update_time):
         """ convert updates to dataframe, then append to index table """
-        # read in dataframe and cast to correct types
-        df = pd.DataFrame.from_dict(updates)
-        # ensure the bank path is not in the path column
-        df["path"] = df["path"].str.replace(self.bank_path, "")
-        # assert not df.duplicated().any(), "update index has duplicate entries"
-        for str_index in self.index_str:
-            sser = df[str_index].astype(str)
-            df[str_index] = sser.str.replace("b", "").str.replace("'", "")
-        for float_index in self.index_float:
-            df[float_index] = df[float_index].astype(float)
-        # populate index store and update metadata
-        assert not df.isnull().any().any(), "null values found in index dataframe"
+        # read in dataframe and prepare for input into hdf5 index
+        df = self._prep_write_df(pd.DataFrame.from_dict(updates))
         with pd.HDFStore(self.index_path) as store:
             node = self._index_node
             try:
@@ -238,6 +242,19 @@ class WaveBank(_Bank):
             if self._meta_node not in store:
                 meta = self._make_meta_table()
                 store.put(self._meta_node, meta, format="table")
+
+    def _prep_write_df(self, df):
+        """ Prepare the dataframe to put it into the HDF5 store. """
+        # ensure the bank path is not in the path column
+        df["path"] = df["path"].str.replace(self.bank_path, "")
+        dtypes = WAVEFORM_DTYPES_INPUT
+        df = order_columns(df, dtype=dtypes, required_columns=list(dtypes))
+        for str_index in self.index_str:
+            sser = df[str_index].astype(str)
+            df[str_index] = sser.str.replace("b", "").str.replace("'", "")
+        # populate index store and update metadata
+        assert not df.isnull().any().any(), "null values found in index dataframe"
+        return df
 
     def _ensure_meta_table_exists(self):
         """
@@ -334,20 +351,10 @@ class WaveBank(_Bank):
 
     # --------------------------- get gaps stuff
 
-    def _get_gap_dfs(self, df, min_gap):
-        """ function to apply to each group of seed_id dataframes """
-        dd = df.sort_values(["starttime", "endtime"]).reset_index(drop=True)
-        shifted_starttimes = dd.starttime.shift(-1)
-        gap_index: pd.DataFrame = (dd.endtime + min_gap) < shifted_starttimes
-        # create a dataframe of gaps
-        df = dd[gap_index]
-        df["starttime"] = dd.endtime[gap_index]
-        df["endtime"] = shifted_starttimes[gap_index]
-        df["gap_duration"] = df["endtime"] - df["starttime"]
-        return df
-
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
-    def get_gaps_df(self, *args, min_gap=1.0, **kwargs) -> pd.DataFrame:
+    def get_gaps_df(
+        self, *args, min_gap: Optional[float] = None, **kwargs
+    ) -> pd.DataFrame:
         """
         Return a dataframe containing an entry for every gap in the archive.
 
@@ -355,22 +362,46 @@ class WaveBank(_Bank):
         ----------
         {get_waveforms_params}
         min_gap
-            The minimum gap to report. Should at least be greater than
-            the sample rate in order to avoid counting one sample between
-            files as gaps. If files have some overlaps this parameter can
-            be set to 0.
+            The minimum gap to report. If None, use 2 x sampling rate for
+            each channel.
 
         Returns
         -------
         pd.DataFrame
         """
-        index = self.read_index(*args, columns=self.columns_no_path, **kwargs)
-        group = index.groupby(list(NSLC))
-        func = partial(self._get_gap_dfs, min_gap=min_gap)
-        out = group.apply(func).reset_index(drop=True)
+
+        def _get_gap_dfs(df, min_gap):
+            """ function to apply to each group of seed_id dataframes """
+            # get the min gap
+            if min_gap is None:
+                min_gap = df["sampling_period"].iloc[0]
+            else:
+                min_gap = np.timedelta64(min_gap, "s")
+            # get df for determining gaps
+            dd = (
+                df.drop_duplicates()
+                .sort_values(["starttime", "endtime"])
+                .reset_index(drop=True)
+            )
+            shifted_starttimes = dd.starttime.shift(-1)
+            gap_index: pd.DataFrame = (dd.endtime + min_gap) < shifted_starttimes
+            # create a dataframe of gaps
+            df = dd[gap_index]
+            df["starttime"] = dd.endtime[gap_index]
+            df["endtime"] = shifted_starttimes[gap_index]
+            df["gap_duration"] = df["endtime"] - df["starttime"]
+            return df
+
+        # index = self.read_index(*args, columns=self.columns_no_path, **kwargs)
+        index = self.read_index(*args, **kwargs)
+
+        group_names = list(NSLC) + ["sampling_period"]  # include period
+        group = index.groupby(group_names, as_index=False)
+        # func = partial(self._get_gap_dfs, min_gap=min_gap)
+        out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
             return pd.DataFrame(columns=self.gap_columns)
-        return out
+        return out.reset_index(drop=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_uptime_df(self, *args, **kwargs) -> pd.DataFrame:
@@ -387,17 +418,17 @@ class WaveBank(_Bank):
         avail["duration"] = avail["endtime"] - avail["starttime"]
         # get total duration of gaps by seed id
         gaps_df = self.get_gaps_df(*args, **kwargs)
-        if not gaps_df.empty:
+        if gaps_df.empty:
+            gap_total_df = pd.DataFrame(avail[list(NSLC)])
+            gap_total_df["gap_duration"] = EMPTYTD64
+        else:
             gap_totals = gaps_df.groupby(list(NSLC)).gap_duration.sum()
             gap_total_df = pd.DataFrame(gap_totals).reset_index()
-        else:
-            gap_total_df = pd.DataFrame(avail[list(NSLC)])
-            gap_total_df["gap_duration"] = 0.0
         # merge gap dataframe with availability dataframe, add uptime and %
         df = pd.merge(avail, gap_total_df, how="outer")
-        # fill any Nan in gap_duration with  0
-        df.loc[:, "gap_duration"] = df["gap_duration"].fillna(0.0)
-        df["uptime"] = df.duration - df.gap_duration
+        # fill any Nan in gap_duration with empty timedelta
+        df.loc[:, "gap_duration"] = df["gap_duration"].fillna(EMPTYTD64)
+        df["uptime"] = df["duration"] - df["gap_duration"]
         df["availability"] = df["uptime"] / df["duration"]
         return df
 
@@ -450,8 +481,8 @@ class WaveBank(_Bank):
 
         # get a dataframe of the bulk arguments, convert time to float
         df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-        df["t1"] = df["utc1"].apply(float)
-        df["t2"] = df["utc2"].apply(float)
+        df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
+        df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
         # read index that contains any times that might be used, or filter
         # provided index
         t1, t2 = df["t1"].min(), df["t2"].max()
@@ -461,7 +492,7 @@ class WaveBank(_Bank):
             ind = self.read_index(starttime=t1, endtime=t2)
         # groupby.apply calls two times for each time set, avoid this.
         unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
-        streams = [_func(time, df=df, ind=ind) for time in unique_times]
+        streams = [_func(t, df=df, ind=ind) for t in unique_times]
         return reduce(add, streams)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
@@ -534,8 +565,8 @@ class WaveBank(_Bank):
         All string parameters can use posix style matching with * and ? chars.
         """
         # get times in float format
-        starttime = to_timestamp(starttime, 0.0)
-        endtime = to_timestamp(endtime, "2999-01-01")
+        starttime = to_datetime64(starttime, 0.0)
+        endtime = to_datetime64(endtime, "2999-01-01")
         # read in the whole index df
         index = self.read_index(
             network=network,
@@ -551,6 +582,7 @@ class WaveBank(_Bank):
         # chunk time and iterate over chunks
         time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
         for t1, t2 in time_chunks:
+            t1, t2 = to_datetime64(t1), to_datetime64(t2)
             con1 = (index.starttime - self.buffer) > t2
             con2 = (index.endtime + self.buffer) < t1
             ind = index[~(con1 | con2)]
@@ -656,14 +688,12 @@ class WaveBank(_Bank):
         """ return the waveforms in the index """
         # get abs path to each datafame
         files: pd.Series = (self.bank_path + index.path).unique()
+        # make sure start and endtimes are in UTCDateTime
+        starttime = to_utc(starttime) if starttime else None
+        endtime = to_utc(endtime) if endtime else None
         # iterate the files to read and try to load into waveforms
-        kwargs = dict(
-            format=self.format,
-            starttime=obspy.UTCDateTime(starttime) if starttime else None,
-            endtime=obspy.UTCDateTime(endtime) if endtime else None,
-        )
+        kwargs = dict(format=self.format, starttime=starttime, endtime=endtime)
         func = partial(_try_read_stream, **kwargs)
-
         stt = obspy.Stream()
         chunksize = len(files) / self._max_workers
         for st in self._map(func, files, chunksize=chunksize):
