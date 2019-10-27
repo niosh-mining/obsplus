@@ -35,7 +35,11 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     utc_time_type,
     get_waveforms_parameters,
+<<<<<<< HEAD
     bar_parameter_description,
+=======
+    bar_paramter_description,
+>>>>>>> pandas datatime
     WAVEFORM_DTYPES,
     WAVEFORM_DTYPES_INPUT,
     EMPTYTD64,
@@ -486,8 +490,13 @@ class WaveBank(_Bank):
 
         # get a dataframe of the bulk arguments, convert time to float
         df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
+<<<<<<< HEAD
         df["t1"] = df["utc1"].apply(to_datetime64)
         df["t2"] = df["utc2"].apply(to_datetime64)
+=======
+        df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
+        df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
+>>>>>>> pandas datatime
         # read index that contains any times that might be used, or filter
         # provided index
         t1, t2 = df["t1"].min(), df["t2"].max()
