@@ -1,8 +1,9 @@
-""""""
+"""
+Conftest specifically for waveform tests.
+"""
 import numpy as np
 import obspy
 import pytest
-from obsplus import obspy_to_array
 
 
 # ----------------------------- helper functions
@@ -15,23 +16,6 @@ def gen_func(name):
     """ generate a dummy method that sets the cache """
 
     return somefunc
-
-
-def make_search_window_array(embed_index, template_len, search_window_len):
-    """ return an array of random search space with the normalized
-    default trace object embbed in it """
-    st = obspy.read()
-    ei = embed_index
-    tl = template_len
-    swl = search_window_len
-    for num, tr in enumerate(st):
-        event_data = (tr.data / np.std(tr.data))[:tl]
-        replace_data = np.random.rand(swl)
-        replace_data[ei : ei + tl] = event_data
-        tr.data = replace_data
-        tr.stats.starttime += 5000  # add arbitrary to start time
-    # st_dict = {str(st[0].stats.starttime): st}
-    return obspy_to_array(st).copy(deep=True)
 
 
 def _change_stats(st, stat_attr, new_values):
@@ -76,13 +60,6 @@ def disjointed_stream():
 
 
 @pytest.fixture(scope="class")
-def default_array():
-    """ the basic waveforms turned into an array """
-    st = obspy.read()
-    return obspy_to_array(st)
-
-
-@pytest.fixture(scope="class")
 def stream_dict(waveform_cache):
     """ return a dictionary of streams """
     out = {}
@@ -98,70 +75,6 @@ def stream_dict(waveform_cache):
             tr.data += np.random.rand(len(tr.data)) * med
         out["event_" + str(var)] = st
     return out
-
-
-@pytest.fixture(scope="class")
-def data_array_from_dict(stream_dict):
-    """ feed the waveforms dict into the stream_dict2dataset functions """
-    return obspy_to_array(stream_dict)
-
-
-@pytest.fixture(scope="class")
-def bingham_dar(bingham_stream_dict):
-    """ build a data array from the bingham waveforms dictionary """
-    return obspy_to_array(bingham_stream_dict)
-
-
-@pytest.fixture(scope="class")
-def dar_attached_picks(bingham_dataset, bingham_dar):
-    """ return a data array from the waveforms after attaching cat  """
-    cat = bingham_dataset.event_client.get_events()
-    bingham_dar.ops.attach_events(cat)
-    assert not bingham_dar.isnull().any(), "nulls found in data array"
-    return bingham_dar
-
-
-# @pytest.fixture(scope="class", params=list(pytest.waveforms.keys))
-# def stream(request):
-#     """ each of the streams in test_data/file_paths"""
-#     return pytest.waveforms[request.param]
-
-
-@pytest.fixture(scope="class")
-def dar_disjoint_seeds():
-    """ make a waveforms dict with various channels and networks, but no common
-     ones across trace ids """
-    # waveforms 0, default waveforms
-    streams = {0: obspy.read()}
-    # waveforms 1, 3 defaults
-    st1 = obspy.read()
-    st2 = obspy.read()
-    st3 = obspy.read()
-    for tr in st2:
-        tr.stats.station = "BOB"
-    for tr in st3:
-        tr.stats.network = "UU"
-    streams[1] = st1 + st2 + st3
-    return obspy_to_array(streams)
-
-
-@pytest.fixture(scope="session")
-def many_sid_array():
-    """ create a data array with many different station ids """
-    # first create, and mutate, several waveforms objects
-    st_list = [obspy.read() for _ in range(5)]
-    # modify stats
-    _change_stats(st_list[0], "network", ["UU"] * 3)
-    _change_stats(st_list[1], "station", ["RBOB"] * 3)
-    _change_stats(st_list[2], "location", ["01"] * 3)
-    _change_stats(st_list[3], "channel", ["HN" + x for x in "ENZ"])
-    # conglomerate into one waveforms
-    st = obspy.Stream()
-    for st_ in st_list:
-        st += st_
-    # make dict and return data array
-    st_dict = {key: st.copy() for key in range(10)}
-    return obspy_to_array(st_dict)
 
 
 @pytest.fixture

@@ -50,17 +50,6 @@ from obsplus.datasets.dataset import DataSet
 
 load_dataset = DataSet.load_dataset
 
-# import xarray stuff
-from obsplus.waveforms.xarray.convert import (
-    obspy_to_array_dict,
-    obspy_to_array,
-    array_to_obspy,
-)
-
-# legacy code names, consider emitting a depreciation warning
-waveform2data_array = obspy_to_array
-waveform2data_array_dict = obspy_to_array_dict
-
 # ensure all obspy objects are monkeypatched with added methods
 from .events.get_events import get_events
 from .stations.get_stations import get_stations

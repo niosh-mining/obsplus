@@ -10,7 +10,7 @@ name: $(Date:yyyyMMdd)$(Rev:.r)
 variables:
   env_name: testenv
   conda_args: --yes --quiet --name $(env_name)
-  conda_packages: pytest obspy pandas xarray pytables flake8 flake8-black
+  conda_packages: pytest obspy pandas pytables flake8 flake8-black
 
 jobs:
 - job: 'Ubuntu'
