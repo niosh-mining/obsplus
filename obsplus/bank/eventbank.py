@@ -31,11 +31,7 @@ from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
     get_events_parameters,
-<<<<<<< HEAD
     bar_parameter_description,
-=======
-    bar_paramter_description,
->>>>>>> pandas datatime
     EVENT_TYPES_OUTPUT,
     EVENT_TYPES_INPUT,
     bank_subpaths_type,

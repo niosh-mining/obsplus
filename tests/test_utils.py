@@ -4,6 +4,7 @@ import os
 import textwrap
 import time
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import obspy
@@ -23,6 +24,7 @@ from obsplus.utils import (
     get_distance_df,
     to_datetime64,
     iter_files,
+    to_utc,
 )
 
 
@@ -374,6 +376,12 @@ class TestToNumpyDateTime:
         assert pd.isnull(out[:3]).all()
         assert out[-1].astype(int) == obspy.UTCDateTime(15)._ns
 
+    def test_zero(self):
+        """ Tests for input values as 0 or 0.0 """
+        dt1 = to_datetime64(0)
+        dt2 = to_datetime64(0.0)
+        assert dt1.astype(int) == dt2.astype(int) == 0
+
     def test_npdatetime64_as_input(self):
         """ This should also work on np.datetime64. """
         test_input = np.array((np.datetime64(1000, "s"), np.datetime64(100, "ns")))
@@ -400,6 +408,33 @@ class TestToNumpyDateTime:
         ser = pd.Series([10, "2010-01-01"])
         out = to_datetime64(ser)
         assert isinstance(out, pd.Series)
+
+
+class TestToUTC:
+    """ Tests for converting things to UTCDateTime objects. """
+
+    # setup for test values
+    utc1 = obspy.UTCDateTime("2019-01-10T12-12")
+    utc_list = [utc1, utc1 + 2, utc1 + 3]
+    dt64 = np.datetime64(1000, "ns")
+    utc_able_list = [1, "2019-02-01", dt64]
+    utc_values = [
+        0,
+        1_000_000,
+        "2015-12-01",
+        utc1,
+        dt64,
+        utc_list,
+        np.array(utc_list),
+        utc_able_list,
+        np.array(utc_able_list, dtype=object),
+    ]
+
+    @pytest.mark.parametrize("value", utc_values)
+    def test_single_value(self, value):
+        out = to_utc(value)
+        # either a sequence or UTCDateTime should be returned
+        assert isinstance(out, (Sequence, UTCDateTime, np.ndarray))
 
 
 class TestDistanceDataframe:

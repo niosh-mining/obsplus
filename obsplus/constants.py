@@ -365,6 +365,9 @@ MAXINT64 = np.iinfo(np.int64).max
 SMALLDT64 = np.datetime64(MININT64 + 5_000_000_000, "ns")
 LARGEDT64 = np.datetime64(MAXINT64 - 5_000_000_000, "ns")
 
+# The default time value indicating missing values
+DEFAULT_TIME = pd.NaT
+
 # an empty time delta to rep. no time distance at all
 EMPTYTD64 = np.timedelta64(0, "s")
 

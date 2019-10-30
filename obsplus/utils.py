@@ -56,6 +56,7 @@ from obsplus.constants import (
     time_types,
     SMALLDT64,
     LARGEDT64,
+    DEFAULT_TIME,
 )
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
@@ -1057,21 +1058,26 @@ def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
 
 
 # --- functions for dealing with time conversions (ugh)
+utc_var = TypeVar("utc_var", utc_able_type, Sequence[utc_able_type])
 
 
 @singledispatch
-def to_datetime64(value: utc_able_type, default=pd.NaT) -> np.datetime64:
+def to_datetime64(
+    value: Union[utc_able_type, Sequence[utc_able_type]], default=DEFAULT_TIME
+) -> Union[np.datetime64, np.ndarray]:
     """
-    Convert time value to a numpy datetime64.
+    Convert time value to a numpy datetime64, or array of such.
 
     Parameters
     ----------
     value
-        Any Value that can be interpreted as a time.
+        Any Value that can be interpreted as a time. If a sequence is passed
+        an ndarray of type "datetime64[ns]" is returned.
     default
-        A value to return if value is null. Default
+        A value for missing data. pandas.NaT is used by default.
     """
-    if pd.isnull(value) or not value:
+    # null values return default (usually NaT)
+    if pd.isnull(value):
         if not pd.isnull(default):
             return to_datetime64(default).astype("datetime64[ns]")
         return default
@@ -1082,7 +1088,7 @@ def to_datetime64(value: utc_able_type, default=pd.NaT) -> np.datetime64:
     try:
         utc = obspy.UTCDateTime(value)
         return np.datetime64(utc._ns, "ns")
-    # the UTCDateTime is too big or small, convert
+    # the UTCDateTime is too big or small, use biggest/smallest values instead
     except (SystemError, OverflowError):
         new = LARGEDT64 if np.sign(utc._ns) > 0 else SMALLDT64
         msg = (
@@ -1093,14 +1099,22 @@ def to_datetime64(value: utc_able_type, default=pd.NaT) -> np.datetime64:
         return new
 
 
+@to_datetime64.register(str)
+def _from_string(time_str: str, default=DEFAULT_TIME):
+    """ Convert to a string. """
+    if not time_str:
+        return default
+    return to_datetime64(obspy.UTCDateTime(time_str))
+
+
 @to_datetime64.register(pd.Series)
-def _series_to_datetime(value, default=pd.NaT):
+def _series_to_datetime(value, default=DEFAULT_TIME):
     """ Convert a series to datetimes """
     return value.apply(to_datetime64, default=default)
 
 
 @to_datetime64.register(np.ndarray)
-def _ndarray_to_datetime64(value, default=pd.NaT):
+def _ndarray_to_datetime64(value, default=DEFAULT_TIME):
     """ Convert an array to datetimes. """
     ns = np.array([to_datetime64(x, default=default) for x in value])
     return pd.to_datetime(ns, unit="ns").values
@@ -1108,24 +1122,30 @@ def _ndarray_to_datetime64(value, default=pd.NaT):
 
 @to_datetime64.register(list)
 @to_datetime64.register(tuple)
-def _sequence_to_datetime64(value, default=pd.NaT):
+def _sequence_to_datetime64(value, default=DEFAULT_TIME):
     out = [to_datetime64(x, default=default) for x in value]
-    seq_type = type(value)
-    return seq_type(out)
+    return np.array(out)
 
 
-def to_utc(value: utc_able_type) -> obspy.UTCDateTime:
+def to_utc(
+    value: Union[utc_able_type, Sequence[utc_able_type]]
+) -> Union[obspy.UTCDateTime, np.ndarray]:
     """
-    Convert a value to a UTCDateTime object.
+    Convert an object to a UTCDateTime object.
 
     Parameters
     ----------
     value
-        Any value readable by ~:class:`obspy.UTCDateTime` or
-        ~:class:`numpy.datetime64`.
+        Any value readable by ~:class:`obspy.UTCDateTime`,
+        ~:class:`numpy.datetime64` or a sequence of such.
     """
-    ns = to_datetime64(value).astype(int)
-    return obspy.UTCDateTime(ns=int(ns))
+    # just use to_datetime64 for flexible handling of types
+    dt64ish = to_datetime64(value)
+    if isinstance(dt64ish, np.datetime64):
+        return obspy.UTCDateTime(ns=int(dt64ish))
+    # else assume a sequence of some sort and every element is a dt64
+    seq = [obspy.UTCDateTime(ns=int(x.astype("datetime64[ns]"))) for x in dt64ish]
+    return np.array(seq)
 
 
 def to_timedelta64(
