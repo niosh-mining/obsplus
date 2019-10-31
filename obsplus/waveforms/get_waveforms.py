@@ -18,7 +18,7 @@ from obsplus.utils import (
 )
 from obsplus.waveforms.utils import _stream_data_to_df
 
-from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC
+from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC, bulk_waveform_arg_type
 
 
 def get_waveforms(
@@ -63,7 +63,7 @@ def get_waveforms(
     return st
 
 
-def get_waveforms_bulk(st: Stream, bulk: List[str], **kwargs) -> Stream:
+def get_waveforms_bulk(st: Stream, bulk: bulk_waveform_arg_type, **kwargs) -> Stream:
     """
     Get a large number of waveforms with a bulk request.
 

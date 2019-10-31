@@ -404,10 +404,10 @@ class TestToNumpyDateTime:
         assert pd.Timestamp(out).year == 2262
 
     def test_series_to_datetimes(self):
-        """ Series should be convertible to datetimes. """
+        """ Series should be convertible to datetimes, but returns ndarray """
         ser = pd.Series([10, "2010-01-01"])
         out = to_datetime64(ser)
-        assert isinstance(out, pd.Series)
+        assert isinstance(out, np.ndarray)
 
 
 class TestToUTC:
@@ -428,6 +428,7 @@ class TestToUTC:
         np.array(utc_list),
         utc_able_list,
         np.array(utc_able_list, dtype=object),
+        pd.Series(utc_able_list),
     ]
 
     @pytest.mark.parametrize("value", utc_values)

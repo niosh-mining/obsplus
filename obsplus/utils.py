@@ -1110,7 +1110,7 @@ def _from_string(time_str: str, default=DEFAULT_TIME):
 @to_datetime64.register(pd.Series)
 def _series_to_datetime(value, default=DEFAULT_TIME):
     """ Convert a series to datetimes """
-    return value.apply(to_datetime64, default=default)
+    return value.apply(to_datetime64, default=default).values
 
 
 @to_datetime64.register(np.ndarray)
@@ -1139,12 +1139,17 @@ def to_utc(
         Any value readable by ~:class:`obspy.UTCDateTime`,
         ~:class:`numpy.datetime64` or a sequence of such.
     """
+
+    def _dt64_to_utc(dt64):
+        ns = dt64.astype("datetime64[ns]").astype(int)
+        return obspy.UTCDateTime(ns=ns)
+
     # just use to_datetime64 for flexible handling of types
     dt64ish = to_datetime64(value)
     if isinstance(dt64ish, np.datetime64):
-        return obspy.UTCDateTime(ns=int(dt64ish))
+        return _dt64_to_utc(dt64ish)
     # else assume a sequence of some sort and every element is a dt64
-    seq = [obspy.UTCDateTime(ns=int(x.astype("datetime64[ns]"))) for x in dt64ish]
+    seq = [_dt64_to_utc(x) for x in dt64ish]
     return np.array(seq)
 
 

@@ -148,7 +148,9 @@ def _get_bulk(bulk):
     return bulk
 
 
-def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Stream]:
+def stream_bulk_split(
+    st: Stream, bulk: List[waveform_request_type], fill_value=None
+) -> List[Stream]:
     """
     Split a stream into a list of streams that meet requirements in bulk.
 
@@ -161,6 +163,8 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         A stream object
     bulk
         A bulk request. Wildcards not currently supported on str params.
+    fill_value
+        If not None fill any missing data in time range with this value.
 
     Returns
     -------
@@ -182,6 +186,9 @@ def stream_bulk_split(st: Stream, bulk: List[waveform_request_type]) -> List[Str
         new_st = obspy.Stream(traces)
         t1, t2 = to_utc(barg[-2]), to_utc(barg[-1])
         new = new_st.slice(starttime=t1, endtime=t2)
+        # apply fill if needed
+        if fill_value is not None:
+            new = new.trim(starttime=t1, endtime=t2, fill_value=fill_value)
         if new is None or not len(new):
             out.append(obspy.Stream())
             continue

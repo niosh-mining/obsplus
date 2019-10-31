@@ -44,3 +44,10 @@ class ValidationNameError(ValidationError, KeyError):
     """
     Raised when a namespace with no validators is used.
     """
+
+
+class DataFrameContentError(ValueError):
+    """
+    Raised when something is unexpected in a dataframe's contents by the
+    calling function.
+    """

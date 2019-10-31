@@ -449,6 +449,9 @@ column_function_map_type = Mapping[str, series_func_type]
 # subpaths type
 bank_subpaths_type = Union[str, Iterable[str]]
 
+# types for bulk waveform requests
+bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
+
 # -------------------------- events validation constants
 
 
