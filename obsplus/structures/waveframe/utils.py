@@ -17,6 +17,21 @@ from obsplus.waveforms.utils import get_waveform_client, stream_bulk_split
 from obsplus.exceptions import DataFrameContentError
 
 
+class DfPartDescriptor:
+    """
+    A simple descriptor granting access to various parts of a dataframe.
+    """
+
+    def __init__(self, df_name):
+        self._df_name = df_name
+
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        return getattr(instance, self._df_name)[self._name]
+
+
 def _time_to_utc(df: pd.DataFrame) -> pd.DataFrame:
     """
     Convert time columns in a pandas dataframe to UTCDateTime objects.
@@ -125,7 +140,7 @@ def _get_stats_dataframe(df):
     return df
 
 
-def _get_data_array_from_client(waveforms, bulk):
+def _get_timeseries_df_from_client(waveforms, bulk):
     client = get_waveform_client(waveforms)
     if not isinstance(waveforms, obspy.Stream):
         waveforms = _get_waveforms_bulk(client, bulk)
@@ -134,7 +149,4 @@ def _get_data_array_from_client(waveforms, bulk):
     st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
     # make sure the data are merged together with a sensible fill value
     arrays = [st[0].data for st in st_list]
-    df = pd.DataFrame(arrays)
-
-    # pad into arrays
-    breakpoint()
+    return pd.DataFrame(arrays)

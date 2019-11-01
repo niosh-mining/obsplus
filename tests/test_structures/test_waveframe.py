@@ -12,28 +12,42 @@ from obsplus.exceptions import DataFrameContentError
 
 
 @pytest.fixture
-def waveframe():
-    """ Create a basic WaveFrame from default stream. """
+def st_no_response():
+    """ Get a copy of the default trace, remove response. """
     st = obspy.read()
     # drop response for easier stats dtypes
     for tr in st:
         tr.stats.pop("response", None)
-    return WaveFrame.from_stream(st)
+    return st
 
 
 @pytest.fixture
-def waveframe_gap():
-    """ Create a waveframe with a 1 second gap in the middle. """
-    st1, st2 = obspy.read(), obspy.read()
+def waveframe(st_no_response) -> WaveFrame:
+    """ Create a basic WaveFrame from default stream. """
+    return WaveFrame.from_stream(st_no_response)
+
+
+@pytest.fixture
+def waveframe_gap(st_no_response) -> WaveFrame:
+    """
+    Create a waveframe with a 1 second gap in the middle.
+    Also shorten last trace.
+    """
+    st1, st2 = st_no_response.copy(), st_no_response.copy()
     for tr in st2:
         tr.stats.starttime = st1[0].stats.endtime + 1
+    st2[-1].data = st2[-1].data[:-20]
     return WaveFrame.from_stream(st1 + st2)
 
 
-class TestInputStats:
-    """ Basic tests input Stats dataframe. """
+class Testbasics:
+    """ Basic tests of waveframe. """
 
-    t1 = UTCDateTime("2017-09-18")
+
+class TestConstructorStats:
+    """ Basic tests input to waveframe. """
+
+    t1 = UTCDateTime("2009-08-24T00-20-03")
 
     def _make_stats_df(self, args):
         names = list(NSLC) + ["starttime", "endtime"]
@@ -65,11 +79,60 @@ class TestInputStats:
 
     def test_date_columns_renamed(self):
         """ Ensure enddate and startdate get renamed to starttime and endtime """
-        bulk = ["UU", "BOB", "01", "BHZ", self.t1, self.t1 + 10]
+        bulk = ["BW", "RJOB", "", "EHZ", self.t1, self.t1 + 10]
         names = list(NSLC) + ["startdate", "enddate"]
         df = pd.DataFrame([bulk], columns=names)
-        wf = WaveFrame(waveforms=obspy.read(), stats=df)
+        st = obspy.read()
+        wf = WaveFrame(waveforms=st, stats=df)
         assert {"starttime", "endtime"}.issubset(set(wf.stats.columns))
+
+    def test_gappy_traces(self, waveframe_gap):
+        """ Ensure gappy data still works. """
+        assert isinstance(waveframe_gap, WaveFrame)
+        assert len(waveframe_gap) == 6
+        # there should also be some NaN on the last row
+        data = waveframe_gap.data
+        null_count = data.isnull().sum(axis=1)
+        # all but the last row should have no nulls
+        assert (null_count.loc[:4] == 0).all()
+        assert null_count.iloc[-1] == 20
+
+    def test_cant_get_waveform_data(self, st_no_response):
+        """
+        Test that data has a row of NaN for any stats that couldn't get
+        waveforms.
+        """
+        t1 = self.t1 - 100_000
+        bulk = ["BW", "RJOB", "", "EHZ", t1, t1 + 10]
+        df = self._make_stats_df(bulk)
+        wf = WaveFrame(waveforms=st_no_response, stats=df)
+        data = wf.data
+        assert len(data) == 1
+        assert data.isnull().all().all()
+
+    def test_init_waveframe_from_waveframe(self, waveframe):
+        """ A waveframe should be valid input to waveframe constructor"""
+        wf1 = waveframe
+        wf2 = WaveFrame(wf1)
+        assert wf1 is not wf2
+        assert wf1._df is not wf2._df
+        assert (wf1._df == wf2._df).all().all()
+
+    def test_init_waveframe_from_waveframe_df(self, waveframe):
+        """ A waveframe can be inited from a dataframe from a waveframe. """
+        wf1 = waveframe
+        wf2 = WaveFrame(wf1._df)
+        assert wf1 is not wf2
+        assert wf1._df is not wf2._df
+        assert (wf1._df == wf2._df).all().all()
+
+    def test_init_waveframe_from_waveframe_parts(self, waveframe):
+        """ A wavefrom should be init'able from a waveframes parts """
+        wf1 = waveframe
+        wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
+        assert wf1 is not wf2
+        assert wf1._df is not wf2._df
+        assert (wf1._df == wf2._df).all().all()
 
 
 class TestToFromStream:
@@ -78,6 +141,7 @@ class TestToFromStream:
     def test_type(self, waveframe):
         assert isinstance(waveframe, WaveFrame)
 
-    def test_to_stream(self, waveframe):
+    def test_to_stream(self, waveframe, st_no_response):
         st = waveframe.to_stream()
-        assert st == obspy.read()
+        assert isinstance(st, obspy.Stream)
+        assert st == st_no_response
