@@ -13,7 +13,7 @@ from obspy.geodetics import kilometers2degrees
 
 from obsplus import WaveBank, events_to_df
 from obsplus.datasets.dataset import DataSet
-from obsplus.events.utils import catalog_to_directory
+from obsplus.utils.events import catalog_to_directory
 
 
 class Bingham(DataSet):

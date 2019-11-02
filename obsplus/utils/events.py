@@ -28,7 +28,9 @@ from obsplus.constants import (
     event_clientable_type,
 )
 from obsplus.interfaces import EventClient
-from obsplus.utils import yield_obj_parent_attr, get_reference_time, get_seed_id_series
+from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.misc import yield_obj_parent_attr
+from obsplus.utils.time import get_reference_time
 
 
 def duplicate_events(

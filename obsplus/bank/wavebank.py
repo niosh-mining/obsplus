@@ -20,14 +20,6 @@ from obspy import UTCDateTime, Stream
 
 import obsplus
 from obsplus.bank.core import _Bank
-from obsplus.bank.utils import (
-    _summarize_trace,
-    _IndexCache,
-    _summarize_wave_file,
-    _try_read_stream,
-    get_inventory,
-    summarizing_functions,
-)
 from obsplus.constants import (
     NSLC,
     availability_type,
@@ -43,19 +35,20 @@ from obsplus.constants import (
     paths_description,
     bulk_waveform_arg_type,
 )
-from obsplus.utils import (
-    compose_docstring,
-    make_time_chunks,
-    to_datetime64,
-    get_seed_id_series,
-    filter_index,
-    replace_null_nlsc_codes,
-    _column_contains,
-    order_columns,
-    to_utc,
-    to_timedelta64,
+from obsplus.utils.bank import (
+    _summarize_trace,
+    _IndexCache,
+    _summarize_wave_file,
+    _try_read_stream,
+    get_inventory,
+    summarizing_functions,
 )
-from obsplus.waveforms.utils import merge_traces
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.misc import replace_null_nlsc_codes
+from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.pd import order_columns, filter_index, _column_contains
+from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
+from obsplus.utils.waveforms import merge_traces
 
 # No idea why but this needs to be here to avoid problems with pandas
 assert tables.get_hdf5_version()

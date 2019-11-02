@@ -12,9 +12,9 @@ import numpy as np
 from obspy.core.event import Comment, ResourceIdentifier
 
 import obsplus
-import obsplus.events.utils
+import obsplus.utils.events
 from obsplus.events import validate
-from obsplus.events.utils import (
+from obsplus.utils.events import (
     bump_creation_version,
     get_event_path,
     duplicate_events,
@@ -22,7 +22,7 @@ from obsplus.events.utils import (
     make_origins,
     prune_events,
 )
-from obsplus.utils import get_instances
+from obsplus.utils.misc import get_instances
 from obsplus import get_preferred
 
 CAT = obspy.read_events()
@@ -136,7 +136,7 @@ class TestPruneEvents:
         # One pick gets removed, the other is kept
         assert len(ev.picks) == 1
         assert ev.picks[0].evaluation_status == "rejected"
-        por = obsplus.events.utils.get_preferred(ev, "origin")
+        por = obsplus.utils.events.get_preferred(ev, "origin")
         assert len(por.arrivals) == 1
 
 
@@ -460,15 +460,15 @@ class TestGetSeedId:
         station_mag_cont = obspy.core.event.StationMagnitudeContribution(
             station_magnitude_id=station_mag.resource_id
         )
-        seed = obsplus.events.utils.get_seed_id(station_mag_cont)
+        seed = obsplus.utils.events.get_seed_id(station_mag_cont)
         assert seed == "AA.BBB.CC.DDD"
 
     def test_no_seed_id(self):
         """Make sure raises AttributeError if no seed info found"""
         with pytest.raises(AssertionError):
-            obsplus.events.utils.get_seed_id(obspy.core.event.Pick())
+            obsplus.utils.events.get_seed_id(obspy.core.event.Pick())
 
     def test_unsupported(self):
         """Make sure an unsupported object raises TypeError"""
         with pytest.raises(TypeError):
-            obsplus.events.utils.get_seed_id(obspy.core.event.Origin())
+            obsplus.utils.events.get_seed_id(obspy.core.event.Origin())

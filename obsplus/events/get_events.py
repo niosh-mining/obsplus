@@ -13,8 +13,10 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import kilometers2degrees
 
 import obsplus
+import obsplus.utils.misc
 from obsplus.constants import get_events_parameters
-from obsplus.utils import compose_docstring, dict_times_to_npdatetimes
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.time import dict_times_to_npdatetimes
 
 CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
 
@@ -90,7 +92,7 @@ def _get_ids(df, kwargs) -> set:
         df = get_event_summary(df, **kwargs)
         filt = np.ones(len(df)).astype(bool)
         # Trim based on circular kwargs
-        radius = obsplus.utils.calculate_distance(
+        radius = obsplus.utils.misc.calculate_distance(
             latitude=circular_kwargs["latitude"],
             longitude=circular_kwargs["longitude"],
             df=df,

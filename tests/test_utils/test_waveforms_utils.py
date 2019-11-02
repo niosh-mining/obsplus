@@ -11,8 +11,8 @@ import pytest
 
 import obsplus
 from obsplus.constants import NSLC
-from obsplus.utils import to_timedelta64
-from obsplus.waveforms.utils import (
+from obsplus.utils.time import to_timedelta64
+from obsplus.utils.waveforms import (
     trim_event_stream,
     stream2contiguous,
     archive_to_sds,

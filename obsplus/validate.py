@@ -14,7 +14,7 @@ from obspy.core.inventory.util import BaseNode
 from obspy.core.util import AttribDict
 
 from obsplus.exceptions import ValidationNameError
-from obsplus.utils import yield_obj_parent_attr, iterate
+from obsplus.utils.misc import yield_obj_parent_attr, iterate
 
 # The validator state is of the form:
 # {"namespace": {cls: {id1: validator1, id2: validator2, ...], ...}, ...}

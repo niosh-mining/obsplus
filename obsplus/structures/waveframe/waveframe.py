@@ -7,14 +7,13 @@ import pandas as pd
 from typing import Optional, Union
 
 from obsplus.constants import waveform_clientable_type
-from obsplus.structures.waveframe.utils import (
-    _get_waveforms_bulk,
+from obsplus.utils.waveframe import (
     _get_bulk_args,
     _get_stats_dataframe,
     _get_timeseries_df_from_client,
     DfPartDescriptor,
 )
-from obsplus.waveforms.utils import to_utc
+from obsplus.utils.time import to_utc
 
 
 class WaveFrame:

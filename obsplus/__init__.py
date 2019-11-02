@@ -14,7 +14,7 @@ pd.options.mode.chained_assignment = None
 
 # json conversions
 from obsplus.events.json import json_to_cat, cat_to_json, cat_to_dict
-from obsplus.events.utils import bump_creation_version, duplicate_events, get_preferred
+from obsplus.utils.events import bump_creation_version, duplicate_events, get_preferred
 
 # events validation and version bumping
 from obsplus.events.validate import validate_catalog
@@ -42,11 +42,11 @@ from obsplus.structures.fetcher import Fetcher
 from obsplus.structures.waveframe.waveframe import WaveFrame
 
 # misc functions
-from obsplus.utils import get_reference_time
+from obsplus.utils.time import get_reference_time
 from obsplus.structures.dfextractor import DataFrameExtractor
 
 # load datasets function
-from obsplus.datasets.utils import copy_dataset
+from obsplus.utils.dataset import copy_dataset
 from obsplus.datasets.dataset import DataSet
 
 load_dataset = DataSet.load_dataset
@@ -57,6 +57,6 @@ from .stations.get_stations import get_stations
 from .waveforms.get_waveforms import get_waveforms
 
 # get the get_client methods into obsplus namespace
-from obsplus.waveforms.utils import get_waveform_client
-from obsplus.events.utils import get_event_client
-from obsplus.stations.utils import get_station_client
+from obsplus.utils.waveforms import get_waveform_client
+from obsplus.utils.events import get_event_client
+from obsplus.utils.stations import get_station_client

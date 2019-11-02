@@ -14,9 +14,9 @@ import numpy as np
 from obspy.core.event import Event, Origin
 
 import obsplus
-from obsplus import Fetcher, WaveBank, stations_to_df
+from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils import make_time_chunks, get_reference_time, to_datetime64
+from obsplus.utils.time import to_datetime64, make_time_chunks
 
 WAVEFETCHERS = []
 

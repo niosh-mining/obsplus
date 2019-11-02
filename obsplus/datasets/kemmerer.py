@@ -10,7 +10,7 @@ from obspy.clients.fdsn.mass_downloader import (
 )
 
 from obsplus.datasets.dataset import DataSet
-from obsplus.events.utils import catalog_to_directory
+from obsplus.utils.events import catalog_to_directory
 
 
 class Kemmerer(DataSet):

@@ -6,7 +6,7 @@ import copy
 from collections import defaultdict
 from functools import lru_cache, partial
 from types import MappingProxyType as MapProxy
-from typing import Optional, Sequence, Union, Dict, Mapping, Any, List
+from typing import Optional, Sequence, Union, Dict, Mapping, Any
 
 import numpy as np
 import obspy
@@ -14,8 +14,8 @@ import obspy.core.event as ev
 import pandas as pd
 from obspy.core.util.obspy_types import Enum
 
-from obsplus.events.utils import make_class_map
-from obsplus.utils import yield_obj_parent_attr, iterate
+from obsplus.utils.events import make_class_map
+from obsplus.utils.misc import yield_obj_parent_attr, iterate
 
 # dicts for mapping expected object name with class definitions and back
 

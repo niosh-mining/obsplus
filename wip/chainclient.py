@@ -7,7 +7,7 @@ import obspy
 from obspy import Stream
 
 from obsplus.constants import waveform_request_type
-from obsplus.utils import iterate
+from obsplus.utils.misc import iterate
 
 
 def empty_inventory():

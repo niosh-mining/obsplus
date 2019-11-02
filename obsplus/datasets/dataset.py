@@ -23,16 +23,16 @@ from obspy.clients.fdsn import Client
 import obsplus
 from obsplus import WaveBank, EventBank, copy_dataset
 from obsplus.constants import DATA_TYPES
-from obsplus.datasets.utils import _create_opsdata
-from obsplus.events.utils import get_event_client
+from obsplus.utils.dataset import _create_opsdata
+from obsplus.utils.events import get_event_client
 from obsplus.exceptions import (
     FileHashChangedError,
     MissingDataFileError,
     DataVersionError,
 )
-from obsplus.stations.utils import get_station_client
-from obsplus.utils import md5_directory
-from obsplus.waveforms.utils import get_waveform_client
+from obsplus.utils.stations import get_station_client
+from obsplus.utils.misc import md5_directory
+from obsplus.utils.waveforms import get_waveform_client
 
 
 class DataSet(abc.ABC):

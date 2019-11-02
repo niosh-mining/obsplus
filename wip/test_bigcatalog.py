@@ -7,7 +7,7 @@ import obspy.core.event as ev
 import pytest
 
 import obsplus
-from obsplus.utils import yield_obj_parent_attr
+from obsplus.utils.misc import yield_obj_parent_attr
 
 
 @pytest.fixture(scope="class")

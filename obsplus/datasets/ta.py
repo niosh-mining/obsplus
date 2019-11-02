@@ -5,7 +5,7 @@ import obspy
 
 from obsplus import WaveBank
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils import make_time_chunks
+from obsplus.utils.time import make_time_chunks
 
 
 class TA(DataSet):

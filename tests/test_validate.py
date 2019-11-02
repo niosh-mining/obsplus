@@ -11,6 +11,7 @@ from obspy.core.inventory import Inventory, Network, Station
 from obspy.core.stream import Stream, Trace
 
 import obsplus
+import obsplus.utils.misc
 from obsplus.validate import _temp_validate_namespace, validator, validate, decompose
 
 
@@ -120,7 +121,7 @@ class TestDecompose:
         """ ensure the catalog, and friends, can be decomposed. """
         test_cls = (ev.Catalog, ev.Event, ev.Origin, ev.Pick, ev.Amplitude)
         cat = obspy.read_events()
-        for obj, _, _ in obsplus.utils.yield_obj_parent_attr(cat):
+        for obj, _, _ in obsplus.utils.misc.yield_obj_parent_attr(cat):
             out = decompose(obj)
             if isinstance(obj, test_cls):
                 assert len(out) > 1

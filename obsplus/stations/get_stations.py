@@ -10,7 +10,7 @@ import obspy
 from obspy.clients.fdsn import Client
 from obspy.core.inventory import Network, Channel, Station
 
-from obsplus.utils import get_instances
+from obsplus.utils.misc import get_instances
 
 UNSOPPORTED = {"latitude", "longitude", "matchtimeseries", "minradius", "maxradius"}
 

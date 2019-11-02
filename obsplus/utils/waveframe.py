@@ -12,8 +12,9 @@ from obsplus.constants import (
     NSLC,
     BULK_WAVEFORM_COLUMNS,
 )
-from obsplus.utils import apply_funcs_to_columns, to_utc, to_datetime64, order_columns
-from obsplus.waveforms.utils import get_waveform_client, stream_bulk_split
+from obsplus.utils.time import to_datetime64, to_utc
+from obsplus.utils.pd import apply_funcs_to_columns, order_columns
+from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
 from obsplus.exceptions import DataFrameContentError
 
 

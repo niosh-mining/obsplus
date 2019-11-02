@@ -11,7 +11,7 @@ import numpy as np
 import obspy
 import pandas as pd
 
-from obsplus.utils import make_time_chunks
+from obsplus.utils.time import make_time_chunks
 
 
 @contextmanager

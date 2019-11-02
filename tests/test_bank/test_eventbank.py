@@ -13,8 +13,9 @@ import pytest
 from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
+import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
-from obsplus.events.utils import catalog_to_directory
+from obsplus.utils.events import catalog_to_directory
 from obsplus.testing import instrument_methods
 
 
@@ -31,7 +32,7 @@ def ebank(tmpdir):
     for event, desc_txt in zip(cat, descs):
         desc = ev.EventDescription(desc_txt)
         event.event_descriptions.insert(0, desc)
-    obsplus.events.utils.catalog_to_directory(cat, path)
+    obsplus.utils.events.catalog_to_directory(cat, path)
     ebank = EventBank(path)
     ebank.update_index()
     return ebank
@@ -542,9 +543,9 @@ class TestProgressBar:
 
         def new_get_bar(*args, **kwargs):
             state["called"] = True
-            obsplus.utils.get_progressbar(*args, **kwargs)
+            obsplus.utils.misc.get_progressbar(*args, **kwargs)
 
-        monkeypatch.setattr(obsplus.utils, "get_progressbar", new_get_bar)
+        monkeypatch.setattr(obsplus.utils.misc, "get_progressbar", new_get_bar)
 
         bar_ebank.update_index(bar=False)
         assert state["called"] is False

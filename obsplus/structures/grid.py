@@ -20,7 +20,7 @@ import matplotlib.gridspec as gridspec
 from scipy.interpolate import griddata
 
 from obsplus.conversions import convert_coords, Conversion
-from obsplus.utils import read_file
+from obsplus.utils.misc import read_file
 
 
 class Grid:

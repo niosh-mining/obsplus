@@ -22,7 +22,9 @@ from obsplus.constants import (
     waveform_request_type,
 )
 from obsplus.interfaces import WaveformClient
-from obsplus.utils import get_seed_id_series, filter_index, to_utc
+from obsplus.utils.pd import filter_index
+from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.time import to_utc
 
 
 # ---------- trim functions

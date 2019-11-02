@@ -10,7 +10,8 @@ from typing import Mapping, Sequence, Optional, Dict
 import pandas as pd
 
 from obsplus.constants import column_function_map_type, TIME_COLUMNS
-from obsplus.utils import order_columns, apply_funcs_to_columns, to_datetime64
+from obsplus.utils.time import to_datetime64
+from obsplus.utils.pd import apply_funcs_to_columns, order_columns
 
 # Create a dictionary of standard column_name: funcs to apply
 standard_column_transforms = {x: to_datetime64 for x in TIME_COLUMNS}

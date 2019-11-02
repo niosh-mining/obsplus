@@ -9,7 +9,8 @@ from obspy.core.event import ResourceIdentifier, WaveformStreamID, TimeWindow
 import obsplus
 import obsplus.events.validate
 from obsplus import validate_catalog
-from obsplus.utils import yield_obj_parent_attr
+from obsplus.utils.misc import yield_obj_parent_attr
+
 
 # ----------------- module level fixtures
 

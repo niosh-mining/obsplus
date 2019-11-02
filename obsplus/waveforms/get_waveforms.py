@@ -1,24 +1,21 @@
 """
 Module for adding the client-like "get_waveforms" to the Stream class
 """
-from typing import Optional, List
 from functools import reduce
 from operator import add
+from typing import Optional
 
+import numpy as np
 import obspy
 import pandas as pd
-import numpy as np
 from obspy import Stream, UTCDateTime as UTC
-from obsplus.utils import (
-    _column_contains,
-    get_seed_id_series,
-    filter_index,
-    to_datetime64,
-    to_utc,
-)
-from obsplus.waveforms.utils import _stream_data_to_df
 
 from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC, bulk_waveform_arg_type
+from obsplus.utils.pd import filter_index, _column_contains
+from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.time import to_datetime64
+from obsplus.utils.time import to_utc
+from obsplus.utils.waveforms import _stream_data_to_df
 
 
 def get_waveforms(

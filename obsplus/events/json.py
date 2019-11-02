@@ -8,7 +8,7 @@ from typing import Union
 import obspy
 from obspy.core.event import ResourceIdentifier, QuantityError
 
-from obsplus.events.utils import obj_to_dict, make_class_map
+from obsplus.utils.events import obj_to_dict, make_class_map
 from obsplus.constants import JSON_KEYS_TO_POP
 
 JSON_SERIALIZER_VERSION = "0.0.0"  # increment when serialization changes

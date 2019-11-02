@@ -17,7 +17,7 @@ from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils import apply_to_files_or_skip, get_instances
+from obsplus.utils.misc import get_instances, apply_to_files_or_skip
 
 # attributes from channel to extract
 

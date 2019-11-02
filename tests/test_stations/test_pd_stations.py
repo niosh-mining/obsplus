@@ -13,7 +13,7 @@ import pytest
 import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
-from obsplus.utils import is_time
+from obsplus.utils.time import is_time
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 

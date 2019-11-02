@@ -15,17 +15,13 @@ from obspy import UTCDateTime
 from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
+import obsplus.utils.misc
 from obsplus.constants import NSLC, NULL_SEED_CODES, DISTANCE_COLUMNS
-from obsplus.utils import (
-    compose_docstring,
-    yield_obj_parent_attr,
-    filter_index,
-    filter_df,
-    get_distance_df,
-    to_datetime64,
-    iter_files,
-    to_utc,
-)
+
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.misc import yield_obj_parent_attr, get_distance_df, iter_files
+from obsplus.utils.pd import filter_index, filter_df
+from obsplus.utils.time import to_utc, get_reference_time, to_datetime64, to_timestamp
 
 
 def append_func_name(list_obj):
@@ -83,7 +79,7 @@ class TestGetReferenceTime:
     def time_outputs(self, request):
         """ meta fixtures to gather up all the input types"""
         fixture_value = request.getfixturevalue(request.param)
-        return obsplus.utils.get_reference_time(fixture_value)
+        return get_reference_time(fixture_value)
 
     # tests
     def test_is_utc_date(self, time_outputs):
@@ -98,33 +94,33 @@ class TestGetReferenceTime:
         """ ensure an empty event will raise """
         event = ev.Event()
         with pytest.raises(ValueError):
-            obsplus.utils.get_reference_time(event)
+            get_reference_time(event)
 
     def test_event_with_picks(self, event_only_picks):
         """ test that an event with picks, no origin, uses smallest pick """
         t_expected = UTCDateTime("2015-01-01")
-        t_out = obsplus.utils.get_reference_time(event_only_picks)
+        t_out = get_reference_time(event_only_picks)
         assert t_expected == t_out
 
     def test_stream(self):
         """ Ensure the start of the stream is returned. """
         st = obspy.read()
-        out = obsplus.utils.get_reference_time(st)
+        out = get_reference_time(st)
         assert out == min([tr.stats.starttime for tr in st])
 
 
 class TestIterate:
     def test_none(self):
         """ None should return an empty tuple """
-        assert obsplus.utils.iterate(None) == tuple()
+        assert obsplus.utils.misc.iterate(None) == tuple()
 
     def test_object(self):
         """ A single object should be returned in a tuple """
-        assert obsplus.utils.iterate(1) == (1,)
+        assert obsplus.utils.misc.iterate(1) == (1,)
 
     def test_str(self):
         """ A single string object should be returned as a tuple """
-        assert obsplus.utils.iterate("hey") == ("hey",)
+        assert obsplus.utils.misc.iterate("hey") == ("hey",)
 
 
 class TestDocsting:
@@ -202,7 +198,7 @@ class TestReplaceNullSeedCodes:
 
     def test_stream(self, null_stream):
         """ ensure all the nullish chars are replaced """
-        st = obsplus.utils.replace_null_nlsc_codes(null_stream.copy())
+        st = obsplus.utils.misc.replace_null_nlsc_codes(null_stream.copy())
         for tr1, tr2 in zip(null_stream, st):
             for code in NSLC:
                 code1 = getattr(tr1.stats, code)
@@ -214,7 +210,7 @@ class TestReplaceNullSeedCodes:
 
     def test_catalog(self, null_catalog):
         """ ensure all nullish catalog chars are replaced """
-        cat = obsplus.utils.replace_null_nlsc_codes(null_catalog.copy())
+        cat = obsplus.utils.misc.replace_null_nlsc_codes(null_catalog.copy())
         for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):
             wid = pick.waveform_id
             assert wid.location_code == ""
@@ -224,7 +220,7 @@ class TestReplaceNullSeedCodes:
             """ return True if the code is valid. """
             return code not in NULL_SEED_CODES
 
-        inv = obsplus.utils.replace_null_nlsc_codes(null_inventory)
+        inv = obsplus.utils.misc.replace_null_nlsc_codes(null_inventory)
 
         for net in inv:
             assert _valid_code(net.code)
@@ -315,7 +311,7 @@ class TestMisc:
 
     def test_no_std_out(self, capsys):
         """ ensure print doesn't propagate to std out when suppressed. """
-        with obsplus.utils.no_std_out():
+        with obsplus.utils.misc.no_std_out():
             print("whisper")
         # nothing should have made it to stdout to get captured. The
         # output shape seems to be dependent on pytest version (or something).
@@ -327,10 +323,10 @@ class TestMisc:
 
     def test_to_timestamp(self):
         """ ensure things are properly converted to timestamps. """
-        ts1 = obsplus.utils.to_timestamp(10, None)
+        ts1 = to_timestamp(10, None)
         ts2 = obspy.UTCDateTime(10).timestamp
         assert ts1 == ts2
-        on_none = obsplus.utils.to_timestamp(None, 10)
+        on_none = to_timestamp(None, 10)
         assert on_none == ts1 == ts2
 
     def test_graceful_progress_fail(self, monkeypatch):
@@ -341,7 +337,7 @@ class TestMisc:
             raise Exception
 
         monkeypatch.setattr(ProgressBar, "start", raise_exception)
-        assert obsplus.utils.get_progressbar(100) is None
+        assert obsplus.utils.misc.get_progressbar(100) is None
 
     def test_apply_or_skip(self, apply_test_dir):
         """ test applying a function to all files or skipping """
@@ -353,7 +349,7 @@ class TestMisc:
                 raise Exception("I dont want seconds")
             return path
 
-        out = list(obsplus.utils.apply_to_files_or_skip(func, apply_test_dir))
+        out = list(obsplus.utils.misc.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
 
@@ -513,7 +509,7 @@ class TestMD5:
     @pytest.fixture(scope="class")
     def md5_out(self, directory_md5):
         """ return the md5 of the directory. """
-        return obsplus.utils.md5_directory(directory_md5, exclude="*1.txt")
+        return obsplus.utils.misc.md5_directory(directory_md5, exclude="*1.txt")
 
     def test_files_exist(self, md5_out):
         """ make sure the hashes exist for the files and such """

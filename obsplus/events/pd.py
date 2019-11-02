@@ -12,7 +12,7 @@ import obspy.core.event as ev
 import pandas as pd
 
 import obsplus
-from obsplus import get_preferred
+import obsplus.utils.time
 from obsplus.constants import (
     EVENT_COLUMNS,
     EVENT_DTYPES,
@@ -29,13 +29,20 @@ from obsplus.constants import (
     NSLC,
     MAGNITUDE_COLUMN_TYPES,
 )
-from obsplus.events.utils import get_reference_time, get_seed_id
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils import read_file, apply_to_files_or_skip, get_instances, getattrs
+from obsplus.utils.events import get_preferred
+from obsplus.utils.events import get_seed_id
+from obsplus.utils.misc import (
+    get_instances,
+    read_file,
+    apply_to_files_or_skip,
+    getattrs,
+)
+from obsplus.utils.time import get_reference_time
 
 # -------------------- init extractors
 events_to_df = DataFrameExtractor(
@@ -53,11 +60,9 @@ arrivals_to_df = DataFrameExtractor(
     ev.Arrival, ARRIVAL_COLUMNS, column_funcs=standard_column_transforms
 )
 
-
 amplitudes_to_df = DataFrameExtractor(
     ev.Amplitude, AMPLITUDE_COLUMNS, column_funcs=standard_column_transforms
 )
-
 
 station_magnitudes_to_df = DataFrameExtractor(
     ev.StationMagnitude,
@@ -336,7 +341,7 @@ def _get_origin_basic(eve):
 @events_to_df.extractor
 def _get_time(event):
     try:
-        return {"time": obsplus.get_reference_time(event)}
+        return {"time": obsplus.utils.time.get_reference_time(event)}
     except ValueError:  # no valid starttime
         return {"time": np.nan}
 

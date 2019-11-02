@@ -11,7 +11,7 @@ import obspy
 import pytest
 
 import obsplus
-import obsplus.datasets.utils
+import obsplus.utils.dataset
 from obsplus.constants import DATA_TYPES
 from obsplus.datasets.dataset import DataSet
 from obsplus.exceptions import (
@@ -225,13 +225,13 @@ class TestCopyDataset:
             monkeypatch.setattr(cls, attr, fail)
 
         # if this proceeds without downloading data the test passes
-        new_ds = obsplus.datasets.utils.copy_dataset("bingham")
+        new_ds = obsplus.utils.dataset.copy_dataset("bingham")
         assert isinstance(new_ds, DataSet)
 
     def test_copy_dataset_with_dataset(self):
         """ ensure a dataset can be the first argument to copy_dataset """
         ds = obsplus.load_dataset("bingham")
-        out = obsplus.datasets.utils.copy_dataset(ds)
+        out = obsplus.utils.dataset.copy_dataset(ds)
         assert isinstance(out, DataSet)
         assert out.name == ds.name
         assert out.data_path != ds.data_path

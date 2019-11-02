@@ -19,7 +19,7 @@ import pandas as pd
 import obsplus
 import obsplus.events.pd
 from obsplus.bank.core import _Bank
-from obsplus.bank.utils import (
+from obsplus.utils.bank import (
     _IndexCache,
     _summarize_event,
     sql_connection,
@@ -40,7 +40,9 @@ from obsplus.constants import (
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
-from obsplus.utils import compose_docstring, try_read_catalog, dict_times_to_npdatetimes
+from obsplus.utils.misc import try_read_catalog
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.time import dict_times_to_npdatetimes
 
 # --- define static types
 

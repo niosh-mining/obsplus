@@ -10,7 +10,7 @@ import pytest
 from obspy.core.event import CreationInfo, Catalog, Event
 
 from obsplus import json_to_cat, cat_to_dict, cat_to_json
-from obsplus.utils import yield_obj_parent_attr
+from obsplus.utils.misc import yield_obj_parent_attr
 
 
 def _remove_empty_quantity_errors(catalog):

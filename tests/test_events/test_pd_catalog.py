@@ -33,7 +33,9 @@ from obsplus.constants import (
     MAGNITUDE_COLUMNS,
     EVENT_DTYPES,
 )
-from obsplus.utils import getattrs, get_seed_id_series, to_datetime64
+from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.misc import getattrs
+from obsplus.utils.time import to_datetime64
 
 common_extractor_cols = {
     "agency_id",

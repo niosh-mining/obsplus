@@ -10,7 +10,7 @@ import pytest
 import pandas as pd
 from obspy import UTCDateTime as UTC
 
-from obsplus.bank.utils import (
+from obsplus.utils.bank import (
     _summarize_trace,
     _summarize_event,
     _try_read_stream,

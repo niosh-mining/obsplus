@@ -27,19 +27,15 @@ from obsplus.constants import (
     get_waveforms_parameters,
     LARGEDT64,
 )
-from obsplus.events.utils import get_event_client
-from obsplus.stations.utils import get_station_client
-from obsplus.utils import (
-    make_time_chunks,
-    register_func,
-    get_reference_time,
-    filter_index,
-    compose_docstring,
-    to_datetime64,
-    to_timedelta64,
-    to_utc,
-)
-from obsplus.waveforms.utils import get_waveform_client
+
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.events import get_event_client
+from obsplus.utils.misc import register_func
+from obsplus.utils.pd import filter_index
+from obsplus.utils.stations import get_station_client
+from obsplus.utils.time import get_reference_time
+from obsplus.utils.time import to_datetime64, to_timedelta64, make_time_chunks, to_utc
+from obsplus.utils.waveforms import get_waveform_client
 
 EventStream = namedtuple("EventStream", "event_id stream")
 

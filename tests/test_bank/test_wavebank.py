@@ -21,20 +21,17 @@ import pytest
 from obspy import UTCDateTime as UTC
 
 import obsplus
-import obsplus.bank.utils
+import obsplus.utils.bank
 import obsplus.bank.wavebank as sbank
-import obsplus.datasets.utils
+import obsplus.utils.dataset
+import obsplus.utils.misc
+import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC, EMPTYTD64
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import (
-    iter_files,
-    get_reference_time,
-    to_datetime64,
-    to_timedelta64,
-    to_utc,
-)
-
+from obsplus.utils.misc import iter_files
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obsplus import get_reference_time
 
 # ----------------------------------- Helper functions
 from obsplus.testing import ArchiveDirectory
@@ -782,7 +779,7 @@ class TestPutWaveForm:
     def test_put_waveforms_to_crandall_copy(self, tmpdir):
         """ ran into issue in docs where putting data into the crandall
         copy didn't work. """
-        ds = obsplus.datasets.utils.copy_dataset(
+        ds = obsplus.utils.dataset.copy_dataset(
             dataset="crandall", destination=Path(tmpdir)
         )
         bank = WaveBank(ds.waveform_client)
@@ -929,12 +926,12 @@ class TestFilesWithMultipleChannels:
         # update index first so we only count event reads
         bank.update_index()
 
-        old_func = obsplus.utils.READ_DICT["mseed"]
+        old_func = obsplus.utils.misc.READ_DICT["mseed"]
         new_func = count_decorator(old_func)
-        obsplus.utils.READ_DICT["mseed"] = new_func
+        obsplus.utils.misc.READ_DICT["mseed"] = new_func
         yield
         self.counter = 0
-        obsplus.utils.READ_DICT["mseed"] = old_func
+        obsplus.utils.misc.READ_DICT["mseed"] = old_func
 
     @pytest.fixture(scope="class")
     def multichannel_bank(self):
@@ -1162,7 +1159,7 @@ class TestGetGaps:
         st = obspy.read()
         assert not df.empty, "uptime df is empty"
         assert len(df) == len(st)
-        assert {tr.id for tr in st} == set(obsplus.utils.get_seed_id_series(df))
+        assert {tr.id for tr in st} == set(obsplus.utils.pd.get_seed_id_series(df))
         assert (df["gap_duration"] == EMPTYTD64).all()
 
     def test_empty_directory(self, empty_bank):
@@ -1189,8 +1186,8 @@ class TestGetGaps:
         index = wbank.read_index()
         uptime = wbank.get_uptime_df()
         # make sure the same seed ids are in the index as uptime df
-        seeds_from_index = set(obsplus.utils.get_seed_id_series(index))
-        seeds_from_uptime = set(obsplus.utils.get_seed_id_series(uptime))
+        seeds_from_index = set(obsplus.utils.pd.get_seed_id_series(index))
+        seeds_from_uptime = set(obsplus.utils.pd.get_seed_id_series(uptime))
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 

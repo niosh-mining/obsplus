@@ -28,13 +28,9 @@ from obsplus.constants import (
     LARGEDT64,
     MININT64,
 )
-from obsplus.utils import (
-    _get_event_origin_time,
-    READ_DICT,
-    dict_times_to_ns,
-    to_datetime64,
-)
-from .mseed import summarize_mseed
+from obsplus.utils.misc import READ_DICT
+from obsplus.utils.time import _get_event_origin_time, to_datetime64, dict_times_to_ns
+from obsplus.bank.mseed import summarize_mseed
 
 # functions for summarizing the various formats
 summarizing_functions = dict(mseed=summarize_mseed)

@@ -11,6 +11,7 @@ import pandas as pd
 from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
+import obsplus.utils.misc
 from obsplus.constants import station_clientable_type, SMALLDT64, LARGEDT64, NSLC
 from obsplus.interfaces import StationClient
 
@@ -56,7 +57,7 @@ def df_to_inventory(df) -> obspy.Inventory:
 
     def _groupby_if_exists(df, columns):
         """ Groupby columns if they exist on dataframe, else return empty. """
-        cols = list(obsplus.utils.iterate(columns))
+        cols = list(obsplus.utils.misc.iterate(columns))
         if not set(cols).issubset(df.columns):
             return
 

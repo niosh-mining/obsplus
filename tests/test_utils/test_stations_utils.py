@@ -9,7 +9,7 @@ import pandas as pd
 
 import obsplus
 from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
-from obsplus.stations.utils import df_to_inventory
+from obsplus.utils.stations import df_to_inventory
 
 
 class TestDfToInventory:
