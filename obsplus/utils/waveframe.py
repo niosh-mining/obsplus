@@ -116,6 +116,7 @@ def _get_stats_dataframe(df):
             if has_qmark or has_star:
                 msg = f"columns {NSLC} cannot contain * or ?, column {code} does"
                 raise DataFrameContentError(msg)
+        return df
 
     def _check_starttime_endtime(df):
         """ Ensure all starttimes are less than endtimes. """
@@ -124,20 +125,24 @@ def _get_stats_dataframe(df):
         if invalid_time_range.any():
             msg = f"all values in starttime must be <= endtime"
             raise DataFrameContentError(msg)
+        return df
 
     def _check_missing_data(df):
         """ There should be no missing data in the required columns."""
         if df[list(BULK_WAVEFORM_COLUMNS)].isnull().any().any():
             msg = f"Missing values in columns {BULK_WAVEFORM_COLUMNS} found. "
             raise DataFrameContentError(msg)
+        return df
 
     # Order the columns and ensure datetime64 dtypes are in dataframe
-    df = rename_startdate_enddate(df)
-    df = _time_cols_to_datetime64(order_columns(df, BULK_WAVEFORM_COLUMNS))
-    # validate data
-    _check_nslc_codes(df)
-    _check_missing_data(df)
-    _check_starttime_endtime(df)
+    df = (
+        rename_startdate_enddate(df)
+        .pipe(_time_cols_to_datetime64)
+        .pipe(order_columns, required_columns=BULK_WAVEFORM_COLUMNS)
+        .pipe(_check_nslc_codes)
+        .pipe(_check_missing_data)
+        .pipe(_check_starttime_endtime)
+    )
     return df
 
 

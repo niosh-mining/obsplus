@@ -45,7 +45,7 @@ from obsplus.utils.bank import (
 )
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import replace_null_nlsc_codes
-from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.pd import get_seed_id_series, cast_dtypes, convert_bytestrings
 from obsplus.utils.pd import order_columns, filter_index, _column_contains
 from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
 from obsplus.utils.waveforms import merge_traces
@@ -250,11 +250,12 @@ class WaveBank(_Bank):
         """ Prepare the dataframe to put it into the HDF5 store. """
         # ensure the bank path is not in the path column
         df["path"] = df["path"].str.replace(self.bank_path, "")
-        dtypes = WAVEFORM_DTYPES_INPUT
-        df = order_columns(df, dtype=dtypes, required_columns=list(dtypes))
-        for str_index in self.index_str:
-            sser = df[str_index].astype(str)
-            df[str_index] = sser.str.replace("b", "").str.replace("'", "")
+        dtype = WAVEFORM_DTYPES_INPUT
+        df = (
+            df.pipe(order_columns, required_columns=list(dtype))
+            .pipe(cast_dtypes, dtype=dtype, inplace=True)
+            .pipe(convert_bytestrings, columns=self.index_str, inplace=True)
+        )
         # populate index store and update metadata
         assert not df.isnull().any().any(), "null values found in index dataframe"
         return df
@@ -626,15 +627,7 @@ class WaveBank(_Bank):
         if not os.path.exists(self.index_path):
             self.update_index()
         index = self._index_cache(starttime, endtime, buffer=self.buffer)
-        seed = (
-            index.network
-            + "."
-            + index.station
-            + "."
-            + index.location
-            + "."
-            + index.channel
-        )
+        seed = get_seed_id_series(index)
         return index[seed.isin(seed_id)]
 
     # ----------------------- deposit waveforms methods

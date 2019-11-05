@@ -11,7 +11,12 @@ import pandas as pd
 
 from obsplus.constants import column_function_map_type, TIME_COLUMNS
 from obsplus.utils.time import to_datetime64
-from obsplus.utils.pd import apply_funcs_to_columns, order_columns
+from obsplus.utils.pd import (
+    apply_funcs_to_columns,
+    order_columns,
+    cast_dtypes,
+    replace_or_swallow,
+)
 
 # Create a dictionary of standard column_name: funcs to apply
 standard_column_transforms = {x: to_datetime64 for x in TIME_COLUMNS}
@@ -192,11 +197,13 @@ class DataFrameExtractor(UserDict):
         """
         df = self._func(obj, **kwargs)
         assert isinstance(df, pd.DataFrame), "must return a DataFrame instance"
-        if not df.empty:
-            df = apply_funcs_to_columns(df, self._column_funcs)
-        replace, dtypes = {"nan": "", "None": ""}, self.dtypes
-        required_cols = self._base_required_columns
-        return order_columns(df, required_cols, dtypes, replace)
+        out = (
+            df.pipe(apply_funcs_to_columns, funcs=self._column_funcs)
+            .pipe(order_columns, required_columns=self._base_required_columns)
+            .pipe(cast_dtypes, dtype=self.dtypes)
+            .pipe(replace_or_swallow, {"nan": "", "None": ""})
+        )
+        return out
 
     def __str__(self):
         msg = (

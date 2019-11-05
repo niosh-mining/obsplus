@@ -3,6 +3,7 @@ Generic Utilities for Pandas
 """
 import fnmatch
 import re
+from contextlib import suppress
 from functools import lru_cache
 from typing import Optional, Sequence, Mapping, Union, Collection, Iterable
 
@@ -20,8 +21,33 @@ from obsplus.constants import (
 from obsplus.utils.time import to_datetime64
 
 
+def convert_bytestrings(df, columns, inplace=False):
+    """
+    Convert byte strings columns to strings.
+
+    This removes 'b' and quotation marks from string columns. For some reason
+    encode doesn't work on data returned from hdf5, hence this approach is a
+    bit hacky.
+
+    Parameters
+    ----------
+    df
+        The input dataframe.
+    columns
+        The names of the columns to convert to string types
+    inplace
+        If True, perform operation in place.
+    """
+
+    def stringitize(ser):
+        return ser.astype(str).str.replace("b", "").str.replace("'", "")
+
+    funcs = {x: stringitize for x in columns}
+    return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
+
+
 def apply_funcs_to_columns(
-    df: pd.DataFrame, funcs: Optional[column_function_map_type]
+    df: pd.DataFrame, funcs: Optional[column_function_map_type], inplace: bool = False
 ) -> pd.DataFrame:
     """
     Apply callables to columns.
@@ -32,29 +58,47 @@ def apply_funcs_to_columns(
         The input dataframe.
     funcs
         A mapping of {column_name, function_to_apply}.
+    inplace
+        If True, perform operation in place.
 
     Returns
     -------
     A new dataframe with the columns replaced with output of the function.
     """
+    if df.empty:
+        return df
     if funcs is not None:
-        df = df.copy()
+        df = df.copy() if inplace else df
         for col in set(df.columns) & set(funcs):
             df[col] = funcs[col](df[col])
     return df
 
 
-def order_columns(
-    df: pd.DataFrame,
-    required_columns: Sequence,
-    dtype: Optional[Mapping[str, type]] = None,
-    replace: Optional[Mapping] = None,
-    drop_columns: bool = False,
-):
+def cast_dtypes(
+    df: pd.DataFrame, dtype: Optional[Mapping[str, type]] = None, inplace=False
+) -> pd.DataFrame:
+    """
+    Cast data types for columns in dataframe, skip columns that doesn't exist.
+
+    Parameters
+    ----------
+    df
+        Dataframe
+    dtype
+        A dict of columns and datatypes.
+    inplace
+        If true perform operation in place.
+    """
+    df = df.copy() if inplace else df
+    dtype = {i: dtype[i] for i in set(dtype) & set(df.columns)}
+    return df.astype(dtype)
+
+
+def order_columns(df: pd.DataFrame, required_columns: Sequence, drop_columns=False):
     """
     Given a dataframe, assert that required columns are in the df, then
     order the columns of df the same as required columns with extra columns
-    attached at the end.
+    sorted and attached at the end.
 
     Parameters
     ----------
@@ -62,18 +106,12 @@ def order_columns(
         The input dataframe.
     required_columns
         A sequence that contains the column names.
-    dtype
-        A dictionary of dtypes.
-    replace
-        Input passed to DataFrame.Replace.
     drop_columns
         If True drop columns not in required_columns.
     Returns
     -------
     pd.DataFrame
     """
-    # if df.empty:
-    #     return pd.DataFrame(columns=required_columns)
     # make sure required columns are there
     column_set = set(df.columns)
     extra_cols = sorted(list(column_set - set(required_columns)))
@@ -82,15 +120,24 @@ def order_columns(
     new_cols = list(required_columns) + extra_cols
     # add any extra (blank) columns if needed and sort
     df = df.reindex(columns=new_cols)
-    # cast network, station, location, channel, to str
-    if dtype:
-        dtypes = {i: dtype[i] for i in set(dtype) & set(df.columns)}
-        df = df.astype(dtypes)
-    if replace:
-        try:
-            df = df.replace(replace)
-        except Exception:
-            pass
+    return df
+
+
+def replace_or_swallow(df: pd.DataFrame, replace: dict) -> pd.DataFrame:
+    """
+    Replace values in a dataframe with new values.
+
+    Parameters
+    ----------
+    df
+        The dataframe for which the values will be replaced
+    replace
+        A dict of {old_value: new_values}
+    """
+    if not replace:
+        return df
+    with suppress(Exception):
+        df = df.replace(replace)
     return df
 
 
