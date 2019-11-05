@@ -41,10 +41,13 @@ class WaveFrame:
         waveforms: Optional[waveform_clientable_type] = None,
     ):
         self.processing = []  # init empty processing list
-
+        # for an instance of WaveFrame simply return its df
         if isinstance(stats, WaveFrame):
             df = stats._df.copy()
             self.processing = copy.deepcopy(stats.processing)
+        # the full waveframe dataframe was passed
+        elif isinstance(stats, pd.DataFrame) and waveforms is None:
+            df = stats.copy()
         else:
             df = self._df_from_stats_waveforms(stats=stats, waveforms=waveforms)
         self._df = df

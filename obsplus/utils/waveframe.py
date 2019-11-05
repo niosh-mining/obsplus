@@ -3,6 +3,7 @@ Waveframe specific utilities.
 """
 import obspy
 import pandas as pd
+from typing import Union
 
 import numpy as np
 from obsplus.constants import TIME_COLUMNS
@@ -11,6 +12,7 @@ from obsplus.constants import (
     bulk_waveform_arg_type,
     NSLC,
     BULK_WAVEFORM_COLUMNS,
+    wave_type,
 )
 from obsplus.utils.time import to_datetime64, to_utc
 from obsplus.utils.pd import apply_funcs_to_columns, order_columns
@@ -146,13 +148,27 @@ def _get_stats_dataframe(df):
     return df
 
 
-def _get_timeseries_df_from_client(waveforms, bulk):
+def _get_timeseries_df_from_client(
+    waveforms: Union[wave_type, pd.DataFrame], bulk
+) -> pd.DataFrame:
+    """ Given a waveform client return a dataframe containing time series. """
+    # If a dataframe was already passed simply return it.
+    if isinstance(waveforms, pd.DataFrame):
+        return waveforms
     client = get_waveform_client(waveforms)
+    # Get a stream of waveforms.
     if not isinstance(waveforms, obspy.Stream):
         waveforms = _get_waveforms_bulk(client, bulk)
     # There isn't guaranteed to be a trace for each bulk arg, so use
     # stream_bulk_split to make it so.
     st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
     # make sure the data are merged together with a sensible fill value
-    arrays = [st[0].data for st in st_list]
+    arrays = []
+    for st in st_list:
+        assert len(st) in {0, 1}, "st should either be empty or len 1"
+        if not len(st):  # empty data still needs an entry
+            arrays.append(np.array(np.NaN))
+            continue
+        arrays.append(st[0].data)
+
     return pd.DataFrame(arrays)

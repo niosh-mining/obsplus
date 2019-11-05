@@ -37,7 +37,10 @@ def waveframe_gap(st_no_response) -> WaveFrame:
     for tr in st2:
         tr.stats.starttime = st1[0].stats.endtime + 1
     st2[-1].data = st2[-1].data[:-20]
-    return WaveFrame.from_stream(st1 + st2)
+    wf = WaveFrame.from_stream(st1 + st2)
+    assert isinstance(wf, WaveFrame)
+    assert len(wf) == 6
+    return wf
 
 
 class Testbasics:
@@ -88,8 +91,7 @@ class TestConstructorStats:
 
     def test_gappy_traces(self, waveframe_gap):
         """ Ensure gappy data still works. """
-        assert isinstance(waveframe_gap, WaveFrame)
-        assert len(waveframe_gap) == 6
+
         # there should also be some NaN on the last row
         data = waveframe_gap.data
         null_count = data.isnull().sum(axis=1)
