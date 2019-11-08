@@ -1,19 +1,20 @@
 """
 Waveframe class definition.
 """
-import obspy
 import copy
-import pandas as pd
 from typing import Optional, Union
 
+import obspy
+import pandas as pd
+
 from obsplus.constants import waveform_clientable_type
+from obsplus.utils.time import to_utc
 from obsplus.utils.waveframe import (
     _get_bulk_args,
     _get_stats_dataframe,
     _get_timeseries_df_from_client,
     DfPartDescriptor,
 )
-from obsplus.utils.time import to_utc
 
 
 class WaveFrame:
@@ -105,3 +106,18 @@ class WaveFrame:
             data = self._df.loc[ind, "data"]
             traces.append(obspy.Trace(data=data.values, header=stats))
         return obspy.Stream(traces=traces)
+
+    # --- Utilities
+    def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
+        """
+        Stride a waveframe to create more rows and fewer columns.
+
+        Parameters
+        ----------
+        window_len
+            The window length in samples.
+        overlap
+            The overlap between each waveform slice, in samples.
+        """
+        window_len = window_len or self.data.size[-1]
+        assert overlap > window_len

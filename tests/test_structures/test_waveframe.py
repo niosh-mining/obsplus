@@ -22,7 +22,7 @@ def st_no_response():
 
 
 @pytest.fixture
-def waveframe(st_no_response) -> WaveFrame:
+def waveframe_from_stream(st_no_response) -> WaveFrame:
     """ Create a basic WaveFrame from default stream. """
     return WaveFrame.from_stream(st_no_response)
 
@@ -112,38 +112,54 @@ class TestConstructorStats:
         assert len(data) == 1
         assert data.isnull().all().all()
 
-    def test_init_waveframe_from_waveframe(self, waveframe):
+    def test_init_waveframe_from_waveframe(self, waveframe_from_stream):
         """ A waveframe should be valid input to waveframe constructor"""
-        wf1 = waveframe
+        wf1 = waveframe_from_stream
         wf2 = WaveFrame(wf1)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert (wf1._df == wf2._df).all().all()
 
-    def test_init_waveframe_from_waveframe_df(self, waveframe):
+    def test_init_waveframe_from_waveframe_df(self, waveframe_from_stream):
         """ A waveframe can be inited from a dataframe from a waveframe. """
-        wf1 = waveframe
+        wf1 = waveframe_from_stream
         wf2 = WaveFrame(wf1._df)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert (wf1._df == wf2._df).all().all()
 
-    def test_init_waveframe_from_waveframe_parts(self, waveframe):
+    def test_init_waveframe_from_waveframe_parts(self, waveframe_from_stream):
         """ A wavefrom should be init'able from a waveframes parts """
-        wf1 = waveframe
+        wf1 = waveframe_from_stream
         wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert (wf1._df == wf2._df).all().all()
 
 
+class TestComparisons:
+    """ Tests for comparing waveframes. """
+
+
 class TestToFromStream:
     """ Tests for converting a stream to a WaveFrame. """
 
-    def test_type(self, waveframe):
-        assert isinstance(waveframe, WaveFrame)
+    def test_type(self, waveframe_from_stream):
+        assert isinstance(waveframe_from_stream, WaveFrame)
 
-    def test_to_stream(self, waveframe, st_no_response):
-        st = waveframe.to_stream()
+    def test_to_stream(self, waveframe_from_stream, st_no_response):
+        st = waveframe_from_stream.to_stream()
         assert isinstance(st, obspy.Stream)
         assert st == st_no_response
+
+
+class TestStride:
+    """ Tests for stridding data. """
+
+    def test_stride(self, waveframe_from_stream):
+        """ Ensure striding works. """
+        # stridding with now input params should return a copy of waveframe
+        out = waveframe_from_stream.stride()
+        assert isinstance(out, WaveFrame)
+        assert out == waveframe_from_stream
+        assert 1
