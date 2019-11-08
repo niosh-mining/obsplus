@@ -156,7 +156,7 @@ def to_datetime64(
     elif isinstance(value, np.datetime64):
         return value
     elif isinstance(value, pd.Timestamp):
-        return value.to_numpy()
+        return value.to_datetime64()
     try:
         utc = obspy.UTCDateTime(value)
         return np.datetime64(utc._ns, "ns")

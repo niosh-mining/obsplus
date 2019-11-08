@@ -8,15 +8,14 @@ from types import MappingProxyType as MapProxy
 from typing import (
     Callable,
     Union,
-    Optional,
     Mapping,
-    Any,
     List,
     Tuple,
     TypeVar,
     MutableSequence,
     Iterable,
 )
+
 
 import numpy as np
 import obspy
@@ -413,9 +412,6 @@ catalog_component = AttribDict
 # types accepted by DataFetcher for stations info
 inventory_type = Union[Inventory, pd.DataFrame]
 
-# stations or events
-inventory_or_event = Union[Inventory, pd.DataFrame, Catalog, Event]
-
 # types that can be a station client
 station_clientable_type = Union[str, Path, Inventory]
 
@@ -423,22 +419,13 @@ station_clientable_type = Union[str, Path, Inventory]
 fetch_type = Union[wfcli_type, str]
 
 # time type (anything that can be fed to UTCDateTime)
-utc_time_type = Union[UTCDateTime, str, float, np.datetime64]
-
-# types for specifying starttimes
-starttime_type = Optional[Union[UTCDateTime, Mapping[Any, UTCDateTime]]]
-
-# types for specifying duration
-duration_type = Optional[Union[float, Mapping[Any, float]]]
+utc_time_type = Union[UTCDateTime, str, float, np.datetime64, pd.Timestamp]
 
 # types that can be used to indicate when an event waveform should start
 event_time_type = Union[UTCDateTime, Catalog, Event, float]
 
 # availability output type (return from obspy earthworm client availability)
 availability_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
-
-# basic types
-basic_types = Optional[Union[int, float, str, bool]]
 
 # series to series or ndarray func
 series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]

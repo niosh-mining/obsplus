@@ -249,9 +249,9 @@ class TestFilterDf:
         # this is mainly here to test the time filtering, because the bank
         # operations pass this off to the HDF5 kernel.
         index = crandall_dataset.waveform_client.read_index(network="UU")
-        mean_ns = index.starttime.astype(int).mean()
-        t1 = to_datetime64(obspy.UTCDateTime(ns=int(mean_ns)))
-        t2 = index.endtime.max()
+        t1_ns = int(index["starttime"].astype(int).mean())
+        t1 = np.datetime64(t1_ns, "ns")
+        t2 = index["endtime"].max()
         kwargs = dict(network="UU", station="*", location="*", channel="*")
         bool_ind = filter_index(index, starttime=t1, endtime=t2, **kwargs)
         assert (~np.logical_not(bool_ind)).any()

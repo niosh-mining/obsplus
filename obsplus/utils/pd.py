@@ -5,11 +5,10 @@ import fnmatch
 import re
 from contextlib import suppress
 from functools import lru_cache
-from typing import Optional, Sequence, Mapping, Union, Collection, Iterable
+from typing import Optional, Sequence, Mapping, Collection, Iterable
 
 import numpy as np
 import pandas as pd
-from obspy import UTCDateTime as UTC
 
 from obsplus.constants import (
     column_function_map_type,
@@ -17,6 +16,7 @@ from obsplus.constants import (
     NSLC,
     SMALLDT64,
     LARGEDT64,
+    utc_time_type,
 )
 from obsplus.utils.time import to_datetime64
 
@@ -176,8 +176,8 @@ def filter_index(
     station: Optional = None,
     location: Optional = None,
     channel: Optional = None,
-    starttime: Optional[Union[UTC, float]] = None,
-    endtime: Optional[Union[UTC, float]] = None,
+    starttime: Optional[utc_time_type] = None,
+    endtime: Optional[utc_time_type] = None,
     **kwargs,
 ) -> np.array:
     """
