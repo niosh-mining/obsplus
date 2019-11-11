@@ -118,7 +118,7 @@ class DataFrameExtractor(UserDict):
         """
         Registers an alternate constructor.
 
-        Registers an althernate constructor that is called when the input is
+        Registers an alternate constructor that is called when the input is
         not an instance of the expected class. This is useful, for examples to
         make the DataFrameExtractor idempotent or to default to various read
         methods in a path/str is passed.

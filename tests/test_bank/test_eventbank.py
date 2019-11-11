@@ -333,7 +333,7 @@ class TestReadIndexQueries:
         df = ebank.read_index()
         # now select on datetime
         sub = df.select_dtypes([np.datetime64])
-        assert "time" in sub.columns
+        assert {"time", "creation_time", "updated"}.issubset(sub.columns)
 
 
 class TestGetEvents:

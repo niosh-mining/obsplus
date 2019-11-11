@@ -35,7 +35,7 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     utc_time_type,
     get_waveforms_parameters,
-    bar_paramter_description,
+    bar_parameter_description,
     WAVEFORM_DTYPES,
     WAVEFORM_DTYPES_INPUT,
     EMPTYTD64,
@@ -194,7 +194,7 @@ class WaveBank(_Bank):
             data_columns=list(self.index_ints),
         )
 
-    @compose_docstring(bar_paramter_description=bar_paramter_description)
+    @compose_docstring(bar_paramter_description=bar_parameter_description)
     def update_index(self, bar: Optional = None) -> "WaveBank":
         """
         Iterate files in bank and add any modified since last update to index.

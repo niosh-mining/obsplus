@@ -89,9 +89,9 @@ def summarize_mseed(mseed_object):
         except ValueError:
             break
         while True:
-            header["starttime"] = current_segment.starttime * 1_000
-            header["endtime"] = current_segment.endtime * 1_000
-            header["sampling_period"] = current_segment.hpdelta * 1_000
+            header["starttime"] = current_segment.starttime * 1000
+            header["endtime"] = current_segment.endtime * 1000
+            header["sampling_period"] = current_segment.hpdelta * 1000
             traces.append(dict(header))
             try:
                 current_segment = current_segment.next.contents

@@ -46,7 +46,7 @@ PREFERRED = {
 }
 
 # ----- Extractor constants
-# types that indeicate time
+# types that indicate time
 time_types = (pd.Timestamp, np.datetime64)
 
 # Mapping numpy time types to their internal representation
@@ -113,7 +113,7 @@ EVENT_DTYPES = OrderedDict(
     stations=str,
     station_count=float,
     vertical_uncertainty=float,
-    updated=float,
+    updated="datetime64[ns]",
     author=str,
     agency_id=str,
     creation_time="datetime64[ns]",
@@ -569,6 +569,8 @@ TIME_VALUES = [
 TIME_COLUMNS = (
     "time",
     "creation_time",
+    "updated",  # I'm hoping this is actually the case
+    "updatedafter",
     "end_date",
     "start_date",
     "event_time",
@@ -652,11 +654,11 @@ degrees: int, default True
 """
 
 # the description for the parameter 'bar' in the bank `update_index` methods.
-bar_paramter_description = """
+bar_parameter_description = """
 bar
     This parameter controls if a progress bar will be used for this
     function call. Its behavior is dependent on the `bar` parameter:
-        False - Dont use a progress bar
+        False - Don't use a progress bar
         None - Use the default progress bar
         ProgressBar - a custom implementation of progress bar is used.
 

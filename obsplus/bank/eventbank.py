@@ -31,7 +31,7 @@ from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
     get_events_parameters,
-    bar_paramter_description,
+    bar_parameter_description,
     EVENT_TYPES_OUTPUT,
     EVENT_TYPES_INPUT,
 )
@@ -206,7 +206,7 @@ class EventBank(_Bank):
             df = df[df.event_id.isin(circular_ids)]
         return df
 
-    @compose_docstring(bar_paramter_description=bar_paramter_description)
+    @compose_docstring(bar_paramter_description=bar_parameter_description)
     def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.

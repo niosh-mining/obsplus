@@ -38,7 +38,6 @@ from obsplus.structures.dfextractor import (
 from obsplus.utils import read_file, apply_to_files_or_skip, get_instances, getattrs
 
 # -------------------- init extractors
-
 events_to_df = DataFrameExtractor(
     ev.Event,
     required_columns=EVENT_COLUMNS,
@@ -207,7 +206,8 @@ def _get_eve_creation_info(event):
     return {x: out.get(x) for x in keys}
 
 
-@events_to_df.extractor(dtypes={"updated": float})
+# @events_to_df.extractor(dtypes={"updated": float})
+@events_to_df.extractor()
 def _get_update_time(eve):
     """ return the most recent time anything was updated in event """
     creations = get_instances(eve, ev.CreationInfo)
