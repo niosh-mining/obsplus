@@ -206,7 +206,6 @@ def _get_eve_creation_info(event):
     return {x: out.get(x) for x in keys}
 
 
-# @events_to_df.extractor(dtypes={"updated": float})
 @events_to_df.extractor()
 def _get_update_time(eve):
     """ return the most recent time anything was updated in event """

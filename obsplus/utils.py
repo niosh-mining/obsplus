@@ -1051,10 +1051,10 @@ def to_datetime64(value: utc_able_type, default=pd.NaT) -> np.datetime64:
     """
     if pd.isnull(value) or not value:
         if not pd.isnull(default):
-            return to_datetime64(default)
+            return to_datetime64(default).astype("datetime64[ns]")
         return default
     elif isinstance(value, np.datetime64):
-        return value
+        return value.astype("datetime64[ns]")
     elif isinstance(value, pd.Timestamp):
         return value.to_datetime64()
     try:
@@ -1102,7 +1102,7 @@ def to_utc(value: utc_able_type) -> obspy.UTCDateTime:
         Any value readable by ~:class:`obspy.UTCDateTime` or
         ~:class:`numpy.datetime64`.
     """
-    ns = to_datetime64(value).astype("datetime64[ns]").astype(int)
+    ns = to_datetime64(value).astype(int)
     return obspy.UTCDateTime(ns=int(ns))
 
 

@@ -481,8 +481,8 @@ class WaveBank(_Bank):
 
         # get a dataframe of the bulk arguments, convert time to float
         df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-        df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
-        df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
+        df["t1"] = df["utc1"].apply(to_datetime64)
+        df["t2"] = df["utc2"].apply(to_datetime64)
         # read index that contains any times that might be used, or filter
         # provided index
         t1, t2 = df["t1"].min(), df["t2"].max()
