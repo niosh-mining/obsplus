@@ -20,11 +20,14 @@ from obsplus.events.utils import catalog_to_directory
 
 # ----------- module fixtures
 
-
-@pytest.fixture(scope="class")
-def catalog(bingham_dataset):
-    """ return the bingham_test_case events """
-    return bingham_dataset.event_client.get_events().copy()
+#
+# @pytest.fixture(scope="class")
+# def catalog(bingham_dataset):
+#     """ return the bingham_test_case events """
+#     cli = bingham_dataset.event_client
+#     cat = cli.get_events()
+#     assert len(cat)
+#     return cat
 
 
 @pytest.fixture
@@ -95,17 +98,34 @@ class TestBankBasics:
         obsplus.__version__ = version
         return ebank
 
+    @pytest.fixture(scope="class")
+    def ebank_with_event_no_time(self, tmp_path_factory):
+        """ Create an event bank which has one file with no time. """
+        tmp_path = Path(tmp_path_factory.mktemp("basic"))
+        cat = obspy.read_events()
+        # clear origin from first event and add an empty one
+        cat[0].origins.clear()
+        new_origin = ev.Origin()
+        cat[0].origins.append(new_origin)
+        cat[0].preferred_origin_id = new_origin.resource_id
+        # now save the events
+        for num, event in enumerate(cat):
+            path = tmp_path / f"{num}.xml"
+            event.write(path, format="quakeml")
+        # init, update, return bank
+        return obsplus.EventBank(tmp_path).update_index()
+
     def test_has_attrs(self, bing_ebank):
         """ ensure all the required attrs exist """
         for attr in self.expected_attrs:
             assert hasattr(bing_ebank, attr)
 
-    def test_read_index(self, bing_ebank, catalog):
+    def test_read_index(self, bing_ebank, bingham_catalog):
         """ read index, ensure its length matches events and id sets are
         equal """
         df = bing_ebank.read_index()
         assert isinstance(df, pd.DataFrame)
-        assert len(catalog) == len(df)
+        assert len(bingham_catalog) == len(df)
 
     def test_read_timestamp(self, bing_ebank):
         """ read the current timestamp (after index has been updated)"""
@@ -137,10 +157,25 @@ class TestBankBasics:
         bing_ebank.update_index()
         assert bing_ebank.get_service_version() == obsplus.__version__
 
+    def test_get_events_empty_bank(self, tmp_path):
+        """ Calling get_waveforms on an empty bank should update index. """
+        cat1 = obspy.read_events()
+        catalog_to_directory(cat1, tmp_path, event_bank_index=False)
+        cat1_dict = {str(x.resource_id): x for x in cat1}
+        # get a bank, ensure it has no index and call get events
+        bank = obsplus.EventBank(tmp_path)
+        index = Path(bank.index_path)
+        if index.exists():
+            index.unlink()
+        # now get events and assert equal to input (although order can change)
+        cat2 = bank.get_events()
+        cat2_dict = {str(x.resource_id): x for x in cat2}
+        assert cat2_dict == cat1_dict
+
     def test_min_version_recreates_index(self, ebank_low_version):
         """
-        If the min version is not met the index should be deleted and re-created.
-        A warning should be issued.
+        If the min version of the event bank is not met the index should
+        be deleted and re-created. A warning should be issued.
         """
         ebank = ebank_low_version
         ipath = Path(ebank.index_path)
@@ -181,9 +216,27 @@ class TestBankBasics:
         out = ebank.update_index()
         assert out is ebank
 
+    def test_events_no_time(self, ebank_with_event_no_time):
+        """ Tests for events which have no event time. """
+        bank = ebank_with_event_no_time
+        # not starttime/endtime should return all row, one has NaT
+        ind = bank.read_index()
+        assert len(ind) == 3
+        assert ind["time"].isnull().sum() == 1
+        # if any starttime/endtime are specified it should not return NaT row
+        ind = bank.read_index(starttime="2012-01-01")
+        assert len(ind) == 2
+        assert not ind["time"].isnull().sum()
+        ind = bank.read_index(endtime="2020-01-01")
+        assert len(ind) == 2
+        assert not ind["time"].isnull().sum()
+        ind = bank.read_index(starttime="2000-01-01", endtime="2020-01-01")
+        assert len(ind) == 2
+        assert not ind["time"].isnull().sum()
+
 
 class TestReadIndexQueries:
-    """ tests to ensure the index can be queried """
+    """ tests for index querying """
 
     def test_query_min_magnitude(self, bing_ebank):
         """ test min mag query """
@@ -205,21 +258,21 @@ class TestReadIndexQueries:
         con2 = df.local_magnitude < maxmag
         assert (con1 & con2).all()
 
-    def test_query_event_id(self, bing_ebank, catalog):
+    def test_query_event_id(self, bing_ebank, bingham_catalog):
         """ test query on an event id """
-        eve_id = str(catalog[0].resource_id)
+        eve_id = str(bingham_catalog[0].resource_id)
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
         assert eve_id in set(df["event_id"])
 
-    def test_query_resource_id(self, bing_ebank, catalog):
+    def test_query_resource_id(self, bing_ebank, bingham_catalog):
         """ test query on a resource id """
-        eve_id = catalog[0].resource_id
+        eve_id = bingham_catalog[0].resource_id
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
         assert str(eve_id) in set(df["event_id"])
 
-    def test_query_event_ids(self, bing_ebank, catalog):
+    def test_query_event_ids(self, bing_ebank, bingham_catalog):
         """
         test querying multiple ids (specifically using something other
         than a list)
@@ -275,25 +328,32 @@ class TestReadIndexQueries:
             assert len(df1) == len(df2)
             assert df1.reset_index(drop=True).equals(df2.reset_index(drop=True))
 
+    def test_index_time_columns(self, ebank):
+        """ Ensure the time columns are pandas datetimes.  """
+        df = ebank.read_index()
+        # now select on datetime
+        sub = df.select_dtypes([np.datetime64])
+        assert {"time", "creation_time", "updated"}.issubset(sub.columns)
+
 
 class TestGetEvents:
     """ tests for pulling events out of the bank """
 
-    def test_no_params(self, bing_ebank, catalog):
+    def test_no_params(self, bing_ebank, bingham_catalog):
         """ ensure a basic query can get an event """
         cat = bing_ebank.get_events()
         ev1 = sorted(cat.events, key=lambda x: str(x.resource_id))
-        ev2 = sorted(catalog.events, key=lambda x: str(x.resource_id))
+        ev2 = sorted(bingham_catalog.events, key=lambda x: str(x.resource_id))
         assert ev1 == ev2
 
-    def test_query(self, bing_ebank, catalog):
+    def test_query(self, bing_ebank, bingham_catalog):
         """ test a query """
         t2 = obspy.UTCDateTime("2013-04-10")
         t1 = obspy.UTCDateTime("2010-01-01")
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
-        assert cat == catalog.get_events(starttime=t1, endtime=t2)
+        assert cat == bingham_catalog.get_events(starttime=t1, endtime=t2)
 
-    def test_query_circular(self, bing_ebank, catalog):
+    def test_query_circular(self, bing_ebank, bingham_catalog):
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
         cat = bing_ebank.get_events(
             latitude=latitude,
@@ -301,7 +361,7 @@ class TestGetEvents:
             maxradius=minradius,
             minradius=maxradius,
         )
-        assert cat == catalog.get_events(
+        assert cat == bingham_catalog.get_events(
             latitude=latitude,
             longitude=longitude,
             maxradius=minradius,
@@ -331,10 +391,10 @@ class TestPutEvents:
         assert len(event_out) == 1
         assert event_out[0] == event
 
-    def test_update_event(self, bing_ebank, catalog):
+    def test_update_event(self, bing_ebank, bingham_catalog):
         """ modify and event and ensure index is updated """
         index1 = bing_ebank.read_index()
-        eve = catalog[0]
+        eve = bingham_catalog[0]
         rid = str(eve.resource_id)
         # modify event
         old_lat = eve.origins[0].latitude

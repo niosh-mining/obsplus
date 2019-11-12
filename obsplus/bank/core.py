@@ -6,7 +6,8 @@ import warnings
 from abc import ABC, abstractmethod
 from os.path import join
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Mapping
+from types import MappingProxyType as MapProxy
 
 import pandas as pd
 from pandas.io.sql import DatabaseError
@@ -15,6 +16,7 @@ import obsplus
 from obsplus.constants import CPU_COUNT
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
+from obsplus.bank.utils import _IndexCache
 from obsplus.utils import iter_files, get_progressbar
 
 BankType = TypeVar("BankType", bound="_Bank")
@@ -40,11 +42,17 @@ class _Bank(ABC):
     name_structure = None
     # the minimum obsplus version. If not met delete index and re-index
     # bump when database schema change.
-    _min_version = "0.0.0"
+    _min_version = "0.0.3"
     # status bar attributes
     _bar_update_interval = 50  # number of files before updating bar
     _min_files_for_bar = 100  # min number of files before using bar enabled
     _read_func: callable  # function for reading datatype
+    # required dypes for input to storage layer
+    _dtypes_input: Mapping = MapProxy({})
+    # required dtypes for output from bank
+    _dtypes_output: Mapping = MapProxy({})
+    # the index cache (can greatly reduce IO efforts)
+    _index_cache: Optional[_IndexCache] = None
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
@@ -208,6 +216,13 @@ class _Bank(ABC):
         else:
             msg = f"{bar} is not a valid input for get_progress_bar"
             raise ValueError(msg)
+
+    def clear_cache(self):
+        """
+        Clear the index cache if the bank is using one.
+        """
+        if self._index_cache is not None:
+            self._index_cache.clear_cache()
 
     @property
     def _max_workers(self):

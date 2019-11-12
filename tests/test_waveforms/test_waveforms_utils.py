@@ -11,6 +11,7 @@ import pytest
 
 import obsplus
 from obsplus.constants import NSLC
+from obsplus.utils import to_timedelta64
 from obsplus.waveforms.utils import (
     trim_event_stream,
     stream2contiguous,
@@ -270,11 +271,11 @@ class TestArchiveToSDS:
         # ensure starttimes are the same
         old_start = group_old.starttime.min()
         sds_start = group_sds.starttime.min()
-        assert (old_start == sds_start).all()
+        assert np.allclose(old_start.astype(int), sds_start.astype(int))
         # ensure endtimes are the same
         old_end = group_old.endtime.max()
         sds_end = group_sds.endtime.max()
-        assert (old_end == sds_end).all()
+        assert np.allclose(old_end.astype(int), sds_end.astype(int))
 
     def test_each_file_one_trace(self, sds_wavebank):
         """ ensure each file in the sds has exactly one channel """
@@ -303,8 +304,8 @@ class TestStreamBulkSplit:
         """ Create a dataframe from the bingham picks. """
         picks = obsplus.picks_to_df(bingham_catalog)
         df = picks[list(NSLC)]
-        df["starttime"] = picks["time"] - 1.011
-        df["endtime"] = picks["time"] + 7.011
+        df["starttime"] = picks["time"] - to_timedelta64(1.011)
+        df["endtime"] = picks["time"] + to_timedelta64(7.011)
         return df
 
     def get_bulk_from_stream(self, st, tr_inds, times):

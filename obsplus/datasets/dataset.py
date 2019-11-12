@@ -7,6 +7,7 @@ import inspect
 import os
 import json
 import shutil
+from contextlib import suppress
 from collections import OrderedDict
 from distutils.dir_util import copy_tree
 from functools import lru_cache
@@ -219,6 +220,7 @@ class DataSet(abc.ABC):
     def _save_data_path(self, path=None):
         """ Save the path to where the data where downloaded in source folder. """
         path = Path(path or self._path_to_saved_path_file)
+        path.parent.mkdir(exist_ok=True, parents=True)
         with path.open("w") as fi:
             fi.write(str(self.data_path))
 
@@ -243,8 +245,10 @@ class DataSet(abc.ABC):
             # The dataset has not been discovered; try to load entry points
             cls._load_dataset_entry_points(name)
             if name in cls._entry_points:
-                cls._entry_points[name].load()
-                return load_dataset(name)
+                # If a plugin was register but no longer exists it can raise.
+                with suppress(ModuleNotFoundError):
+                    cls._entry_points[name].load()
+                    return load_dataset(name)
             msg = f"{name} is not in the known datasets {list(cls.datasets)}"
             raise ValueError(msg)
         if name in cls._loaded_datasets:

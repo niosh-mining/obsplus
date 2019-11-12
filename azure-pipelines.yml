@@ -13,7 +13,6 @@ variables:
   conda_packages: pytest obspy pandas xarray pytables flake8 flake8-black
 
 jobs:
-
 - job: 'Ubuntu'
   pool:
     vmImage: 'ubuntu-latest'

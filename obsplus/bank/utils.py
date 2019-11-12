@@ -24,11 +24,20 @@ from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     WAVEFORM_NAME_STRUCTURE,
     EVENT_NAME_STRUCTURE,
+    SMALLDT64,
+    LARGEDT64,
+    MININT64,
 )
-from obsplus.utils import _get_event_origin_time, READ_DICT
+from obsplus.utils import (
+    _get_event_origin_time,
+    READ_DICT,
+    dict_times_to_ns,
+    to_datetime64,
+)
 from .mseed import summarize_mseed
 
-# --- sensible defaults
+# functions for summarizing the various formats
+summarizing_functions = dict(mseed=summarize_mseed)
 
 # extensions
 WAVEFORM_EXT = ".mseed"
@@ -70,24 +79,34 @@ def _get_path(info, path, name, path_struct, name_strcut):
     return dict(path=path, filename=out_name)
 
 
-def _summarize_wave_file(path, format):
-    if format == "mseed":
-        try:
-            return summarize_mseed(path)
-        except Exception:
-            pass
-    # specialized mseed function failed
-    out_list = []
+def summarize_generic_stream(path, format=None):
     st = _try_read_stream(path, format=format) or _try_read_stream(path) or []
+    out = []
     for tr in st:
-        out = {
-            "starttime": tr.stats.starttime.timestamp,
-            "endtime": tr.stats.endtime.timestamp,
+        summary = {
+            "starttime": tr.stats.starttime._ns,
+            "endtime": tr.stats.endtime._ns,
+            "sampling_period": int(tr.stats.delta * 1_000_000_000),
             "path": path,
         }
-        out.update(dict((x, c) for x, c in zip(NSLC, tr.id.split("."))))
-        out_list.append(out)
-    return out_list
+        summary.update(dict((x, c) for x, c in zip(NSLC, tr.id.split("."))))
+        out.append(summary)
+    return out
+
+
+def _summarize_wave_file(path, format, summarizer=None):
+    """
+    Summarize waveform files for indexing.
+
+    Note: this function is a bit ugly, but it gets called *a lot* so be sure
+    to profile before refactoring.
+    """
+    if summarizer is not None:
+        try:
+            return summarizer(path)
+        except Exception:
+            pass
+    return summarize_generic_stream(path, format)
 
 
 def _summarize_trace(
@@ -177,29 +196,27 @@ class _IndexCache:
     def __call__(self, starttime, endtime, buffer, **kwargs):
         """ get start and end times, perform in kernel lookup """
         # get defaults if starttime or endtime is none
-        starttime = obspy.UTCDateTime(starttime or 0.0).timestamp
-        endtime = obspy.UTCDateTime(endtime or 9_000_000_000).timestamp
+        starttime = to_datetime64(starttime or SMALLDT64)
+        endtime = to_datetime64(endtime or LARGEDT64)
         # find out if the query falls within one cached times
         con1 = self.cache.t1 <= starttime
         con2 = self.cache.t2 >= endtime
         con3 = self.cache.kwargs == self._kwargs_to_str(kwargs)
         cached_index = self.cache[con1 & con2 & con3]
-        if not len(cached_index):  # query is not cached get it from cache
-            # get expected dtypes
-            strs = {x: str for x in self.bank.index_str}
-            floats = {x: float for x in self.bank.index_float}
-            dtypes = {**strs, **floats}
-            where = get_kernel_query(starttime, endtime, buffer=buffer)
-            index = self._get_index(where, **kwargs)
+        if not len(cached_index):  # query is not cached get it from hdf5 file
+            where = get_kernel_query(int(starttime), int(endtime), int(buffer))
+            raw_index = self._get_index(where, **kwargs)
             # replace "None" with None
             ic = self.bank.index_str
-            index.loc[:, ic] = index.loc[:, ic].replace(["None"], [None])
-            self._set_cache(index.astype(dtypes), starttime, endtime, kwargs)
+            raw_index.loc[:, ic] = raw_index.loc[:, ic].replace(["None"], [None])
+            # convert data types used by bank back to those seen by user
+            index = raw_index.astype(dict(self.bank._dtypes_output))
+            self._set_cache(index, starttime, endtime, kwargs)
         else:
             index = cached_index.iloc[0]["cindex"]
         # trim down index
-        con1 = index.starttime >= (endtime + buffer)
-        con2 = index.endtime <= (starttime - buffer)
+        con1 = index["starttime"] >= (endtime + buffer)
+        con2 = index["endtime"] <= (starttime - buffer)
         return index[~(con1 | con2)]
 
     def _set_cache(self, index, starttime, endtime, kwargs):
@@ -249,16 +266,16 @@ def sql_connection(path, **kwargs):
         yield con
 
 
-def get_kernel_query(starttime: float, endtime: float, buffer: float):
+def get_kernel_query(starttime: int, endtime: int, buffer: int):
     """" get the HDF5 kernel query parameters (this is necessary because
     hdf5 doesnt accept invert conditions for some reason. A slight buffer
     is applied to the ranges to make sure no edge files are left out"""
-    t1 = obspy.UTCDateTime(starttime).timestamp - buffer
-    t2 = obspy.UTCDateTime(endtime).timestamp + buffer
+    t1 = starttime - buffer
+    t2 = endtime + buffer
     con = (
-        f"(starttime>{t1:f} & starttime<{t2:f}) | "
-        f"((endtime>{t1:f} & endtime<{t2:f}) | "
-        f"(starttime<{t1:f} & endtime>{t2:f}))"
+        f"(starttime>{t1:d} & starttime<{t2:d}) | "
+        f"((endtime>{t1:d} & endtime<{t2:d}) | "
+        f"(starttime<{t1:d} & endtime>{t2:d}))"
     )
     return con
 
@@ -285,42 +302,51 @@ def _str_of_params(value):
 
 def _make_wheres(queries):
     """ Create the where queries, join with AND clauses """
-    kwargs = dict(queries)
-    out = []
 
-    if "eventid" in kwargs:
-        kwargs["event_id"] = kwargs["eventid"]
-        kwargs.pop("eventid")
-    if "event_id" in kwargs:
-        kwargs["event_id"] = _str_of_params(kwargs["event_id"])
-    if "event_description" in kwargs:
-        kwargs["event_description"] = _str_of_params(kwargs["event_description"])
-    if "endtime" in kwargs:
-        kwargs["maxtime"] = kwargs["endtime"]
-        kwargs.pop("endtime")
-    if "starttime" in kwargs:
-        kwargs["mintime"] = kwargs["starttime"]
-        kwargs.pop("starttime")
-    if "mintime" in kwargs:
-        kwargs["mintime"] = obspy.UTCDateTime(kwargs["mintime"]).timestamp
-    if "maxtime" in kwargs:
-        kwargs["maxtime"] = obspy.UTCDateTime(kwargs["maxtime"]).timestamp
+    def _rename_keys(kwargs):
+        """ re-word some keys to make automatic sql generation easier"""
+        if "eventid" in kwargs:
+            kwargs["event_id"] = kwargs["eventid"]
+            kwargs.pop("eventid")
+        if "event_id" in kwargs:
+            kwargs["event_id"] = _str_of_params(kwargs["event_id"])
+        if "event_description" in kwargs:
+            kwargs["event_description"] = _str_of_params(kwargs["event_description"])
+        if "endtime" in kwargs:
+            kwargs["maxtime"] = kwargs.pop("endtime")
+        if "starttime" in kwargs:
+            kwargs["mintime"] = kwargs.pop("starttime")
+        return kwargs
 
-    for key, val in kwargs.items():
-        # deal with simple min/max
-        if key.startswith("min"):
-            out.append(f"{key.replace('min', '')} > {val}")
-        elif key.startswith("max"):
-            out.append(f"{key.replace('max', '')} < {val}")
-        # deal with equals or ins
-        elif isinstance(val, Sequence):
-            if isinstance(val, str):
-                val = [val]
-            tup = str(tuple(val)).replace(",)", ")")  # no trailing coma
-            out.append(f"{key} IN {tup}")
-        else:
-            out.append(f"{key} = {val}")
-    return " AND ".join(out).replace("'", '"')
+    def _handle_nat(kwargs):
+        """ add a mintime that will exclude NaT values if endtime is used """
+        if "maxtime" in kwargs and "mintime" not in kwargs:
+            kwargs["mintime"] = MININT64 + 1
+        return kwargs
+
+    def _build_query(kwargs):
+        """ iterate each key/value and build query """
+        out = []
+        for key, val in kwargs.items():
+            # deal with simple min/max
+            if key.startswith("min"):
+                out.append(f"{key.replace('min', '')} > {val}")
+            elif key.startswith("max"):
+                out.append(f"{key.replace('max', '')} < {val}")
+            # deal with equals or ins
+            elif isinstance(val, Sequence):
+                if isinstance(val, str):
+                    val = [val]
+                tup = str(tuple(val)).replace(",)", ")")  # no trailing coma
+                out.append(f"{key} IN {tup}")
+            else:
+                out.append(f"{key} = {val}")
+        return " AND ".join(out).replace("'", '"')
+
+    kwargs = dict_times_to_ns(queries)
+    kwargs = _rename_keys(kwargs)
+    kwargs = _handle_nat(kwargs)
+    return _build_query(kwargs)
 
 
 def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
@@ -358,6 +384,7 @@ def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
     -------
 
     """
+    # first ensure all times are ns (as ints)
     sql = _make_sql_command("select", table_name, columns=columns, **kwargs)
     # replace "None" with None
     return pd.read_sql(sql, con)
@@ -390,22 +417,7 @@ def _try_read_stream(stream_path, format=None, **kwargs):
             msg = f"{stream_path} was read but is not of format {format}"
             warnings.warn(msg, UserWarning)
     finally:
-        if stt is not None and len(stt):
-            return stt
-    return None
-
-
-def _try_read_catalog(catalog_path, **kwargs):
-    """ Try to read a events from file, if it raises return None """
-    read = READ_DICT.get(kwargs.pop("format", None), obspy.read_events)
-    try:
-        cat = read(catalog_path, **kwargs)
-    except Exception:
-        warnings.warn(f"obspy failed to read {catalog_path}")
-    else:
-        if cat is not None and len(cat):
-            return cat
-    return None
+        return stt if stt else None
 
 
 @singledispatch

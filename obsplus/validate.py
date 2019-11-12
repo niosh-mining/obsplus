@@ -3,7 +3,7 @@ Core modules for validate.
 """
 import inspect
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from functools import singledispatch
 from itertools import product
 from typing import Optional, Dict
@@ -142,7 +142,12 @@ def _make_validator_report(validator, obj, kwargs):
     try:
         _run_validator(validator, obj, kwargs)
     except AssertionError as e:
-        msg = f"validator {val_name} failed object: {obj} raising message:\n {e}"
+        # some objects raise when trying to represent them as str, protect
+        # against this.
+        obj_rep = ""
+        with suppress(TypeError, ValueError):
+            obj_rep = str(obj)
+        msg = f"validator {val_name} failed object: {obj_rep} raising:\n {e}"
         out["passed"] = False
         out["message"] = msg
     else:

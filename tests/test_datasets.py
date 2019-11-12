@@ -65,7 +65,11 @@ class TestDatasets:
     """ generic tests for all loaded datasets. These require downloaded a few
      mb of data. """
 
-    client_types = (EventClient, StationClient, WaveformClient)
+    client_types = {
+        "event": EventClient,
+        "station": StationClient,
+        "waveform": WaveformClient,
+    }
 
     @pytest.fixture(scope="class")
     def new_dataset(self, dataset, tmpdir_factory) -> DataSet:
@@ -107,7 +111,7 @@ class TestDatasets:
 
     def test_clients(self, datafetcher):
         """ Each dataset should have waveform, event, and station clients """
-        for name, ctype in zip(DATA_TYPES, self.client_types):
+        for name, ctype in self.client_types.items():
             obj = getattr(datafetcher, name + "_client", None)
             assert isinstance(obj, ctype) or obj is None
 
@@ -131,6 +135,7 @@ class TestDatasets:
         class NewDataSet(DataSet):
             name = "test_dataset"
             base_path = path
+            version = "0.0.0"
 
             def download_stations(self):
                 self.station_path.mkdir(exist_ok=True, parents=True)

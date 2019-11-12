@@ -9,6 +9,8 @@ obsplus master:
     * Removed concurrent update features for WaveBank (see #117).
     * Add support for using concurrent.futures Executors to speed up indexing
       and reading files (see #108).
+    * WaveBank and event Bank now represent time as an int of nanoseconds, see
+      (#131).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
@@ -31,6 +33,9 @@ obsplus master:
     * Added assert_streams_almost_equal method (see #128).
     * The function obsplus.waveforms.stream_split_bulk now has more flexible
       inputs (see #128).
+  - general
+    * All obsplus objects now use pandas datetimes and/or numpy datetime64 for
+      representing dates and times (see #88 and #131).
 
 obsplus 0.0.2:
   - obsplus.bank

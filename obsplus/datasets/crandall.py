@@ -1,7 +1,7 @@
 """
 The Crandall Canyon dataset
 """
-
+import numpy as np
 import obspy
 from obspy import UTCDateTime as UTC
 from obspy.clients.fdsn.mass_downloader import (
@@ -36,8 +36,8 @@ class Crandall(DataSet):
     # Days of interest. The collapse occurred on Aug 6th
     starttime = obspy.UTCDateTime("2007-08-06")
     endtime = obspy.UTCDateTime("2007-08-10")
-    time_before = 10
-    time_after = 60
+    time_before = np.timedelta64(10, "s")
+    time_after = np.timedelta64(60, "s")
     # approx. location of collapse
     latitude = 39.462
     longitude = -111.228

@@ -61,7 +61,7 @@ class TestGetEvents:
         assert len(out) == 1
         assert out[0] == catalog[0]
 
-    def test_test_update_after(self, catalog):
+    def test_update_after(self, catalog):
         """ test that ids can be used to filter """
         eve = catalog[0]
         time = obspy.UTCDateTime("2017-05-04")

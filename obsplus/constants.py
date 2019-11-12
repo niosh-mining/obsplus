@@ -1,10 +1,10 @@
 """
 Constants used throughout obsplus
 """
-import concurrent.futures
-from os import cpu_count
 from collections import OrderedDict
+from os import cpu_count
 from pathlib import Path
+from types import MappingProxyType as MapProxy
 from typing import (
     Callable,
     Union,
@@ -46,6 +46,12 @@ PREFERRED = {
 }
 
 # ----- Extractor constants
+# types that indicate time
+time_types = (pd.Timestamp, np.datetime64)
+
+# Mapping numpy time types to their internal representation
+_DATETIME_TYPE_MAP = {"datetime64[ns]": int, "timedelta64[ns]": int}
+
 # columns required for station data
 STATION_DTYPES = OrderedDict(
     network=str,
@@ -60,8 +66,8 @@ STATION_DTYPES = OrderedDict(
     azimuth=float,
     dip=float,
     sample_rate=float,
-    start_date=float,
-    end_date=float,
+    start_date="datetime64[ns]",
+    end_date="datetime64[ns]",
 )
 
 STATION_COLUMNS = tuple(STATION_DTYPES)
@@ -84,13 +90,13 @@ DF_TO_INV_COLUMNS = tuple(DF_TO_INV_DTYPES)
 
 # columns required for event_data
 EVENT_DTYPES = OrderedDict(
-    time=float,
+    time="datetime64[ns]",
     latitude=float,
     longitude=float,
     depth=float,
     magnitude=float,
     event_description=str,
-    associated_phase_count=int,
+    associated_phase_count=float,
     azimuthal_gap=float,
     event_id=str,
     horizontal_uncertainty=float,
@@ -98,29 +104,37 @@ EVENT_DTYPES = OrderedDict(
     moment_magnitude=float,
     duration_magnitude=float,
     magnitude_type=str,
-    p_phase_count=int,
-    s_phase_count=int,
-    p_pick_count=int,
-    s_pick_count=int,
+    p_phase_count=float,
+    s_phase_count=float,
+    p_pick_count=float,
+    s_pick_count=float,
     standard_error=float,
-    used_phase_count=int,
-    stations=float,
-    station_count=int,
+    used_phase_count=float,
+    stations=str,
+    station_count=float,
     vertical_uncertainty=float,
-    updated=float,
+    updated="datetime64[ns]",
     author=str,
     agency_id=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     version=str,
 )
 
 EVENT_COLUMNS = tuple(EVENT_DTYPES)
 
-# columns required for picks
+# Event types which are returned from EventBank
+EVENT_TYPES_OUTPUT = dict(EVENT_DTYPES)
+EVENT_TYPES_OUTPUT.pop("stations", None)
+EVENT_TYPES_OUTPUT["path"] = str
 
+# input types for EventBank
+INPUT_MAP = {"datetime64[ns]": int}
+EVENT_TYPES_INPUT = {i: INPUT_MAP.get(v, v) for i, v in EVENT_TYPES_OUTPUT.items()}
+
+# columns required for picks
 PICK_DTYPES = OrderedDict(
     resource_id=str,
-    time=float,
+    time="datetime64[ns]",
     seed_id=str,
     filter_id=str,
     method_id=str,
@@ -130,9 +144,9 @@ PICK_DTYPES = OrderedDict(
     phase_hint=str,
     polarity=str,
     evaluation_mode=str,
-    event_time=float,
+    event_time="datetime64[ns]",
     evaluation_status=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
     event_id=str,
@@ -170,16 +184,16 @@ AMPLITUDE_DTYPES = OrderedDict(
     period=float,
     snr=float,
     pick_id=str,
-    reference=float,
+    reference="datetime64[ns]",
     time_begin=float,
     time_end=float,
     scaling_time=float,
     evaluation_mode=str,
     evaluation_status=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
-    event_time=float,
+    event_time="datetime64[ns]",
     event_id=str,
     network=str,
     station=str,
@@ -214,11 +228,11 @@ STATION_MAGNITUDE_DTYPES = OrderedDict(
     magnitude_id=str,
     origin_id=str,
     method_id=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
     event_id=str,
-    event_time=float,
+    event_time="datetime64[ns]",
     network=str,
     station=str,
     location=str,
@@ -251,11 +265,11 @@ MAGNITUDE_DTYPES = OrderedDict(
     azimuthal_gap=float,
     evaluation_mode=str,
     evaluation_status=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
     event_id=str,
-    event_time=float,
+    event_time="datetime64[ns]",
     uncertainty=float,
     lower_uncertainty=float,
     upper_uncertainty=float,
@@ -281,7 +295,7 @@ ARRIVAL_DTYPES = OrderedDict(
     horizontal_slowness_weight=float,
     backazimuth_weight=float,
     earth_model_id=str,
-    creation_time=float,
+    creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
     network=str,
@@ -289,7 +303,7 @@ ARRIVAL_DTYPES = OrderedDict(
     location=str,
     channel=str,
     origin_id=str,
-    origin_time=float,
+    origin_time="datetime64[ns]",
 )
 
 ARRIVAL_COLUMNS = (
@@ -309,6 +323,22 @@ ARRIVAL_COLUMNS = (
     "channel",
 )
 
+# Waveform datatypes
+WAVEFORM_DTYPES = OrderedDict(
+    network=str,
+    station=str,
+    location=str,
+    channel=str,
+    starttime="datetime64[ns]",
+    endtime="datetime64[ns]",
+    sampling_period="timedelta64[ns]",
+)
+
+# The datatypes needed for putting waveform info into HDF5
+WAVEFORM_DTYPES_INPUT = MapProxy(
+    {i: _DATETIME_TYPE_MAP.get(v, v) for i, v in WAVEFORM_DTYPES.items()}
+)
+
 # keys used to identify UTC objects
 UTC_KEYS = ("creation_time", "time", "reference")
 
@@ -325,6 +355,19 @@ DIMS = ("stream_id", "seed_id", "time")
 BIG_UTC = obspy.UTCDateTime("3000-01-01")
 SMALL_UTC = obspy.UTCDateTime("1970-01-01")
 
+# The smallest value an int64 can rep. (used as NaT by datetime64)
+MININT64 = np.iinfo(np.int64).min
+
+# The largest value an int64 can rep
+MAXINT64 = np.iinfo(np.int64).max
+
+# Large and small np.datetime64[ns] (used when defaults are needed)
+SMALLDT64 = np.datetime64(MININT64 + 5_000_000_000, "ns")
+LARGEDT64 = np.datetime64(MAXINT64 - 5_000_000_000, "ns")
+
+# an empty time delta to rep. no time distance at all
+EMPTYTD64 = np.timedelta64(0, "s")
+
 # path to where obsplus datasets are stored by default
 OPSDATA_PATH = Path().home() / "opsdata"
 
@@ -340,10 +383,10 @@ stream_proc_type = Callable[[Stream], Stream]
 wave_type = Union[Stream, Trace, xr.DataArray]
 
 # Type can can be turned into a UTCDateTime
-timable_type = Union[str, UTCDateTime, float]
+utc_able_type = Union[str, UTCDateTime, float, np.datetime64, pd.Timestamp]
 
 # waveform request type (args for get_waveforms)
-waveform_request_type = Tuple[str, str, str, str, timable_type, timable_type]
+waveform_request_type = Tuple[str, str, str, str, utc_able_type, utc_able_type]
 
 # the signature of obspy fdsn client
 wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
@@ -377,7 +420,7 @@ station_clientable_type = Union[str, Path, Inventory]
 fetch_type = Union[wfcli_type, str]
 
 # time type (anything that can be fed to UTCDateTime)
-utc_time_type = Union[UTCDateTime, str, float]
+utc_time_type = Union[UTCDateTime, str, float, np.datetime64]
 
 # types for specifying starttimes
 starttime_type = Optional[Union[UTCDateTime, Mapping[Any, UTCDateTime]]]
@@ -396,6 +439,12 @@ xr_type = Union[xr.DataArray, xr.Dataset]
 
 # basic types
 basic_types = Optional[Union[int, float, str, bool]]
+
+# series to series or ndarray func
+series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
+
+# type for mapping of functions to apply over callables
+column_function_map_type = Mapping[str, series_func_type]
 
 # -------------------------- events validation constants
 
@@ -427,6 +476,13 @@ UTC_FORMATS = {
     "hour": "%02d",
     "minute": "%02d",
     "second": "%02d",
+}
+
+# magnitude column names and magnitude type used in event dataframes
+MAGNITUDE_COLUMN_TYPES = {
+    "moment_magnitude": "MW",
+    "local_magnitude": "ML",
+    "duration_magnitude": "MD",
 }
 
 # input args to UTCDateTime object
@@ -509,7 +565,21 @@ TIME_VALUES = [
     "time",
 ]
 
-client_type = Union[str, concurrent.futures.Executor]
+# Columns of dataframes that are always date times
+TIME_COLUMNS = (
+    "time",
+    "creation_time",
+    "updated",  # I'm hoping this is actually the case
+    "updatedafter",
+    "end_date",
+    "start_date",
+    "event_time",
+    "origin_time",
+    "reference",
+    "starttime",
+    "endtime",
+)
+
 TIME_PRECISION = obspy.UTCDateTime.DEFAULT_PRECISION
 AGG_LEVEL_MAP = dict(network=1, station=2, location=3, channel=4, all=5)
 
@@ -584,11 +654,11 @@ degrees: int, default True
 """
 
 # the description for the parameter 'bar' in the bank `update_index` methods.
-bar_paramter_description = """
+bar_parameter_description = """
 bar
     This parameter controls if a progress bar will be used for this
     function call. Its behavior is dependent on the `bar` parameter:
-        False - Dont use a progress bar
+        False - Don't use a progress bar
         None - Use the default progress bar
         ProgressBar - a custom implementation of progress bar is used.
 

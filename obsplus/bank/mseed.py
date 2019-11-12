@@ -14,7 +14,6 @@ from obspy.io.mseed.core import DATATYPES, C, clibmseed
 
 def _get_lil(mseed_object):
     """ get the lil object """
-
     # Parse the headonly and reclen flags.
     unpack_data = 0
     details = False
@@ -65,9 +64,7 @@ def _get_lil(mseed_object):
 
 def summarize_mseed(mseed_object):
     """
-    get a summary of mseed file.
-
-    Returns a list of dicts with nslc and starttime/endtime.
+    get a summary of an mseed file.
 
     Note: we cannot simply use obspy.io.mseed.get_record_information because it
     returns info only about the first trace.
@@ -75,10 +72,8 @@ def summarize_mseed(mseed_object):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         lil = _get_lil(mseed_object)
-
     traces = []
     current_id = lil.contents
-
     while True:
         # Init header with the essential information.
         header = {
@@ -94,12 +89,10 @@ def summarize_mseed(mseed_object):
         except ValueError:
             break
         while True:
-            header["starttime"] = current_segment.starttime / 1_000_000.0
-            samps = current_segment.samplecnt
-            sample_rate = current_segment.samprate
-            header["endtime"] = header["starttime"] + (samps - 1) / sample_rate
+            header["starttime"] = current_segment.starttime * 1000
+            header["endtime"] = current_segment.endtime * 1000
+            header["sampling_period"] = current_segment.hpdelta * 1000
             traces.append(dict(header))
-
             try:
                 current_segment = current_segment.next.contents
             except ValueError:

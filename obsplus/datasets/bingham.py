@@ -1,7 +1,7 @@
 """
 The Bingham dataset.
 """
-
+import numpy as np
 import obspy
 from obspy import UTCDateTime as UTC
 from obspy.clients.fdsn.mass_downloader import (
@@ -30,8 +30,8 @@ class Bingham(DataSet):
 
     name = "bingham"
     version = "0.0.0"
-    time_before = 10
-    time_after = 60
+    time_before = np.timedelta64(10, "s")
+    time_after = np.timedelta64(60, "s")
     # define spatial extents variables (center of pit)
     latitude = 40.53829
     longitude = -112.149_506
