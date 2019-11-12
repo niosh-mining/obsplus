@@ -200,8 +200,8 @@ class TestBankBasics:
         st = obspy.read()
         starttimes = [to_datetime64(tr.stats.starttime) for tr in st]
         endtimes = [to_datetime64(tr.stats.endtime) for tr in st]
-        assert min(starttimes) == index.starttime.min()
-        assert max(endtimes) == index.endtime.max()
+        assert min(starttimes) == index.starttime.min().to_datetime64()
+        assert max(endtimes) == index.endtime.max().to_datetime64()
 
     def test_bank_can_init_bank(self, default_wbank):
         """ WaveBank should be able to take a Wavebank as an input arg. """
