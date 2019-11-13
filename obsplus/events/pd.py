@@ -72,116 +72,11 @@ station_magnitudes_to_df = DataFrameExtractor(
 
 magnitudes_to_df = DataFrameExtractor(
     ev.Magnitude, MAGNITUDE_COLUMNS, column_funcs=standard_column_transforms
-
 )
 
 magnitudes_to_df = DataFrameExtractor(
     ev.Magnitude, MAGNITUDE_COLUMNS, column_funcs=standard_column_transforms
 )
-
-
-class _OriginQualityExtractor:
-    """
-    A class encapsulating logic for getting information about origin quality.
-    """
-
-    def __init__(self, event: ev.Event):
-        self.event = event
-
-    def _get_picks_linked_to_amps(self, eve, arrival_set):
-        """ Make sure the picks exists the amplitudes point to. """
-        for pick in eve.picks:
-            pick.resource_id.set_referred_object(pick)
-        pick_dict = {str(p.resource_id): p for p in eve.picks}
-        assert set(arrival_set).issubset(
-            set(pick_dict)
-        ), "arrivals link to non-existent picks"
-        return pick_dict
-
-    def _get_pick_count(self, phase, pict_dict):
-        """ count the number of non-rejected picks with given phase """
-        out = {
-            i
-            for i, v in pict_dict.items()
-            if v.phase_hint == phase and v.evaluation_status != "rejected"
-        }
-        return len(out)
-
-    def _get_phase_count(self, ori: ev.Origin, phase_type: str):
-        """ return the number of phases with phase_type found in origin """
-        count = 0
-        for ar in ori.arrivals:
-            # if phase is not specified dont count it
-            if ar.phase is None or not len(ar.phase):
-                continue
-            if ar.phase == phase_type:
-                count += 1
-        return count
-
-    def _get_origin_quality_info(self, origin, out):
-        """ Get information from quality info."""
-        quality_attrs = (
-            ("standard_error", np.NaN),
-            ("associated_phase_count", 0),
-            ("azimuthal_gap", np.NaN),
-            ("used_phase_count", 0),
-        )
-        quality = getattr(origin, "quality", ev.OriginQuality())
-        for (attr, default) in quality_attrs:
-            out[attr] = getattr(quality, attr, None) or default
-
-    def _get_origin_uncertainty(self, origin, out):
-        """ Get information from uncertainty. """
-        uncert_attrs = (("horizontal_uncertainty", np.NaN),)
-        uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
-        for (attr, default) in uncert_attrs:
-            out[attr] = getattr(uncert, attr) or default
-
-    def _get_depth_uncertainty_info(self, origin, out):
-        """ Get info from depth info. """
-        depth_uncert = origin.depth_errors
-        out["vertical_uncertainty"] = getattr(depth_uncert, "uncertainty", np.NaN)
-
-    def _get_phase_and_pick_counts(self, origin, out):
-        # get a dict of picks
-        arrivals = {str(x.pick_id) for x in origin.arrivals}
-        pick_dict = self._get_picks_linked_to_amps(self.event, arrivals)
-        used_picks = [p for pid, p in pick_dict.items() if pid in arrivals]
-        # get counts of picks
-        out["p_phase_count"] = self._get_phase_count(origin, "P")
-        out["s_phase_count"] = self._get_phase_count(origin, "S")
-        out["p_pick_count"] = self._get_pick_count("P", pick_dict)
-        out["s_pick_count"] = self._get_pick_count("S", pick_dict)
-        out["used_phase_count"] = out["p_phase_count"] + out["s_phase_count"]
-        # get names of station and station count
-        assert all(used_picks)
-        pset = {p.waveform_id.station_code for p in used_picks}
-        sl = sorted(list(pset))
-        out["stations"] = ", ".join(sl)
-        out["station_count"] = len(sl)
-
-    def __call__(self):
-        """ Return a dict of origin quality attributes. """
-        out = {}
-        origin = get_preferred(self.event, "origin", init_empty=True)
-        # now extract information
-        self._get_origin_quality_info(origin, out)
-        self._get_depth_uncertainty_info(origin, out)
-        # get phase and pick count
-        self._get_phase_and_pick_counts(origin, out)
-        return out
-
-
-def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = None):
-    """ Get the quality of the last magnitude, optionally of a given type. """
-    out = np.NaN
-    for mag in mags:
-        if mag_type is not None:
-            mtype = (mag.magnitude_type or "").upper()
-            if not mag_type == mtype:
-                continue
-        out = mag.mag
-    return out
 
 
 class _OriginQualityExtractor:

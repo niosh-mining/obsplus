@@ -407,11 +407,13 @@ class DataSet(abc.ABC):
             If True also include hidden files
         """
         out = md5_directory(self.data_path, exclude="readme.txt", hidden=hidden)
+        # sort dict to mess less with git
+        sort_dict = OrderedDict(sorted(out.items()))
         if path is not None:
-            # sort dict to mess less with git
-            sort_dict = OrderedDict(sorted(out.items()))
-            with (self.data_path / Path(path)).open("w") as fi:
-                json.dump(sort_dict, fi)
+            pass
+        pass
+        with (self.data_path / Path(path)).open("w") as fi:
+            json.dump(sort_dict, fi)
         return out
 
     def check_hashes(self, check_hash=False):
@@ -517,8 +519,8 @@ class DataSet(abc.ABC):
         If the version string is not valid raise DataVersionError.
         """
         is_str = isinstance(version_str, str)
-        has_3 = len(version_str.split(".")) == 3
-        if not (is_str and has_3):
+        # If version_str is not a str or doesnt have a len of 3
+        if not (is_str and len(version_str.split(".")) == 3):
             msg = f"version must be a string of the form x.y.z, not {version_str}"
             raise DataVersionError(msg)
 
