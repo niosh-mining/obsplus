@@ -452,7 +452,7 @@ ORIGIN_FLOATS = {"latitude", "longitude", "depth"}
 QUANTITY_ERRORS = {"depth_errors", "latitude_errors", "longitude_errors", "time_errors"}
 
 # columns needed for bulk waveform request
-BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime"])
+BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime", "delta"])
 
 # resource_ids that are linked to other resource ids
 LINKED_RESOURCE_IDS = {

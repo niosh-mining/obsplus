@@ -5,7 +5,7 @@ import fnmatch
 import re
 from contextlib import suppress
 from functools import lru_cache
-from typing import Optional, Sequence, Mapping, Collection, Iterable
+from typing import Optional, Sequence, Mapping, Collection, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ from obsplus.constants import (
     LARGEDT64,
     utc_time_type,
 )
-from obsplus.utils.time import to_datetime64
+from obsplus.utils.time import to_datetime64, to_timedelta64
 
 
 def convert_bytestrings(df, columns, inplace=False):
@@ -68,17 +68,26 @@ def apply_funcs_to_columns(
     if df.empty:
         return df
     if funcs is not None:
-        df = df.copy() if inplace else df
+        df = df if inplace else df.copy()
         for col in set(df.columns) & set(funcs):
             df[col] = funcs[col](df[col])
     return df
 
 
 def cast_dtypes(
-    df: pd.DataFrame, dtype: Optional[Mapping[str, type]] = None, inplace=False
+    df: pd.DataFrame,
+    dtype: Optional[Mapping[str, Union[type, str]]] = None,
+    inplace=False,
 ) -> pd.DataFrame:
     """
     Cast data types for columns in dataframe, skip columns that doesn't exist.
+
+    The following obsplus specific datatypes are supported:
+        'time' - call :func:`obsplus.utils.time.to_datetime64` on column
+        'timedelta` - call :func:`obsplus.utils.time.to_timedelta64` on column
+
+    Note: this is different from pd.astype because it skips columns which
+    don't exist.
 
     Parameters
     ----------
@@ -89,9 +98,12 @@ def cast_dtypes(
     inplace
         If true perform operation in place.
     """
-    df = df.copy() if inplace else df
+    special = {"time": to_datetime64, "timedelta": to_timedelta64}
+    # get overlapping columns and dtypes
     dtype = {i: dtype[i] for i in set(dtype) & set(df.columns)}
-    return df.astype(dtype)
+    # get either a special func or use astype to apply to each column
+    funcs = {i: special.get(v, lambda x, y=v: x.astype(y)) for i, v in dtype.items()}
+    return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
 
 
 def order_columns(df: pd.DataFrame, required_columns: Sequence, drop_columns=False):

@@ -136,6 +136,11 @@ class TestConstructorStats:
         assert wf1._df is not wf2._df
         assert (wf1._df == wf2._df).all().all()
 
+    def test_waveframe_was_delta(self, waveframe_from_stream):
+        """ Waveframe should have a delta parameter in its stats. """
+        # stats = waveframe_from_stream.stats
+        # breakpoint()
+
 
 class TestComparisons:
     """ Tests for comparing waveframes. """

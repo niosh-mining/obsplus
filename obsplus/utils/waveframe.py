@@ -20,6 +20,10 @@ from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
 from obsplus.exceptions import DataFrameContentError
 
 
+# functions to be applied to stats after converting to df
+STATS_FUNCS = {"delta": to_datetime64, "starttime": to_utc, "endtime": to_utc}
+
+
 class DfPartDescriptor:
     """
     A simple descriptor granting access to various parts of a dataframe.
@@ -41,14 +45,6 @@ def _time_to_utc(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
     col_funcs = {name: to_utc for name in TIME_COLUMNS}
-    return apply_funcs_to_columns(df, col_funcs)
-
-
-def _time_cols_to_datetime64(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Convert time columns in a dataframe to numpy datetimes.
-    """
-    col_funcs = {name: to_datetime64 for name in TIME_COLUMNS}
     return apply_funcs_to_columns(df, col_funcs)
 
 
@@ -139,7 +135,7 @@ def _get_stats_dataframe(df):
     # Order the columns and ensure datetime64 dtypes are in dataframe
     df = (
         rename_startdate_enddate(df)
-        .pipe(_time_cols_to_datetime64)
+        .pipe(apply_funcs_to_columns, funcs=STATS_FUNCS)
         .pipe(order_columns, required_columns=BULK_WAVEFORM_COLUMNS)
         .pipe(_check_nslc_codes)
         .pipe(_check_missing_data)

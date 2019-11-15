@@ -1,10 +1,8 @@
 """ tests for various utility functions """
 import itertools
 import os
-import textwrap
 import time
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 import obspy
@@ -21,7 +19,7 @@ from obsplus.constants import NSLC, NULL_SEED_CODES, DISTANCE_COLUMNS
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import yield_obj_parent_attr, get_distance_df, iter_files
 from obsplus.utils.pd import filter_index, filter_df
-from obsplus.utils.time import to_utc, get_reference_time, to_datetime64, to_timestamp
+from obsplus.utils.time import get_reference_time, to_timestamp
 
 
 def append_func_name(list_obj):
@@ -121,34 +119,6 @@ class TestIterate:
     def test_str(self):
         """ A single string object should be returned as a tuple """
         assert obsplus.utils.misc.iterate("hey") == ("hey",)
-
-
-class TestDocsting:
-    """ tests for obsplus' simple docstring substitution function. """
-
-    def test_docstring(self):
-        """ Ensure docstrings can be composed with the docstring decorator. """
-        params = textwrap.dedent(
-            """
-        Parameters
-        ----------
-        a: int
-            a
-        b int
-            b
-        """
-        )
-
-        @compose_docstring(params=params)
-        def testfun1():
-            """
-            {params}
-            """
-
-        assert "Parameters" in testfun1.__doc__
-        line = [x for x in testfun1.__doc__.split("\n") if "Parameters" in x][0]
-        base_spaces = line.split("Parameters")[0]
-        assert len(base_spaces) == 12
 
 
 class TestReplaceNullSeedCodes:
@@ -352,86 +322,6 @@ class TestMisc:
         out = list(obsplus.utils.misc.apply_to_files_or_skip(func, apply_test_dir))
         assert len(processed_files) == 2
         assert len(out) == 1
-
-
-class TestToNumpyDateTime:
-    """ Tests for converting UTC-able objects to numpy datetime 64. """
-
-    def test_simple(self):
-        """ Test converting simple UTCDateTimable things """
-        test_input = ("2019-01-10 11-12", obspy.UTCDateTime("2019-01-10T12-12"), 100)
-        expected = np.array([obspy.UTCDateTime(x)._ns for x in test_input])
-        out = np.array(to_datetime64(test_input)).astype(int)
-        assert np.equal(expected, out).all()
-
-    def test_with_nulls(self):
-        """ Test for handling nulls. """
-        test_input = (np.NaN, None, "", 15)
-        out = np.array(to_datetime64(test_input))
-        # first make sure empty values worked
-        assert pd.isnull(out[:3]).all()
-        assert out[-1].astype(int) == obspy.UTCDateTime(15)._ns
-
-    def test_zero(self):
-        """ Tests for input values as 0 or 0.0 """
-        dt1 = to_datetime64(0)
-        dt2 = to_datetime64(0.0)
-        assert dt1.astype(int) == dt2.astype(int) == 0
-
-    def test_npdatetime64_as_input(self):
-        """ This should also work on np.datetime64. """
-        test_input = np.array((np.datetime64(1000, "s"), np.datetime64(100, "ns")))
-        out = to_datetime64(test_input)
-        assert isinstance(out, np.ndarray)
-        assert (test_input == out).all()
-
-    def test_pandas_timestamp(self):
-        """ Timestamps should also work. """
-        kwargs = dict(year=2019, month=10, day=11, hour=12)
-        ts = pd.Timestamp(**kwargs)
-        out = to_datetime64((ts,))
-        expected_out = (ts.to_datetime64(),)
-        assert out == expected_out
-
-    def test_utc_to_large(self):
-        too_big = obspy.UTCDateTime("2600-01-01")
-        with pytest.warns(UserWarning):
-            out = to_datetime64(too_big)
-        assert pd.Timestamp(out).year == 2262
-
-    def test_series_to_datetimes(self):
-        """ Series should be convertible to datetimes, but returns ndarray """
-        ser = pd.Series([10, "2010-01-01"])
-        out = to_datetime64(ser)
-        assert isinstance(out, np.ndarray)
-
-
-class TestToUTC:
-    """ Tests for converting things to UTCDateTime objects. """
-
-    # setup for test values
-    utc1 = obspy.UTCDateTime("2019-01-10T12-12")
-    utc_list = [utc1, utc1 + 2, utc1 + 3]
-    dt64 = np.datetime64(1000, "ns")
-    utc_able_list = [1, "2019-02-01", dt64]
-    utc_values = [
-        0,
-        1_000_000,
-        "2015-12-01",
-        utc1,
-        dt64,
-        utc_list,
-        np.array(utc_list),
-        utc_able_list,
-        np.array(utc_able_list, dtype=object),
-        pd.Series(utc_able_list),
-    ]
-
-    @pytest.mark.parametrize("value", utc_values)
-    def test_single_value(self, value):
-        out = to_utc(value)
-        # either a sequence or UTCDateTime should be returned
-        assert isinstance(out, (Sequence, UTCDateTime, np.ndarray))
 
 
 class TestDistanceDataframe:

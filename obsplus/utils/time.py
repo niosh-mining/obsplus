@@ -225,6 +225,7 @@ def to_utc(
     return np.array(seq)
 
 
+@singledispatch
 def to_timedelta64(
     value: Union[float, int], default=np.timedelta64(0, "s")
 ) -> np.timedelta64:
@@ -249,6 +250,25 @@ def to_timedelta64(
             return default
         ns = to_utc(value)._ns
         return np.timedelta64(ns, "ns")
+
+
+@to_timedelta64.register(tuple)
+@to_timedelta64.register(list)
+def _list_tuple_to_datetime(obj):
+    """ Convert sequences to timedeltas. """
+    return np.array(obj).astype("timedelta64")
+
+
+@to_timedelta64.register(pd.Series)
+def _series_to_timedelta(ser):
+    """ Convert a series to a timedelta. """
+    return ser.apply(to_timedelta64).values
+
+
+@to_timedelta64.register(np.ndarray)
+def _array_to_timedelta(obj):
+    """ Convert a series to a timedelta. """
+    return np.array([to_timedelta64(x) for x in obj])
 
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))
