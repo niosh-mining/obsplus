@@ -127,8 +127,10 @@ def _get_stats_dataframe(df):
 
     def _check_missing_data(df):
         """ There should be no missing data in the required columns."""
-        if df[list(BULK_WAVEFORM_COLUMNS)].isnull().any().any():
-            msg = f"Missing values in columns {BULK_WAVEFORM_COLUMNS} found. "
+        missing_date = df[list(BULK_WAVEFORM_COLUMNS)].isnull().any()
+        no_data_cols = missing_date[missing_date].index
+        if not no_data_cols.empty:
+            msg = f"dataframe is missing values in columns: {list(no_data_cols)}"
             raise DataFrameContentError(msg)
         return df
 

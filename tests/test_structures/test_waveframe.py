@@ -138,8 +138,8 @@ class TestConstructorStats:
 
     def test_waveframe_was_delta(self, waveframe_from_stream):
         """ Waveframe should have a delta parameter in its stats. """
-        # stats = waveframe_from_stream.stats
-        # breakpoint()
+        stats = waveframe_from_stream.stats
+        breakpoint()
 
 
 class TestComparisons:
