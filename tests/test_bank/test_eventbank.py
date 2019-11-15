@@ -82,20 +82,19 @@ def ebank_with_bad_files(tmpdir):
 
 class TestBankBasics:
     expected_attrs = ["update_index", "read_index"]
+    low_version_str: str = "0.0.-1"
 
     @pytest.fixture
-    def ebank_low_version(self, ebank):
+    def ebank_low_version(self, ebank, monkeypatch):
         """ return the default bank with a negative version number. """
-        # monkey patch obsplus version
-        negative_version = "0.0.-1"
-        version = obsplus.__version__
-        obsplus.__version__ = negative_version
+        # monkey patch obsplus version so that a low version is saved to disk
+        monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
         # write index with negative version
         os.remove(ebank.index_path)
         ebank.update_index()
-        assert ebank._index_version == negative_version
-        # restore correct version
-        obsplus.__version__ = version
+        monkeypatch.undo()
+        assert ebank._index_version == self.low_version_str
+        assert obsplus.__version__ != self.low_version_str
         return ebank
 
     @pytest.fixture(scope="class")
@@ -172,7 +171,7 @@ class TestBankBasics:
         cat2_dict = {str(x.resource_id): x for x in cat2}
         assert cat2_dict == cat1_dict
 
-    def test_min_version_recreates_index(self, ebank_low_version):
+    def test_update_index_recreates_index(self, ebank_low_version):
         """
         If the min version of the event bank is not met the index should
         be deleted and re-created. A warning should be issued.
@@ -186,6 +185,20 @@ class TestBankBasics:
         mtime2 = ipath.stat().st_mtime
         # ensure the index was deleted and rewritten
         assert mtime1 < mtime2
+
+    def test_get_events_recreates_index(self, ebank_low_version):
+        """
+        Not just updating the index but also initing a new bank and using it.
+        """
+        ebank = ebank_low_version
+        # The index should not yet have been updated
+        assert ebank._index_version == self.low_version_str
+        with pytest.warns(UserWarning):
+            ebank2 = EventBank(ebank.bank_path)
+        _ = ebank2.get_events(limit=1)
+        # but after creating a new bank it should
+        assert ebank._index_version == obsplus.__version__
+        assert ebank2._index_version == obsplus.__version__
 
     def test_limit_keyword(self, ebank):
         """ Test that the limit keyword limits results (see #19) """

@@ -117,6 +117,8 @@ def empty_bank():
 class TestBankBasics:
     """ basic tests for Bank class """
 
+    low_version_str = "0.0.-1"
+
     # fixtures
     @pytest.fixture(scope="function")
     def ta_bank_no_index(self, ta_bank):
@@ -127,18 +129,18 @@ class TestBankBasics:
         return sbank.WaveBank(ta_bank.bank_path)
 
     @pytest.fixture
-    def default_bank_low_version(self, default_wbank):
+    def default_bank_low_version(self, default_wbank, monkeypatch):
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version
-        negative_version = "0.0.-1"
-        version = obsplus.__version__
-        obsplus.__version__ = negative_version
+        monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
         # write index with negative version
         os.remove(default_wbank.index_path)
         default_wbank.update_index()
-        assert default_wbank._index_version == negative_version
+        assert default_wbank._index_version == self.low_version_str
         # restore correct version
-        obsplus.__version__ = version
+        monkeypatch.undo()
+        assert obsplus.__version__ != self.low_version_str
+        assert Path(default_wbank.bank_path).exists()
         return default_wbank
 
     # tests
@@ -217,15 +219,28 @@ class TestBankBasics:
         If the min version is not met the index should be deleted and re-created.
         A warning should be issued.
         """
+        # TODO start here
         bank = default_bank_low_version
-        ipath = Path(bank.index_path)
-        mtime1 = ipath.stat().st_mtime
-        with pytest.warns(UserWarning) as w:
+        with pytest.warns(UserWarning):
             bank.update_index()
-        assert len(w)  # a warning should have been raised
-        mtime2 = ipath.stat().st_mtime
-        # ensure the index was deleted and rewritten
-        assert mtime1 < mtime2
+        assert bank._index_version == obsplus.__version__
+        assert Path(bank.index_path).exists()
+
+    def test_min_version_new_bank_recreates_index(self, default_bank_low_version):
+        """
+        A new bank should delete the old index and getting data from the bank
+        should recreate it.
+        """
+        bank = default_bank_low_version
+        assert bank._index_version == self.low_version_str
+        # initing a new bank should warn and delete the old index
+        with pytest.warns(UserWarning):
+            bank2 = WaveBank(bank.bank_path)
+        assert not Path(bank2.index_path).exists()
+        bank2.get_waveforms()
+        assert bank2._index_version != self.low_version_str
+        assert bank2._index_version == obsplus.__version__
+        assert Path(bank2.index_path).exists()
 
     def test_empty_bank_raises(self, tmpdir):
         """
