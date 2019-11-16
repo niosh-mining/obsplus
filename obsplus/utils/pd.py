@@ -17,8 +17,11 @@ from obsplus.constants import (
     SMALLDT64,
     LARGEDT64,
     utc_time_type,
+    BULK_WAVEFORM_COLUMNS,
+    bulk_waveform_arg_type,
 )
-from obsplus.utils.time import to_datetime64, to_timedelta64
+from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
 
 def convert_bytestrings(df, columns, inplace=False):
@@ -83,8 +86,8 @@ def cast_dtypes(
     Cast data types for columns in dataframe, skip columns that doesn't exist.
 
     The following obsplus specific datatypes are supported:
-        'time' - call :func:`obsplus.utils.time.to_datetime64` on column
-        'timedelta` - call :func:`obsplus.utils.time.to_timedelta64` on column
+        'ops_datetime' - call :func:`obsplus.utils.time.to_datetime64` on column
+        'ops_timedelta` - call :func:`obsplus.utils.time.to_timedelta64` on column
 
     Note: this is different from pd.astype because it skips columns which
     don't exist.
@@ -98,7 +101,12 @@ def cast_dtypes(
     inplace
         If true perform operation in place.
     """
-    special = {"time": to_datetime64, "timedelta": to_timedelta64}
+    # define special (obsplus-specific) datatypes
+    special = {
+        "ops_datetime": to_datetime64,
+        "ops_timedelta": to_timedelta64,
+        "utcdatetime": to_utc,
+    }
     # get overlapping columns and dtypes
     dtype = {i: dtype[i] for i in set(dtype) & set(df.columns)}
     # get either a special func or use astype to apply to each column
@@ -106,11 +114,11 @@ def cast_dtypes(
     return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
 
 
-def order_columns(df: pd.DataFrame, required_columns: Sequence, drop_columns=False):
+def order_columns(
+    df: pd.DataFrame, required_columns: Sequence, drop_columns=False, fill_missing=True
+):
     """
-    Given a dataframe, assert that required columns are in the df, then
-    order the columns of df the same as required columns with extra columns
-    sorted and attached at the end.
+    Order a dataframe's columns and ensure it has required columns.
 
     Parameters
     ----------
@@ -120,15 +128,23 @@ def order_columns(df: pd.DataFrame, required_columns: Sequence, drop_columns=Fal
         A sequence that contains the column names.
     drop_columns
         If True drop columns not in required_columns.
+    fill_missing
+        If True, create missing required columns and fill with nullish values.
+
     Returns
     -------
     pd.DataFrame
     """
     # make sure required columns are there
     column_set = set(df.columns)
+    missing_cols = set(required_columns) - set(df.columns)
     extra_cols = sorted(list(column_set - set(required_columns)))
     if drop_columns:  # dont include extras if drop_columns
         extra_cols = []
+    # raise a DataFrameContentError if required columns are not there
+    if missing_cols and not fill_missing:
+        msg = f"dataframe is missing required columns: {missing_cols}"
+        raise DataFrameContentError(msg)
     new_cols = list(required_columns) + extra_cols
     # add any extra (blank) columns if needed and sort
     df = df.reindex(columns=new_cols)
@@ -302,3 +318,76 @@ def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
     """ Test if a str series contains any values in a sequence """
     safe_matches = {re.escape(x) for x in str_sequence}
     return ser.str.contains("|".join(safe_matches)).values
+
+
+def get_waveforms_bulk_args(
+    df: pd.DataFrame, time_dtype="utcdatetime"
+) -> bulk_waveform_arg_type:
+    """
+    Get the inputs to a get_waveforms_bulk from a dataframe.
+
+    Parameters
+    ----------
+    df
+        A dataframe with required columns:
+            network, station, location, channel, starttime, endtime
+    bulk_waveform_arg_type
+        The dtype that is used to represent time.
+
+    Returns
+    -------
+    A list of tuples (network, station, location, channel, starttime, endtime)
+    """
+
+    def rename_startdate_enddate(df):
+        """ rename startdate, enddate to starttime endtime """
+        col_set = set(df.columns)
+        if "startdate" in col_set and "starttime" not in col_set:
+            df = df.rename(columns={"startdate": "starttime"})
+        if "enddate" in col_set and "endtime" not in col_set:
+            df = df.rename(columns={"enddate": "endtime"})
+        return df
+
+    def _check_nslc_codes(df):
+        """ Ensure there are no wildcards in NSLC columns. """
+        for code in NSLC:
+            has_qmark = df[code].str.contains("?", regex=False).any()
+            has_star = df[code].str.contains("*", regex=False).any()
+            if has_qmark or has_star:
+                msg = f"columns {NSLC} cannot contain * or ?, column {code} does"
+                raise DataFrameContentError(msg)
+        return df
+
+    def _check_starttime_endtime(df):
+        """ Ensure all starttimes are less than endtimes. """
+        # starttimes must be <= endtime
+        invalid_time_range = df["starttime"] >= df["endtime"]
+        if invalid_time_range.any():
+            msg = f"all values in starttime must be <= endtime"
+            raise DataFrameContentError(msg)
+        return df
+
+    def _check_missing_data(df):
+        """ There should be no missing data in the required columns."""
+        missing_date = df[list(BULK_WAVEFORM_COLUMNS)].isnull().any()
+        no_data_cols = missing_date[missing_date].index
+        if not no_data_cols.empty:
+            msg = f"dataframe is missing values in columns: {list(no_data_cols)}"
+            raise DataFrameContentError(msg)
+        return df
+
+    dtypes = {x: str for x in NSLC}
+    dtypes.update({"starttime": time_dtype, "endtime": time_dtype})
+    order_cols_kwargs = dict(drop_columns=True, fill_missing=False)
+
+    df = (
+        rename_startdate_enddate(df)
+        .pipe(order_columns, BULK_WAVEFORM_COLUMNS, **order_cols_kwargs)
+        .pipe(_check_nslc_codes)
+        .pipe(_check_missing_data)
+        .pipe(_check_starttime_endtime)
+        .pipe(cast_dtypes, dtypes)
+    )
+    df = order_columns(df, required_columns=BULK_WAVEFORM_COLUMNS)
+
+    return df[list(BULK_WAVEFORM_COLUMNS)].to_records(index=False).tolist()

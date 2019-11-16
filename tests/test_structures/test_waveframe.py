@@ -4,6 +4,7 @@ Tests for the WaveFrame class.
 import obspy
 import pandas as pd
 import pytest
+import numpy as np
 from obspy import UTCDateTime
 
 from obsplus import WaveFrame
@@ -136,10 +137,11 @@ class TestConstructorStats:
         assert wf1._df is not wf2._df
         assert (wf1._df == wf2._df).all().all()
 
-    def test_waveframe_was_delta(self, waveframe_from_stream):
+    def test_waveframe_has_delta(self, waveframe_from_stream):
         """ Waveframe should have a delta parameter in its stats. """
         stats = waveframe_from_stream.stats
-        breakpoint()
+        assert "delta" in stats.columns
+        assert stats["delta"].dtype == np.timedelta64
 
 
 class TestComparisons:

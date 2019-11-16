@@ -119,7 +119,8 @@ EVENT_DTYPES = OrderedDict(
     version=str,
 )
 
-EVENT_COLUMNS = tuple(EVENT_DTYPES)
+# required columns for event dataframe
+EVENT_COLUMNS = list(EVENT_DTYPES)
 
 # Event types which are returned from EventBank
 EVENT_TYPES_OUTPUT = dict(EVENT_DTYPES)
@@ -452,7 +453,7 @@ ORIGIN_FLOATS = {"latitude", "longitude", "depth"}
 QUANTITY_ERRORS = {"depth_errors", "latitude_errors", "longitude_errors", "time_errors"}
 
 # columns needed for bulk waveform request
-BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime", "delta"])
+BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime"])
 
 # resource_ids that are linked to other resource ids
 LINKED_RESOURCE_IDS = {
@@ -528,6 +529,19 @@ NUMPY_FLOAT_TYPES = {
 # str for types of data
 
 DATA_TYPES = ("waveform", "station", "event")
+
+# dtypes for the stats columns in waveframe
+
+WAVEFRAME_STATS_DTYPES = {
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "starttime": "ops_datetime",
+    "endtime": "ops_datetime",
+    "delta": "ops_timedelta",
+    "sampling_rate": float,
+}
 
 # ------------------------ wavefetcher/bank stuff
 

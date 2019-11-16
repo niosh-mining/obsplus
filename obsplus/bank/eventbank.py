@@ -337,7 +337,7 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = self.bank_path + self.read_index(columns="path", **kwargs).path
+        paths = self.bank_path + self.read_index(**kwargs)["path"]
         read_func = partial(try_read_catalog, format=self.format)
         map_kwargs = dict(chunksize=len(paths) // self._max_workers)
         try:

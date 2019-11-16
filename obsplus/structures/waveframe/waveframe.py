@@ -10,11 +10,11 @@ import pandas as pd
 from obsplus.constants import waveform_clientable_type
 from obsplus.utils.time import to_utc
 from obsplus.utils.waveframe import (
-    _get_bulk_args,
-    _get_stats_dataframe,
-    _get_timeseries_df_from_client,
+    _get_data_and_stats,
+    _create_stats_df,
     DfPartDescriptor,
 )
+from obsplus.utils.pd import get_waveforms_bulk_args
 
 
 class WaveFrame:
@@ -56,10 +56,12 @@ class WaveFrame:
     def _df_from_stats_waveforms(self, stats, waveforms):
         """ Get the waveframe df from stats and waveform_client. """
         # validate stats dataframe and extract bulk parameters
-        stats = _get_stats_dataframe(stats)
-        bulk = _get_bulk_args(stats)
-        # make sure we have a stream
-        ts_df = _get_timeseries_df_from_client(waveforms, bulk)
+        bulk = get_waveforms_bulk_args(stats)
+        # get arrays and stats list
+        data_list, stats_list = _get_data_and_stats(waveforms, bulk)
+        ts_df = pd.DataFrame(data_list)
+        # now augment stats df with data from stats traces
+        stats = _create_stats_df(stats_list)
         return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
 
     def __str__(self):

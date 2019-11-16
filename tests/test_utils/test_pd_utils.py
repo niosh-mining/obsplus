@@ -2,11 +2,15 @@
 Tests for the pandas utilites.
 """
 import numpy as np
+import obspy
 import pandas as pd
+import pytest
+
 import obsplus
 import obsplus.utils.pd as upd
 from obsplus.utils.time import to_datetime64, to_timedelta64
-import pytest
+from obsplus.constants import NSLC
+from obsplus.exceptions import DataFrameContentError
 
 
 @pytest.fixture
@@ -45,7 +49,7 @@ class TestApplyFuncsToColumns:
         assert out is simple_df
 
 
-class TestApplyDtypes:
+class TestCastDtypes:
     """ tests for apply different datatypes to columns. """
 
     @pytest.fixture
@@ -75,12 +79,75 @@ class TestApplyDtypes:
 
     def test_time_dtype(self, time_df):
         """ Test time dtype. """
-        out1 = upd.cast_dtypes(time_df, {"time": "time"})["time"]
+        out1 = upd.cast_dtypes(time_df, {"time": "ops_datetime"})["time"]
         out2 = to_datetime64(time_df["time"])
         assert (out1 == out2).all()
 
     def test_time_delta(self, time_df):
         """ Test that timedelta dtype. """
-        out1 = upd.cast_dtypes(time_df, {"delta": "timedelta"})["delta"]
+        out1 = upd.cast_dtypes(time_df, {"delta": "ops_timedelta"})["delta"]
         out2 = to_timedelta64(time_df["delta"])
         assert (out1 == out2).all()
+
+    def test_utc_datetime(self, time_df):
+        """ Tests for converting to UTCDateTime. """
+        out = upd.cast_dtypes(time_df, {"time": "utcdatetime"})
+        assert all([isinstance(x, obspy.UTCDateTime) for x in out["time"]])
+
+    def test_empty(self):
+        """ An empty dataframe should still have the datatypes castll. """
+        # get columns and dtypes
+        columns = ["time", "space"]
+        dtypes = {"time": "ops_datetime", "space": float}
+        # create 2 dfs, one empty one with values
+        df_empty = pd.DataFrame(columns=columns)
+        df_full = pd.DataFrame([[1, 1.2]], columns=columns)
+        # run cast_dtypes on both and compare
+        out_empty = upd.cast_dtypes(df_empty, dtype=dtypes).dtypes
+        out_full = upd.cast_dtypes(df_full, dtype=dtypes).dtypes
+        assert (out_empty == out_full).all()
+
+
+class TestGetWaveformsBulkArgs:
+    """
+    Tests for getting the bulk arguments for get_waveforms_bulk.
+    """
+
+    def assert_wellformed_bulk_args(self, bulk_args):
+        """ Assert the bulk args are as expected. """
+        for bulk_arg in bulk_args:
+            assert len(bulk_arg) == 6
+            for str_thing in bulk_arg[:4]:
+                assert isinstance(str_thing, str)
+            for date_thing in bulk_arg[4:]:
+                assert isinstance(date_thing, obspy.UTCDateTime)
+
+    @pytest.fixture
+    def waveform_df(self):
+        """ Create a dataframe with the basic required columns. """
+        st = obspy.read()
+        cols = list(NSLC) + ["starttime", "endtime"]
+        return pd.DataFrame([tr.stats for tr in st])[cols]
+
+    def test_basic_get_nslc(self, waveform_df):
+        """ Test bulk args with no only required columns. """
+        bulk_args = upd.get_waveforms_bulk_args(waveform_df)
+        self.assert_wellformed_bulk_args(bulk_args)
+
+    def test_missing_column_raises(self, waveform_df):
+        """ Test that a missing required column raises. """
+        df = waveform_df.drop(columns="starttime")
+        with pytest.raises(DataFrameContentError):
+            upd.get_waveforms_bulk_args(df)
+
+    def test_missing_value_raises(self, waveform_df):
+        """ Ensure any NaN values raises. """
+        waveform_df.loc[0, "starttime"] = np.NaN
+        with pytest.raises(DataFrameContentError):
+            upd.get_waveforms_bulk_args(waveform_df)
+
+    def test_extractra_columns_work(self, waveform_df):
+        """ Extra columns shouldn't effect anything. """
+        waveform_df["bob"] = 10
+        bulk = upd.get_waveforms_bulk_args(waveform_df)
+        self.assert_wellformed_bulk_args(bulk)
