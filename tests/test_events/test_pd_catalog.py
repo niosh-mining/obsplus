@@ -255,7 +255,6 @@ class TestCat2Df:
     def df(self, test_catalog):
         """ call the catalog2df method, return result"""
         cat = test_catalog.copy()
-        breakpoint()
         return events_to_df(cat)
 
     # tests

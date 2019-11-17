@@ -1,17 +1,18 @@
 """
 Waveframe specific utilities.
 """
-import obspy
-import pandas as pd
 from typing import Union, List, Tuple
 
 import numpy as np
+import obspy
+import pandas as pd
+
+from obsplus.constants import BULK_WAVEFORM_COLUMNS, WAVEFRAME_STATS_DTYPES
 from obsplus.constants import TIME_COLUMNS
 from obsplus.constants import WaveformClient, bulk_waveform_arg_type, wave_type
-from obsplus.utils.time import to_utc
 from obsplus.utils.pd import apply_funcs_to_columns, order_columns, cast_dtypes
+from obsplus.utils.time import to_utc
 from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
-from obsplus.constants import BULK_WAVEFORM_COLUMNS, WAVEFRAME_STATS_DTYPES
 
 
 # functions to be applied to stats after converting to df
@@ -94,16 +95,26 @@ def _get_data_and_stats(
     return arrays, stats
 
 
-def _create_stats_df(stats_list):
-
+def _create_stats_df(stats_list, strip_extra=True) -> pd.DataFrame:
     """
-    Augment the stats dataframe with stats from list.
+    Create a stats dataframe from a list of trace stats objects.
+
+    Parameters
+    ----------
+    stats_list
+        A list of stats objects.
+    strip_extra
+        If True, strip out columns called "processing" and "response" if
+        found.
     """
     df = (
         pd.DataFrame(stats_list)
         .pipe(cast_dtypes, WAVEFRAME_STATS_DTYPES)
         .pipe(order_columns, list(WAVEFRAME_STATS_DTYPES))
-        .pipe()
     )
-
-    breakpoint()
+    # strip extra columns that can have complex object types
+    if strip_extra:
+        to_drop = ["processing", "response"]
+        drop = list(set(to_drop) & set(df.columns))
+        df = df.drop(columns=drop)
+    return df

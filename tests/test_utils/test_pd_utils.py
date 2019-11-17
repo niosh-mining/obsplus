@@ -94,7 +94,7 @@ class TestCastDtypes:
         out = upd.cast_dtypes(time_df, {"time": "utcdatetime"})
         assert all([isinstance(x, obspy.UTCDateTime) for x in out["time"]])
 
-    def test_empty(self):
+    def test_empty_with_columns(self):
         """ An empty dataframe should still have the datatypes castll. """
         # get columns and dtypes
         columns = ["time", "space"]
@@ -106,6 +106,14 @@ class TestCastDtypes:
         out_empty = upd.cast_dtypes(df_empty, dtype=dtypes).dtypes
         out_full = upd.cast_dtypes(df_full, dtype=dtypes).dtypes
         assert (out_empty == out_full).all()
+
+    def test_empty_no_columns(self):
+        """ Ensure empty dataframes with no columns just returns. """
+        df = pd.DataFrame()
+        out = upd.cast_dtypes(df, dtype={"bob": int})
+        assert isinstance(out, pd.DataFrame)
+        assert out.empty
+        assert len(out.columns) == 0
 
 
 class TestGetWaveformsBulkArgs:

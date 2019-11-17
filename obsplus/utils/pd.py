@@ -10,6 +10,7 @@ from typing import Optional, Sequence, Mapping, Collection, Iterable, Union
 import numpy as np
 import pandas as pd
 
+import obspy
 from obsplus.constants import (
     column_function_map_type,
     NULL_SEED_CODES,
@@ -22,6 +23,21 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+
+
+# maps obsplus datatypes to functions to apply to columns to obtain dtype
+OPS_DTYPE_FUNCS = {
+    "ops_datetime": to_datetime64,
+    "ops_timedelta": to_timedelta64,
+    "utcdatetime": to_utc,
+}
+
+# the dtype of the columns
+OPS_DTYPES = {
+    "ops_datetime": "datetime64",
+    "ops_timedelta": "timedelta64",
+    "utcdatetime": obspy.UTCDateTime,
+}
 
 
 def convert_bytestrings(df, columns, inplace=False):
@@ -96,21 +112,23 @@ def cast_dtypes(
     ----------
     df
         Dataframe
-    dtype
+    dtype_codes
         A dict of columns and datatypes.
     inplace
         If true perform operation in place.
     """
-    # define special (obsplus-specific) datatypes
-    special = {
-        "ops_datetime": to_datetime64,
-        "ops_timedelta": to_timedelta64,
-        "utcdatetime": to_utc,
-    }
     # get overlapping columns and dtypes
-    dtype = {i: dtype[i] for i in set(dtype) & set(df.columns)}
-    # get either a special func or use astype to apply to each column
-    funcs = {i: special.get(v, lambda x, y=v: x.astype(y)) for i, v in dtype.items()}
+    overlap = set(dtype) & set(df.columns)
+    dtype_codes = {i: dtype[i] for i in overlap}
+    # if the dataframe is empty and has columns use simple astype
+    if df.empty and len(df.columns):
+        dtypes = {i: OPS_DTYPES.get(v, v) for i, v in dtype_codes.items()}
+        return df.astype(dtypes)
+    # else create functions and apply to each column
+    funcs = {
+        i: OPS_DTYPE_FUNCS.get(v, lambda x, y=v: x.astype(y))
+        for i, v in dtype_codes.items()
+    }
     return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
 
 
