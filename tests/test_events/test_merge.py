@@ -209,7 +209,7 @@ class TestAttachNewOrigin:
         assert set(origin_pick_dict) == set(cat2_pick_dict)
 
     # fixtures
-    @pytest.fixture("function")
+    @pytest.fixture(scope="function")
     def origin_pack(self, merge_catalogs_function):
         """ using the second events from the merge set, create an origin
         object that will be attached to the first events """

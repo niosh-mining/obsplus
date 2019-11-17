@@ -21,7 +21,7 @@ from obspy.core.event.base import ResourceIdentifier
 import obsplus.utils.dataset
 import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
-from obsplus.testing import instrument_methods
+from obsplus.utils.testing import instrument_methods
 
 # ------------------------- define constants
 

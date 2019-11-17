@@ -34,7 +34,7 @@ from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obsplus import get_reference_time
 
 # ----------------------------------- Helper functions
-from obsplus.testing import ArchiveDirectory
+from obsplus.utils.testing import ArchiveDirectory
 
 
 def count_calls(instance, bound_method, counter_attr):

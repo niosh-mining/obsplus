@@ -16,7 +16,7 @@ import obsplus
 import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
 from obsplus.utils.events import catalog_to_directory
-from obsplus.testing import instrument_methods
+from obsplus.utils.testing import handle_warnings
 
 
 # ----------- module fixtures
@@ -356,12 +356,13 @@ class TestReadIndexQueries:
 
     def test_query_circular(self, bing_ebank):
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
-        df = bing_ebank.read_index(
-            latitude=latitude,
-            longitude=longitude,
-            maxradius=minradius,
-            minradius=maxradius,
-        )
+        with handle_warnings():  # suppress install geographiclib warning
+            df = bing_ebank.read_index(
+                latitude=latitude,
+                longitude=longitude,
+                maxradius=minradius,
+                minradius=maxradius,
+            )
         for lat, lon in zip(df["latitude"], df["longitude"]):
             dist, _, _ = gps2dist_azimuth(latitude, longitude, lat, lon)
             assert minradius <= kilometer2degrees(dist / 1000.0) <= maxradius
@@ -421,19 +422,22 @@ class TestGetEvents:
         assert cat == bingham_catalog.get_events(starttime=t1, endtime=t2)
 
     def test_query_circular(self, bing_ebank, bingham_catalog):
+        """ The bank query should return the same as get_events on catalog. """
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
-        cat = bing_ebank.get_events(
-            latitude=latitude,
-            longitude=longitude,
-            maxradius=minradius,
-            minradius=maxradius,
-        )
-        assert cat == bingham_catalog.get_events(
-            latitude=latitude,
-            longitude=longitude,
-            maxradius=minradius,
-            minradius=maxradius,
-        )
+        with handle_warnings():
+            cat1 = bing_ebank.get_events(
+                latitude=latitude,
+                longitude=longitude,
+                maxradius=minradius,
+                minradius=maxradius,
+            )
+            cat2 = bingham_catalog.get_events(
+                latitude=latitude,
+                longitude=longitude,
+                maxradius=minradius,
+                minradius=maxradius,
+            )
+        assert cat1 == cat2
 
     def test_issue_30(self, crandall_dataset):
         """ ensure eventid can accept a numpy array. see #30. """

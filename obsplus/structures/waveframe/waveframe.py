@@ -8,13 +8,11 @@ import obspy
 import pandas as pd
 
 from obsplus.constants import waveform_clientable_type
-from obsplus.utils.time import to_utc
 from obsplus.utils.waveframe import (
-    _get_data_and_stats,
-    _create_stats_df,
     DfPartDescriptor,
+    _stats_df_to_stats,
+    _df_from_stats_waveforms,
 )
-from obsplus.utils.pd import get_waveforms_bulk_args
 
 
 class WaveFrame:
@@ -49,20 +47,12 @@ class WaveFrame:
         # the full waveframe dataframe was passed
         elif isinstance(stats, pd.DataFrame) and waveforms is None:
             df = stats.copy()
+        # waveform argument is already a dataframe
+        elif isinstance(waveforms, pd.DataFrame):
+            df = pd.concat([stats, waveforms], axis=1, keys=["stats", "data"])
         else:
-            df = self._df_from_stats_waveforms(stats=stats, waveforms=waveforms)
+            df = _df_from_stats_waveforms(stats=stats, waveforms=waveforms)
         self._df = df
-
-    def _df_from_stats_waveforms(self, stats, waveforms):
-        """ Get the waveframe df from stats and waveform_client. """
-        # validate stats dataframe and extract bulk parameters
-        bulk = get_waveforms_bulk_args(stats)
-        # get arrays and stats list
-        data_list, stats_list = _get_data_and_stats(waveforms, bulk)
-        ts_df = pd.DataFrame(data_list)
-        # now augment stats df with data from stats traces
-        stats = _create_stats_df(stats_list)
-        return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
 
     def __str__(self):
         return str(self._df)
@@ -97,12 +87,10 @@ class WaveFrame:
         """
         Convert the waveframe to a Stream object.
         """
-        traces = []
         # get stats, convert datetimes back to obspy
-        stats = self._df["stats"].copy()
-        for col in ["starttime", "endtime"]:
-            stats[col] = to_utc(stats[col])
+        stats = _stats_df_to_stats(self.stats)
         # create traces
+        traces = []
         for ind, row in stats.iterrows():
             stats = row.to_dict()
             data = self._df.loc[ind, "data"]
@@ -121,5 +109,6 @@ class WaveFrame:
         overlap
             The overlap between each waveform slice, in samples.
         """
-        window_len = window_len or self.data.size[-1]
-        assert overlap > window_len
+        window_len = window_len or self.data.shape[-1]
+        assert overlap < window_len
+        return self

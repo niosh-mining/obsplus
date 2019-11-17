@@ -16,6 +16,7 @@ from obspy.core.event import Event, Origin
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
+from obsplus.utils.testing import handle_warnings
 from obsplus.utils.time import to_datetime64, make_time_chunks
 
 WAVEFETCHERS = []
@@ -154,7 +155,9 @@ class TestGeneric:
         wbank = obsplus.WaveBank(bingham_dataset.waveform_path).update_index()
         ebank = obsplus.EventBank(bingham_dataset.event_path).update_index()
         sbank = bingham_dataset.station_client
-        fetcher = Fetcher(waveforms=wbank, events=ebank, stations=sbank)
+        # ignore warnings (endtimes of inv are out of range)
+        with handle_warnings():
+            fetcher = Fetcher(waveforms=wbank, events=ebank, stations=sbank)
         edf = fetcher.event_df
         sdf = fetcher.station_df
         for df in [edf, sdf]:

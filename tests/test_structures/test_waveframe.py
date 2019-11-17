@@ -141,7 +141,7 @@ class TestConstructorStats:
         """ Waveframe should have a delta parameter in its stats. """
         stats = waveframe_from_stream.stats
         assert "delta" in stats.columns
-        assert stats["delta"].dtype == np.timedelta64
+        assert np.issubdtype(stats["delta"].values.dtype, np.timedelta64)
 
 
 class TestComparisons:
@@ -169,4 +169,3 @@ class TestStride:
         out = waveframe_from_stream.stride()
         assert isinstance(out, WaveFrame)
         assert out == waveframe_from_stream
-        assert 1

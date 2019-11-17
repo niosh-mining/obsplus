@@ -10,7 +10,12 @@ import pandas as pd
 from obsplus.constants import BULK_WAVEFORM_COLUMNS, WAVEFRAME_STATS_DTYPES
 from obsplus.constants import TIME_COLUMNS
 from obsplus.constants import WaveformClient, bulk_waveform_arg_type, wave_type
-from obsplus.utils.pd import apply_funcs_to_columns, order_columns, cast_dtypes
+from obsplus.utils.pd import (
+    apply_funcs_to_columns,
+    order_columns,
+    cast_dtypes,
+    get_waveforms_bulk_args,
+)
 from obsplus.utils.time import to_utc
 from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
 
@@ -87,15 +92,15 @@ def _get_data_and_stats(
         if not len(st):  # empty data still needs an entry and stats from bulk
             arrays.append(np.array(np.NaN))
             statskwargs = {i: v for i, v in zip(BULK_WAVEFORM_COLUMNS, b)}
-            arrays.append(statskwargs)
+            stats.append(statskwargs)
             continue
         arrays.append(st[0].data)
-        stats.append(st[0].stats)
+        stats.append(dict(st[0].stats))
 
     return arrays, stats
 
 
-def _create_stats_df(stats_list, strip_extra=True) -> pd.DataFrame:
+def _create_stats_df(df, strip_extra=True) -> pd.DataFrame:
     """
     Create a stats dataframe from a list of trace stats objects.
 
@@ -107,14 +112,46 @@ def _create_stats_df(stats_list, strip_extra=True) -> pd.DataFrame:
         If True, strip out columns called "processing" and "response" if
         found.
     """
-    df = (
-        pd.DataFrame(stats_list)
-        .pipe(cast_dtypes, WAVEFRAME_STATS_DTYPES)
-        .pipe(order_columns, list(WAVEFRAME_STATS_DTYPES))
+    out = df.pipe(cast_dtypes, WAVEFRAME_STATS_DTYPES).pipe(
+        order_columns, list(WAVEFRAME_STATS_DTYPES)
     )
     # strip extra columns that can have complex object types
     if strip_extra:
         to_drop = ["processing", "response"]
         drop = list(set(to_drop) & set(df.columns))
-        df = df.drop(columns=drop)
+        out = out.drop(columns=drop)
+    return out
+
+
+def _df_from_stats_waveforms(stats, waveforms):
+    """ Get the waveframe df from stats and waveform_client. """
+    # validate stats dataframe and extract bulk parameters
+    bulk = get_waveforms_bulk_args(stats)
+    # get arrays and stats list
+    data_list, stats_list = _get_data_and_stats(waveforms, bulk)
+    # then get dataframes of stats and arrays
+    stats = _create_stats_df(pd.DataFrame(stats_list))
+    ts_df = pd.DataFrame(data_list)
+    return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
+
+
+def _stats_df_to_stats(df: pd.DataFrame) -> List[dict]:
+    """
+    Convert a stats dataframe back to a list of stats objects.
+
+    Parameters
+    ----------
+    df
+        A dataframe with the required columns.
+    """
+    # get inputs to cast_dtypes, apply_funcs, drop, etc.
+    dtypes = {"starttime": "utcdatetime", "endtime": "utcdatetime"}
+    funcs = {"delta": lambda x: x.astype(int) / 1_000_000_000}
+    drop = {"sampling_rate"} & set(df.columns)
+
+    df = (
+        df.pipe(cast_dtypes, dtypes)
+        .pipe(apply_funcs_to_columns, funcs=funcs)
+        .drop(columns=drop)
+    )
     return df
