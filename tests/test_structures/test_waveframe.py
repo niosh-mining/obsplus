@@ -79,6 +79,14 @@ class Testbasics:
         assert isinstance(out, pd.Series)
         assert len(out) == len(wf)
 
+    def test_filtering(self, waveframe_from_stream):
+        """ Ensure passing a boolean filters the dataframe. """
+        wf = waveframe_from_stream
+        ser = wf["channel"].str.endswith("Z")
+        wf2 = wf[ser]
+        assert len(wf2) == 1
+        assert wf2["channel"].str.endswith("Z").all()
+
 
 class TestConstructorStats:
     """ Basic tests input to waveframe. """
@@ -174,6 +182,16 @@ class TestConstructorStats:
         stats = waveframe_from_stream.stats
         assert "delta" in stats.columns
         assert np.issubdtype(stats["delta"].values.dtype, np.timedelta64)
+
+    def test_stream_uneven(self, st_no_response):
+        """ Tests for when streams are not evenly sized. """
+        st = st_no_response
+        st[0].data = st[0].data[:100]
+        wf = WaveFrame.from_stream(st)
+        # only 100 values should be Non-null
+        assert (~wf.data.loc[0].isnull()).sum() == 100
+        # the shape should still be greater than 100
+        assert wf.data.shape[-1] > 100
 
 
 class TestBasicOperations:

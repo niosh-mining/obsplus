@@ -86,7 +86,10 @@ class WaveFrame:
         return self.equals(other)
 
     def __getitem__(self, item):
-        return self._df[("stats", item)]
+        try:
+            return self._df[("stats", item)]
+        except TypeError:  # boolean index is being used
+            return WaveFrame(self._df[item], processing=self.processing)
 
     def __setitem__(self, key, value):
         self._df[("stats", key)] = value
