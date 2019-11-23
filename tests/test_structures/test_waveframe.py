@@ -294,16 +294,23 @@ class TestToFromStream:
 class TestStride:
     """ Tests for stridding data. """
 
-    def test_empty_stride(self, waveframe_from_stream):
+    def test_empty(self, waveframe_from_stream):
         """ Ensure striding works. """
         # Stridding with now input params should return a copy of waveframe.
         out = waveframe_from_stream.stride()
         assert isinstance(out, WaveFrame)
         assert out == waveframe_from_stream
 
-    def test_stride_overlap_default_window_len(self, waveframe_from_stream):
+    def test_overlap_default_window_len(self, waveframe_from_stream):
         """ Ensure strides can be overlapped. """
         wf = waveframe_from_stream
         # An overlap with the default window_len should also return a copy.
         wf2 = wf.stride(overlap=10)
         assert wf == wf2
+
+    def test_no_overlap_half_len(self, waveframe_from_stream):
+        """ ensure the stride when len is half creates a waveframe with 2x rows."""
+        wf = waveframe_from_stream
+        out = wf.stride(window_len=1500)
+        assert len(out) == 2 * len(wf)
+        assert out.size[-1] == wf.size[-1] / 2

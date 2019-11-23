@@ -94,6 +94,10 @@ class WaveFrame:
     def __setitem__(self, key, value):
         self._df[("stats", key)] = value
 
+    @property
+    def size(self):
+        return self.data.size
+
     # --- Alternative constructors
     @classmethod
     def from_stream(cls, stream: obspy.Stream) -> "WaveFrame":
