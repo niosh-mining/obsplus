@@ -51,3 +51,9 @@ class DataFrameContentError(ValueError):
     Raised when something is unexpected in a dataframe's contents by the
     calling function.
     """
+
+
+class IncompatibleWaveFrameError(ValueError):
+    """
+    Raised when an operation is attempted on incompatible WaveFrames.
+    """

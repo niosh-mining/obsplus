@@ -2,12 +2,15 @@
 Waveframe class definition.
 """
 import copy
-from typing import Optional, Union
+import operator
+from typing import Optional, Union, Any, List
 
 import obspy
+import numpy as np
 import pandas as pd
 
-from obsplus.constants import waveform_clientable_type
+from obsplus.constants import waveform_clientable_type, number_type
+from obsplus.exceptions import IncompatibleWaveFrameError
 from obsplus.utils.waveframe import (
     DfPartDescriptor,
     _stats_df_to_stats,
@@ -28,6 +31,8 @@ class WaveFrame:
         A dataframe with at least the following columns:
             (network, station, location, channel, starttime, endtime)
         Wildcards in any of the string columns are not permitted.
+    processing
+        A list of strings indicating the methods called on the waveframe.
     """
 
     _df: pd.DataFrame
@@ -38,18 +43,20 @@ class WaveFrame:
         self,
         stats: Union[pd.DataFrame, "WaveFrame"],
         waveforms: Optional[waveform_clientable_type] = None,
+        processing: Optional[List[str]] = None,
     ):
-        self.processing = []  # init empty processing list
-        # for an instance of WaveFrame simply return its df
+        self.processing = processing or []  # init empty processing list
+        # for an instance of WaveFrame copy and update state
         if isinstance(stats, WaveFrame):
-            df = stats._df.copy()
-            self.processing = copy.deepcopy(stats.processing)
+            self.__dict__.update(stats.copy().__dict__)
+            return
         # the full waveframe dataframe was passed
         elif isinstance(stats, pd.DataFrame) and waveforms is None:
             df = stats.copy()
         # waveform argument is already a dataframe
         elif isinstance(waveforms, pd.DataFrame):
             df = pd.concat([stats, waveforms], axis=1, keys=["stats", "data"])
+        # else we have
         else:
             df = _df_from_stats_waveforms(stats=stats, waveforms=waveforms)
         self._df = df
@@ -62,6 +69,27 @@ class WaveFrame:
 
     def __len__(self):
         return len(self._df)
+
+    def __add__(self, other):
+        return self.operate(other, operator.add)
+
+    def __sub__(self, other):
+        return self.operate(other, operator.sub)
+
+    def __mul__(self, other):
+        return self.operate(other, operator.mul)
+
+    def __truediv__(self, other):
+        return self.operate(other, operator.truediv)
+
+    def __eq__(self, other):
+        return self.equals(other)
+
+    def __getitem__(self, item):
+        return self._df[("stats", item)]
+
+    def __setitem__(self, key, value):
+        self._df[("stats", key)] = value
 
     # --- Alternative constructors
     @classmethod
@@ -81,6 +109,122 @@ class WaveFrame:
         """
         stats = pd.DataFrame([dict(tr.stats) for tr in stream])
         return cls(waveforms=stream, stats=stats)
+
+    def from_data(self, data: Union[pd.DataFrame, np.ndarray]) -> "WaveFrame":
+        """
+        Return a copy of the current waveframe with a new data df.
+
+        Parameters
+        ----------
+        data
+            A dataframe with the same index as the current stats dataframe.
+        """
+        out = self.copy()
+        if isinstance(data, np.ndarray):
+            old = self.data
+            data = pd.DataFrame(data, columns=old.columns, index=old.index)
+        out.data = data
+        return out
+
+    def from_stats(self, stats: pd.DataFrame) -> "WaveFrame":
+        """
+        Return a copy of the current waveframe with a new stats df.
+
+        Parameters
+        ----------
+        stats
+            A dataframe with the same columns as the stats df.
+        """
+        out = self.copy()
+        out.stats = stats
+        return out
+
+    # --- Concrete implementations of dunder methods
+    def copy(self) -> "WaveFrame":
+        """
+        Perform a deep copy on the waveframe.
+        """
+        return copy.deepcopy(self)
+
+    def _stats_equal(self, other: "WaveFrame", stats_intersection=False) -> bool:
+        """
+        Return True if the stats on self and other are equal.
+
+        Parameters
+        ----------
+        other
+            Another WaveFrame
+        stats_intersection
+            If True only check the intersection of columns for stats.
+        """
+        stats1, stats2 = self.stats, other.stats
+        if stats_intersection:
+            cols = list(set(stats1) & set(stats2))
+            stats1, stats2 = stats1[cols], stats2[cols]
+        if not stats1.equals(stats2):
+            return False
+        return True
+
+    def equals(
+        self,
+        other: Union[Any, "WaveFrame"],
+        processing: bool = False,
+        stats_intersection: bool = False,
+    ) -> bool:
+        """
+        Equality checks for an WaveFrame.
+
+        Returns True if both the data and stats dataframes are equal.
+
+        Parameters
+        ----------
+        other
+            An object against which equality will be checked. If obj is not
+            an instance of waveframe the result will be False.
+        processing
+            If True, include the processing list in the equality check.
+        stats_intersection
+            If True, only compare the intersections of columns from both
+            waveframes' stats dataframe.
+        """
+        if not isinstance(other, WaveFrame):
+            return False
+        # check if stats are equal
+        if not self._stats_equal(other, stats_intersection=stats_intersection):
+            return False
+        # check if data are equal
+        data1, data2 = self.data, other.data
+        if not data1.equals(data2):
+            return False
+        # check processing, if requested
+        if processing:
+            if not self.processing == other.processing:
+                return False
+        return True
+
+    def operate(
+        self, other: number_type, operator: callable, check_stats: bool = True
+    ) -> "WaveFrame":
+        """
+        Perform a basic operation on a WaveFrame.
+
+        Parameters
+        ----------
+        other
+            Either a number, in which case it will be added to all values in
+            the data df, or another waveframe, in which case the data dfs will
+            simply be added together.
+
+        operator
+            A callable which will take (self.data, other).
+        """
+        if isinstance(other, WaveFrame):
+            if check_stats and not self._stats_equal(other, stats_intersection=True):
+                msg = "Stats columns are not equal, cannot add waveframes."
+                raise IncompatibleWaveFrameError(msg)
+            other = other.data
+        new_data = operator(self.data.values, other)
+        return self.from_data(new_data)
 
     # --- Output
     def to_stream(self) -> obspy.Stream:

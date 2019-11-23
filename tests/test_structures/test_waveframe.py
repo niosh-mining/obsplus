@@ -1,19 +1,21 @@
 """
 Tests for the WaveFrame class.
 """
+import operator
+
+import numpy as np
 import obspy
 import pandas as pd
 import pytest
-import numpy as np
 from obspy import UTCDateTime
 
 from obsplus import WaveFrame
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.testing import handle_warnings
 
 
-@pytest.fixture
-def st_no_response():
+def _make_st_no_response():
     """ Get a copy of the default trace, remove response. """
     st = obspy.read()
     # drop response for easier stats dtypes
@@ -22,10 +24,20 @@ def st_no_response():
     return st
 
 
+st_no_resp = _make_st_no_response()
+wf = WaveFrame.from_stream(st_no_resp)
+
+
+@pytest.fixture
+def st_no_response():
+    """ Get a copy of the default trace, remove response. """
+    return st_no_resp.copy()
+
+
 @pytest.fixture
 def waveframe_from_stream(st_no_response) -> WaveFrame:
     """ Create a basic WaveFrame from default stream. """
-    return WaveFrame.from_stream(st_no_response)
+    return wf.copy()
 
 
 @pytest.fixture
@@ -46,6 +58,26 @@ def waveframe_gap(st_no_response) -> WaveFrame:
 
 class Testbasics:
     """ Basic tests of waveframe. """
+
+    def test_get_item(self, waveframe_from_stream):
+        """ get item should return the series from the stats df. """
+        wf = waveframe_from_stream
+        ser = wf["station"]
+        assert (ser == "RJOB").all()
+
+    def test_set_item(self, waveframe_from_stream):
+        """ Set item should set a column in the stats dataframe. """
+        wf = waveframe_from_stream
+        wf["station"] = "JOB"
+        assert (wf["station"] == "JOB").all()
+
+    def test_add_new_column(self, waveframe_from_stream):
+        """ Add a new column to stats. """
+        wf = waveframe_from_stream
+        wf["new_col"] = "heyo"
+        out = wf["new_col"]
+        assert isinstance(out, pd.Series)
+        assert len(out) == len(wf)
 
 
 class TestConstructorStats:
@@ -119,7 +151,7 @@ class TestConstructorStats:
         wf2 = WaveFrame(wf1)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
-        assert (wf1._df == wf2._df).all().all()
+        assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_df(self, waveframe_from_stream):
         """ A waveframe can be inited from a dataframe from a waveframe. """
@@ -127,7 +159,7 @@ class TestConstructorStats:
         wf2 = WaveFrame(wf1._df)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
-        assert (wf1._df == wf2._df).all().all()
+        assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_parts(self, waveframe_from_stream):
         """ A wavefrom should be init'able from a waveframes parts """
@@ -135,7 +167,7 @@ class TestConstructorStats:
         wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
-        assert (wf1._df == wf2._df).all().all()
+        assert wf1 == wf2
 
     def test_waveframe_has_delta(self, waveframe_from_stream):
         """ Waveframe should have a delta parameter in its stats. """
@@ -144,8 +176,89 @@ class TestConstructorStats:
         assert np.issubdtype(stats["delta"].values.dtype, np.timedelta64)
 
 
-class TestComparisons:
+class TestBasicOperations:
+    """ Tests for basic operations. """
+
+    numbers = (0, 1, -1, 1.11, 10e2, 1 + 10j)
+
+    def _generic_op_test(self, wf1, number, op):
+        """ Apply generic operation tests. """
+        # div 0 raises runtime warning, this is ok.
+        with handle_warnings():
+            wf2 = op(wf1, number)
+            data1 = op(wf1.data.values, number)
+
+        assert isinstance(wf2, WaveFrame)
+        assert wf2 is not wf1
+        data2 = wf2.data.values
+        close = np.isclose(data1, data2)
+        not_finite = ~np.isfinite(data1)
+        assert np.all(close | not_finite)
+
+    @pytest.mark.parametrize("number", numbers)
+    def test_add_numbers(self, waveframe_from_stream, number):
+        """ Tests for adding numbers. """
+        self._generic_op_test(waveframe_from_stream, number, operator.add)
+
+    @pytest.mark.parametrize("number", numbers)
+    def test_subtract_numbers(self, waveframe_from_stream, number):
+        """ Tests for adding numbers. """
+        self._generic_op_test(waveframe_from_stream, number, operator.sub)
+
+    @pytest.mark.parametrize("number", numbers)
+    def test_mult_numbers(self, waveframe_from_stream, number):
+        """ Tests for adding numbers. """
+        self._generic_op_test(waveframe_from_stream, number, operator.mul)
+
+    @pytest.mark.parametrize("number", numbers)
+    def test_div_numbers(self, waveframe_from_stream, number):
+        """ Tests for adding numbers. """
+        self._generic_op_test(waveframe_from_stream, number, operator.truediv)
+
+
+class TestEqualityCheck:
     """ Tests for comparing waveframes. """
+
+    def test_basic_comparison(self, waveframe_from_stream):
+        """ Tests for equality checks which should return True. """
+        wf1 = waveframe_from_stream
+        assert wf1 == wf1
+        wf2 = wf1.copy()
+        assert wf2 == wf1
+
+    def test_compare_non_waveframes(self, waveframe_from_stream):
+        """ Tests for comparing objects which are not waveframes. """
+        wf1 = waveframe_from_stream
+        assert wf1 != 1
+        assert wf1 != "bob"
+        assert not wf1.equals(TestEqualityCheck)
+
+    def test_not_equal(self, waveframe_from_stream):
+        """ simple tests for waveframes which should not be equal. """
+        wf1 = waveframe_from_stream
+        wf2 = wf1 + 20
+        assert wf1 != wf2
+
+    def test_stats_not_equal(self, waveframe_from_stream):
+        """
+        When data are equal but stats are not the wfs should not be equal.
+        """
+        wf2 = waveframe_from_stream.copy()
+        wf2["station"] = ""
+        waveframe_from_stream.equals(wf2)
+        assert waveframe_from_stream != wf2
+
+    def test_stats_intersection(self, waveframe_from_stream):
+        """
+        If only the intersection of stats are used wf can still be equal.
+        """
+        wf1, wf2 = waveframe_from_stream, waveframe_from_stream.copy()
+        wf2["new_col"] = "new_column"
+        # these should now be not equal
+        assert not wf1.equals(wf2, stats_intersection=False)
+        # but if only using intersection of stats columns they are equal
+        wf1.equals(wf2, stats_intersection=True)
+        assert wf1.equals(wf2, stats_intersection=True)
 
 
 class TestToFromStream:
@@ -163,9 +276,16 @@ class TestToFromStream:
 class TestStride:
     """ Tests for stridding data. """
 
-    def test_stride(self, waveframe_from_stream):
+    def test_empty_stride(self, waveframe_from_stream):
         """ Ensure striding works. """
-        # stridding with now input params should return a copy of waveframe
+        # Stridding with now input params should return a copy of waveframe.
         out = waveframe_from_stream.stride()
         assert isinstance(out, WaveFrame)
         assert out == waveframe_from_stream
+
+    def test_stride_overlap_default_window_len(self, waveframe_from_stream):
+        """ Ensure strides can be overlapped. """
+        wf = waveframe_from_stream
+        # An overlap with the default window_len should also return a copy.
+        wf2 = wf.stride(overlap=10)
+        assert wf == wf2

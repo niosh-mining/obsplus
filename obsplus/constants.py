@@ -379,6 +379,9 @@ CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
 
 # ------------------- type aliases (aliai?)
 
+# number types
+number_type = Union[float, int, np.float, np.int, np.complex]
+
 # The waveforms processor type
 stream_proc_type = Callable[[Stream], Stream]
 

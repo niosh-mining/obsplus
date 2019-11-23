@@ -1,7 +1,7 @@
 """
 Waveframe specific utilities.
 """
-from typing import Union, List, Tuple
+from typing import List
 
 import numpy as np
 import obspy
@@ -9,7 +9,7 @@ import pandas as pd
 
 from obsplus.constants import BULK_WAVEFORM_COLUMNS, WAVEFRAME_STATS_DTYPES
 from obsplus.constants import TIME_COLUMNS
-from obsplus.constants import WaveformClient, bulk_waveform_arg_type, wave_type
+from obsplus.constants import WaveformClient, bulk_waveform_arg_type
 from obsplus.utils.pd import (
     apply_funcs_to_columns,
     order_columns,
@@ -74,32 +74,6 @@ def _get_waveforms_bulk(
     return out
 
 
-def _get_data_and_stats(
-    waveforms: Union[wave_type, pd.DataFrame], bulk
-) -> Tuple[List[np.ndarray], List[dict]]:
-    """ Given a waveform client return a list of data (np arrays) and stats. """
-    client = get_waveform_client(waveforms)
-    # Get a stream of waveforms.
-    if not isinstance(waveforms, obspy.Stream):
-        waveforms = _get_waveforms_bulk(client, bulk)
-    # There isn't guaranteed to be a trace for each bulk arg, so use
-    # stream_bulk_split to make it so.
-    st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
-    # make sure the data are merged together with a sensible fill value
-    arrays, stats = [], []
-    for st, b in zip(st_list, bulk):
-        assert len(st) in {0, 1}, "st should either be empty or len 1"
-        if not len(st):  # empty data still needs an entry and stats from bulk
-            arrays.append(np.array(np.NaN))
-            statskwargs = {i: v for i, v in zip(BULK_WAVEFORM_COLUMNS, b)}
-            stats.append(statskwargs)
-            continue
-        arrays.append(st[0].data)
-        stats.append(dict(st[0].stats))
-
-    return arrays, stats
-
-
 def _create_stats_df(df, strip_extra=True) -> pd.DataFrame:
     """
     Create a stats dataframe from a list of trace stats objects.
@@ -125,13 +99,52 @@ def _create_stats_df(df, strip_extra=True) -> pd.DataFrame:
 
 def _df_from_stats_waveforms(stats, waveforms):
     """ Get the waveframe df from stats and waveform_client. """
+
+    def _get_data_df(arrays):
+        """ A fast way to convert a list of np.ndarrays to a single ndarray. """
+        # Surprisingly this is much (5x) times faster than just passing arrays
+        # to the DataFrame constructor.
+        max_len = max([len(x) if x.shape else 0 for x in arrays])
+        out = np.full([len(arrays), max_len], np.NAN)
+        for num, array in enumerate(arrays):
+            if not array.shape:
+                continue
+            out[num, : len(array)] = array
+        # out has an empty dim just use NaN
+        if out.shape[-1] == 0:
+            return pd.DataFrame([np.NaN])
+        return pd.DataFrame(out)
+
+    def _get_data_and_stats(waveforms, bulk):
+        """ Using a waveform client return an array of data and stats. """
+        client = get_waveform_client(waveforms)
+        # Get a stream of waveforms.
+        if not isinstance(waveforms, obspy.Stream):
+            waveforms = _get_waveforms_bulk(client, bulk)
+        # There isn't guaranteed to be a trace for each bulk arg, so use
+        # stream_bulk_split to make it so.
+        st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
+        # make sure the data are merged together with a sensible fill value
+        arrays, stats = [], []
+        for st, b in zip(st_list, bulk):
+            assert len(st) in {0, 1}, "st should either be empty or len 1"
+            if not len(st):  # empty data still needs an entry and stats from bulk
+                arrays.append(np.array(np.NaN))
+                statskwargs = {i: v for i, v in zip(BULK_WAVEFORM_COLUMNS, b)}
+                stats.append(statskwargs)
+                continue
+            arrays.append(st[0].data)
+            stats.append(dict(st[0].stats))
+
+        return arrays, stats
+
     # validate stats dataframe and extract bulk parameters
     bulk = get_waveforms_bulk_args(stats)
     # get arrays and stats list
     data_list, stats_list = _get_data_and_stats(waveforms, bulk)
     # then get dataframes of stats and arrays
     stats = _create_stats_df(pd.DataFrame(stats_list))
-    ts_df = pd.DataFrame(data_list)
+    ts_df = _get_data_df(data_list)
     return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
 
 
