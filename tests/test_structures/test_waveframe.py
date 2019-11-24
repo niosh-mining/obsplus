@@ -314,3 +314,18 @@ class TestStride:
         out = wf.stride(window_len=1500)
         assert len(out) == 2 * len(wf)
         assert out.size[-1] == wf.size[-1] / 2
+
+
+class TestDropNa:
+    """ tests for dropping null values. """
+
+    def test_drop_nan_column(self, waveframe_from_stream):
+        """ Tests for dropping a single NaN. """
+        wf1 = waveframe_from_stream
+        df = wf1._df.copy()
+        df.loc[:, ("data", 0)] = np.NaN
+        wf2 = WaveFrame(df)
+        # first test drops based on rows, this should drop all rows
+        wf3 = wf2.dropna(1, how="any")
+
+        breakpoint()

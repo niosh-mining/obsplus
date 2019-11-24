@@ -5,8 +5,8 @@ import copy
 import operator
 from typing import Optional, Union, Any, List
 
-import obspy
 import numpy as np
+import obspy
 import pandas as pd
 
 from obsplus.constants import waveform_clientable_type, number_type
@@ -249,6 +249,34 @@ class WaveFrame:
         return obspy.Stream(traces=traces)
 
     # --- Utilities
+
+    def _update_times(self, start=True, end=True) -> "WaveFrame":
+        """
+        Update start/endtime based on the length of the data. The dataframe
+        is modified in place.
+        """
+        df = self._df
+        data_len = df.loc[:, "data"].shape[-1]
+        time_delta = df.loc[:, ("stats", "delta")]
+        starttimes = df.loc[:, ("stats", "starttime")]
+
+        # update starttimes
+        if start:
+            data = df.loc[:, "data"]
+            start_index = data.columns.index[0]
+            if start_index != 0:
+                start_detla = -(time_delta * start_index)
+                df.loc[:, ("stats", "starttime")] = starttimes + start_detla
+                # TODO start here
+                breakpoint()
+        #
+
+        df = self._df
+
+        endtime = df.loc[:, ("stats", "starttime")] + (data_len * time_delta)
+        df.loc[:, ("stats", "endtime")] = endtime
+        return self
+
     def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
         """
         Stride a waveframe to create more rows and fewer columns.
@@ -263,3 +291,24 @@ class WaveFrame:
         window_len = window_len or self.data.shape[-1]
         assert overlap < window_len
         return self
+
+    def dropna(
+        self, axis: int = 0, how: str = "any", thresh: Optional[float] = None
+    ) -> "WaveFrame":
+        """
+        Drop data with null values, return a new waveframe.
+
+        Parameters
+        ----------
+        axis
+        how: {'any', 'all'}
+            The string for determining if a row or column is deleted.
+            'any': Drop row or column if any null values are present
+            'all': Drop row or column if all null values are present
+        thresh
+        """
+        data = self.data
+        new_data = data.dropna(axis=axis, how=how, thresh=thresh)
+        stats = self.stats.loc[new_data.index]
+        df = pd.concat([stats, new_data], axis=1, keys=["stats", "data"])
+        return self.__class__(df)._update_times()
