@@ -357,6 +357,12 @@ class TestDropNa:
 class TestStride:
     """ Tests for stridding data. """
 
+    def test_overlap_gt_window_len_raises(self, waveframe_from_stream):
+        """ Stride should rasie if the overlap is greater than window len. """
+        wf = waveframe_from_stream
+        with pytest.raises(ValueError):
+            wf.stride(10, 100)
+
     def test_empty(self, waveframe_from_stream):
         """ Ensure striding works. """
         # Stridding with now input params should return a copy of waveframe.
@@ -374,6 +380,11 @@ class TestStride:
     def test_no_overlap_half_len(self, waveframe_from_stream):
         """ ensure the stride when len is half creates a waveframe with 2x rows."""
         wf = waveframe_from_stream
+        breakpoint()
         out = wf.stride(window_len=1500)
         assert len(out) == 2 * len(wf)
         assert out.size[-1] == wf.size[-1] / 2
+
+
+class TestResetIndex:
+    """ tests for resetting index of waveframe. """

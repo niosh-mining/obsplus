@@ -99,6 +99,10 @@ class WaveFrame:
     def size(self):
         return self.data.size
 
+    @property
+    def index(self):
+        return self._df.index
+
     # --- Alternative constructors
     @classmethod
     def from_stream(cls, stream: obspy.Stream) -> "WaveFrame":
@@ -250,22 +254,6 @@ class WaveFrame:
         return obspy.Stream(traces=traces)
 
     # --- Utilities
-
-    def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
-        """
-        Stride a waveframe to create more rows and fewer columns.
-
-        Parameters
-        ----------
-        window_len
-            The window length in samples.
-        overlap
-            The overlap between each waveform slice, in samples.
-        """
-        window_len = window_len or self.data.shape[-1]
-        assert overlap < window_len
-        return self
-
     def dropna(
         self, axis: int = 0, how: str = "any", thresh: Optional[float] = None
     ) -> "WaveFrame":
@@ -287,3 +275,35 @@ class WaveFrame:
         df = pd.concat([stats, new_data], axis=1, keys=["stats", "data"])
         df = _update_df_times(df)
         return WaveFrame(df)
+
+    def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
+        """
+        Stride a waveframe to create more rows and fewer columns.
+
+        Parameters
+        ----------
+        window_len
+            The window length in samples.
+        overlap
+            The overlap between each waveform slice, in samples.
+        """
+        # check window len
+        data = self.data
+        data_len = data.shape[-1]
+        window_len = window_len or data_len
+        if window_len < overlap:
+            raise ValueError(f"window_len must be greater than overlap")
+        # TODO consider filling all missing with NaN so index is monotonic
+        assert data.index.is_monotonic, "index must be monotonic"
+        array = data.values
+        # get start and stop indicies
+        start = np.arange(0, data_len, window_len - overlap)
+        end = start + window_len
+        # get new index values for df
+        y_inds = np.repeat(self.index.values, len(start))
+        out = np.hstack([array[y, x1:x2] for y in y_inds for x1, x2 in zip(start, end)])
+        # create new dataframe
+        new_data = pd.DataFrame(out, index=y_inds)
+        new_stats = self.stats.loc[y_inds]
+        df = pd.concat([new_stats, new_data], axis=1, keys=["stats", "data"])
+        return WaveFrame(df).dropna(1, how="all")
