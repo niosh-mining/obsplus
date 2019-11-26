@@ -2,6 +2,7 @@
 Tests for the WaveFrame class.
 """
 import operator
+from typing import Union
 
 import numpy as np
 import obspy
@@ -291,6 +292,68 @@ class TestToFromStream:
         assert st == st_no_response
 
 
+class TestDropNa:
+    """ tests for dropping null values. """
+
+    def _make_nan_wf(
+        self,
+        wf,
+        y_inds: Union[int, slice] = slice(None),
+        x_inds: Union[int, slice] = slice(None),
+    ):
+        """ make a waveframe with NaN values. """
+        df = wf._df.copy()
+        df.loc[y_inds, ("data", x_inds)] = np.NaN
+        return WaveFrame(df)
+
+    def test_drop_nan_column_all(self, waveframe_from_stream):
+        """ Tests for dropping a column with all NaN. """
+        wf = self._make_nan_wf(waveframe_from_stream, x_inds=0)
+        # first test drops based on rows, this should drop all rows
+        wf2 = wf.dropna(1, how="any")
+        assert wf2 is not wf
+        # there should no longer be any NaN
+        assert not wf2.data.isnull().any().any()
+        # the start of the columns should be 0
+        assert wf2.data.columns[0] == 0
+        # the starttime should have been updated
+        assert (wf2["starttime"] > wf["starttime"]).all()
+        # dropping using the all keyword should also work
+        assert wf.dropna(1, how="all") == wf2
+
+    def test_drop_nan_column_any(self, waveframe_from_stream):
+        """ Tests for dropping a column with one NaN. """
+        wf = self._make_nan_wf(waveframe_from_stream, 0, 0)
+        # since only one value is NaN using how==all does nothing
+        assert wf == wf.dropna(1, how="all")
+        # but how==any should
+        wf2 = wf.dropna(1, how="any")
+        assert (wf["starttime"] < wf2["starttime"]).all()
+        # the first index should always be 0
+        assert wf2.data.columns[0] == 0
+
+    def test_drop_nan_row_all(self, waveframe_from_stream):
+        """ tests for dropping a row with all NaN"""
+        wf = self._make_nan_wf(waveframe_from_stream, y_inds=0)
+        wf2 = wf.dropna(0, how="all")
+        assert wf2 == wf.dropna(0, how="any")
+        # starttimes should not have changed
+        assert (wf["starttime"][1:] == wf2["starttime"]).all()
+
+    def test_drop_nan_row_any(self, waveframe_from_stream):
+        """ test for dropping a row with one NaN. """
+        wf = self._make_nan_wf(waveframe_from_stream, y_inds=0, x_inds=0)
+        wf2 = wf.dropna(0, how="any")
+        wf3 = wf.dropna(0, how="all")
+        assert len(wf3) > len(wf2)
+
+    def test_drop_all(self, waveframe_from_stream):
+        """ tests for when all rows are dropped. """
+        wf = self._make_nan_wf(waveframe_from_stream, x_inds=0)
+        wf2 = wf.dropna(0, how="any")
+        assert len(wf2) == 0
+
+
 class TestStride:
     """ Tests for stridding data. """
 
@@ -314,18 +377,3 @@ class TestStride:
         out = wf.stride(window_len=1500)
         assert len(out) == 2 * len(wf)
         assert out.size[-1] == wf.size[-1] / 2
-
-
-class TestDropNa:
-    """ tests for dropping null values. """
-
-    def test_drop_nan_column(self, waveframe_from_stream):
-        """ Tests for dropping a single NaN. """
-        wf1 = waveframe_from_stream
-        df = wf1._df.copy()
-        df.loc[:, ("data", 0)] = np.NaN
-        wf2 = WaveFrame(df)
-        # first test drops based on rows, this should drop all rows
-        wf3 = wf2.dropna(1, how="any")
-
-        breakpoint()

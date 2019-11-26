@@ -15,6 +15,7 @@ from obsplus.utils.waveframe import (
     DfPartDescriptor,
     _stats_df_to_stats,
     _df_from_stats_waveforms,
+    _update_df_times,
 )
 
 
@@ -250,33 +251,6 @@ class WaveFrame:
 
     # --- Utilities
 
-    def _update_times(self, start=True, end=True) -> "WaveFrame":
-        """
-        Update start/endtime based on the length of the data. The dataframe
-        is modified in place.
-        """
-        df = self._df
-        data_len = df.loc[:, "data"].shape[-1]
-        time_delta = df.loc[:, ("stats", "delta")]
-        starttimes = df.loc[:, ("stats", "starttime")]
-
-        # update starttimes
-        if start:
-            data = df.loc[:, "data"]
-            start_index = data.columns.index[0]
-            if start_index != 0:
-                start_detla = -(time_delta * start_index)
-                df.loc[:, ("stats", "starttime")] = starttimes + start_detla
-                # TODO start here
-                breakpoint()
-        #
-
-        df = self._df
-
-        endtime = df.loc[:, ("stats", "starttime")] + (data_len * time_delta)
-        df.loc[:, ("stats", "endtime")] = endtime
-        return self
-
     def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
         """
         Stride a waveframe to create more rows and fewer columns.
@@ -311,4 +285,5 @@ class WaveFrame:
         new_data = data.dropna(axis=axis, how=how, thresh=thresh)
         stats = self.stats.loc[new_data.index]
         df = pd.concat([stats, new_data], axis=1, keys=["stats", "data"])
-        return self.__class__(df)._update_times()
+        df = _update_df_times(df)
+        return WaveFrame(df)

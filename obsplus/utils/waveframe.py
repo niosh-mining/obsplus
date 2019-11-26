@@ -168,3 +168,31 @@ def _stats_df_to_stats(df: pd.DataFrame) -> List[dict]:
         .drop(columns=drop)
     )
     return df
+
+
+def _update_df_times(df, start=True, end=True) -> pd.DataFrame:
+    """
+    Update start/endtime based on the length of the data. The dataframe
+    is modified in place.
+    """
+    df = df
+    time_delta = df.loc[:, ("stats", "delta")]
+    starttime = df.loc[:, ("stats", "starttime")]
+    time_index = df["data"].columns
+    # update starttimes
+    if start:
+        data = df.loc[:, "data"]
+        start_index = data.columns[0]
+        if start_index != 0:
+            start_detla = time_delta * start_index
+            df.loc[:, ("stats", "starttime")] = starttime + start_detla
+            new_data_index = data.columns - start_index
+            # convert current index to df, set new values and convert back
+            ind_df = df.columns.to_frame()
+            ind_df.loc[:, 1].loc["data"] = new_data_index
+            df.columns = pd.MultiIndex.from_frame(ind_df)
+    # update endtimes
+    if end:
+        endtime = starttime + (time_index[-1] * time_delta)
+        df.loc[:, ("stats", "endtime")] = endtime
+    return df
