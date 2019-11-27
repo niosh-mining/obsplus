@@ -24,21 +24,6 @@ from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
 # STATS_FUNCS = {"delta": to_datetime64, "starttime": to_utc, "endtime": to_utc}
 
 
-class DfPartDescriptor:
-    """
-    A simple descriptor granting access to various parts of a dataframe.
-    """
-
-    def __init__(self, df_name):
-        self._df_name = df_name
-
-    def __set_name__(self, owner, name):
-        self._name = name
-
-    def __get__(self, instance, owner):
-        return getattr(instance, self._df_name)[self._name]
-
-
 def _time_to_utc(df: pd.DataFrame, inplace=False) -> pd.DataFrame:
     """
     Convert time columns in a pandas dataframe to UTCDateTime objects.
@@ -95,57 +80,6 @@ def _create_stats_df(df, strip_extra=True) -> pd.DataFrame:
         drop = list(set(to_drop) & set(df.columns))
         out = out.drop(columns=drop)
     return out
-
-
-def _df_from_stats_waveforms(stats, waveforms):
-    """ Get the waveframe df from stats and waveform_client. """
-
-    def _get_data_df(arrays):
-        """ A fast way to convert a list of np.ndarrays to a single ndarray. """
-        # Surprisingly this is much (5x) times faster than just passing arrays
-        # to the DataFrame constructor.
-        max_len = max([len(x) if x.shape else 0 for x in arrays])
-        out = np.full([len(arrays), max_len], np.NAN)
-        for num, array in enumerate(arrays):
-            if not array.shape:
-                continue
-            out[num, : len(array)] = array
-        # out has an empty dim just use NaN
-        if out.shape[-1] == 0:
-            return pd.DataFrame([np.NaN])
-        return pd.DataFrame(out)
-
-    def _get_data_and_stats(waveforms, bulk):
-        """ Using a waveform client return an array of data and stats. """
-        client = get_waveform_client(waveforms)
-        # Get a stream of waveforms.
-        if not isinstance(waveforms, obspy.Stream):
-            waveforms = _get_waveforms_bulk(client, bulk)
-        # There isn't guaranteed to be a trace for each bulk arg, so use
-        # stream_bulk_split to make it so.
-        st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
-        # make sure the data are merged together with a sensible fill value
-        arrays, stats = [], []
-        for st, b in zip(st_list, bulk):
-            assert len(st) in {0, 1}, "st should either be empty or len 1"
-            if not len(st):  # empty data still needs an entry and stats from bulk
-                arrays.append(np.array(np.NaN))
-                statskwargs = {i: v for i, v in zip(BULK_WAVEFORM_COLUMNS, b)}
-                stats.append(statskwargs)
-                continue
-            arrays.append(st[0].data)
-            stats.append(dict(st[0].stats))
-
-        return arrays, stats
-
-    # validate stats dataframe and extract bulk parameters
-    bulk = get_waveforms_bulk_args(stats)
-    # get arrays and stats list
-    data_list, stats_list = _get_data_and_stats(waveforms, bulk)
-    # then get dataframes of stats and arrays
-    stats = _create_stats_df(pd.DataFrame(stats_list))
-    ts_df = _get_data_df(data_list)
-    return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
 
 
 def _stats_df_to_stats(df: pd.DataFrame) -> List[dict]:
@@ -223,6 +157,79 @@ def _enforce_monotonic_data_columns(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df["stats"], new_data], axis=1, keys=["stats", "data"])
 
 
+class _DFExtractorFromStatsAndClient:
+    """
+    Private class for extracting info from stats and waveform clients.
+    """
+
+    def __init__(self, stats, waveforms):
+        self.stats = stats
+        self.client = get_waveform_client(waveforms)
+
+    def _get_data_df(self, arrays):
+        """ A fast way to convert a list of np.ndarrays to a single ndarray. """
+        # Surprisingly this is much (5x) times faster than just passing arrays
+        # to the DataFrame constructor.
+        max_len = max([len(x) if x.shape else 0 for x in arrays])
+        out = np.full([len(arrays), max_len], np.NAN)
+        for num, array in enumerate(arrays):
+            if not array.shape:
+                continue
+            out[num, : len(array)] = array
+        # out has an empty dim just use NaN
+        if out.shape[-1] == 0:
+            return pd.DataFrame([np.NaN])
+        return pd.DataFrame(out)
+
+    def _get_data_and_stats(self, bulk):
+        """ Using a waveform client return an array of data and stats. """
+        waveforms = self.client
+        # Get a stream of waveforms.
+        if not isinstance(waveforms, obspy.Stream):
+            waveforms = _get_waveforms_bulk(waveforms, bulk)
+        # There isn't guaranteed to be a trace for each bulk arg, so use
+        # stream_bulk_split to make it so.
+        st_list = stream_bulk_split(waveforms, bulk, fill_value=np.NaN)
+        # make sure the data are merged together with a sensible fill value
+        arrays, stats = [], []
+        for st, b in zip(st_list, bulk):
+            assert len(st) in {0, 1}, "st should either be empty or len 1"
+            if not len(st):  # empty data still needs an entry and stats from bulk
+                arrays.append(np.array(np.NaN))
+                statskwargs = {i: v for i, v in zip(BULK_WAVEFORM_COLUMNS, b)}
+                stats.append(statskwargs)
+                continue
+            arrays.append(st[0].data)
+            stats.append(dict(st[0].stats))
+
+        return arrays, stats
+
+    def get_df(self):
+        # validate stats dataframe and extract bulk parameters
+        bulk = get_waveforms_bulk_args(self.stats)
+        # get arrays and stats list
+        data_list, stats_list = self._get_data_and_stats(bulk)
+        # then get dataframes of stats and arrays
+        stats = _create_stats_df(pd.DataFrame(stats_list))
+        ts_df = self._get_data_df(data_list)
+        return pd.concat([stats, ts_df], axis=1, keys=["stats", "data"])
+
+
+class _DfPartDescriptor:
+    """
+    A simple descriptor granting access to various parts of a dataframe.
+    """
+
+    def __init__(self, df_name):
+        self._df_name = df_name
+
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        return getattr(instance, self._df_name)[self._name]
+
+
 class _DataStridder:
     """
     Class to encapsulate logic needed for stridding a waveframe df.
@@ -258,13 +265,14 @@ class _DataStridder:
         count = 0
         for y_ind in self.data.index.values:
             for ind1, ind2 in zip(start, end):
-                out[count, :] = array[y_ind, ind1:ind2]
+                data_len = ind2 - ind1
+                out[count, :data_len] = array[y_ind, ind1:ind2]
                 count += 1
         return out
 
-    def stride(self, window_len=None, overlap=None) -> pd.DataFrame:
+    def stride(self, window_len=None, overlap=0) -> pd.DataFrame:
         """ Stride the dataframe, return new dataframe. """
-        window_len = window_len or self.data_len
+        window_len, overlap = int(window_len or self.data_len), int(overlap)
         # if the stride length is the data length just return copy of df
         if window_len == self.data_len:
             return self.df.copy()
@@ -273,6 +281,7 @@ class _DataStridder:
         # get start and stop indices
         start = np.arange(0, self.data_len, window_len - overlap)
         end = start + window_len
+        end[end > self.data_len] = self.data_len
         # old y index for each stride length
         y_inds = np.repeat(self.stats.index.values, len(start))
         stats = self._get_new_stats(start, y_inds, window_len)

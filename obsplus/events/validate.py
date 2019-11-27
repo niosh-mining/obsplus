@@ -8,7 +8,7 @@ from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 import obsplus
 from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
 from obsplus.utils.misc import yield_obj_parent_attr, iterate, replace_null_nlsc_codes
-from obsplus.validate import validator, validate
+from obsplus.utils.validate import validator, validate
 
 CATALOG_VALIDATORS = []
 

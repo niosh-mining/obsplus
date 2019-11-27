@@ -12,7 +12,12 @@ from obspy.core.stream import Stream, Trace
 
 import obsplus
 import obsplus.utils.misc
-from obsplus.validate import _temp_validate_namespace, validator, validate, decompose
+from obsplus.utils.validate import (
+    _temp_validate_namespace,
+    validator,
+    validate,
+    decompose,
+)
 
 
 class Thing1:

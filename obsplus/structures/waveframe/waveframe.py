@@ -9,14 +9,19 @@ import numpy as np
 import obspy
 import pandas as pd
 
-from obsplus.constants import waveform_clientable_type, number_type
+from obsplus.constants import (
+    waveform_clientable_type,
+    number_type,
+    WAVEFRAME_STATS_DTYPES,
+)
 from obsplus.exceptions import IncompatibleWaveFrameError
+from obsplus.utils.validate import validator, validate
 from obsplus.utils.waveframe import (
-    DfPartDescriptor,
-    _stats_df_to_stats,
-    _df_from_stats_waveforms,
-    _update_df_times,
+    _DfPartDescriptor,
     _DataStridder,
+    _stats_df_to_stats,
+    _DFExtractorFromStatsAndClient,
+    _update_df_times,
 )
 
 
@@ -38,8 +43,9 @@ class WaveFrame:
     """
 
     _df: pd.DataFrame
-    stats = DfPartDescriptor("_df")
-    data = DfPartDescriptor("_df")
+    stats = _DfPartDescriptor("_df")
+    data = _DfPartDescriptor("_df")
+    _required_stats_columns = set(sorted(WAVEFRAME_STATS_DTYPES))
 
     def __init__(
         self,
@@ -60,7 +66,8 @@ class WaveFrame:
             df = pd.concat([stats, waveforms], axis=1, keys=["stats", "data"])
         # else we have
         else:
-            df = _df_from_stats_waveforms(stats=stats, waveforms=waveforms)
+            extractor = _DFExtractorFromStatsAndClient(stats, waveforms)
+            df = extractor.get_df()
         # the waveframe must have unique indicies
         assert df.index.is_unique
         self._df = df
@@ -261,6 +268,21 @@ class WaveFrame:
         return obspy.Stream(traces=traces)
 
     # --- Utilities
+    def validate(self, report=False) -> Union["WaveFrame", pd.DataFrame]:
+        """
+        Runs the basic WaveFrame validation suite, returns self if passes.
+
+        Parameters
+        ----------
+        report
+            If True, return the validation report, as a dataframe, rather than
+            self.
+        """
+        out = validate(self, "ops_waveframe", report=report)
+        if report:
+            return out
+        return self
+
     def dropna(
         self, axis: int = 0, how: str = "any", thresh: Optional[float] = None
     ) -> "WaveFrame":
@@ -296,3 +318,36 @@ class WaveFrame:
         """
         out = _DataStridder(self._df).stride(window_len, overlap)
         return WaveFrame(out)
+
+
+# --- WaveFrame validators
+
+
+@validator("ops_waveframe", WaveFrame)
+def has_stats_and_data(wf: WaveFrame):
+    """ Ensure the waveframe has the required stats columns. """
+    df = wf._df
+    levels = df.columns.get_level_values(0).unique()
+    assert {"data", "stats"}.issubset(levels)
+
+
+@validator("ops_waveframe", WaveFrame)
+def has_required_stats_columns(wf: WaveFrame):
+    """ Ensure the waveframe has the required stats columns. """
+    current_cols = wf.stats.columns
+    expected_cols = wf._required_stats_columns
+    assert set(current_cols).issuperset(expected_cols)
+
+
+@validator("ops_waveframe", WaveFrame)
+def starttime_le_endtime(wf):
+    """ ensure starttimes is less than the endtime. """
+    assert (wf["starttime"] <= wf["endtime"]).all()
+
+
+@validator("ops_waveframe", WaveFrame)
+def times_consistent_with_data_len(wf):
+    """ Ensure the start and endtimes are consistent with the data length. """
+    data_len = wf.shape[-1]
+    expected_duration = wf["delta"] * (data_len - 1)
+    assert (wf["starttime"] + expected_duration == wf["endtime"]).all()
