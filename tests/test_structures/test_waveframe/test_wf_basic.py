@@ -2,7 +2,6 @@
 Tests for the WaveFrame class.
 """
 import operator
-from typing import Union
 
 import numpy as np
 import obspy
@@ -14,47 +13,6 @@ from obsplus import WaveFrame
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.testing import handle_warnings
-
-
-def _make_st_no_response():
-    """ Get a copy of the default trace, remove response. """
-    st = obspy.read()
-    # drop response for easier stats dtypes
-    for tr in st:
-        tr.stats.pop("response", None)
-    return st
-
-
-st_no_resp = _make_st_no_response()
-wf = WaveFrame.from_stream(st_no_resp)
-
-
-@pytest.fixture
-def st_no_response():
-    """ Get a copy of the default trace, remove response. """
-    return st_no_resp.copy()
-
-
-@pytest.fixture
-def waveframe_from_stream(st_no_response) -> WaveFrame:
-    """ Create a basic WaveFrame from default stream. """
-    return wf.copy()
-
-
-@pytest.fixture
-def waveframe_gap(st_no_response) -> WaveFrame:
-    """
-    Create a waveframe with a 1 second gap in the middle.
-    Also shorten last trace.
-    """
-    st1, st2 = st_no_response.copy(), st_no_response.copy()
-    for tr in st2:
-        tr.stats.starttime = st1[0].stats.endtime + 1
-    st2[-1].data = st2[-1].data[:-20]
-    wf = WaveFrame.from_stream(st1 + st2)
-    assert isinstance(wf, WaveFrame)
-    assert len(wf) == 6
-    return wf
 
 
 class Testbasics:
@@ -89,8 +47,8 @@ class Testbasics:
         assert wf2["channel"].str.endswith("Z").all()
 
 
-class TestConstructorStats:
-    """ Basic tests input to waveframe. """
+class TestConstructor:
+    """ Basic tests for creating WaveFrame instances. """
 
     t1 = UTCDateTime("2009-08-24T00-20-03")
 
@@ -195,6 +153,37 @@ class TestConstructorStats:
         assert wf.data.shape[-1] > 100
 
 
+class TestValidate:
+    """ tests for validating waveframes. """
+
+    def test_missing_required_columns_raises(self, waveframe_from_stream):
+        """
+        Ensure if any of the required stats columns are missing validate raises.
+        """
+        wf = waveframe_from_stream
+        # drop one of the requried columns
+        df = wf._df
+        df.drop(columns=["delta"], level=1, inplace=True)
+        with pytest.raises(AssertionError):
+            wf.validate()
+
+    def test_inconsistent_endtimes(self, waveframe_from_stream):
+        """
+        If the endtime is not consistent with the starttime + len of data raise.
+        """
+        df = waveframe_from_stream._df
+        df.loc[:, ("stats", "endtime")] += df.loc[:, ("stats", "delta")] * 10
+        with pytest.raises(AssertionError):
+            waveframe_from_stream.validate()
+
+    def test_validation_report(self, waveframe_from_stream):
+        """ Ensure a report can be returned. """
+        wf = waveframe_from_stream
+        df = wf.validate(report=True)
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+
+
 class TestBasicOperations:
     """ Tests for basic operations. """
 
@@ -278,139 +267,3 @@ class TestEqualityCheck:
         # but if only using intersection of stats columns they are equal
         wf1.equals(wf2, stats_intersection=True)
         assert wf1.equals(wf2, stats_intersection=True)
-
-
-class TestToFromStream:
-    """ Tests for converting a stream to a WaveFrame. """
-
-    def test_type(self, waveframe_from_stream):
-        assert isinstance(waveframe_from_stream, WaveFrame)
-
-    def test_to_stream(self, waveframe_from_stream, st_no_response):
-        st = waveframe_from_stream.to_stream()
-        assert isinstance(st, obspy.Stream)
-        assert st == st_no_response
-
-
-class TestDropNa:
-    """ tests for dropping null values. """
-
-    def _make_nan_wf(
-        self,
-        wf,
-        y_inds: Union[int, slice] = slice(None),
-        x_inds: Union[int, slice] = slice(None),
-    ):
-        """ make a waveframe with NaN values. """
-        df = wf._df.copy()
-        df.loc[y_inds, ("data", x_inds)] = np.NaN
-        return WaveFrame(df)
-
-    def test_drop_nan_column_all(self, waveframe_from_stream):
-        """ Tests for dropping a column with all NaN. """
-        wf = self._make_nan_wf(waveframe_from_stream, x_inds=0)
-        # first test drops based on rows, this should drop all rows
-        wf2 = wf.dropna(1, how="any")
-        assert wf2 is not wf
-        # there should no longer be any NaN
-        assert not wf2.data.isnull().any().any()
-        # the start of the columns should be 0
-        assert wf2.data.columns[0] == 0
-        # the starttime should have been updated
-        assert (wf2["starttime"] > wf["starttime"]).all()
-        # dropping using the all keyword should also work
-        assert wf.dropna(1, how="all") == wf2
-
-    def test_drop_nan_column_any(self, waveframe_from_stream):
-        """ Tests for dropping a column with one NaN. """
-        wf = self._make_nan_wf(waveframe_from_stream, 0, 0)
-        # since only one value is NaN using how==all does nothing
-        assert wf == wf.dropna(1, how="all")
-        # but how==any should
-        wf2 = wf.dropna(1, how="any")
-        assert (wf["starttime"] < wf2["starttime"]).all()
-        # the first index should always be 0
-        assert wf2.data.columns[0] == 0
-
-    def test_drop_nan_row_all(self, waveframe_from_stream):
-        """ tests for dropping a row with all NaN"""
-        wf = self._make_nan_wf(waveframe_from_stream, y_inds=0)
-        wf2 = wf.dropna(0, how="all")
-        assert wf2 == wf.dropna(0, how="any")
-        # starttimes should not have changed
-        assert (wf["starttime"][1:] == wf2["starttime"]).all()
-
-    def test_drop_nan_row_any(self, waveframe_from_stream):
-        """ test for dropping a row with one NaN. """
-        wf = self._make_nan_wf(waveframe_from_stream, y_inds=0, x_inds=0)
-        wf2 = wf.dropna(0, how="any")
-        wf3 = wf.dropna(0, how="all")
-        assert len(wf3) > len(wf2)
-
-    def test_drop_all(self, waveframe_from_stream):
-        """ tests for when all rows are dropped. """
-        wf = self._make_nan_wf(waveframe_from_stream, x_inds=0)
-        wf2 = wf.dropna(0, how="any")
-        assert len(wf2) == 0
-
-
-class TestStride:
-    """ Tests for stridding data. """
-
-    window_len = 1_500
-
-    def test_overlap_gt_window_len_raises(self, waveframe_from_stream):
-        """ Stride should rasie if the overlap is greater than window len. """
-        wf = waveframe_from_stream
-        with pytest.raises(ValueError):
-            wf.stride(10, 100)
-
-    def test_empty(self, waveframe_from_stream):
-        """ Ensure striding works. """
-        # Stridding with now input params should return a copy of waveframe.
-        out = waveframe_from_stream.stride()
-        assert isinstance(out, WaveFrame)
-        assert out == waveframe_from_stream
-
-    def test_overlap_default_window_len(self, waveframe_from_stream):
-        """ Ensure strides can be overlapped. """
-        wf = waveframe_from_stream
-        # An overlap with the default window_len should also return a copy.
-        wf2 = wf.stride(overlap=10)
-        assert wf == wf2
-
-    def test_no_overlap_half_len(self, waveframe_from_stream):
-        """ ensure the stride when len is half creates a waveframe with 2x rows."""
-        window_len = waveframe_from_stream.shape[-1] // 2
-        wf = waveframe_from_stream
-        out = wf.stride(window_len=window_len).validate()
-        assert len(out) == 2 * len(wf)
-        assert out.shape[-1] == window_len
-        # starttimes and endtime should have been updated
-        starttimes, endtimes = out["starttime"], out["endtime"]
-        delta = out["delta"]
-        data_len = out.shape[-1]
-        assert starttimes[0] + data_len * delta[0] == starttimes[1]
-        # assert (endtimes - starttimes == (data_len - 1) * delta).all()
-        assert endtimes[0] == starttimes[1] - delta[1]
-        assert endtimes[0] + data_len * delta[0] == endtimes[1]
-
-    def test_overlap_half_len(self, waveframe_from_stream):
-        """ ensure half len """
-        wf = waveframe_from_stream
-        window_len = wf.shape[-1] // 2
-        overlap = window_len // 2
-        out = wf.stride(window_len=window_len, overlap=overlap).validate()
-        data = out.data
-        # no column should have all NaN values
-        assert data.isnull().all(axis=1).sum() == 0
-        # only one column for each channel should have NaN values
-        assert data.isnull().any(axis=1).sum() == 3
-
-
-class TestResetIndex:
-    """ tests for resetting index of waveframe. """
-
-
-class TestSetIndex:
-    """ Tests for setting index """

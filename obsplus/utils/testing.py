@@ -7,11 +7,13 @@ from collections import Counter
 from contextlib import contextmanager
 from os.path import join
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import obspy
 import pandas as pd
 
+import obsplus
 from obsplus.utils.time import make_time_chunks
 
 
@@ -167,3 +169,15 @@ class ArchiveDirectory:
             time_name = str(t1).split(".")[0].replace(":", "-") + ".mseed"
             save_name = path / f"{net}_{sta}_{time_name}"
             st.write(str(save_name), "mseed")
+
+
+def make_wf_with_nan(
+    wf: Optional["obsplus.WaveFrame"],
+    y_inds: Union[int, slice] = slice(None),
+    x_inds: Union[int, slice] = slice(None),
+):
+    """ make a waveframe with NaN values. """
+    wf = wf or obsplus.WaveFrame.load_example_wf()
+    df = wf._df.copy()
+    df.loc[y_inds, ("data", x_inds)] = np.NaN
+    return obsplus.WaveFrame(df)

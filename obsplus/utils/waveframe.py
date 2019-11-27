@@ -1,15 +1,20 @@
 """
 Waveframe specific utilities.
 """
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import obspy
 import pandas as pd
 
-from obsplus.constants import BULK_WAVEFORM_COLUMNS, WAVEFRAME_STATS_DTYPES
-from obsplus.constants import TIME_COLUMNS
-from obsplus.constants import WaveformClient, bulk_waveform_arg_type
+import obsplus
+from obsplus.constants import (
+    BULK_WAVEFORM_COLUMNS,
+    WAVEFRAME_STATS_DTYPES,
+    WaveformClient,
+    bulk_waveform_arg_type,
+    TIME_COLUMNS,
+)
 from obsplus.utils.pd import (
     apply_funcs_to_columns,
     order_columns,
@@ -18,6 +23,7 @@ from obsplus.utils.pd import (
 )
 from obsplus.utils.time import to_utc
 from obsplus.utils.waveforms import get_waveform_client, stream_bulk_split
+from obsplus.utils.misc import register_func
 
 
 # functions to be applied to stats after converting to df
@@ -288,3 +294,29 @@ class _DataStridder:
         array = self._get_data_array(start, end, window_len, y_inds)
         new_data = pd.DataFrame(array, index=stats.index)
         return pd.concat([stats, new_data], axis=1, keys=["stats", "data"])
+
+
+class _WFExampleLoader:
+    """
+    Private class for loading the example waveframes.
+    """
+
+    example_loaders = {}
+    cache = {}
+
+    def __call__(self, name: str, *args, **kwargs):
+        # load cached example and return copy
+        if name in self.cache:
+            return self.cache[name].copy()
+        # or create it if it does not yet exist
+        self.cache[name] = self.example_loaders[name](self, *args, **kwargs)
+        return self(name)
+
+    @register_func(example_loaders, "default")
+    def _make_wf_from_st_no_response(self):
+        """ Get a copy of the default trace, remove response. """
+        st = obspy.read()
+        # drop response for easier stats dtypes
+        for tr in st:
+            tr.stats.pop("response", None)
+        return obsplus.WaveFrame.from_stream(st)

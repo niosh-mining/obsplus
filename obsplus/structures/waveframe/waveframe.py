@@ -22,6 +22,7 @@ from obsplus.utils.waveframe import (
     _stats_df_to_stats,
     _DFExtractorFromStatsAndClient,
     _update_df_times,
+    _WFExampleLoader,
 )
 
 
@@ -268,15 +269,42 @@ class WaveFrame:
         return obspy.Stream(traces=traces)
 
     # --- Utilities
+    @classmethod
+    def load_example_wf(cls, name: str = "default", *args, **kwargs) -> "WaveFrame":
+        """
+        Load an example WaveFrame.
+
+        Args and kwargs are passed to the example generating functions.
+
+        Parameters
+        ----------
+        name
+            The name of the example to load. By default a waveframe will
+            be created from he obspy example traces.
+
+        Examples
+        --------
+        Get the default waveframe.
+
+        >>> wf = WaveFrame.load_example_wf()
+        >>> assert isinstance(wf, WaveFrame)
+        >>> assert not wf.empty
+        """
+        example_loader = _WFExampleLoader()
+        return example_loader(name, *args, **kwargs)
+
     def validate(self, report=False) -> Union["WaveFrame", pd.DataFrame]:
         """
-        Runs the basic WaveFrame validation suite, returns self if passes.
+        Runs the basic WaveFrame validation suite.
+
+        This method does the following:
+            1. Ensure the underlying dataframe has both stats and data
 
         Parameters
         ----------
         report
             If True, return the validation report, as a dataframe, rather than
-            self.
+            self or raising assertion errors if validators fail.
         """
         out = validate(self, "ops_waveframe", report=report)
         if report:
