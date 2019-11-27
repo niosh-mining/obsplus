@@ -16,6 +16,7 @@ from obsplus.utils.waveframe import (
     _stats_df_to_stats,
     _df_from_stats_waveforms,
     _update_df_times,
+    _DataStridder,
 )
 
 
@@ -60,6 +61,8 @@ class WaveFrame:
         # else we have
         else:
             df = _df_from_stats_waveforms(stats=stats, waveforms=waveforms)
+        # the waveframe must have unique indicies
+        assert df.index.is_unique
         self._df = df
 
     def __str__(self):
@@ -98,6 +101,10 @@ class WaveFrame:
     @property
     def size(self):
         return self.data.size
+
+    @property
+    def shape(self):
+        return self.data.shape
 
     @property
     def index(self):
@@ -287,23 +294,5 @@ class WaveFrame:
         overlap
             The overlap between each waveform slice, in samples.
         """
-        # check window len
-        data = self.data
-        data_len = data.shape[-1]
-        window_len = window_len or data_len
-        if window_len < overlap:
-            raise ValueError(f"window_len must be greater than overlap")
-        # TODO consider filling all missing with NaN so index is monotonic
-        assert data.index.is_monotonic, "index must be monotonic"
-        array = data.values
-        # get start and stop indicies
-        start = np.arange(0, data_len, window_len - overlap)
-        end = start + window_len
-        # get new index values for df
-        y_inds = np.repeat(self.index.values, len(start))
-        out = np.hstack([array[y, x1:x2] for y in y_inds for x1, x2 in zip(start, end)])
-        # create new dataframe
-        new_data = pd.DataFrame(out, index=y_inds)
-        new_stats = self.stats.loc[y_inds]
-        df = pd.concat([new_stats, new_data], axis=1, keys=["stats", "data"])
-        return WaveFrame(df).dropna(1, how="all")
+        out = _DataStridder(self._df).stride(window_len, overlap)
+        return WaveFrame(out)

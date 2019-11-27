@@ -170,29 +170,112 @@ def _stats_df_to_stats(df: pd.DataFrame) -> List[dict]:
     return df
 
 
-def _update_df_times(df, start=True, end=True) -> pd.DataFrame:
+def _reset_data_columns(df, new_cols) -> pd.DataFrame:
     """
-    Update start/endtime based on the length of the data. The dataframe
-    is modified in place.
+    Helper function for resetting the data columns of a waveframe df.
+
+    Operates inplace to avoid over copying data.
     """
-    df = df
+    # convert current index to df, set new values and convert back
+    ind_df = df.columns.to_frame()
+    ind_df.loc[:, 1].loc["data"] = new_cols
+    df.columns = pd.MultiIndex.from_frame(ind_df)
+    return df
+
+
+def _update_df_times(df, inplace=False) -> pd.DataFrame:
+    """
+    Update start/endtime based on the length of the data.
+
+    As part of the process the columns of the data df will be reset to start
+    at 0.
+    """
+    df = df if inplace else df.copy()
     time_delta = df.loc[:, ("stats", "delta")]
     starttime = df.loc[:, ("stats", "starttime")]
     time_index = df["data"].columns
     # update starttimes
-    if start:
-        data = df.loc[:, "data"]
-        start_index = data.columns[0]
-        if start_index != 0:
-            start_detla = time_delta * start_index
-            df.loc[:, ("stats", "starttime")] = starttime + start_detla
-            new_data_index = data.columns - start_index
-            # convert current index to df, set new values and convert back
-            ind_df = df.columns.to_frame()
-            ind_df.loc[:, 1].loc["data"] = new_data_index
-            df.columns = pd.MultiIndex.from_frame(ind_df)
+    data = df.loc[:, "data"]
+    start_index = data.columns[0]
+    if start_index != 0:
+        start_detla = time_delta * start_index
+        df.loc[:, ("stats", "starttime")] = starttime + start_detla
+        new_data_index = data.columns - start_index
+        df = _reset_data_columns(df, new_data_index)
     # update endtimes
-    if end:
-        endtime = starttime + (time_index[-1] * time_delta)
-        df.loc[:, ("stats", "endtime")] = endtime
+    endtime = starttime + (time_index[-1] * time_delta)
+    df.loc[:, ("stats", "endtime")] = endtime
     return df
+
+
+def _enforce_monotonic_data_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    The index of the dataframe should be monotonic ints else re-index adding
+    NaN for missing values.
+    """
+    columns = df["data"].columns
+    # do nothing if the columns are already monotonic
+    if columns.is_monotonic:
+        return df
+    # if not, re-index and re-create dataframe.
+    new_index = np.arange(columns.min(), columns.max(), 1)
+    new_data = df["data"].reindex(new_index, axis="columns")
+    return pd.concat([df["stats"], new_data], axis=1, keys=["stats", "data"])
+
+
+class _DataStridder:
+    """
+    Class to encapsulate logic needed for stridding a waveframe df.
+
+    This class should not be used directly but rather by the WaveFrame.
+    """
+
+    def __init__(self, df):
+        self.df = df.pipe(_enforce_monotonic_data_columns).pipe(
+            _update_df_times, inplace=True
+        )
+        self.data = df["data"]
+        self.stats = df["stats"]
+        self.data_len = self.data.shape[-1]
+
+    def _get_new_stats(self, start, y_inds, window_len):
+        """ get a new dataframe of stats. Also update start/end times. """
+        # repeat stats rows for each entry in start
+        stats = self.stats.loc[y_inds].reset_index(drop=True)
+        # get deltas to apply to starttimes. Accounts for new rows
+        starttime_delta = np.tile(start, len(self.stats.index)) * stats["delta"]
+        # get deltas corresponding to endtimes
+        endtime_delta = stats["delta"] * (window_len - 1)
+        stats["starttime"] += starttime_delta
+        stats["endtime"] = stats["starttime"] + endtime_delta
+        return stats
+
+    def _get_data_array(self, start, end, window_len, y_inds):
+        """ create the array of data. """
+        array = self.data.values
+        # create empty NaN data array
+        out = np.full((len(self.data) * len(start), window_len), np.NaN)
+        count = 0
+        for y_ind in self.data.index.values:
+            for ind1, ind2 in zip(start, end):
+                out[count, :] = array[y_ind, ind1:ind2]
+                count += 1
+        return out
+
+    def stride(self, window_len=None, overlap=None) -> pd.DataFrame:
+        """ Stride the dataframe, return new dataframe. """
+        window_len = window_len or self.data_len
+        # if the stride length is the data length just return copy of df
+        if window_len == self.data_len:
+            return self.df.copy()
+        if window_len < overlap:
+            raise ValueError(f"window_len must be greater than overlap")
+        # get start and stop indices
+        start = np.arange(0, self.data_len, window_len - overlap)
+        end = start + window_len
+        # old y index for each stride length
+        y_inds = np.repeat(self.stats.index.values, len(start))
+        stats = self._get_new_stats(start, y_inds, window_len)
+        array = self._get_data_array(start, end, window_len, y_inds)
+        new_data = pd.DataFrame(array, index=stats.index)
+        return pd.concat([stats, new_data], axis=1, keys=["stats", "data"])

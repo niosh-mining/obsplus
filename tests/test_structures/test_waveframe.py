@@ -379,12 +379,24 @@ class TestStride:
 
     def test_no_overlap_half_len(self, waveframe_from_stream):
         """ ensure the stride when len is half creates a waveframe with 2x rows."""
+        window_len = 1_500
         wf = waveframe_from_stream
-        breakpoint()
-        out = wf.stride(window_len=1500)
+        out = wf.stride(window_len=window_len)
         assert len(out) == 2 * len(wf)
-        assert out.size[-1] == wf.size[-1] / 2
+        assert out.shape[-1] == window_len
+        # starttimes and endtime should have been updated
+        starttimes, endtimes = out["starttime"], out["endtime"]
+        delta = out["delta"]
+        data_len = out.shape[-1]
+        assert starttimes[0] + data_len * delta[0] == starttimes[1]
+        assert (endtimes - starttimes == (data_len - 1) * delta).all()
+        assert endtimes[0] == starttimes[1] - delta[1]
+        assert endtimes[0] + data_len * delta[0] == endtimes[1]
 
 
 class TestResetIndex:
     """ tests for resetting index of waveframe. """
+
+
+class TestSetIndex:
+    """ Tests for setting index """
