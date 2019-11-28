@@ -16,14 +16,37 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import IncompatibleWaveFrameError
 from obsplus.utils.validate import validator, validate
-from obsplus.utils.waveframe import (
-    _DfPartDescriptor,
-    _DataStridder,
-    _stats_df_to_stats,
-    _DFExtractorFromStatsAndClient,
-    _update_df_times,
+from obsplus.waveframe.construct import (
     _WFExampleLoader,
+    _DFExtractorFromStatsAndClient,
+    _DFtoStreamConverter,
 )
+from obsplus.waveframe.core import _update_df_times, _combine_stats_and_data
+from obsplus.waveframe.reshape import _DataStridder
+from obsplus.waveframe.processing import _WFDetrender
+
+
+class _DfPartDescriptor:
+    """
+    A simple descriptor granting access to various parts of a dataframe.
+    """
+
+    def __init__(self, df_name):
+        self._df_name = df_name
+
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            msg = f"{self.name} is an only an instance attribute"
+            raise AttributeError(msg)
+        return getattr(instance, self._df_name)[self._name]
+
+    def __set__(self, instance, value):
+        # for some reason this was needed to prevent overwriting the property
+        msg = f"can't set attribute {self._name}"
+        raise AttributeError(msg)
 
 
 class WaveFrame:
@@ -51,7 +74,7 @@ class WaveFrame:
     def __init__(
         self,
         stats: Union[pd.DataFrame, "WaveFrame"],
-        waveforms: Optional[waveform_clientable_type] = None,
+        waveforms: Optional[Union[waveform_clientable_type, pd.DataFrame]] = None,
         processing: Optional[List[str]] = None,
     ):
         self.processing = processing or []  # init empty processing list
@@ -64,7 +87,7 @@ class WaveFrame:
             df = stats.copy()
         # waveform argument is already a dataframe
         elif isinstance(waveforms, pd.DataFrame):
-            df = pd.concat([stats, waveforms], axis=1, keys=["stats", "data"])
+            df = _combine_stats_and_data(stats, waveforms)
         # else we have
         else:
             extractor = _DFExtractorFromStatsAndClient(stats, waveforms)
@@ -146,25 +169,21 @@ class WaveFrame:
         data
             A dataframe with the same index as the current stats dataframe.
         """
-        out = self.copy()
         if isinstance(data, np.ndarray):
             old = self.data
             data = pd.DataFrame(data, columns=old.columns, index=old.index)
-        out.data = data
-        return out
+        return WaveFrame(stats=self.stats, waveforms=data)
 
     def from_stats(self, stats: pd.DataFrame) -> "WaveFrame":
         """
         Return a copy of the current waveframe with a new stats df.
-
         Parameters
         ----------
         stats
             A dataframe with the same columns as the stats df.
         """
-        out = self.copy()
-        out.stats = stats
-        return out
+        data = self.data
+        return WaveFrame(stats=stats, waveforms=data)
 
     # --- Concrete implementations of dunder methods
     def copy(self) -> "WaveFrame":
@@ -258,15 +277,8 @@ class WaveFrame:
         """
         Convert the waveframe to a Stream object.
         """
-        # get stats, convert datetimes back to obspy
-        stats = _stats_df_to_stats(self.stats)
-        # create traces
-        traces = []
-        for ind, row in stats.iterrows():
-            stats = row.to_dict()
-            data = self._df.loc[ind, "data"]
-            traces.append(obspy.Trace(data=data.values, header=stats))
-        return obspy.Stream(traces=traces)
+        converter = _DFtoStreamConverter()
+        return converter(self._df)
 
     # --- Utilities
     @classmethod
@@ -329,7 +341,7 @@ class WaveFrame:
         data = self.data
         new_data = data.dropna(axis=axis, how=how, thresh=thresh)
         stats = self.stats.loc[new_data.index]
-        df = pd.concat([stats, new_data], axis=1, keys=["stats", "data"])
+        df = _combine_stats_and_data(stats, new_data)
         df = _update_df_times(df)
         return WaveFrame(df)
 
@@ -344,8 +356,24 @@ class WaveFrame:
         overlap
             The overlap between each waveform slice, in samples.
         """
-        out = _DataStridder(self._df).stride(window_len, overlap)
+        out = _DataStridder()(self._df, window_len=window_len, overlap=overlap)
         return WaveFrame(out)
+
+    # --- Processing methods
+    def detrend(self, method: str = "simple", **kwargs) -> "WaveFrame":
+        """
+        Detrend all traces in waveframe.
+
+        The kwargs are passed to underlying functions.
+
+        Parameters
+        ----------
+        method
+            The detrend method to use. Supported options are:
+                simple -
+        """
+        df = _WFDetrender(method)(self._df)
+        return WaveFrame(df)
 
 
 # --- WaveFrame validators

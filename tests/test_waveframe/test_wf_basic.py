@@ -18,33 +18,48 @@ from obsplus.utils.testing import handle_warnings
 class Testbasics:
     """ Basic tests of waveframe. """
 
-    def test_get_item(self, waveframe_from_stream):
+    def test_get_item(self, stream_wf):
         """ get item should return the series from the stats df. """
-        wf = waveframe_from_stream
+        wf = stream_wf
         ser = wf["station"]
         assert (ser == "RJOB").all()
 
-    def test_set_item(self, waveframe_from_stream):
+    def test_set_item(self, stream_wf):
         """ Set item should set a column in the stats dataframe. """
-        wf = waveframe_from_stream
+        wf = stream_wf
         wf["station"] = "JOB"
         assert (wf["station"] == "JOB").all()
 
-    def test_add_new_column(self, waveframe_from_stream):
+    def test_add_new_column(self, stream_wf):
         """ Add a new column to stats. """
-        wf = waveframe_from_stream
+        wf = stream_wf
         wf["new_col"] = "heyo"
         out = wf["new_col"]
         assert isinstance(out, pd.Series)
         assert len(out) == len(wf)
 
-    def test_filtering(self, waveframe_from_stream):
+    def test_filtering(self, stream_wf):
         """ Ensure passing a boolean filters the dataframe. """
-        wf = waveframe_from_stream
+        wf = stream_wf
         ser = wf["channel"].str.endswith("Z")
         wf2 = wf[ser]
         assert len(wf2) == 1
         assert wf2["channel"].str.endswith("Z").all()
+
+    def test_data_and_stats_write_only(self, stream_wf):
+        """ The data and stats parameter should be write only."""
+        data, stats = stream_wf.data, stream_wf.stats
+        with pytest.raises(AttributeError):
+            stream_wf.data = data
+        with pytest.raises(AttributeError):
+            stream_wf.stats = stats
+
+    def test_cant_access_class_data_stats(self):
+        """ Class level data and stats should not be accessible. """
+        with pytest.raises(AttributeError):
+            WaveFrame.stats
+        with pytest.raises(AttributeError):
+            WaveFrame.data
 
 
 class TestConstructor:
@@ -112,33 +127,33 @@ class TestConstructor:
         assert len(data) == 1
         assert data.isnull().all().all()
 
-    def test_init_waveframe_from_waveframe(self, waveframe_from_stream):
+    def test_init_waveframe_from_waveframe(self, stream_wf):
         """ A waveframe should be valid input to waveframe constructor"""
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         wf2 = WaveFrame(wf1)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert wf1 == wf2
 
-    def test_init_waveframe_from_waveframe_df(self, waveframe_from_stream):
+    def test_init_waveframe_from_waveframe_df(self, stream_wf):
         """ A waveframe can be inited from a dataframe from a waveframe. """
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         wf2 = WaveFrame(wf1._df)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert wf1 == wf2
 
-    def test_init_waveframe_from_waveframe_parts(self, waveframe_from_stream):
+    def test_init_waveframe_from_waveframe_parts(self, stream_wf):
         """ A wavefrom should be init'able from a waveframes parts """
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
         assert wf1 is not wf2
         assert wf1._df is not wf2._df
         assert wf1 == wf2
 
-    def test_waveframe_has_delta(self, waveframe_from_stream):
+    def test_waveframe_has_delta(self, stream_wf):
         """ Waveframe should have a delta parameter in its stats. """
-        stats = waveframe_from_stream.stats
+        stats = stream_wf.stats
         assert "delta" in stats.columns
         assert np.issubdtype(stats["delta"].values.dtype, np.timedelta64)
 
@@ -152,33 +167,52 @@ class TestConstructor:
         # the shape should still be greater than 100
         assert wf.data.shape[-1] > 100
 
+    def test_from_stats(self, stream_wf):
+        """ Ensure a new wavefream from stats can be created. """
+        stats = stream_wf.stats
+        delta = np.timedelta64(10, "D")
+
+        stats["starttime"] += delta
+        stats["endtime"] += delta
+        out = stream_wf.from_stats(stats)
+        assert isinstance(out, WaveFrame)
+        assert out != stream_wf
+        assert (out["starttime"] == stats["starttime"]).all()
+
+    def test_from_data(self, stream_wf):
+        """ Ensure a new waveframe can be created from a new data df. """
+        data = (stream_wf + 10).data
+        out = stream_wf.from_data(data)
+        assert isinstance(out, WaveFrame)
+        assert np.allclose(out.data.values, stream_wf.data.values + 10)
+
 
 class TestValidate:
     """ tests for validating waveframes. """
 
-    def test_missing_required_columns_raises(self, waveframe_from_stream):
+    def test_missing_required_columns_raises(self, stream_wf):
         """
         Ensure if any of the required stats columns are missing validate raises.
         """
-        wf = waveframe_from_stream
+        wf = stream_wf
         # drop one of the requried columns
         df = wf._df
         df.drop(columns=["delta"], level=1, inplace=True)
         with pytest.raises(AssertionError):
             wf.validate()
 
-    def test_inconsistent_endtimes(self, waveframe_from_stream):
+    def test_inconsistent_endtimes(self, stream_wf):
         """
         If the endtime is not consistent with the starttime + len of data raise.
         """
-        df = waveframe_from_stream._df
+        df = stream_wf._df
         df.loc[:, ("stats", "endtime")] += df.loc[:, ("stats", "delta")] * 10
         with pytest.raises(AssertionError):
-            waveframe_from_stream.validate()
+            stream_wf.validate()
 
-    def test_validation_report(self, waveframe_from_stream):
+    def test_validation_report(self, stream_wf):
         """ Ensure a report can be returned. """
-        wf = waveframe_from_stream
+        wf = stream_wf
         df = wf.validate(report=True)
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
@@ -204,63 +238,63 @@ class TestBasicOperations:
         assert np.all(close | not_finite)
 
     @pytest.mark.parametrize("number", numbers)
-    def test_add_numbers(self, waveframe_from_stream, number):
+    def test_add_numbers(self, stream_wf, number):
         """ Tests for adding numbers. """
-        self._generic_op_test(waveframe_from_stream, number, operator.add)
+        self._generic_op_test(stream_wf, number, operator.add)
 
     @pytest.mark.parametrize("number", numbers)
-    def test_subtract_numbers(self, waveframe_from_stream, number):
+    def test_subtract_numbers(self, stream_wf, number):
         """ Tests for adding numbers. """
-        self._generic_op_test(waveframe_from_stream, number, operator.sub)
+        self._generic_op_test(stream_wf, number, operator.sub)
 
     @pytest.mark.parametrize("number", numbers)
-    def test_mult_numbers(self, waveframe_from_stream, number):
+    def test_mult_numbers(self, stream_wf, number):
         """ Tests for adding numbers. """
-        self._generic_op_test(waveframe_from_stream, number, operator.mul)
+        self._generic_op_test(stream_wf, number, operator.mul)
 
     @pytest.mark.parametrize("number", numbers)
-    def test_div_numbers(self, waveframe_from_stream, number):
+    def test_div_numbers(self, stream_wf, number):
         """ Tests for adding numbers. """
-        self._generic_op_test(waveframe_from_stream, number, operator.truediv)
+        self._generic_op_test(stream_wf, number, operator.truediv)
 
 
 class TestEqualityCheck:
     """ Tests for comparing waveframes. """
 
-    def test_basic_comparison(self, waveframe_from_stream):
+    def test_basic_comparison(self, stream_wf):
         """ Tests for equality checks which should return True. """
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         assert wf1 == wf1
         wf2 = wf1.copy()
         assert wf2 == wf1
 
-    def test_compare_non_waveframes(self, waveframe_from_stream):
+    def test_compare_non_waveframes(self, stream_wf):
         """ Tests for comparing objects which are not waveframes. """
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         assert wf1 != 1
         assert wf1 != "bob"
         assert not wf1.equals(TestEqualityCheck)
 
-    def test_not_equal(self, waveframe_from_stream):
+    def test_not_equal(self, stream_wf):
         """ simple tests for waveframes which should not be equal. """
-        wf1 = waveframe_from_stream
+        wf1 = stream_wf
         wf2 = wf1 + 20
         assert wf1 != wf2
 
-    def test_stats_not_equal(self, waveframe_from_stream):
+    def test_stats_not_equal(self, stream_wf):
         """
         When data are equal but stats are not the wfs should not be equal.
         """
-        wf2 = waveframe_from_stream.copy()
+        wf2 = stream_wf.copy()
         wf2["station"] = ""
-        waveframe_from_stream.equals(wf2)
-        assert waveframe_from_stream != wf2
+        stream_wf.equals(wf2)
+        assert stream_wf != wf2
 
-    def test_stats_intersection(self, waveframe_from_stream):
+    def test_stats_intersection(self, stream_wf):
         """
         If only the intersection of stats are used wf can still be equal.
         """
-        wf1, wf2 = waveframe_from_stream, waveframe_from_stream.copy()
+        wf1, wf2 = stream_wf, stream_wf.copy()
         wf2["new_col"] = "new_column"
         # these should now be not equal
         assert not wf1.equals(wf2, stats_intersection=False)

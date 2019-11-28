@@ -24,7 +24,7 @@ def st_no_response():
 
 
 @pytest.fixture
-def waveframe_from_stream(st_no_response) -> WaveFrame:
+def stream_wf(st_no_response) -> WaveFrame:
     """ Create a basic WaveFrame from default stream. """
     return WaveFrame.load_example_wf()
 

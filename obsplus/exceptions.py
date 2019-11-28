@@ -57,3 +57,7 @@ class IncompatibleWaveFrameError(ValueError):
     """
     Raised when an operation is attempted on incompatible WaveFrames.
     """
+
+
+class UnkownMethodError(ValueError):
+    """ Raised when an unsupported method is selected. """
