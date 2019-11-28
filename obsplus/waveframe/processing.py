@@ -4,6 +4,7 @@ Modules for performing simple processing with waveframes.
 
 import numpy as np
 import pandas as pd
+import scipy.signal
 
 from obsplus.waveframe.core import DFTransformer, _combine_stats_and_data
 
@@ -43,22 +44,47 @@ class _WFDetrender(DFTransformer):
     demean = constant
 
     def linear(self, df):
-        """ Perform linear detrending. """
-        # data, stats = df["data"], df["stats"]
-        # vals = data.values
-        # times = get_time_array(df)
-        # finite_inds = np.isfinite(vals)
-        #
-        # # get all non NaN numbers
-        # vals_nn = vals[finite_inds]
-        # times_nn = times[finite_inds].astype(int)
-        #
-        # x0, x1 = self._make_linear_coefs(times_nn, vals_nn)
-        # out = scipy.stats.linregress(times_nn, vals_nn)
-        #
-        # breakpoint()
+        """
+        Perform linear detrending, possibly accounting for NaN values.
+        """
+        data, stats = df["data"], df["stats"]
+        values = data.values
+        finite = np.isfinite(values)
+        # if everything is not NaN used fast path
+        if np.all(finite):
+            out = scipy.signal.detrend(values, axis=1)
+        else:  # complicated logic to handle NaN
+            out = self._linear_detrend_with_nan(values, finite)
+        # create new df and return
+        df = pd.DataFrame(out, index=data.index, columns=data.columns)
+        return _combine_stats_and_data(stats=stats, data=df)
 
     # --- Helper functions
+
+    def _linear_detrend_with_nan(self, values, finite):
+        """ Apply linear detrend to data which have NaNs. """
+        out = np.empty_like(values) * np.NaN
+        vals = values[finite]  # flatten to only include non NaN
+        # get indices of NoN Nan
+        new_inds = np.indices(values.shape)
+        row_ind = new_inds[0][finite]
+        col_ind = new_inds[1][finite]
+        # set breakpoints where new columns start
+        bpoints = np.where(row_ind[:-1] < row_ind[1:])[0] + 1
+        # apply piece-wise detrend
+        detrended = scipy.signal.detrend(vals, type="linear", bp=bpoints)
+        # indexes for flattened array (output of scipy)
+        if_2 = np.concatenate([bpoints, [len(vals)]])
+        if_1 = np.zeros_like(if_2)
+        if_1[1:] = if_2[:-1]  # start is just the end of previous
+        # indexes for original array (for putting data back in)
+        col_start = col_ind[np.insert(bpoints, 0, 0)]  # start of col index
+        row_ind = np.arange(len(if_1))  # row index
+        # add detrended data back to array
+        for fs, fe, row, col_s in zip(if_1, if_2, row_ind, col_start):
+            ar = detrended[fs:fe]
+            out[row, col_s : len(ar) + col_s] = ar
+        return out
 
     def _make_linear_coefs(self, times: np.ndarray, vals: np.ndarray):
         """ return an array of x_0 and x_1 for each row in times"""

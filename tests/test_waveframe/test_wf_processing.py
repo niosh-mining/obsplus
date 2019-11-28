@@ -23,6 +23,8 @@ def wf_with_offset(stream_wf):
 class TestDetrend:
     """ Tests for applying detrend to waveframe. """
 
+    nan_x_inds = (0, 100, 250, -1)
+
     @staticmethod
     def get_relative_offset(wf):
         """ Calculate mean / max of each trace, return np array. """
@@ -36,7 +38,7 @@ class TestDetrend:
     @pytest.fixture
     def wf_offset_nan(self, wf_with_offset):
         """ Add some NaN to offsets, just for fun. """
-        return make_wf_with_nan(wf_with_offset, x_inds=(0, 100, 250, -1))
+        return make_wf_with_nan(wf_with_offset, x_inds=self.nan_x_inds)
 
     def test_simple(self, wf_with_offset):
         """ ensure the simplest case works. """
@@ -70,5 +72,32 @@ class TestDetrend:
 
     def test_detrend_linear(self, wf_with_offset):
         """ tests for linear detrending. """
-        # out = wf_with_offset.detrend("linear")
-        # breakpoint()
+        original_data = wf_with_offset.data.values.copy()
+        out = wf_with_offset.detrend("linear")
+        # the relative offsets should now be very close to 0
+        rel_offset = self.get_relative_offset(out)
+        assert np.allclose(rel_offset, 0)
+        # the data should not have changed in place.
+        assert np.allclose(original_data, wf_with_offset.data.values)
+        # but should have changed on new object
+        assert not np.allclose(original_data, out.data.values)
+
+    def test_detrend_linear_with_nan(self, wf_offset_nan):
+        """ test for linear detrending with NaN values. """
+
+        original_data = wf_offset_nan.data.values
+        original_copy = original_data.copy()
+        out = wf_offset_nan.detrend("linear")
+        # the data should not have changed in place.
+        assert np.allclose(original_data, original_copy, equal_nan=True)
+        # but should have changed
+        assert not np.allclose(original_data, out.data.values)
+        # the positions of NaNs should not have changed.
+        nan1 = np.isnan(original_data)
+        nan2 = np.isnan(out.data.values)
+        assert np.all(nan1 == nan2)
+        # and the relative offsets should be very close to 0
+        rel_offsets = self.get_relative_offset(out)
+        assert np.allclose(rel_offsets, 0)
+
+        breakpoint()
