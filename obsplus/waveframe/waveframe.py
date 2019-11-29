@@ -360,19 +360,35 @@ class WaveFrame:
         return WaveFrame(out)
 
     # --- Processing methods
-    def detrend(self, method: str = "simple", **kwargs) -> "WaveFrame":
+    def detrend(self, method: str = "linear", **kwargs) -> "WaveFrame":
         """
         Detrend all traces in waveframe.
 
-        The kwargs are passed to underlying functions.
+        Kwargs are passed to underlying functions.
 
         Parameters
         ----------
         method
             The detrend method to use. Supported options are:
-                simple -
+                linear - Remove a linear trend for each row
+                simple - Remove a lienar trend for first and last point of
+                    each row
+                constant - Subtract the mean of each row
+        Notes
+        -----
+        When ``method == 'linear'`` detrending is performed either on each row,
+        or if a row contains non-finite values (eg NaN Inf) detrending is
+        performed on each contiguous segment. For example, consider the
+        following data where two non-finite values exist in the first row
+        has some NaN values (denoted by --):
+
+            AAAAAAAAA--BBBBBBBBBB
+            CCCCCCCCCCCCCCCCCCCCC
+
+        In this case the detrending would be applied independently to segments
+        marked with A, B, and C.
         """
-        df = _WFDetrender(method)(self._df)
+        df = _WFDetrender(method)(self._df, **kwargs)
         return WaveFrame(df)
 
 

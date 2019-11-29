@@ -5,6 +5,9 @@ Tests for processing methods of WaveFrame.
 import numpy as np
 import pytest
 
+
+from obsplus.waveframe.core import get_finite_segments
+
 from obsplus.utils.testing import make_wf_with_nan
 
 
@@ -34,6 +37,16 @@ class TestDetrend:
         maxval = np.nanmax(vals, axis=1)
         percent_offset = abs(mean / maxval)
         return percent_offset
+
+    @staticmethod
+    def assert_zeroish_mean_per_segment(wf):
+        data = wf.data
+        values = data.values
+        finite_segs = get_finite_segments(values)
+        for bp in finite_segs.bp:
+            ar = finite_segs.flat[bp[0] : bp[1]]
+            seg_mean = np.nanmean(ar)
+            assert np.allclose(seg_mean, 0)
 
     @pytest.fixture
     def wf_offset_nan(self, wf_with_offset):
@@ -81,10 +94,11 @@ class TestDetrend:
         assert np.allclose(original_data, wf_with_offset.data.values)
         # but should have changed on new object
         assert not np.allclose(original_data, out.data.values)
+        # and all segments should have nearly 0 offsets
+        self.assert_zeroish_mean_per_segment(out)
 
     def test_detrend_linear_with_nan(self, wf_offset_nan):
         """ test for linear detrending with NaN values. """
-
         original_data = wf_offset_nan.data.values
         original_copy = original_data.copy()
         out = wf_offset_nan.detrend("linear")
@@ -99,3 +113,5 @@ class TestDetrend:
         # and the relative offsets should be very close to 0
         rel_offsets = self.get_relative_offset(out)
         assert np.allclose(rel_offsets, 0)
+        # and all segments should have nearly 0 offsets
+        self.assert_zeroish_mean_per_segment(out)

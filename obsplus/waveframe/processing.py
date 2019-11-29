@@ -10,6 +10,7 @@ from obsplus.waveframe.core import (
     DFTransformer,
     _combine_stats_and_data,
     get_finite_segments,
+    _new_waveframe_df,
 )
 
 
@@ -33,22 +34,18 @@ class _WFDetrender(DFTransformer):
         # get offsets, subtract from current and return new df
         offsets = data_inds.astype(int) * x1 + x0
         new = data.values - offsets
-        data_df = pd.DataFrame(new, index=data.index, columns=data.columns)
-        return _combine_stats_and_data(stats=stats, data=data_df)
+        return _new_waveframe_df(df, data=new)
 
     def constant(self, df):
         """ A simple demeaning on the data via mean subtraction """
-        return self._detrend(df, type="constant")
+        data = df.data.values
+        means = np.nanmean(data, axis=1)
+        out = data - means[:, np.newaxis]
+        return _new_waveframe_df(df, data=out)
 
-    def demean(self, df):
-        """ A simple demeaning on the data via mean subtraction """
-        return self._detrend(df, type="constant")
+    demean = constant
 
-    def linear(self, df):
-        """ Linear detrending. """
-        return self._detrend(df, type="linear")
-
-    def _detrend(self, df, type="linear"):
+    def linear(self, df, type="linear"):
         """
         Perform linear detrending, possibly accounting for NaN values.
         """

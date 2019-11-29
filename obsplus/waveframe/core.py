@@ -8,6 +8,7 @@ from typing import Optional, Callable, Dict
 import numpy as np
 import pandas as pd
 
+import obsplus
 from obsplus.constants import WAVEFRAME_STATS_DTYPES
 
 FlatNan = namedtuple("FlatNan", "flat bp ind")
@@ -128,6 +129,37 @@ def _enforce_monotonic_data_columns(df: pd.DataFrame) -> pd.DataFrame:
     new_index = np.arange(columns.min(), columns.max(), 1)
     new_data = df["data"].reindex(new_index, axis="columns")
     return _combine_stats_and_data(df["stats"], new_data)
+
+
+def _new_waveframe_df(wdf, data=None, stats=None):
+    """
+    Create a new waveframe df using the old one as a base.
+
+    Parameters
+    ----------
+    wdf
+        The old waveframe df.
+    data
+        If not None, data to used in new wdf.
+    stats
+        If not None, stats to use in new wdf.
+    """
+
+    def _df_from_array(old, ar):
+        """ Create an dataframe from an array. """
+        index, cols = old.index, old.columns
+        return pd.DataFrame(ar, index=index, columns=cols)
+
+    wdf = wdf._df if isinstance(wdf, obsplus.WaveFrame) else wdf
+
+    data_df = wdf["data"]
+    stats_df = wdf["stats"]
+    index = wdf.index
+    if data is not None:
+        data_df = _df_from_array(data_df, data)
+    if stats is not None:
+        stats_df = _df_from_array(stats_df, stats)
+    return _combine_stats_and_data(stats=stats_df, data=data_df)
 
 
 def _combine_stats_and_data(stats: pd.DataFrame, data: pd.DataFrame) -> pd.DataFrame:
