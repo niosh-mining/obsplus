@@ -37,19 +37,16 @@ class _WFDetrender(DFTransformer):
         return _combine_stats_and_data(stats=stats, data=data_df)
 
     def constant(self, df):
-        """ Perform a simple demeaning on the data. """
-        data, stats = df["data"], df["stats"]
-        vals = data.values
-        means = np.nanmean(vals, axis=1)
-        new_values = vals - means[:, np.newaxis]
-        new_data = pd.DataFrame(new_values, index=data.index, columns=data.columns)
-        return _combine_stats_and_data(stats=stats, data=new_data)
+        """ A simple demeaning on the data via mean subtraction """
+        return self._detrend(df, type="constant")
+
+    def demean(self, df):
+        """ A simple demeaning on the data via mean subtraction """
+        return self._detrend(df, type="constant")
 
     def linear(self, df):
         """ Linear detrending. """
         return self._detrend(df, type="linear")
-
-    demean = constant
 
     def _detrend(self, df, type="linear"):
         """
