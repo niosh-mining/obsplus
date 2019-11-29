@@ -2,12 +2,79 @@
 Waveframe core functionality and utilities.
 """
 import abc
-from typing import Callable, Dict
+from collections import namedtuple
+from typing import Optional, Callable, Dict
 
 import numpy as np
 import pandas as pd
 
 from obsplus.constants import WAVEFRAME_STATS_DTYPES
+
+FlatNan = namedtuple("FlatNan", "flat bp ind")
+
+
+def get_finite_segments(
+    array: np.ndarray, finite: Optional[np.ndarray] = None
+) -> FlatNan:
+    """
+    Function to remove NaN from array and provide info on indices.
+
+    Given an array is of dimension D with A non-nan contiguous segments along
+    axis 1 the output is a named tuple with the following attributes:
+        1. flat - flattened array with NaN removed
+        2. bp - 2d array with start ar[0, :] and stop ar[1, :] indices
+            indicating where each contiguous non NaN segments starts/ends in
+            flattened array no NaN array.
+        3. ind - array of shape (A, D, 2) where [a, :, 0] is the starting
+            index corresponding to the start of segment a in arrays dimensions
+            and [a, :, 1] is the ending index for the same segment.
+
+    Notes
+    -----
+    This is only tested on a 2d arrays, it may not work on higher dimensions.
+
+    Parameters
+    ----------
+    array
+        Any numpy array which may have NaN values.
+    finite
+        A boolean array of the same shape as array indicating the finiteness
+        of each element. If None it will be calculated.
+    """
+
+    def _get_break_points(ar_inds):
+        """ Get the breakpoints from the flat array. """
+        row_count = ar_inds[1]
+        # we know a new segment starts if an expected value is skipped
+        # this accounts for NaN interrupting segments or new rows
+        _start = np.where(row_count[:-1] != (row_count[1:] - 1))[0] + 1
+        start = np.insert(_start, 0, 0)
+        end = np.append(start[1:], len(row_count))
+        assert len(start) == len(end)
+        return np.stack([start, end], axis=-1)
+
+    def _get_unflat_indices(ar_inds, bps):
+        """
+        return an array of indices from original array corresponding
+        to breakpoints.
+        """
+        start = np.array([x[bps[:, 0]] for x in ar_inds]).T
+        stop = np.array([x[bps[:, 1] - 1] + 1 for x in ar_inds]).T
+        return np.stack([start, stop], axis=-1)
+
+    # Determine which values are finite and get indices of each value in array
+    finite = np.isfinite(array) if finite is None else finite
+    if not np.any(finite):
+        msg = "Array with no finite values encountered"
+        raise ValueError(msg)
+    ar_index = np.indices(np.shape(array))
+    # flatten the array and the indices of non-NaN values
+    flat = array[finite]
+    ar_inds = [x[finite] for x in ar_index]
+    # first get points where new rows start
+    bps = _get_break_points(ar_inds)
+    old_inds = _get_unflat_indices(ar_inds, bps)
+    return FlatNan(flat, bps, old_inds)
 
 
 def _reset_data_columns(df, new_cols) -> pd.DataFrame:

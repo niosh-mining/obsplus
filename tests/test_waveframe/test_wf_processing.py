@@ -99,5 +99,3 @@ class TestDetrend:
         # and the relative offsets should be very close to 0
         rel_offsets = self.get_relative_offset(out)
         assert np.allclose(rel_offsets, 0)
-
-        breakpoint()
