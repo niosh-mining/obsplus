@@ -620,3 +620,15 @@ def md5_directory(
         if keep:
             out[str(sub_path.relative_to(path))] = md5(sub_path)
     return out
+
+
+def maybe_jit(func):
+    """
+    Decorator for using numba to jit a function if it is available.
+    """
+    try:
+        import numba
+    except ImportError:
+        return func
+    else:
+        return numba.jit(func)

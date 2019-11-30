@@ -1,7 +1,13 @@
+"""
+Tests for manipulating shapes of waveframes.
+"""
+import numpy as np
 import pytest
+import pandas as pd
 
 from obsplus import WaveFrame
 from obsplus.utils.testing import make_wf_with_nan
+from obsplus.utils.time import to_datetime64
 
 
 class TestStride:
@@ -107,6 +113,70 @@ class TestDropNa:
         wf = make_wf_with_nan(stream_wf, x_inds=0)
         wf2 = wf.dropna(0, how="any")
         assert len(wf2) == 0
+
+    def test_drop_start_and_end(self, stream_wf):
+        """ Drop a few samples from start and end, ensure times update."""
+        wf = make_wf_with_nan(stream_wf, x_inds=(0, 1, -2, -1))
+        delta = wf["delta"][0]
+        start, end = wf["starttime"], wf["endtime"]
+        # drop NaN, ensure start/end times are as expected.
+        out = wf.dropna(axis=1, how="any")
+        assert (out["starttime"] == (start + 2 * delta)).all()
+        assert (out["endtime"] == (end - 2 * delta)).all()
+
+
+class TestFillNaN:
+    """ tests for filling NaN values. """
+
+    def test_basic(self, stream_wf):
+        """ Simple test for filling on NaN value. """
+        wf = make_wf_with_nan(stream_wf, x_inds=0, y_inds=0)
+        out = wf.fillna(2019)
+        assert out.data.loc[0, 0] == 2019
+
+
+class TestTrim:
+    """ tests for trimming waveframes. """
+
+    def test_trim_single_value(self, stream_wf):
+        """ tests for trimming to a single value. """
+        starttime = stream_wf["starttime"].iloc[0] + np.timedelta64(10, "s")
+        endtime = stream_wf["endtime"].iloc[0] - np.timedelta64(10, "s")
+        out = stream_wf.trim(starttime=starttime, endtime=endtime)
+        new_starttime = out["starttime"]
+        new_endtime = out["endtime"]
+        assert (new_starttime >= starttime).all()
+        assert (new_endtime <= endtime).all()
+
+    def test_trim_out_of_existence(self, stream_wf):
+        """ Tests for trimming out all data. """
+        far_out = to_datetime64("2200-01-01")
+        wf = stream_wf.trim(starttime=far_out)
+        assert len(wf) == 0
+        data, stats = wf.data, wf.stats
+        assert len(data) == len(stats) == 0
+
+    def test_trim_with_deltas(self, stream_wf):
+        """ Tests for applying delta to stream_wf. """
+        wf = stream_wf
+        delta = np.timedelta64(5_000_001_000, "ns")
+        start, end = wf["starttime"] + delta, wf["endtime"] - delta
+        out = wf.trim(starttime=delta, endtime=-delta)
+        assert (out["starttime"] >= start).all()
+        assert (out["endtime"] <= end).all()
+        # should return the same results as using absolute time
+        assert out == stream_wf.trim(starttime=start, endtime=end)
+
+    def test_trim_different_times(self, stream_wf):
+        """ tests for different times on different chanenls. """
+        wf = stream_wf
+        deltas = wf["delta"] * np.arange(1, len(wf) + 1) * 10
+        out = wf.trim(starttime=deltas, endtime=-deltas)
+        # the first 10 values in row 1 should be 0, and first 20 in row 2
+        assert pd.isnull(out.data.values[1, :10]).all()
+        assert pd.isnull(out.data.values[2, :20]).all()
+        # the starttimes should have changed slightly
+        assert (out["starttime"] == (wf["starttime"] + out["delta"] * 10)).all()
 
 
 class TestResetIndex:

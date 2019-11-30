@@ -15,7 +15,7 @@ from obsplus.constants import (
     LARGEDT64,
     SMALLDT64,
     TIME_COLUMNS,
-    time_types,
+    pd_time_types,
 )
 from obsplus.utils.docs import compose_docstring
 
@@ -227,7 +227,8 @@ def to_utc(
 
 @singledispatch
 def to_timedelta64(
-    value: Union[float, int], default=np.timedelta64(0, "s")
+    value: Union[float, int, list, np.ndarray, pd.Series],
+    default=np.timedelta64(0, "s"),
 ) -> np.timedelta64:
     """
     Convert a value to a timedelta[ns].
@@ -243,13 +244,14 @@ def to_timedelta64(
     default
         The default to return if the input value is not truthy.
     """
-    try:
-        return np.timedelta64(value, "s")
-    except (ValueError, TypeError):
-        if not value:
-            return default
-        ns = to_utc(value)._ns
-        return np.timedelta64(ns, "ns")
+    if pd.isnull(value):
+        return default
+    if isinstance(value, np.timedelta64):
+        return value
+    if isinstance(value, pd.Timedelta):
+        return value.to_timedelta64()
+    ns = to_utc(value)._ns
+    return np.timedelta64(ns, "ns")
 
 
 @to_timedelta64.register(tuple)
@@ -268,6 +270,8 @@ def _series_to_timedelta(ser):
 @to_timedelta64.register(np.ndarray)
 def _array_to_timedelta(obj):
     """ Convert a series to a timedelta. """
+    if np.issubdtype(obj.dtype, np.timedelta64):
+        return obj
     return np.array([to_timedelta64(x) for x in obj])
 
 
@@ -318,7 +322,7 @@ def dict_times_to_ns(
 
 def is_time(obj):
     """ return True if an object is a time type. """
-    return isinstance(obj, time_types) or pd.isnull(obj)
+    return isinstance(obj, pd_time_types) or pd.isnull(obj)
 
 
 utc_var = TypeVar("utc_var", utc_able_type, Sequence[utc_able_type])

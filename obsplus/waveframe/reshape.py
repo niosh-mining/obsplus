@@ -1,11 +1,78 @@
 """
 Waveframe logic for various reshaping and re-indexing.
 """
+from contextlib import suppress
+from typing import Union
+
 
 import numpy as np
 import pandas as pd
 
-from obsplus.waveframe.core import _combine_stats_and_data, DFTransformer
+from obsplus.utils.time import to_datetime64, to_timedelta64
+
+from obsplus.constants import time_types
+from obsplus.waveframe.core import (
+    _combine_stats_and_data,
+    DFTransformer,
+    _new_waveframe_df,
+    get_time_array,
+    _update_df_times,
+)
+
+
+def _get_absolute_time(
+    time: Union[time_types, np.ndarray], ref_time: np.ndarray
+) -> np.ndarray:
+    """
+    Get an absolute time from a possible reference time.
+
+    Parameters
+    ----------
+    time
+        Can either  be a an absolute time, or a timedelta with respect to
+        ref_time.
+    ref_time
+        The object time is referenced to.
+    """
+
+    def _is_time_delta(obj):
+        """ return True if an object is a timedelta like thing. """
+        if isinstance(obj, (int, float)):
+            return True
+        dtype = getattr(obj, "dtype", None)
+        if np.issubdtype(dtype, np.timedelta64):
+            return True
+        is_int = np.issubdtype(dtype, np.integer)
+        is_float = np.issubdtype(dtype, np.floating)
+        if is_int or is_float:
+            return True
+        return False
+
+    # First try converting to datetime64, if that fails convert to timedelta.
+    if _is_time_delta(time):
+        dt = ref_time + to_timedelta64(time)
+    else:
+        dt = to_datetime64(time)
+    return np.broadcast_to(dt, np.shape(ref_time))
+
+
+class _NaNHandler(DFTransformer):
+    """
+    Class for handling NaNs.
+
+    See `pandas.DataFrame.fillna` and `pandas.DataFrame.dropna`.
+    """
+
+    def fillna(self, df, *args, **kwargs):
+        """ Fill data with NaN. """
+        data = df.data.fillna(*args, **kwargs)
+        return _new_waveframe_df(df, data=data)
+
+    def dropna(self, df, *args, **kwargs):
+        """ Drop data with NaN. """
+        data = df.data.dropna(*args, **kwargs)
+        df = _new_waveframe_df(df, data=data, allow_size_change=True)
+        return _update_df_times(df, inplace=True)
 
 
 class _DataStridder(DFTransformer):
@@ -60,3 +127,23 @@ class _DataStridder(DFTransformer):
         array = self._get_data_array(start, end, window_len, data)
         new_data = pd.DataFrame(array, index=stats.index)
         return _combine_stats_and_data(stats, new_data)
+
+
+class _Trimmer(DFTransformer):
+    """
+    Class for filling data.
+    """
+
+    def run(self, df, starttime=None, endtime=None):
+        """ Apply trimming to each row of waveframe's data. """
+        data, stats = df["data"], df["stats"]
+        # get current start and endtimes
+        cstart, cend = stats["starttime"], stats["endtime"]
+        t1 = _get_absolute_time(starttime, cstart)
+        t2 = _get_absolute_time(endtime, cend)
+        # get times corresponding to each sample and determine if in trim time
+        time = get_time_array(df)
+        to_trim = (time < t1[:, np.newaxis]) | (time > t2[:, np.newaxis])
+        out = data.mask(to_trim).dropna(axis=1, how="all").dropna(axis=0, how="all")
+        df = _combine_stats_and_data(data=out, stats=stats, allow_size_change=True)
+        return _update_df_times(df, inplace=True)

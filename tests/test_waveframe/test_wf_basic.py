@@ -61,6 +61,37 @@ class Testbasics:
         with pytest.raises(AttributeError):
             WaveFrame.data
 
+    def test_set_readonly_stats(self, stream_wf):
+        """ Ensure an error is raised when accessing protected stats. """
+        with pytest.raises(AttributeError):
+            stream_wf["endtime"] = np.datetime64("2019-01-01")
+
+    def test_helpful_message_on_access_non_existent_column(self, stream_wf):
+        """
+        Ensure a helpful message is raised when accessing a stats column
+        which doesnt exist.
+        """
+        with pytest.raises(KeyError) as e:
+            stream_wf["_this_isnt_a_column!!"]
+        msg = str(e.value)
+        assert "is not a stats column" in msg
+
+    def test_set_new_column(self, stream_wf):
+        """ get_item syntax should allow for setting new values on index. """
+        # a single value should work
+        stream_wf["bob"] = 2
+        assert (stream_wf["bob"] == 2).all()
+        # as should an array
+        ones = np.ones(len(stream_wf))
+        stream_wf["ones"] = ones
+        assert (stream_wf["ones"] == 1).all()
+        # or a series with an index
+        sub = stream_wf["delta"].loc[1:]
+        stream_wf["sub1"] = sub
+        sub1_out = stream_wf["sub1"]
+        assert pd.isnull(sub1_out.loc[0])
+        assert (sub1_out.loc[1:] == sub).all()
+
 
 class TestConstructor:
     """ Basic tests for creating WaveFrame instances. """

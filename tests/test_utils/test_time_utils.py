@@ -92,6 +92,29 @@ class TestTimeDelta:
         out = to_timedelta64(ar)
         assert all([isinstance(x, np.timedelta64) for x in out])
 
+    def test_no_precision_lost(self):
+        """ There should be no precision lost in converting to a timedelta. """
+        td = np.timedelta64(1_111_111_111, "ns")
+        out = to_timedelta64(td)
+        assert out == td
+        # and also in negative
+        assert (-td) == to_timedelta64(-td)
+
+    def test_identity_function_on_delta_array(self):
+        """ Delta array should simply return a delta array. """
+        deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
+        out = to_timedelta64(deltas)
+        assert np.all(deltas == out)
+
+    def test_identity_function_on_delta_series(self):
+        """ Delta array should simply return a delta array. """
+        deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
+        ser = pd.Series(deltas)
+        out = to_timedelta64(ser)
+        ints1 = deltas.astype("timedelta64[ns]").astype(int)
+        ints2 = out.astype("timedelta64[ns]").astype(int)
+        assert np.all(ints1 == ints2)
+
 
 class TestToUTC:
     """ Tests for converting things to UTCDateTime objects. """

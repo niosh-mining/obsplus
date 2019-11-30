@@ -45,8 +45,6 @@ PREFERRED = {
 }
 
 # ----- Extractor constants
-# types that indicate time
-time_types = (pd.Timestamp, np.datetime64)
 
 # Mapping numpy time types to their internal representation
 _DATETIME_TYPE_MAP = {"datetime64[ns]": int, "timedelta64[ns]": int}
@@ -445,6 +443,21 @@ bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime
 
 # types which can be used to slice a numpy array
 slice_types = Union[int, slice, List[int], Tuple[int, ...]]
+
+# types that indicate time
+pd_time_types = (pd.Timestamp, np.datetime64)
+
+# types used to represent an absolute point in time.
+absolute_time_types = Union[UTCDateTime, pd.Timestamp, np.datetime64]
+
+# types used to represent relative time
+relative_time_types = Union[np.timedelta64]
+
+# combine the two
+time_types = Union[absolute_time_types, relative_time_types]
+
+# time types accepted by trim
+trim_time_types = Union[time_types, np.ndarray]
 
 # -------------------------- events validation constants
 

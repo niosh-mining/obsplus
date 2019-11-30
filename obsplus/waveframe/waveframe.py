@@ -13,6 +13,7 @@ from obsplus.constants import (
     waveform_clientable_type,
     number_type,
     WAVEFRAME_STATS_DTYPES,
+    trim_time_types,
 )
 from obsplus.exceptions import IncompatibleWaveFrameError
 from obsplus.utils.validate import validator, validate
@@ -22,8 +23,8 @@ from obsplus.waveframe.construct import (
     _DFtoStreamConverter,
 )
 from obsplus.waveframe.core import _update_df_times, _combine_stats_and_data
-from obsplus.waveframe.reshape import _DataStridder
 from obsplus.waveframe.processing import _WFDetrender
+from obsplus.waveframe.reshape import _DataStridder, _NaNHandler, _Trimmer
 
 
 class _DfPartDescriptor:
@@ -70,6 +71,8 @@ class WaveFrame:
     stats = _DfPartDescriptor("_df")
     data = _DfPartDescriptor("_df")
     _required_stats_columns = set(sorted(WAVEFRAME_STATS_DTYPES))
+    # a tuple of stats attributes which should be treated as read only
+    _read_only_stats = "endtime"
 
     def __init__(
         self,
@@ -125,8 +128,18 @@ class WaveFrame:
             return self._df[("stats", item)]
         except TypeError:  # boolean index is being used
             return WaveFrame(self._df[item], processing=self.processing)
+        except KeyError:
+            cols = str(self.stats.columns)
+            msg = (
+                f"{item} is not a stats column of this waveframe."
+                f" Columns are:\n {cols}"
+            )
+            raise KeyError(msg)
 
     def __setitem__(self, key, value):
+        if key in self._read_only_stats:
+            msg = f"{key} is a read-only stats column"
+            raise AttributeError(msg)
         self._df[("stats", key)] = value
 
     @property
@@ -338,11 +351,29 @@ class WaveFrame:
             'all': Drop row or column if all null values are present
         thresh
         """
-        data = self.data
-        new_data = data.dropna(axis=axis, how=how, thresh=thresh)
-        stats = self.stats.loc[new_data.index]
-        df = _combine_stats_and_data(stats, new_data)
-        df = _update_df_times(df)
+        nan_hand = _NaNHandler("dropna")
+        df = nan_hand(self._df, axis=axis, how=how, thresh=thresh)
+
+        return WaveFrame(df)
+
+    def fillna(self, value=None, method=None, axis=None, limit=None):
+        """
+        Fill NaN values in data.
+
+        Parameters
+        ----------
+        value
+            The fill value.
+        method: {'backfill', 'pad' bfill', ffill, None}
+            Method used for filling hoes in reindexing series.
+        axis
+            Axis along which to fill missing values.
+        limit
+            Limit to number of cconsecutive NaN values.
+        """
+        nan_hand = _NaNHandler("fillna")
+        kwargs = dict(value=value, method=method, axis=axis, limit=limit)
+        df = nan_hand(self._df, **kwargs)
         return WaveFrame(df)
 
     def stride(self, window_len: Optional[int] = None, overlap: int = 0) -> "WaveFrame":
@@ -358,6 +389,37 @@ class WaveFrame:
         """
         out = _DataStridder()(self._df, window_len=window_len, overlap=overlap)
         return WaveFrame(out)
+
+    def trim(
+        self,
+        starttime: Optional[trim_time_types] = None,
+        endtime: Optional[trim_time_types] = None,
+    ) -> "WaveFrame":
+        """
+        Trim the waveframe and return a copy.
+
+        Unlike obspy's trim, this method only allows trimming the waveframe.
+        If you would like to pad or extend the waveframes data use
+        :func:`obsplus.WaveFrame.pad`.
+
+        Parameters
+        ----------
+        starttime
+            Either a single value, or an array of values, indicating the
+            start time of the new trace. Can also be ``np.timedelta64``
+            object to reference a start time relative to current starttimes.
+        endtime
+            Either a single value, or an array of values, indicating the
+            end time of the new trace. Can also be ``np.timedelta64``
+            object to reference an end time relative to current endtime.
+
+        Notes
+        -----
+        If a delta is used it should be positive for ``starttime`` and
+        negative for ``endtime`` otherwise no trimming will be applied.
+        """
+        df = _Trimmer()(self._df, starttime=starttime, endtime=endtime)
+        return WaveFrame(df, processing=self.processing)
 
     # --- Processing methods
     def detrend(self, method: str = "linear", **kwargs) -> "WaveFrame":
@@ -389,7 +451,7 @@ class WaveFrame:
         marked with A, B, and C.
         """
         df = _WFDetrender(method)(self._df, **kwargs)
-        return WaveFrame(df)
+        return WaveFrame(df, processing=self.processing)
 
 
 # --- WaveFrame validators

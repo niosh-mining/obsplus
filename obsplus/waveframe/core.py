@@ -106,10 +106,11 @@ def _update_df_times(df, inplace=False) -> pd.DataFrame:
     data = df.loc[:, "data"]
     start_index = data.columns[0]
     if start_index != 0:
-        start_detla = time_delta * start_index
-        df.loc[:, ("stats", "starttime")] = starttime + start_detla
+        start_delta = time_delta * start_index
+        df.loc[:, ("stats", "starttime")] = starttime + start_delta
         new_data_index = data.columns - start_index
         df = _reset_data_columns(df, new_data_index)
+        time_index = df["data"].columns
     # update endtimes
     endtime = starttime + (time_index[-1] * time_delta)
     df.loc[:, ("stats", "endtime")] = endtime
@@ -131,7 +132,7 @@ def _enforce_monotonic_data_columns(df: pd.DataFrame) -> pd.DataFrame:
     return _combine_stats_and_data(df["stats"], new_data)
 
 
-def _new_waveframe_df(wdf, data=None, stats=None):
+def _new_waveframe_df(wdf, data=None, stats=None, allow_size_change=True):
     """
     Create a new waveframe df using the old one as a base.
 
@@ -147,6 +148,8 @@ def _new_waveframe_df(wdf, data=None, stats=None):
 
     def _df_from_array(old, ar):
         """ Create an dataframe from an array. """
+        if isinstance(ar, pd.DataFrame):
+            return ar
         index, cols = old.index, old.columns
         return pd.DataFrame(ar, index=index, columns=cols)
 
@@ -154,15 +157,18 @@ def _new_waveframe_df(wdf, data=None, stats=None):
 
     data_df = wdf["data"]
     stats_df = wdf["stats"]
-    index = wdf.index
     if data is not None:
         data_df = _df_from_array(data_df, data)
     if stats is not None:
         stats_df = _df_from_array(stats_df, stats)
-    return _combine_stats_and_data(stats=stats_df, data=data_df)
+    return _combine_stats_and_data(
+        stats=stats_df, data=data_df, allow_size_change=allow_size_change
+    )
 
 
-def _combine_stats_and_data(stats: pd.DataFrame, data: pd.DataFrame) -> pd.DataFrame:
+def _combine_stats_and_data(
+    stats: pd.DataFrame, data: pd.DataFrame, allow_size_change=False
+) -> pd.DataFrame:
     """
     Combine the data and stats dataframe into the waveframe input df.
 
@@ -172,8 +178,19 @@ def _combine_stats_and_data(stats: pd.DataFrame, data: pd.DataFrame) -> pd.DataF
         A dataframe with the required stats columns.
     data
         A dataframe containing time-series.
+    allow_size_change
+        If True, find the overlap in index and re-index both df.
 
     """
+    # make sure data has at least one column (empty case)
+    if not len(data.columns):
+        data = pd.DataFrame(data, columns=[0])
+
+    if allow_size_change:
+        new_ind = stats.index.intersection(data.index)
+        stats = stats.loc[new_ind]
+        data = data.loc[new_ind]
+
     # simple checks
     assert set(WAVEFRAME_STATS_DTYPES).issubset(stats.columns)
     assert len(data) == len(stats)
