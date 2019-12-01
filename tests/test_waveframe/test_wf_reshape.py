@@ -215,6 +215,14 @@ class TestCutOut:
         assert not set(removed_dates) & set(out.data.index.values)
 
 
+class TestMerge:
+    """ Tests for merging overlapping data together. """
+
+
+class TestSplit:
+    """ Tests for splitting out contiguous chunks of data. """
+
+
 class TestResetIndex:
     """ tests for resetting index of waveframe. """
 

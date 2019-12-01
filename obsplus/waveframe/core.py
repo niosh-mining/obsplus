@@ -244,9 +244,9 @@ class DFTransformer:
         }
         cls.method_dict = method_dict
 
-    @abc.abstractmethod
     def run(self, df: pd.DataFrame) -> pd.DataFrame:
         """ default run is simply to return a copy. """
+        return df
 
     def __call__(self, df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
         """
