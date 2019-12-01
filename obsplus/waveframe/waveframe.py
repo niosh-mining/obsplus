@@ -14,9 +14,11 @@ from obsplus.constants import (
     number_type,
     WAVEFRAME_STATS_DTYPES,
     trim_time_types,
+    starttime_endtime_params,
 )
 from obsplus.exceptions import IncompatibleWaveFrameError
 from obsplus.utils.validate import validator, validate
+from obsplus.utils.docs import compose_docstring
 from obsplus.waveframe.construct import (
     _WFExampleLoader,
     _DFExtractorFromStatsAndClient,
@@ -390,6 +392,7 @@ class WaveFrame:
         out = _DataStridder()(self._df, window_len=window_len, overlap=overlap)
         return WaveFrame(out)
 
+    @compose_docstring(start_end_desc=starttime_endtime_params)
     def trim(
         self,
         starttime: Optional[trim_time_types] = None,
@@ -404,21 +407,31 @@ class WaveFrame:
 
         Parameters
         ----------
-        starttime
-            Either a single value, or an array of values, indicating the
-            start time of the new trace. Can also be ``np.timedelta64``
-            object to reference a start time relative to current starttimes.
-        endtime
-            Either a single value, or an array of values, indicating the
-            end time of the new trace. Can also be ``np.timedelta64``
-            object to reference an end time relative to current endtime.
+        {start_end_desc}
 
         Notes
         -----
         If a delta is used it should be positive for ``starttime`` and
         negative for ``endtime`` otherwise no trimming will be applied.
         """
-        df = _Trimmer()(self._df, starttime=starttime, endtime=endtime)
+        df = _Trimmer("trim")(self._df, starttime=starttime, endtime=endtime)
+        return WaveFrame(df, processing=self.processing)
+
+    @compose_docstring(start_end_desc=starttime_endtime_params)
+    def cutout(
+        self, starttime: trim_time_types, endtime: trim_time_types
+    ) -> "WaveFrame":
+        """
+        Cut out sections of the WaveFrame.
+
+        This method is essentially the opposite of
+        :method:`obsplus.Waveframe.trim`.
+
+        Parameters
+        ----------
+        {start_end_desc}
+        """
+        df = _Trimmer("cutout")(self._df, starttime=starttime, endtime=endtime)
         return WaveFrame(df, processing=self.processing)
 
     # --- Processing methods

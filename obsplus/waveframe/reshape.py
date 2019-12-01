@@ -131,10 +131,16 @@ class _DataStridder(DFTransformer):
 
 class _Trimmer(DFTransformer):
     """
-    Class for filling data.
+    Class for trimming and cutting out specified time periods.
     """
 
-    def run(self, df, starttime=None, endtime=None):
+    def trim(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
+
+    def cutout(self, *args, **kwargs):
+        return self.run(*args, invert=True, **kwargs)
+
+    def run(self, df, starttime=None, endtime=None, invert=False):
         """ Apply trimming to each row of waveframe's data. """
         data, stats = df["data"], df["stats"]
         # get current start and endtimes
@@ -144,6 +150,9 @@ class _Trimmer(DFTransformer):
         # get times corresponding to each sample and determine if in trim time
         time = get_time_array(df)
         to_trim = (time < t1[:, np.newaxis]) | (time > t2[:, np.newaxis])
+        # invert (for cutout)
+        if invert:
+            to_trim = ~to_trim
         out = data.mask(to_trim).dropna(axis=1, how="all").dropna(axis=0, how="all")
         df = _combine_stats_and_data(data=out, stats=stats, allow_size_change=True)
         return _update_df_times(df, inplace=True)

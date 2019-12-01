@@ -2,8 +2,8 @@
 Tests for manipulating shapes of waveframes.
 """
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 
 from obsplus import WaveFrame
 from obsplus.utils.testing import make_wf_with_nan
@@ -139,7 +139,7 @@ class TestTrim:
     """ tests for trimming waveframes. """
 
     def test_trim_single_value(self, stream_wf):
-        """ tests for trimming to a single value. """
+        """ tests for trimming to a scalar value. """
         starttime = stream_wf["starttime"].iloc[0] + np.timedelta64(10, "s")
         endtime = stream_wf["endtime"].iloc[0] - np.timedelta64(10, "s")
         out = stream_wf.trim(starttime=starttime, endtime=endtime)
@@ -177,6 +177,42 @@ class TestTrim:
         assert pd.isnull(out.data.values[2, :20]).all()
         # the starttimes should have changed slightly
         assert (out["starttime"] == (wf["starttime"] + out["delta"] * 10)).all()
+
+    def test_trim_no_start(self, stream_wf):
+        """ tests for trimming with no starttime. """
+        center = stream_wf["starttime"] + np.timedelta64(15, "s")
+        out = stream_wf.trim(endtime=center)
+        assert (out["endtime"] <= center).all()
+        # any difference between specified time and actual should be < 1 delta
+        assert (abs(out["endtime"] - center) < out["delta"]).all()
+
+    def test_trim_no_end(self, stream_wf):
+        """ tests for trimming with no endtime. """
+        center = stream_wf["starttime"] + np.timedelta64(15, "s")
+        out = stream_wf.trim(starttime=center)
+        assert (out["starttime"] >= center).all()
+        # any difference between specified time and actual should be < 1 delta
+        assert (abs(out["starttime"] - center) < out["delta"]).all()
+
+
+class TestCutOut:
+    """ tests for cutting out data from waveframe. """
+
+    def test_basic(self, stream_wf):
+        data, stats = stream_wf.data, stream_wf.stats
+        start = stats["starttime"] + np.timedelta64(14, "s")
+        end = stats["starttime"] + np.timedelta64(16, "s")
+        delta = stats["delta"].iloc[0].to_timedelta64()
+        t1, t2 = stats["starttime"].iloc[0], stats["endtime"].iloc[0]
+        out = stream_wf.cutout(starttime=start, endtime=end)
+        # the middle of data should have been removed, as well as end members
+        cols = out.data.columns.values.astype(int)
+        diffs = np.unique(cols[1:] - cols[:-1])
+        assert len(diffs) == 2
+        assert {1, 202} == set(list(diffs))
+        removed_dates = np.arange(t1, t2, delta)
+        # there should be no overlap
+        assert not set(removed_dates) & set(out.data.index.values)
 
 
 class TestResetIndex:
