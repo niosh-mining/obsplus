@@ -19,14 +19,7 @@ def instrument_methods(obj):
     """
     Temporarily instrument an objects methods.
 
-    This allows the calls to each of the executors methods to be counted. A
-    Counter object is attached to the executor and each of the methods is
-    wrapped to count how many times they are called.
-
-
-    Parameters
-    ----------
-    obj
+    This allows the calls to each of the objects methods to be counted.
     """
     old_methods = {}
     counter = Counter()

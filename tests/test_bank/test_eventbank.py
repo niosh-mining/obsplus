@@ -16,6 +16,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 import obsplus
 from obsplus import EventBank, copy_dataset
 from obsplus.events.utils import catalog_to_directory
+from obsplus.testing import instrument_methods
 
 
 # ----------- module fixtures
@@ -246,6 +247,26 @@ class TestBankBasics:
         ind = bank.read_index(starttime="2000-01-01", endtime="2020-01-01")
         assert len(ind) == 2
         assert not ind["time"].isnull().sum()
+
+    def test_limit_index(self, tmpdir):
+        """ Test to run the logic for limiting index memory usage. """
+        # This tests is a bit invasive but I cant think of a better way
+        cat = obspy.read_events()
+        # create temporary directory of event files
+        td = Path(tmpdir)
+        kwargs = dict(cat=cat, path=td, event_bank_index=False, check_duplicates=False)
+        obsplus.events.utils.catalog_to_directory(**kwargs)
+        # init bank and add index
+        bank = EventBank(td).update_index()
+        # instrument bank, delete index, create new index
+        with instrument_methods(bank) as ibank:
+            os.remove(bank.index_path)
+            ibank._max_events_in_memory = 1
+            ibank.update_index()
+            counter = ibank._counter
+        # count the number of _write_update calls
+        assert counter["update_index"] == 1
+        assert counter["_write_update"] == 3
 
 
 class TestReadIndexQueries:
