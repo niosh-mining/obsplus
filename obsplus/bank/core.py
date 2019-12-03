@@ -196,6 +196,7 @@ class _Bank(ABC):
         If bar is a subclass of ProgressBar, init class and set max_values.
         If bar is an instance of ProgressBar, return it.
         """
+        print(f"updating or creating event index for {self.bank_path}")
         # conditions to bail out early
         if bar is False:  # False indicates no bar is to be used
             return None
@@ -206,7 +207,6 @@ class _Bank(ABC):
         if num_files < self._min_files_for_bar:  # not enough files to use bar
             return None
         # instantiate bar and return
-        print(f"updating or creating event index for {self.bank_path}")
         kwargs = {"min_value": self._min_files_for_bar, "max_value": num_files}
         # an instance should be init'ed
         if isinstance(bar, type) and issubclass(bar, ProgressBar):

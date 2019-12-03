@@ -226,9 +226,16 @@ class EventBank(_Bank):
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
-        iterator = self._measured_unindexed_iterator(bar)
+        # create an iterator which yields files to update and updates bar
+        update_file_feeder = self._measured_unindexed_iterator(bar)
+        # create iterator
+        iterator = self._map(func, update_file_feeder)
+        return self._iterate_event_feeder(iterator, update_time)
+
+    def _iterate_event_feeder(self, iterator, update_time):
+        """ Iterator over an event yielder and dump to database. """
         events, update_times, paths = [], [], []
-        for cat, mtime, path in self._map(func, iterator):
+        for cat, mtime, path in iterator:
             if cat is None:
                 continue
             for event in cat:
