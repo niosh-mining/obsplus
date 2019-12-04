@@ -110,6 +110,7 @@ class EventBank(_Bank):
     _min_files_for_bar = 50
     _dtypes_output = EVENT_TYPES_OUTPUT
     _dtypes_input = EVENT_TYPES_INPUT
+    _max_events_in_memory = 2000
 
     def __init__(
         self,
@@ -226,23 +227,39 @@ class EventBank(_Bank):
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
-        iterator = self._measured_unindexed_iterator(bar)
+        # create an iterator which yields files to update and updates bar
+        update_file_feeder = self._measured_unindexed_iterator(bar)
+        # create iterator, loop over it in chunks util it is exhausted
+        iterator = self._map(func, update_file_feeder)
+        events_remain = True
+        while events_remain:
+            events_remain = self._index_from_iterable(iterator, update_time)
+        return self
+
+    def _index_from_iterable(self, iterable, update_time):
+        """ Iterate over an event iterable and dump to database. """
         events, update_times, paths = [], [], []
-        for cat, mtime, path in self._map(func, iterator):
+        max_mem = self._max_events_in_memory  # this avoids the MRO each loop
+        events_remain = False
+
+        for cat, mtime, path in iterable:
             if cat is None:
                 continue
             for event in cat:
                 events.append(event)
                 update_times.append(mtime)
                 paths.append(path)
+            if len(events) >= max_mem:  # max limit exceeded, dump to db
+                events_remain = True
+                break
         # add new events to database
-        df = obsplus.events.pd._default_cat_to_df(obspy.Catalog(events=events))
+        df = obsplus.events.pd._default_cat_to_df(events)
         df["updated"] = update_times
         df["path"] = paths
         if len(df):
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)
             self._write_update(df_to_write, update_time)
-        return self
+        return events_remain
 
     def _prepare_dataframe(self, df: pd.DataFrame, dtypes: dict):
         """
