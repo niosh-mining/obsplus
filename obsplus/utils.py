@@ -181,8 +181,11 @@ def make_time_chunks(
     ----------
     >>> t1 = obspy.UTCDateTime('2016-01-01')
     >>> t2 = t1 + 3 * 3600
-    >>> out = make_time_chunks(t1, t2, 3600)
-    >>> assert out == [t1, t1 + 3600, t2]
+    >>> out = list(make_time_chunks(t1, t2, 3600))
+    >>> assert len(out) == 3
+    >>> assert out[0] == (t1, t1 + 3600)
+    >>> assert out[1] == (t1 + 3600, t1 + 3600 * 2)
+    >>> assert out[2] == (t1 + 3600 * 2, t1 + 3600 * 3)
     """
     utc1 = to_utc(utc1)
     utc2 = to_utc(utc2)

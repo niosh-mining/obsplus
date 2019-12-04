@@ -46,15 +46,24 @@ jobs:
     displayName: Create Anaconda environment
 
   - bash: |
-      source activate $(env_name)
-      flake8
-    displayName: flake8
+        source activate $(env_name)
+        flake8
+      displayName: flake8
 
   - bash: |
       source activate $(env_name)
       pytest --cov obsplus && pytest --nbval docs/
-    displayName: pytest
+    displayName: run test suite
 
+  - bash: |
+      source activate $(env_name)
+      pytest --cov obsplus && pytest --nbval docs/
+    displayName: test docstring examples
+
+  - bash: |
+      source activate $(env_name)
+      pytest --nbval docs/
+    displayName: test documentation
 
 - job: 'macOS'
   pool:
@@ -96,7 +105,17 @@ jobs:
   - bash: |
       source activate $(env_name)
       pytest --cov obsplus && pytest --nbval docs/
-    displayName: pytest
+    displayName: run test suite
+
+  - bash: |
+      source activate $(env_name)
+      pytest --cov obsplus && pytest --nbval docs/
+    displayName: test docstring examples
+
+  - bash: |
+      source activate $(env_name)
+      pytest --nbval docs/
+    displayName: test documentation
 
 #
 #- job: 'windows'
