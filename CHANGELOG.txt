@@ -11,6 +11,8 @@ obsplus master:
       and reading files (see #108).
     * WaveBank and event Bank now represent time as an int of nanoseconds, see
       (#131).
+    * EventBank now limits the number of obspy Event objects which are held in
+      memory during indexing (see #136 and #137).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
