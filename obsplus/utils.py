@@ -815,8 +815,8 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
 
 
 def get_distance_df(
-    entity_1: Union[event_type, inventory_type],
-    entity_2: Union[event_type, inventory_type],
+    entity_1: Union[event_type, inventory_type, pd.DataFrame],
+    entity_2: Union[event_type, inventory_type, pd.DataFrame],
     a: float = WGS84_A,
     f: float = WGS84_F,
 ) -> pd.DataFrame:
@@ -826,10 +826,10 @@ def get_distance_df(
     Parameters
     ----------
     entity_1
-        An object from which latitude, longitude and depth are
+        An object from which latitude, longitude and elevation are
         extractable.
     entity_2
-        An object from which latitude, longitude and depth are
+        An object from which latitude, longitude and elecation are
         extractable.
     a
         Radius of planetary body (usually Earth) in m. Defaults to WGS84.
@@ -842,6 +842,11 @@ def get_distance_df(
     of the dataframe is a multi-index where the first level corresponds to ids
     from entity_1 (either an event_id or seed_id str) and the second level
     corresponds to ids from entity_2.
+
+    Both depth and elevation should be in m from sea level.
+
+    A dataframe with columns "latitude", "longitude", "elevation" and "id"
+    is acceptable input for both entity_1 and entity_2.
 
     Returns
     -------
@@ -867,6 +872,8 @@ def get_distance_df(
     def _get_distance_tuple(obj):
         """ return a list of tuples for entities """
         cols = ["latitude", "longitude", "elevation", "id"]
+        if isinstance(obj, pd.DataFrame) and set(cols).issubset(obj.columns):
+            return set(obj[cols].itertuples(index=False, name=None))
         try:
             df = obsplus.events_to_df(obj)
             df["elevation"] = -df["depth"]
@@ -874,7 +881,7 @@ def get_distance_df(
         except (TypeError, ValueError, AttributeError):
             df = obsplus.stations_to_df(obj)
             df["id"] = df["seed_id"]
-        return set(df[cols].itertuples(index=False, name=None))
+        return _get_distance_tuple(df)
 
     # get a tuple of
     coord1 = _get_distance_tuple(entity_1)
