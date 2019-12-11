@@ -442,6 +442,19 @@ class TestDistanceDataframe:
         combinations = set(itertools.permutations(event_ids, 2))
         assert combinations == set(df.index)
 
+    def test_dataframe_input(self, cat):
+        """
+        Any dataframe should be valid input provided it has the required columns.
+        """
+        data = [[10.1, 10.1, 0, "some_id"]]
+        cols = ["latitude", "longitude", "elevation", "id"]
+        df = pd.DataFrame(data, columns=cols)
+        dist_df = get_distance_df(df, cat)
+        # make sure output has expected shape and ids
+        assert len(dist_df) == len(cat) * len(df)
+        id1 = dist_df.index.get_level_values("id1")
+        assert "some_id" in set(id1)
+
 
 class TestMD5:
     """ Tests for getting md5 hashes from files. """
