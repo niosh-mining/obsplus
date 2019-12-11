@@ -48,7 +48,7 @@ jobs:
   - bash: |
         source activate $(env_name)
         flake8
-      displayName: flake8
+    displayName: flake8
 
   - bash: |
       source activate $(env_name)
