@@ -52,11 +52,6 @@ jobs:
 
   - bash: |
       source activate $(env_name)
-      pytest --cov obsplus && pytest --nbval docs/
-    displayName: run test suite
-
-  - bash: |
-      source activate $(env_name)
       pytest --cov obsplus
     displayName: run test suite
 
