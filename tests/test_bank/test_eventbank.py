@@ -16,7 +16,7 @@ import obsplus
 import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
 from obsplus.utils.events import catalog_to_directory
-from obsplus.utils.testing import handle_warnings
+from obsplus.utils.testing import handle_warnings, instrument_methods
 
 
 # ----------- module fixtures
@@ -253,7 +253,7 @@ class TestBankBasics:
         # create temporary directory of event files
         td = Path(tmpdir)
         kwargs = dict(cat=cat, path=td, event_bank_index=False, check_duplicates=False)
-        obsplus.events.utils.catalog_to_directory(**kwargs)
+        obsplus.utils.events.catalog_to_directory(**kwargs)
         # init bank and add index
         bank = EventBank(td).update_index()
         # instrument bank, delete index, create new index
