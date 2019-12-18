@@ -126,7 +126,7 @@ class WaveBank(_Bank):
     index_ints = ("starttime", "endtime", "sampling_period")
     index_columns = tuple(list(index_str) + list(index_ints) + ["path"])
     columns_no_path = index_columns[:-1]
-    gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
+    _gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
     # other defaults
     # the time before and after the desired times to pull
@@ -354,7 +354,7 @@ class WaveBank(_Bank):
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_gaps_df(
-        self, *args, min_gap: Optional[float] = None, **kwargs
+        self, *args, min_gap: Optional[Union[float, np.timedelta64]] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Return a dataframe containing an entry for every gap in the archive.
@@ -363,7 +363,8 @@ class WaveBank(_Bank):
         ----------
         {get_waveforms_params}
         min_gap
-            The minimum gap to report. If None, use 1.5 x sampling rate for
+            The minimum gap to report in seconds or as a timedelta64.
+             If None, use 1.5 x sampling rate for
             each channel.
         """
 
@@ -381,7 +382,8 @@ class WaveBank(_Bank):
                 .reset_index(drop=True)
             )
             shifted_starttimes = dd.starttime.shift(-1)
-            gap_index = (dd["endtime"] + min_gap) < shifted_starttimes
+            cum_max = np.maximum.accumulate(dd["endtime"] + min_gap)
+            gap_index = cum_max < shifted_starttimes
             # create a dataframe of gaps
             df = dd[gap_index]
             df["starttime"] = dd.endtime[gap_index]
@@ -389,15 +391,13 @@ class WaveBank(_Bank):
             df["gap_duration"] = df["endtime"] - df["starttime"]
             return df
 
-        # index = self.read_index(*args, columns=self.columns_no_path, **kwargs)
+        # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
-
         group_names = list(NSLC) + ["sampling_period"]  # include period
         group = index.groupby(group_names, as_index=False)
-        # func = partial(self._get_gap_dfs, min_gap=min_gap)
         out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
-            return pd.DataFrame(columns=self.gap_columns)
+            return pd.DataFrame(columns=self._gap_columns)
         return out.reset_index(drop=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)

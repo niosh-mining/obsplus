@@ -1095,8 +1095,7 @@ class TestGetGaps:
                 header[code] = row[code]
             return obspy.Trace(data, header=header)
 
-        t1 = obspy.UTCDateTime("2017-01-01")
-        t2 = obspy.UTCDateTime("2017-01-02")
+        t1, t2 = obspy.UTCDateTime("2017-01-01"), obspy.UTCDateTime("2017-01-02")
         sid = ("TA.BOB.01.VHZ",)
         kwargs = dict(starttime=t1, endtime=t2, path=tmpdir, seed_ids=sid)
         ArchiveDirectory(**kwargs).create_directory()
@@ -1145,7 +1144,7 @@ class TestGetGaps:
         columns """
         gaps = empty_bank.get_gaps_df()
         assert not len(gaps)
-        assert set(WaveBank.gap_columns).issubset(set(gaps.columns))
+        assert set(WaveBank._gap_columns).issubset(set(gaps.columns))
 
     def test_kemmerer_uptime(self, kem_fetcher):
         """ ensure the kemmerer bank returns an uptime df"""
