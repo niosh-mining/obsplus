@@ -50,6 +50,7 @@ from obsplus.utils import (
     _column_contains,
     order_columns,
     to_utc,
+    to_timedelta64,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -362,21 +363,17 @@ class WaveBank(_Bank):
         ----------
         {get_waveforms_params}
         min_gap
-            The minimum gap to report. If None, use 2 x sampling rate for
+            The minimum gap to report. If None, use 1.5 x sampling rate for
             each channel.
-
-        Returns
-        -------
-        pd.DataFrame
         """
 
         def _get_gap_dfs(df, min_gap):
             """ function to apply to each group of seed_id dataframes """
             # get the min gap
             if min_gap is None:
-                min_gap = df["sampling_period"].iloc[0]
+                min_gap = 1.5 * df["sampling_period"].iloc[0]
             else:
-                min_gap = np.timedelta64(min_gap, "s")
+                min_gap = to_timedelta64(min_gap)
             # get df for determining gaps
             dd = (
                 df.drop_duplicates()
@@ -384,7 +381,7 @@ class WaveBank(_Bank):
                 .reset_index(drop=True)
             )
             shifted_starttimes = dd.starttime.shift(-1)
-            gap_index: pd.DataFrame = (dd.endtime + min_gap) < shifted_starttimes
+            gap_index = (dd["endtime"] + min_gap) < shifted_starttimes
             # create a dataframe of gaps
             df = dd[gap_index]
             df["starttime"] = dd.endtime[gap_index]
@@ -637,7 +634,9 @@ class WaveBank(_Bank):
 
     # ----------------------- deposit waveforms methods
 
-    def put_waveforms(self, stream: obspy.Stream, name=None, update_index=True):
+    def put_waveforms(
+        self, stream: Union[obspy.Stream, obspy.Trace], name=None, update_index=True
+    ):
         """
         Add the waveforms in a waveforms to the bank.
 
@@ -653,6 +652,8 @@ class WaveBank(_Bank):
         """
         self.ensure_bank_path_exists(create=True)
         st_dic = defaultdict(lambda: [])
+        # make sure we have a trace iterable
+        stream = [stream] if isinstance(stream, obspy.Trace) else stream
         # iter the waveforms and group by common paths
         for tr in stream:
             summary = _summarize_trace(

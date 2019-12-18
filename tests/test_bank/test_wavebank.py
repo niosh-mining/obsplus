@@ -27,7 +27,13 @@ import obsplus.datasets.utils
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC, EMPTYTD64
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import iter_files, get_reference_time, to_datetime64, to_timedelta64
+from obsplus.utils import (
+    iter_files,
+    get_reference_time,
+    to_datetime64,
+    to_timedelta64,
+    to_utc,
+)
 
 
 # ----------------------------------- Helper functions
@@ -1074,6 +1080,35 @@ class TestGetGaps:
         """ return the uptime from the default stream bank. """
         return default_wbank.get_uptime_df()
 
+    @pytest.fixture()
+    def small_overlap_gaps(self, tmpdir):
+        """
+        Create a bank with small overlapping files.
+        """
+
+        def create_trace(row):
+            """ Create a trace in the middle of a row of the index. """
+            t1 = to_utc(row["starttime"]) + 10
+            data = np.random.rand(10)
+            header = dict(starttime=t1, sampling_rate=1)
+            for code in NSLC:
+                header[code] = row[code]
+            return obspy.Trace(data, header=header)
+
+        t1 = obspy.UTCDateTime("2017-01-01")
+        t2 = obspy.UTCDateTime("2017-01-02")
+        sid = ("TA.BOB.01.VHZ",)
+        kwargs = dict(starttime=t1, endtime=t2, path=tmpdir, seed_ids=sid)
+        ArchiveDirectory(**kwargs).create_directory()
+        bank = obsplus.WaveBank(tmpdir).update_index()
+        index = bank.read_index()
+        # create a trace and push into bank
+        tr = create_trace(index.sort_values("starttime").iloc[4])
+        bank.put_waveforms(tr)
+        bank.update_index()
+        assert len(bank.read_index()) == len(index) + 1, "one trace added"
+        return bank
+
     # tests
     def test_gaps_length(self, gap_df, gappy_bank):
         """ ensure each of the gaps shows up in df """
@@ -1122,7 +1157,7 @@ class TestGetGaps:
 
     def test_gappy_and_contiguous_uptime(self, gappy_and_contiguous_bank):
         """
-        Ensure when there are gappy streams and continguous streams
+        Ensure when there are gappy streams and contiguous streams
         get_uptime still returns correct results.
         """
         wbank = gappy_and_contiguous_bank
@@ -1133,6 +1168,21 @@ class TestGetGaps:
         seeds_from_uptime = set(obsplus.utils.get_seed_id_series(uptime))
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
+
+    def test_no_gaps_on_continuous_dataset(self, kemmerer_dataset):
+        """ test no gaps on kemmerer dataset. """
+        ds = obsplus.load_dataset("kemmerer")
+        wbank = ds.waveform_client
+        gap_df = wbank.get_gaps_df()
+        assert len(gap_df) == 0
+
+    def test_gaps_small_overlaps(self, small_overlap_gaps):
+        """
+        Ensure when there are files with small overlaps gaps are not falsely
+        reported.
+        """
+        gap_df = small_overlap_gaps.get_gaps_df()
+        assert len(gap_df) == 0
 
 
 class TestBadInputs:
