@@ -50,6 +50,7 @@ from obsplus.utils import (
     _column_contains,
     order_columns,
     to_utc,
+    to_timedelta64,
 )
 from obsplus.waveforms.utils import merge_traces
 
@@ -125,7 +126,7 @@ class WaveBank(_Bank):
     index_ints = ("starttime", "endtime", "sampling_period")
     index_columns = tuple(list(index_str) + list(index_ints) + ["path"])
     columns_no_path = index_columns[:-1]
-    gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
+    _gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
     namespace = "/waveforms"
     # other defaults
     # the time before and after the desired times to pull
@@ -353,7 +354,7 @@ class WaveBank(_Bank):
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_gaps_df(
-        self, *args, min_gap: Optional[float] = None, **kwargs
+        self, *args, min_gap: Optional[Union[float, np.timedelta64]] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Return a dataframe containing an entry for every gap in the archive.
@@ -362,21 +363,18 @@ class WaveBank(_Bank):
         ----------
         {get_waveforms_params}
         min_gap
-            The minimum gap to report. If None, use 2 x sampling rate for
+            The minimum gap to report in seconds or as a timedelta64.
+             If None, use 1.5 x sampling rate for
             each channel.
-
-        Returns
-        -------
-        pd.DataFrame
         """
 
         def _get_gap_dfs(df, min_gap):
             """ function to apply to each group of seed_id dataframes """
             # get the min gap
             if min_gap is None:
-                min_gap = df["sampling_period"].iloc[0]
+                min_gap = 1.5 * df["sampling_period"].iloc[0]
             else:
-                min_gap = np.timedelta64(min_gap, "s")
+                min_gap = to_timedelta64(min_gap)
             # get df for determining gaps
             dd = (
                 df.drop_duplicates()
@@ -384,7 +382,8 @@ class WaveBank(_Bank):
                 .reset_index(drop=True)
             )
             shifted_starttimes = dd.starttime.shift(-1)
-            gap_index: pd.DataFrame = (dd.endtime + min_gap) < shifted_starttimes
+            cum_max = np.maximum.accumulate(dd["endtime"] + min_gap)
+            gap_index = cum_max < shifted_starttimes
             # create a dataframe of gaps
             df = dd[gap_index]
             df["starttime"] = dd.endtime[gap_index]
@@ -392,15 +391,13 @@ class WaveBank(_Bank):
             df["gap_duration"] = df["endtime"] - df["starttime"]
             return df
 
-        # index = self.read_index(*args, columns=self.columns_no_path, **kwargs)
+        # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
-
         group_names = list(NSLC) + ["sampling_period"]  # include period
         group = index.groupby(group_names, as_index=False)
-        # func = partial(self._get_gap_dfs, min_gap=min_gap)
         out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
-            return pd.DataFrame(columns=self.gap_columns)
+            return pd.DataFrame(columns=self._gap_columns)
         return out.reset_index(drop=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
@@ -637,7 +634,9 @@ class WaveBank(_Bank):
 
     # ----------------------- deposit waveforms methods
 
-    def put_waveforms(self, stream: obspy.Stream, name=None, update_index=True):
+    def put_waveforms(
+        self, stream: Union[obspy.Stream, obspy.Trace], name=None, update_index=True
+    ):
         """
         Add the waveforms in a waveforms to the bank.
 
@@ -653,6 +652,8 @@ class WaveBank(_Bank):
         """
         self.ensure_bank_path_exists(create=True)
         st_dic = defaultdict(lambda: [])
+        # make sure we have a trace iterable
+        stream = [stream] if isinstance(stream, obspy.Trace) else stream
         # iter the waveforms and group by common paths
         for tr in stream:
             summary = _summarize_trace(

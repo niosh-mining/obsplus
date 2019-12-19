@@ -13,6 +13,8 @@ obsplus master:
       (#131).
     * EventBank now limits the number of obspy Event objects which are held in
       memory during indexing (see #136 and #137).
+    * WaveBank.get_gaps_df now accounts for small overlapping file which
+      previously caused false gaps to be reported (see #140).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
