@@ -41,9 +41,12 @@ class _MethodChecker(type):
 
     def __instancecheck__(cls, instance):
         is_instance = not inspect.isclass(instance)
+        # look for defined methods
         if is_instance and set(cls._required_methods).issubset(dir(instance)):
             return True
-        return False
+        # if they do not exist probe for dynamic methods  that meet criteria
+        has_meths = [getattr(instance, x, False) for x in cls._required_methods]
+        return all(has_meths) and is_instance
 
 
 class EventClient(metaclass=_MethodChecker):

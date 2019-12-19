@@ -11,6 +11,7 @@ import obspy
 import pandas as pd
 from obspy import Stream, UTCDateTime
 
+import obsplus
 from obsplus import events_to_df, stations_to_df, picks_to_df
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import (
@@ -74,8 +75,8 @@ def _temporary_override(func):
 
 # ---------------------------------- Wavefetcher class
 
-fetcher_waveform_type = waveform_clientable_type
-fetcher_event_type = Union[event_clientable_type, pd.DataFrame]
+fetcher_waveform_type = Union[waveform_clientable_type, obsplus.WaveBank]
+fetcher_event_type = Union[event_clientable_type, pd.DataFrame, obsplus.EventBank]
 fetcher_station_type = Union[station_clientable_type, pd.DataFrame]
 
 
