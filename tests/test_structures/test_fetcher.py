@@ -151,9 +151,8 @@ class TestGeneric:
 
     def test_init_with_banks(self, bingham_dataset):
         """ Ensure the fetcher can be init'ed with all bank inputs. """
-        wbank = obsplus.WaveBank(bingham_dataset.waveform_path)
-        ebank = obsplus.EventBank(bingham_dataset.event_path)
-        wbank.update_index(), ebank.update_index()
+        wbank = obsplus.WaveBank(bingham_dataset.waveform_path).update_index()
+        ebank = obsplus.EventBank(bingham_dataset.event_path).update_index()
         sbank = bingham_dataset.station_client
         fetcher = Fetcher(waveforms=wbank, events=ebank, stations=sbank)
         edf = fetcher.event_df
