@@ -34,6 +34,8 @@ from obsplus.constants import (
     bar_parameter_description,
     EVENT_TYPES_OUTPUT,
     EVENT_TYPES_INPUT,
+    bank_subpaths_type,
+    subpaths_description,
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
@@ -207,14 +209,22 @@ class EventBank(_Bank):
             df = df[df.event_id.isin(circular_ids)]
         return df
 
-    @compose_docstring(bar_paramter_description=bar_parameter_description)
-    def update_index(self, bar: Optional[ProgressBar] = None) -> "EventBank":
+    @compose_docstring(
+        bar_description=bar_parameter_description,
+        subpaths_description=subpaths_description,
+    )
+    def update_index(
+        self,
+        bar: Optional[ProgressBar] = None,
+        sub_paths: Optional[bank_subpaths_type] = None,
+    ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
 
         Parameters
         ----------
         {bar_parameter_description}
+        {subpaths_description}
         """
 
         def func(path):
@@ -228,7 +238,7 @@ class EventBank(_Bank):
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
-        update_file_feeder = self._measured_unindexed_iterator(bar)
+        update_file_feeder = self._measured_unindexed_iterator(bar, sub_paths)
         # create iterator, loop over it in chunks util it is exhausted
         iterator = self._map(func, update_file_feeder)
         events_remain = True

@@ -669,3 +669,13 @@ bar
     If a custom progress bar is to be used, it must have an `update`
     and `finish` method.
 """
+
+subpaths_description = """
+sub_paths
+    A str, or iterable of str, specifying subdirectories (relative
+    to bank path) to allow updating only files in specific directories
+    of the bank. This is useful for large banks which have files added
+    to them in predictable locations. However, if other files are added
+    outside of these locations they may not get indexed as the last updated
+    timestamp still gets updated (use with caution).
+"""

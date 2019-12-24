@@ -4,6 +4,7 @@ tests for event wavebank
 import os
 import sys
 from io import StringIO
+from contextlib import suppress
 from pathlib import Path
 
 import numpy as np
@@ -267,6 +268,27 @@ class TestBankBasics:
         # count the number of _write_update calls
         assert counter["update_index"] == 1
         assert counter["_write_update"] == 3
+
+    def test_index_subpaths(self, ebank):
+        """ Ensure using subpaths only indexes certain files. """
+        bank_path = Path(ebank.bank_path)
+        with suppress(FileNotFoundError):
+            Path(ebank.index_path).unlink()
+        # make new subdirectories
+        for year in {"2019", "2018"}:
+            (bank_path / year).mkdir(exist_ok=True)
+        # put a new event in the bank
+        new_events = obspy.read_events()
+        new_events[0].origins[0].time = obspy.UTCDateTime("2019-01-01")
+        new_events[1].origins[0].time = obspy.UTCDateTime("2018-01-01")
+        new_events[0].write(str(bank_path / "2019" / "2019.xml"), "quakeml")
+        new_events[1].write(str(bank_path / "2018" / "2019.xml"), "quakeml")
+        # partial update index, read index
+        ebank.update_index(sub_paths=("2019", "2018"))
+        df = ebank.read_index()
+        # ensure only expected years are found
+        assert len(df) == 2
+        assert set(df["time"].dt.year.unique()) == {2019, 2018}
 
 
 class TestReadIndexQueries:

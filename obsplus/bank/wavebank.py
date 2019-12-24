@@ -40,6 +40,7 @@ from obsplus.constants import (
     WAVEFORM_DTYPES_INPUT,
     EMPTYTD64,
     bank_subpaths_type,
+    subpaths_description,
 )
 from obsplus.utils import (
     compose_docstring,
@@ -196,7 +197,10 @@ class WaveBank(_Bank):
             data_columns=list(self.index_ints),
         )
 
-    @compose_docstring(bar_paramter_description=bar_parameter_description)
+    @compose_docstring(
+        bar_description=bar_parameter_description,
+        subpaths_description=subpaths_description,
+    )
     def update_index(
         self, bar: Optional = None, sub_paths: Optional[bank_subpaths_type] = None
     ) -> "WaveBank":
@@ -205,12 +209,8 @@ class WaveBank(_Bank):
 
         Parameters
         ----------
-        {bar_parameter_description}
-        sub_paths
-            A str, or iterable of str, specifying subdirectories (relative
-            to bank path)to allow updating only files in sud directories
-            of the bank. This is useful for large banks which
-            have files added to them in predictable locations.
+        {bar_description}
+        {subpaths_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
         update_time = time.time()
