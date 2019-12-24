@@ -272,6 +272,16 @@ class TestBankBasics:
         np_datetime_cols = df.select_dtypes(np.datetime64).columns
         assert {"starttime", "endtime"}.issubset(np_datetime_cols)
 
+    def test_update_index_with_subpaths(self, ta_bank_no_index):
+        """ Ensure update index can have subpaths passed to it. """
+        bank = ta_bank_no_index
+        # get sub paths to excluse Z components
+        sub_paths = "TA/M11A/VHE", "TA/M11A/VHN"
+        bank.update_index(sub_paths=sub_paths)
+        # make sure only VHE and VHN are in index
+        df = bank.read_index()
+        assert set(df["channel"].unique()) == {"VHE", "VHN"}
+
 
 class TestEmptyBank:
     """ tests for graceful handling of empty sbanks"""
@@ -1277,8 +1287,9 @@ class TestConcurrentUpdateIndex:
 
     # tests
     def test_index_read_thread(self, thread_read):
-        """ ensure the index updated and the threads didn't kill each
-        other """
+        """
+        Ensure the index updated and the threads didn't kill each other.
+        """
         # get a list of exceptions that occurred
         assert len(thread_read) == self.worker_count
         excs = [x.result() for x in thread_read]

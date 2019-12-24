@@ -783,15 +783,21 @@ def _filter_starttime_endtime(df, starttime=None, endtime=None):
     return np.logical_and(bool_index, in_time.values)
 
 
-def iter_files(path, ext=None, mtime=None, skip_hidden=True):
+def iter_files(
+    paths: Union[str, Iterable[str]],
+    ext: Optional[str] = None,
+    mtime: Optional[float] = None,
+    skip_hidden: bool = True,
+) -> Iterable[str]:
     """
     use os.scan dir to iter files, optionally only for those with given
     extension (ext) or modified times after mtime
 
     Parameters
     ----------
-    path : str
-        The path to the base directory to traverse.
+    paths
+        The path to the base directory to traverse. Can also use a collection
+        of paths.
     ext : str or None
         The extensions to map.
     mtime : int or float
@@ -799,19 +805,23 @@ def iter_files(path, ext=None, mtime=None, skip_hidden=True):
     skip_hidden : bool
         If True skip files that begin with a '.'
 
-    Returns
-    -------
-
+    Yields
+    ------
+    Paths, as strings, meeting requirements.
     """
-    for entry in os.scandir(path):
-        if entry.is_file() and (ext is None or entry.name.endswith(ext)):
-            if mtime is None or entry.stat().st_mtime >= mtime:
-                if entry.name[0] != "." or not skip_hidden:
-                    yield entry.path
-        elif entry.is_dir():
-            yield from iter_files(
-                entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
-            )
+    try:  # a single path was passed
+        for entry in os.scandir(paths):
+            if entry.is_file() and (ext is None or entry.name.endswith(ext)):
+                if mtime is None or entry.stat().st_mtime >= mtime:
+                    if entry.name[0] != "." or not skip_hidden:
+                        yield entry.path
+            elif entry.is_dir():
+                yield from iter_files(
+                    entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
+                )
+    except TypeError:  # multiple paths were passed
+        for path in paths:
+            yield from iter_files(path, ext, mtime, skip_hidden)
 
 
 def get_distance_df(

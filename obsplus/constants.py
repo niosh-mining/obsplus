@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     TypeVar,
     MutableSequence,
+    Iterable,
 )
 
 import numpy as np
@@ -445,6 +446,9 @@ series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
 
 # type for mapping of functions to apply over callables
 column_function_map_type = Mapping[str, series_func_type]
+
+# subpaths type
+bank_subpaths_type = Union[str, Iterable[str]]
 
 # -------------------------- events validation constants
 

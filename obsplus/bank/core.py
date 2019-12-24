@@ -13,11 +13,11 @@ import pandas as pd
 from pandas.io.sql import DatabaseError
 
 import obsplus
-from obsplus.constants import CPU_COUNT
+from obsplus.constants import CPU_COUNT, bank_subpaths_type
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
 from obsplus.bank.utils import _IndexCache
-from obsplus.utils import iter_files, get_progressbar
+from obsplus.utils import iter_files, get_progressbar, iterate
 
 BankType = TypeVar("BankType", bound="_Bank")
 
@@ -127,17 +127,26 @@ class _Bank(ABC):
                 warnings.warn(msg)
                 os.remove(self.index_path)
 
-    def _unindexed_iterator(self):
+    def _unindexed_iterator(self, sub_paths: Optional[bank_subpaths_type] = None):
         """ return an iterator of potential unindexed files """
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
         last_updated = self.last_updated  # this needs db so only call once
         if last_updated is not None:
             mtime = last_updated - 0.001
+        # get paths to iterate
+        if sub_paths is None:
+            paths = self.bank_path
+        else:
+            paths = [f"{self.bank_path}/{x}" for x in iterate(sub_paths)]
         # return file iterator
-        return iter_files(self.bank_path, ext=self.ext, mtime=mtime)
+        return iter_files(paths, ext=self.ext, mtime=mtime)
 
-    def _measured_unindexed_iterator(self, bar: Optional[ProgressBar] = None):
+    def _measured_unindexed_iterator(
+        self,
+        bar: Optional[ProgressBar] = None,
+        sub_paths: Optional[bank_subpaths_type] = None,
+    ):
         """
         A generator to yield un-indexed files and update progress bar.
 
@@ -153,7 +162,7 @@ class _Bank(ABC):
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator
-        for num, path in enumerate(self._unindexed_iterator()):
+        for num, path in enumerate(self._unindexed_iterator(sub_paths)):
             # update bar if count is in update interval
             if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)
