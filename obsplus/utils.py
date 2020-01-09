@@ -822,6 +822,8 @@ def iter_files(
     except TypeError:  # multiple paths were passed
         for path in paths:
             yield from iter_files(path, ext, mtime, skip_hidden)
+    except NotADirectoryError:  # a file path was passed, just return it
+        yield paths
 
 
 def get_distance_df(

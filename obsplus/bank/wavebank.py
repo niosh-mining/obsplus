@@ -40,7 +40,7 @@ from obsplus.constants import (
     WAVEFORM_DTYPES_INPUT,
     EMPTYTD64,
     bank_subpaths_type,
-    subpaths_description,
+    paths_description,
 )
 from obsplus.utils import (
     compose_docstring,
@@ -198,11 +198,10 @@ class WaveBank(_Bank):
         )
 
     @compose_docstring(
-        bar_description=bar_parameter_description,
-        subpaths_description=subpaths_description,
+        bar_description=bar_parameter_description, paths_description=paths_description
     )
     def update_index(
-        self, bar: Optional = None, sub_paths: Optional[bank_subpaths_type] = None
+        self, bar: Optional = None, paths: Optional[bank_subpaths_type] = None
     ) -> "WaveBank":
         """
         Iterate files in bank and add any modified since last update to index.
@@ -210,7 +209,7 @@ class WaveBank(_Bank):
         Parameters
         ----------
         {bar_description}
-        {subpaths_description}
+        {paths_description}
         """
         self._enforce_min_version()  # delete index if schema has changed
         update_time = time.time()
@@ -220,7 +219,7 @@ class WaveBank(_Bank):
             format=self.format,
             summarizer=summarizing_functions.get(self.format, None),
         )
-        iterable = self._measured_unindexed_iterator(bar, sub_paths)
+        iterable = self._measured_unindexed_iterator(bar, paths)
         updates = list(self._map(func, iterable))
         # push updates to index if any were found
         if len(updates):
@@ -664,6 +663,7 @@ class WaveBank(_Bank):
         # make sure we have a trace iterable
         stream = [stream] if isinstance(stream, obspy.Trace) else stream
         # iter the waveforms and group by common paths
+        paths = []
         for tr in stream:
             summary = _summarize_trace(
                 tr,
@@ -686,9 +686,10 @@ class WaveBank(_Bank):
             # polish streams and write
             stream.merge(method=1)
             stream.write(path, format="mseed")
+            paths.append(path)
         # update the index as the contents have changed
         if st_dic and update_index:
-            self.update_index()
+            self.update_index(paths=paths)
 
     # ------------------------ misc methods
 

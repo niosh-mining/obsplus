@@ -2,8 +2,6 @@
 tests for event wavebank
 """
 import os
-import sys
-from io import StringIO
 from contextlib import suppress
 from pathlib import Path
 
@@ -21,15 +19,6 @@ from obsplus.testing import instrument_methods
 
 
 # ----------- module fixtures
-
-#
-# @pytest.fixture(scope="class")
-# def catalog(bingham_dataset):
-#     """ return the bingham_test_case events """
-#     cli = bingham_dataset.event_client
-#     cat = cli.get_events()
-#     assert len(cat)
-#     return cat
 
 
 @pytest.fixture
@@ -115,6 +104,13 @@ class TestBankBasics:
             event.write(path, format="quakeml")
         # init, update, return bank
         return obsplus.EventBank(tmp_path).update_index()
+
+    @pytest.fixture
+    def ebank_no_index(self, ebank):
+        """ return an event bank with no index file. """
+        with suppress(FileNotFoundError):
+            Path(ebank.index_path).unlink()
+        return ebank
 
     def test_has_attrs(self, bing_ebank):
         """ ensure all the required attrs exist """
@@ -269,11 +265,9 @@ class TestBankBasics:
         assert counter["update_index"] == 1
         assert counter["_write_update"] == 3
 
-    def test_index_subpaths(self, ebank):
+    def test_index_subpaths_directories(self, ebank_no_index):
         """ Ensure using subpaths only indexes certain files. """
-        bank_path = Path(ebank.bank_path)
-        with suppress(FileNotFoundError):
-            Path(ebank.index_path).unlink()
+        bank_path = Path(ebank_no_index.bank_path)
         # make new subdirectories
         for year in {"2019", "2018"}:
             (bank_path / year).mkdir(exist_ok=True)
@@ -284,11 +278,27 @@ class TestBankBasics:
         new_events[0].write(str(bank_path / "2019" / "2019.xml"), "quakeml")
         new_events[1].write(str(bank_path / "2018" / "2019.xml"), "quakeml")
         # partial update index, read index
-        ebank.update_index(sub_paths=("2019", "2018"))
-        df = ebank.read_index()
+        ebank_no_index.update_index(paths=("2019", Path("2018")))
+        df = ebank_no_index.read_index()
         # ensure only expected years are found
         assert len(df) == 2
         assert set(df["time"].dt.year.unique()) == {2019, 2018}
+
+    def test_index_subpaths_files(self, ebank_no_index):
+        """ Ensure a file (not just directory) can be used. """
+        paths = [f"file_{x}.xml" for x in range(1, 4)]
+        base_path = Path(ebank_no_index.bank_path)
+        # save a single new file in bank
+        for event, path in zip(obspy.read_events(), paths):
+            # change origin time to avoid confusion with original files.
+            event.origins[0].time = obspy.UTCDateTime("2020-01-03T19")
+            event.write(str(base_path / path), "quakeml")
+        # create paths mixing str, Path instance, relative, absolute
+        in_paths = [base_path / paths[0], str(base_path / paths[1]), paths[2]]
+        # update index, make sure everything is as expected
+        df = ebank_no_index.update_index(paths=in_paths).read_index()
+        assert len(df) == 3
+        assert set(df["time"].dt.year) == {2020}
 
 
 class TestReadIndexQueries:
@@ -543,15 +553,6 @@ class TestProgressBar:
         """ Passing an unsupported value to bar should raise. """
         with pytest.raises(ValueError):
             bar_ebank.update_index(bar="unsupported")
-
-    def test_update_bar_default(self, bar_ebank, monkeypatch):
-        """ Ensure the default progress bar shows up. """
-        stringio = StringIO()
-        monkeypatch.setattr(sys, "stdout", stringio)
-        bar_ebank.update_index()
-        stringio.seek(0)
-        out = stringio.read()
-        assert "updating or creating" in out
 
 
 class TestConcurrency:

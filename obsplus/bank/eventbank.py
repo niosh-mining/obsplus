@@ -35,7 +35,7 @@ from obsplus.constants import (
     EVENT_TYPES_OUTPUT,
     EVENT_TYPES_INPUT,
     bank_subpaths_type,
-    subpaths_description,
+    paths_description,
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
@@ -211,12 +211,12 @@ class EventBank(_Bank):
 
     @compose_docstring(
         bar_description=bar_parameter_description,
-        subpaths_description=subpaths_description,
+        subpaths_description=paths_description,
     )
     def update_index(
         self,
         bar: Optional[ProgressBar] = None,
-        sub_paths: Optional[bank_subpaths_type] = None,
+        paths: Optional[bank_subpaths_type] = None,
     ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
@@ -224,7 +224,7 @@ class EventBank(_Bank):
         Parameters
         ----------
         {bar_parameter_description}
-        {subpaths_description}
+        {paths_description}
         """
 
         def func(path):
@@ -238,8 +238,8 @@ class EventBank(_Bank):
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
-        update_file_feeder = self._measured_unindexed_iterator(bar, sub_paths)
-        # create iterator, loop over it in chunks util it is exhausted
+        update_file_feeder = self._measured_unindexed_iterator(bar, paths)
+        # create iterator, loop over it in chunks until it is exhausted
         iterator = self._map(func, update_file_feeder)
         events_remain = True
         while events_remain:
@@ -364,12 +364,14 @@ class EventBank(_Bank):
         # get dataframe of current event info, if they exists
         event_ids = [str(x.resource_id) for x in events]
         df = self.read_index(event_id=event_ids).set_index("event_id")
+        paths = []
         for event in events:
             rid = str(event.resource_id)
             if rid in df.index:  # event needs to be updated
-                path = self.bank_path + df.loc[rid, "path"]
-                assert exists(path)
-                event.write(path, self.format)
+                path = df.loc[rid, "path"]
+                save_path = self.bank_path + path
+                assert exists(save_path)
+                event.write(save_path, self.format)
             else:  # event file does not yet exist
                 path = _summarize_event(
                     event,
@@ -379,7 +381,8 @@ class EventBank(_Bank):
                 ppath = (Path(self.bank_path) / path).absolute()
                 ppath.parent.mkdir(parents=True, exist_ok=True)
                 event.write(str(ppath), self.format)
-        if update_index:
-            self.update_index()  # parse newly saved files and update index
+            paths.append(path)  # append path to paths
+        if update_index:  # parse newly saved files and update index
+            self.update_index(paths=paths)
 
     get_event_summary = read_index

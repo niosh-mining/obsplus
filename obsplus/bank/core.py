@@ -135,10 +135,15 @@ class _Bank(ABC):
         if last_updated is not None:
             mtime = last_updated - 0.001
         # get paths to iterate
+        bank_path = self.bank_path
         if sub_paths is None:
             paths = self.bank_path
         else:
-            paths = [f"{self.bank_path}/{x}" for x in iterate(sub_paths)]
+            # TODO move this to bank utils
+            paths = [
+                f"{self.bank_path}/{x}" if str(bank_path) not in str(x) else str(x)
+                for x in iterate(sub_paths)
+            ]
         # return file iterator
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
@@ -205,7 +210,6 @@ class _Bank(ABC):
         If bar is a subclass of ProgressBar, init class and set max_values.
         If bar is an instance of ProgressBar, return it.
         """
-        print(f"updating or creating event index for {self.bank_path}")
         # conditions to bail out early
         if bar is False:  # False indicates no bar is to be used
             return None
