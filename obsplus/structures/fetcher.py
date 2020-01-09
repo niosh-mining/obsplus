@@ -37,6 +37,7 @@ from obsplus.utils import (
     compose_docstring,
     to_datetime64,
     to_timedelta64,
+    to_utc,
 )
 from obsplus.waveforms.utils import get_waveform_client
 
@@ -431,7 +432,7 @@ class Fetcher:
         time = to_datetime64(get_reference_time(time_arg))
         t1 = time - tbefore
         t2 = time + tafter
-        return self.get_waveforms(starttime=t1, endtime=t2, **kwargs)
+        return self.get_waveforms(starttime=to_utc(t1), endtime=to_utc(t2), **kwargs)
 
     # ------------------------------- misc
 
@@ -472,6 +473,9 @@ class Fetcher:
         df.loc[:, "endtime"] = endtime
         # remove any rows that don't have defined start/end times
         out = df[(~df["starttime"].isnull()) & (~df["endtime"].isnull())]
+        # ensure we have UTCDateTime objects
+        out["starttime"] = [to_utc(x) for x in df["starttime"]]
+        out["endtime"] = [to_utc(x) for x in df["endtime"]]
         # convert to list of tuples and return
         return [tuple(x) for x in out.to_records(index=False)]
 
