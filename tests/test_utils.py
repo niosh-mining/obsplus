@@ -1,6 +1,8 @@
 """ tests for various utility functions """
 import itertools
+import os
 import textwrap
+import time
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +22,7 @@ from obsplus.utils import (
     filter_df,
     get_distance_df,
     to_datetime64,
+    iter_files,
 )
 
 
@@ -481,3 +484,71 @@ class TestMD5:
         # the file1.txt should not have been included
         assert len(md5_out) == 1
         assert "file1.txt" not in md5_out
+
+
+class TestIterFiles:
+    """" Tests for iterating directories of files. """
+
+    sub = {"D": {"C": ".mseed"}, "F": ".json", "G": {"H": ".txt"}}
+    file_paths = {"A": ".txt", "B": sub}
+
+    # --- helper functions
+    def setup_test_directory(self, some_dict: dict, path: Path):
+        for path in self.get_file_paths(some_dict, path):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("w") as fi:
+                fi.write("useful text")
+
+    def get_file_paths(self, some_dict, path):
+        """ return expected paths to files. """
+        for i, v in some_dict.items():
+            if isinstance(v, dict):
+                yield from self.get_file_paths(v, path / i)
+            else:
+                yield path / (i + v)
+
+    # --- fixtures
+    @pytest.fixture(scope="class")
+    def simple_dir(self, tmp_path_factory):
+        path = Path(tmp_path_factory.mktemp("iterfiles"))
+        self.setup_test_directory(self.file_paths, path)
+        return path
+
+    def test_basic(self, simple_dir):
+        """ test basic usage of iterfiles. """
+        files = set(self.get_file_paths(self.file_paths, simple_dir))
+        out = set((Path(x) for x in iter_files(simple_dir)))
+        assert files == out
+
+    def test_one_subdir(self, simple_dir):
+        subdirs = simple_dir / "B" / "D"
+        out = set(iter_files(subdirs))
+        assert len(out) == 1
+
+    def test_multiple_subdirs(self, simple_dir):
+        path1 = simple_dir / "B" / "D"
+        path2 = simple_dir / "B" / "G"
+        out = {Path(x) for x in iter_files([path1, path2])}
+        files = self.get_file_paths(self.file_paths, simple_dir)
+        expected = {
+            x
+            for x in files
+            if str(x).startswith(str(path1)) or str(x).startswith(str(path2))
+        }
+        assert out == expected
+
+    def test_extention(self, simple_dir):
+        out = set(iter_files(simple_dir, ext=".txt"))
+        for val in out:
+            assert val.endswith(".txt")
+
+    def test_mtime(self, simple_dir):
+        files = list(self.get_file_paths(self.file_paths, simple_dir))
+        # set the first file mtime in future
+        now = time.time()
+        first_file = files[0]
+        os.utime(first_file, (now + 10, now + 10))
+        # get output make sure it only returned first file
+        out = list(iter_files(simple_dir, mtime=now))
+        assert len(out) == 1
+        assert Path(out[0]) == first_file

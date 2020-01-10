@@ -272,6 +272,32 @@ class TestBankBasics:
         np_datetime_cols = df.select_dtypes(np.datetime64).columns
         assert {"starttime", "endtime"}.issubset(np_datetime_cols)
 
+    def test_update_index_with_subpath_directory(self, ta_bank_no_index):
+        """ Ensure update index can have subpaths passed to it. """
+        bank = ta_bank_no_index
+        # get sub paths to excluse Z components
+        sub_paths = "TA/M11A/VHE", "TA/M11A/VHN"
+        bank.update_index(paths=sub_paths)
+        # make sure only VHE and VHN are in index
+        df = bank.read_index()
+        assert set(df["channel"].unique()) == {"VHE", "VHN"}
+
+    def test_update_index_with_supath_files(self, ta_bank_no_index):
+        """ Ensure a file (not just directory) can be used. """
+        bank = ta_bank_no_index
+        paths = [f"file_{x}.mseed" for x in range(1, 4)]
+        # get sub paths to excluse Z components
+        base_path = Path(bank.bank_path)
+        # save a single new file in bank
+        for tr, path in zip(obspy.read(), paths):
+            # change origin time to avoid confusion with original files.
+            tr.write(str(base_path / path), "mseed")
+        # create paths mixing str, Path instance, relative, absolute
+        in_paths = [base_path / paths[0], str(base_path / paths[1]), paths[2]]
+        # update index, make sure everything is as expected
+        df = bank.update_index(paths=in_paths).read_index()
+        assert len(df) == 3
+
 
 class TestEmptyBank:
     """ tests for graceful handling of empty sbanks"""
@@ -1277,8 +1303,9 @@ class TestConcurrentUpdateIndex:
 
     # tests
     def test_index_read_thread(self, thread_read):
-        """ ensure the index updated and the threads didn't kill each
-        other """
+        """
+        Ensure the index updated and the threads didn't kill each other.
+        """
         # get a list of exceptions that occurred
         assert len(thread_read) == self.worker_count
         excs = [x.result() for x in thread_read]

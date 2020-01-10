@@ -15,6 +15,12 @@ obsplus master:
       memory during indexing (see #136 and #137).
     * WaveBank.get_gaps_df now accounts for small overlapping file which
       previously caused false gaps to be reported (see #140).
+    * Added paths parameter to update_index methods to speed up indexing when
+      file locations are predictable (see #144).
+    * Removed print statement which fired every time the index of a bank  was
+      created or updated (see #144).
+    * Updated put_x methods to only index newly added files when update_index
+      is True. First mentioned in (#122), implemented in (#144).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
