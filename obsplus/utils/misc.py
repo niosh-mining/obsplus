@@ -8,7 +8,6 @@ import os
 import sys
 import warnings
 from functools import wraps, partial, singledispatch
-from itertools import product
 from pathlib import Path
 from typing import (
     Generator,
@@ -30,22 +29,11 @@ import obspy
 import pandas as pd
 from obspy.core import event as ev
 from obspy.core.inventory import Station, Channel
-from obspy.geodetics import gps2dist_azimuth
-from obspy.geodetics.base import WGS84_A, WGS84_F
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
-from obspy.taup.taup_geo import calc_dist
 from progressbar import ProgressBar
 
-import obsplus
-from obsplus.constants import (
-    NULL_SEED_CODES,
-    NSLC,
-    event_type,
-    inventory_type,
-    DISTANCE_DTYPES,
-    DISTANCE_COLUMNS,
-)
+from obsplus.constants import NULL_SEED_CODES, NSLC
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
@@ -76,9 +64,9 @@ def yield_obj_parent_attr(
     Recurse an object, yield a tuple of object, parent, attr.
 
     Can be used, for example, to yield all ResourceIdentifier instances
-    contained in any obspy.core.event class instances and attached instances,
-    as well as the objects they are attached to (parents) and the attribute
-    name in which they are stored (attr).
+    contained in any obspy.core.event object tree, as well as the objects
+    they are attached to (parents) and the attribute name in which they are
+    stored (attr).
 
     Parameters
     -----------
@@ -159,7 +147,7 @@ def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
     file_path
         The path to the file to read
     funcs
-        A tuple of functions to try to read the file (starting with firsts)
+        A tuple of functions to try to read the file (starting with first)
 
     """
     for func in funcs:
@@ -232,10 +220,8 @@ def get_progressbar(
         old_update = bar.update
 
         def update(value=None, force=False, **kwargs):
-            try:
+            with contextlib.suppress((IndexError, ValueError, AttributeError)):
                 old_update(value=value, force=force, **kwargs)
-            except (IndexError, ValueError, AttributeError):
-                pass
 
         return update
 
@@ -404,155 +390,6 @@ def iter_files(
         yield paths
 
 
-def get_distance_df(
-    entity_1: Union[event_type, inventory_type, pd.DataFrame],
-    entity_2: Union[event_type, inventory_type, pd.DataFrame],
-    a: float = WGS84_A,
-    f: float = WGS84_F,
-) -> pd.DataFrame:
-    """
-    Create a dataframe of distances and azimuths from events to stations.
-
-    Parameters
-    ----------
-    entity_1
-        An object from which latitude, longitude and elevation are
-        extractable.
-    entity_2
-        An object from which latitude, longitude and elecation are
-        extractable.
-    a
-        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
-    f
-        Flattening of planetary body (usually Earth). Defaults to WGS84.
-
-    Notes
-    -----
-    Simply uses obspy.geodetics.gps2dist_azimuth under the hood. The index
-    of the dataframe is a multi-index where the first level corresponds to ids
-    from entity_1 (either an event_id or seed_id str) and the second level
-    corresponds to ids from entity_2.
-
-    Both depth and elevation should be in m from sea level.
-
-    A dataframe with columns "latitude", "longitude", "elevation" and "id"
-    is acceptable input for both entity_1 and entity_2.
-
-    Returns
-    -------
-    A dataframe with distance, horizontal_distance, and depth distances,
-    as well as azimuth, for each entity pair.
-    """
-
-    def _dist_func(tup1, tup2):
-        """
-        Function to get distances and azimuths from pairs of coordinates
-        """
-        gs_dist, azimuth = gps2dist_azimuth(*tup2[:2], *tup1[:2], a=a, f=f)[:2]
-        z_diff = tup2[2] - tup1[2]
-        dist = np.sqrt(gs_dist ** 2 + z_diff ** 2)
-        out = dict(
-            horizontal_distance=gs_dist,
-            distance=dist,
-            depth_distance=z_diff,
-            azimuth=azimuth,
-        )
-        return out
-
-    def _get_distance_tuple(obj):
-        """ return a list of tuples for entities """
-        cols = ["latitude", "longitude", "elevation", "id"]
-        if isinstance(obj, pd.DataFrame) and set(cols).issubset(obj.columns):
-            return set(obj[cols].itertuples(index=False, name=None))
-        try:
-            df = obsplus.events_to_df(obj)
-            df["elevation"] = -df["depth"]
-            df["id"] = df["event_id"]
-        except (TypeError, ValueError, AttributeError):
-            df = obsplus.stations_to_df(obj)
-            df["id"] = df["seed_id"]
-        return _get_distance_tuple(df)
-
-    # get a tuple of
-    coord1 = _get_distance_tuple(entity_1)
-    coord2 = _get_distance_tuple(entity_2)
-    # make a dict of {(event_id, seed_id): (dist, azimuth)}
-    dist_dicts = {
-        (ell[-1], ill[-1]): _dist_func(ell, ill)
-        for ell, ill in product(coord1, coord2)
-        if ell[-1] != ill[-1]  # skip if same entity
-    }
-    df = pd.DataFrame(dist_dicts).T.astype(DISTANCE_DTYPES)
-    # make sure index is named
-    df.index.names = ("id1", "id2")
-    return df[list(DISTANCE_COLUMNS)]
-
-
-def calculate_distance(
-    latitude: float,
-    longitude: float,
-    df,
-    degrees: bool = True,
-    a: float = WGS84_A,
-    f: float = WGS84_F,
-) -> pd.Series:
-    """
-    Calculate the distance from all events in the dataframe to a set point.
-
-    Parameters
-    ----------
-    latitude
-        Latitude in degrees for point to calculate distance from
-    longitude
-        Longitude in degrees for point to calculate distance from
-    df
-        DataFrame to compute distances for. Must have columns titles
-        "latitude" and "longitude"
-    degrees
-        Whether to return distance in degrees (default) or in meters.
-    a
-        Radius of planetary body (usually Earth) in m. Defaults to WGS84.
-    f
-        Flattening of planetary body (usually Earth). Defaults to WGS84.
-
-    Returns
-    -------
-    A series of distances (in degrees if `degrees=True` or meters) indexed in
-    the same way as the input dataframe.
-    """
-    if latitude > 90 or latitude < -90:
-        raise ValueError("Latitude of Point 1 out of bounds! (-90 <= lat1 <=90)")
-    _a = a / 1000  # calc_dist needs this in km, but other things use m - convert once.
-
-    def _degrees_dist_func(_df):
-        if _df["latitude"] > 90 or _df["latitude"] < -90:
-            raise ValueError(
-                "Latitude in dataframe out of bounds! "
-                "(-90 <= {0} <=90)".format(_df["latitude"])
-            )
-        return calc_dist(
-            source_latitude_in_deg=latitude,
-            source_longitude_in_deg=longitude,
-            receiver_latitude_in_deg=_df["latitude"],
-            receiver_longitude_in_deg=_df["longitude"],
-            radius_of_planet_in_km=_a,
-            flattening_of_planet=f,
-        )
-
-    def _km_dist_func(_df):
-        dist, _, _ = gps2dist_azimuth(
-            lat1=latitude, lon1=longitude, lat2=_df["latitude"], lon2=_df["longitude"]
-        )
-        return dist
-
-    if degrees:
-        _dist_func = _degrees_dist_func
-    else:
-        _dist_func = _km_dist_func
-
-    return df.apply(_dist_func, axis=1, result_type="reduce")
-
-
 def md5(path: Union[str, Path]):
     """
     Calculate the md5 hash of a file.
@@ -620,15 +457,3 @@ def md5_directory(
         if keep:
             out[str(sub_path.relative_to(path))] = md5(sub_path)
     return out
-
-
-def maybe_jit(func):
-    """
-    Decorator for using numba to jit a function if it is available.
-    """
-    try:
-        import numba
-    except ImportError:
-        return func
-    else:
-        return numba.jit(func)

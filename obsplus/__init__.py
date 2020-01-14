@@ -39,7 +39,6 @@ from obsplus.bank.stationbank import StationBank
 Sbank = WaveBank
 
 from obsplus.structures.fetcher import Fetcher
-from obsplus.waveframe.waveframe import WaveFrame
 
 # misc functions
 from obsplus.utils.time import get_reference_time

@@ -72,6 +72,12 @@ class TestGetWaveformsBulk:
         assert all([tr.stats.network == "LF" for tr in st])
         assert all([tr.stats.station == "BOB" for tr in st])
 
+    def test_empty_bulk(self, stream):
+        """ Ensure an empty Stream is returned when bulk is None """
+        st = stream.get_waveforms_bulk([])
+        assert isinstance(st, obspy.Stream)
+        assert len(st) == 0
+
     def test_doesnt_modify_original(self, bingham_st, bingham_bulk_args):
         """ Ensure the method doesn't modify the original stream or bulk args """
         st1 = copy.deepcopy(bingham_st)

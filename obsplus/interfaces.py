@@ -11,16 +11,6 @@ import obspy
 import pandas as pd
 
 
-def add_func_name(my_set: set):
-    """ add the name of a function to a set """
-
-    def _wrap(func):
-        my_set.add(func.__name__)
-        return func
-
-    return _wrap
-
-
 class _MethodChecker(type):
     """ class for checking if methods exist """
 

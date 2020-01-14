@@ -6,24 +6,15 @@ import tempfile
 from os.path import join, exists
 from pathlib import Path
 
+import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
-import numpy as np
 from obspy import UTCDateTime
 
-
 import obsplus
-from obsplus import (
-    events_to_df,
-    picks_to_df,
-    arrivals_to_df,
-    amplitudes_to_df,
-    station_magnitudes_to_df,
-    magnitudes_to_df,
-    get_preferred,
-)
+from obsplus import events_to_df, picks_to_df, get_preferred
 from obsplus.constants import (
     EVENT_COLUMNS,
     PICK_COLUMNS,
@@ -33,8 +24,16 @@ from obsplus.constants import (
     MAGNITUDE_COLUMNS,
     EVENT_DTYPES,
 )
-from obsplus.utils.pd import get_seed_id_series
+from obsplus.events.pd import (
+    amplitudes_to_dataframe,
+    station_magnitudes_to_dataframe,
+    arrivals_to_dataframe,
+    picks_to_dataframe,
+    event_to_dataframe,
+    magnitudes_to_dataframe,
+)
 from obsplus.utils.misc import getattrs
+from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.time import to_datetime64
 
 common_extractor_cols = {
@@ -255,7 +254,7 @@ class TestCat2Df:
     def df(self, test_catalog):
         """ call the catalog2df method, return result"""
         cat = test_catalog.copy()
-        return events_to_df(cat)
+        return event_to_dataframe(cat)
 
     # tests
     def test_method_exists(self, test_catalog):
@@ -371,7 +370,7 @@ class TestReadEvents:
     def events_from_catalog(self):
         """ read events from a events object """
         cat = obspy.read_events()
-        return events_to_df(cat)
+        return event_to_dataframe(cat)
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
@@ -497,21 +496,21 @@ class TestReadPhasePicks:
     @append_func_name(fixtures)
     def catalog_output(self, tcat):
         """ call read_picks on the events, return result """
-        return picks_to_df(tcat)
+        return picks_to_dataframe(tcat)
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
     def dataframe_output(self, tcat):
         """ return read_picks result from reading dataframe """
         df = picks_to_df(tcat)
-        return picks_to_df(df)
+        return picks_to_dataframe(df)
 
     @pytest.fixture(scope="class")
     def empty_catalog(self):
         """ run an empty events through the picks_to_df function """
         event = ev.Event()
         cat = obspy.Catalog(events=[event])
-        return picks_to_df(cat)
+        return picks_to_dataframe(cat)
 
     @pytest.fixture(scope="class")
     def picks_no_origin(self):
@@ -526,7 +525,7 @@ class TestReadPhasePicks:
             ev.Pick(time=t0 + 1.2, waveform_id=wave_id("UU.BOB.01.ELZ")),
             ev.Pick(time=t0 + 3.2, waveform_id=wave_id("UU.TEX..EHZ")),
         ]
-        return picks_to_df(ev.Event(picks=picks))
+        return picks_to_dataframe(ev.Event(picks=picks))
 
     @pytest.fixture(scope="class", params=fixtures)
     def read_picks_output(self, request):
@@ -564,7 +563,7 @@ class TestReadPhasePicks:
 
     def test_unique_event_time_no_origin(self, bingham_cat_only_picks):
         """ Ensure events with no origin don't all return the same time. """
-        df = picks_to_df(bingham_cat_only_picks)
+        df = picks_to_dataframe(bingham_cat_only_picks)
         assert len(df["event_time"].unique()) == len(df["event_id"].unique())
 
     def test_read_uncertainty(self):
@@ -577,7 +576,7 @@ class TestReadPhasePicks:
         pick = ev.Pick(
             time=UTCDateTime(), time_errors=time_error, waveform_id=waveform_id
         )
-        df = picks_to_df(pick)
+        df = picks_to_dataframe(pick)
         assert set(kwargs).issubset(df.columns)
         assert len(df) == 1
         ser = df.iloc[0]
@@ -589,7 +588,7 @@ class TestReadPhasePicks:
         """
         waveform_id = ev.WaveformStreamID(station_code="A")
         pick = ev.Pick(time=UTCDateTime(), waveform_id=waveform_id)
-        df = picks_to_df(pick)
+        df = picks_to_dataframe(pick)
         assert df.onset.iloc[0] == ""
         assert df.polarity.iloc[0] == ""
 
@@ -609,7 +608,7 @@ class TestReadKemPicks:
     @pytest.fixture(scope="class", params=supported_inputs)
     def pick_df(self, request):
         """ collect all the supported inputs are parametrize"""
-        return picks_to_df(request.param)
+        return picks_to_dataframe(request.param)
 
     # tests
     def test_len(self, pick_df):
@@ -667,7 +666,7 @@ class TestReadArrivals:
 
     @pytest.fixture(scope="class")
     def read_arr_output(self, dummy_cat):
-        return arrivals_to_df(dummy_cat)
+        return arrivals_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_arr_output):
@@ -713,14 +712,14 @@ class TestReadArrivals:
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
         """ ensure returns empty df with required columns """
-        df = arrivals_to_df(empty_cat)
+        df = arrivals_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
 
     def test_no_origin(self, no_origin):
         """ ensure returns empty df with required columns """
-        df = arrivals_to_df(no_origin)
+        df = arrivals_to_dataframe(no_origin)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
@@ -749,7 +748,7 @@ class TestReadAmplitudes:
 
     @pytest.fixture(scope="class")
     def read_amps_output(self, dummy_cat):
-        return amplitudes_to_df(dummy_cat)
+        return amplitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
     def amplitude(self, dummy_cat):
@@ -817,7 +816,7 @@ class TestReadAmplitudes:
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
         """ ensure returns empty df with required columns """
-        df = amplitudes_to_df(empty_cat)
+        df = amplitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
@@ -861,7 +860,7 @@ class TestReadStationMagnitudes:
 
     @pytest.fixture(scope="class")
     def read_sms_output(self, dummy_cat):
-        return station_magnitudes_to_df(dummy_cat)
+        return station_magnitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_sms_output):
@@ -911,7 +910,7 @@ class TestReadStationMagnitudes:
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
         dummy_mag = dummy_mag.magnitudes[0]
-        mag_df = station_magnitudes_to_df(dummy_mag)
+        mag_df = station_magnitudes_to_dataframe(dummy_mag)
         assert len(mag_df) == len(dummy_mag.station_magnitude_contributions)
         sm = mag_df.iloc[0]
         assert sm.magnitude_id == dummy_mag.resource_id.id
@@ -919,7 +918,7 @@ class TestReadStationMagnitudes:
     # empty catalog tests
     def test_empty_catalog(self, empty_cat):
         """ ensure returns empty df with required columns """
-        df = station_magnitudes_to_df(empty_cat)
+        df = station_magnitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
@@ -937,12 +936,8 @@ class TestReadMagnitudes:
         return cat
 
     @pytest.fixture(scope="class")
-    def empty_cat(self):
-        return ev.Catalog()
-
-    @pytest.fixture(scope="class")
     def read_mags_output(self, dummy_cat):
-        return magnitudes_to_df(dummy_cat)
+        return magnitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_mags_output):
@@ -987,9 +982,10 @@ class TestReadMagnitudes:
         assert floatify_dict(ser_dict) == floatify_dict(mag_dict)
 
     # empty catalog tests
-    def test_empty_catalog(self, empty_cat):
+    def test_empty_catalog(self):
         """ ensure returns empty df with required columns """
-        df = magnitudes_to_df(empty_cat)
+        empty_cat = ev.Catalog()
+        df = magnitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(MAGNITUDE_COLUMNS)

@@ -8,9 +8,22 @@ import numpy as np
 import obspy
 import pandas as pd
 import pytest
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Catalog
+from obspy.core import event as ev
+from obspy.core.event import Origin, Event
 
+from obsplus import get_reference_time
 from obsplus.utils.time import to_datetime64, to_utc, to_timedelta64
+
+
+def append_func_name(list_obj):
+    """ decorator to append a function name to list_obj """
+
+    def wrap(func):
+        list_obj.append(func.__name__)
+        return func
+
+    return wrap
 
 
 class TestToNumpyDateTime:
@@ -142,3 +155,75 @@ class TestToUTC:
         out = to_utc(value)
         # either a sequence or UTCDateTime should be returned
         assert isinstance(out, (Sequence, UTCDateTime, np.ndarray))
+
+
+class TestGetReferenceTime:
+    """ tests for getting reference times from various objects """
+
+    time = obspy.UTCDateTime("2009-04-01")
+    fixtures = []
+
+    # fixtures
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def utc_object(self):
+        return obspy.UTCDateTime(self.time)
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def timestamp(self):
+        return self.time.timestamp
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def event(self):
+        origin = Origin(time=self.time, latitude=47, longitude=-111.7)
+        return Event(origins=[origin])
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def catalog(self, event):
+        return Catalog(events=[event])
+
+    @pytest.fixture(scope="class")
+    def picks(self):
+        t1, t2 = UTCDateTime("2016-01-01"), UTCDateTime("2015-01-01")
+        picks = [ev.Pick(time=t1), ev.Pick(time=t2), ev.Pick()]
+        return picks
+
+    @pytest.fixture(scope="class")
+    def event_only_picks(self, picks):
+        return ev.Event(picks=picks)
+
+    @pytest.fixture(scope="class", params=fixtures)
+    def time_outputs(self, request):
+        """ meta fixtures to gather up all the input types"""
+        fixture_value = request.getfixturevalue(request.param)
+        return get_reference_time(fixture_value)
+
+    # tests
+    def test_is_utc_date(self, time_outputs):
+        """ ensure the output is a UTCDateTime """
+        assert isinstance(time_outputs, obspy.UTCDateTime)
+
+    def test_time_equals(self, time_outputs):
+        """ ensure the outputs are equal to time on self """
+        assert time_outputs == self.time
+
+    def test_empty_event_raises(self):
+        """ ensure an empty event will raise """
+        event = ev.Event()
+        with pytest.raises(ValueError):
+            get_reference_time(event)
+
+    def test_event_with_picks(self, event_only_picks):
+        """ test that an event with picks, no origin, uses smallest pick """
+        t_expected = UTCDateTime("2015-01-01")
+        t_out = get_reference_time(event_only_picks)
+        assert t_expected == t_out
+
+    def test_stream(self):
+        """ Ensure the start of the stream is returned. """
+        st = obspy.read()
+        out = get_reference_time(st)
+        assert out == min([tr.stats.starttime for tr in st])

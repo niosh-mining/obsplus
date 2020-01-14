@@ -9,102 +9,22 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
-from obspy import UTCDateTime
-from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
 import obsplus.utils.misc
-from obsplus.constants import NSLC, NULL_SEED_CODES, DISTANCE_COLUMNS
-
-from obsplus.utils.docs import compose_docstring
-from obsplus.utils.misc import yield_obj_parent_attr, get_distance_df, iter_files
+from obsplus.constants import NSLC, NULL_SEED_CODES
+from obsplus.utils.misc import (
+    yield_obj_parent_attr,
+    iter_files,
+    getattrs,
+    read_file,
+    deprecated_callable,
+)
 from obsplus.utils.pd import filter_index, filter_df
-from obsplus.utils.time import get_reference_time, to_timestamp
-
-
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
+from obsplus.utils.time import to_timestamp
 
 
 # ------------------------- module level fixtures
-
-
-class TestGetReferenceTime:
-    """ tests for getting reference times from various objects """
-
-    time = obspy.UTCDateTime("2009-04-01")
-    fixtures = []
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
-    def utc_object(self):
-        return obspy.UTCDateTime(self.time)
-
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
-    def timestamp(self):
-        return self.time.timestamp
-
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
-    def event(self):
-        origin = Origin(time=self.time, latitude=47, longitude=-111.7)
-        return Event(origins=[origin])
-
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
-    def catalog(self, event):
-        return Catalog(events=[event])
-
-    @pytest.fixture(scope="class")
-    def picks(self):
-        t1, t2 = UTCDateTime("2016-01-01"), UTCDateTime("2015-01-01")
-        picks = [ev.Pick(time=t1), ev.Pick(time=t2), ev.Pick()]
-        return picks
-
-    @pytest.fixture(scope="class")
-    def event_only_picks(self, picks):
-        return ev.Event(picks=picks)
-
-    @pytest.fixture(scope="class", params=fixtures)
-    def time_outputs(self, request):
-        """ meta fixtures to gather up all the input types"""
-        fixture_value = request.getfixturevalue(request.param)
-        return get_reference_time(fixture_value)
-
-    # tests
-    def test_is_utc_date(self, time_outputs):
-        """ ensure the output is a UTCDateTime """
-        assert isinstance(time_outputs, obspy.UTCDateTime)
-
-    def test_time_equals(self, time_outputs):
-        """ ensure the outputs are equal to time on self """
-        assert time_outputs == self.time
-
-    def test_empty_event_raises(self):
-        """ ensure an empty event will raise """
-        event = ev.Event()
-        with pytest.raises(ValueError):
-            get_reference_time(event)
-
-    def test_event_with_picks(self, event_only_picks):
-        """ test that an event with picks, no origin, uses smallest pick """
-        t_expected = UTCDateTime("2015-01-01")
-        t_out = get_reference_time(event_only_picks)
-        assert t_expected == t_out
-
-    def test_stream(self):
-        """ Ensure the start of the stream is returned. """
-        st = obspy.read()
-        out = get_reference_time(st)
-        assert out == min([tr.stats.starttime for tr in st])
 
 
 class TestIterate:
@@ -299,16 +219,6 @@ class TestMisc:
         on_none = to_timestamp(None, 10)
         assert on_none == ts1 == ts2
 
-    def test_graceful_progress_fail(self, monkeypatch):
-        """ Ensure a progress bar that cant update returns None """
-        from progressbar import ProgressBar
-
-        def raise_exception():
-            raise Exception
-
-        monkeypatch.setattr(ProgressBar, "start", raise_exception)
-        assert obsplus.utils.misc.get_progressbar(100) is None
-
     def test_apply_or_skip(self, apply_test_dir):
         """ test applying a function to all files or skipping """
         processed_files = []
@@ -323,62 +233,60 @@ class TestMisc:
         assert len(processed_files) == 2
         assert len(out) == 1
 
+    def test_getattrs_unused_attr(self):
+        """ simple tests for getattrs """
+        instance = "instance"
+        assert getattrs(instance, ("bob",)) == {"bob": np.NaN}
 
-class TestDistanceDataframe:
-    """
-    Tests for returning a distance dataframe from some number of events
-    and some number of stations.
-    """
+    def test_read_file_fails(self):
+        """ ensure read_file can raise IOError. """
 
-    @pytest.fixture(scope="class")
-    def cat(self):
-        """ return the first 3 events from the crandall dataset. """
-        return obspy.read_events()
+        def raise_value_error(arg):
+            raise ValueError("ouch")
 
-    @pytest.fixture(scope="class")
-    def inv(self):
-        return obspy.read_inventory()
+        path = "something made up"
+        with pytest.raises(IOError):
+            read_file(path, (raise_value_error,))
 
-    @pytest.fixture(scope="class")
-    def distance_df(self, cat, inv):
-        """ Return a dataframe from all the crandall events and stations. """
-        return get_distance_df(entity_1=cat, entity_2=inv)
+    def test_deprecate_function(self):
+        """ Test deprecating function. """
 
-    def test_type(self, distance_df):
-        """ ensure a dataframe was returned. """
-        assert isinstance(distance_df, pd.DataFrame)
-        assert set(distance_df.columns) == set(DISTANCE_COLUMNS)
+        @deprecated_callable(replacement_str="another_func")
+        def func():
+            return None
 
-    def test_all_events_in_df(self, distance_df, cat):
-        """ Ensure all the events are in the distance dataframe. """
-        event_ids_df = set(distance_df.index.to_frame()["id1"])
-        event_ids_cat = {str(x.resource_id) for x in cat}
-        assert event_ids_cat == event_ids_df
+        with pytest.warns(UserWarning) as w:
+            func()
 
-    def test_all_seed_id_in_df(self, distance_df, inv):
-        seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
-        seed_id_df = set(distance_df.index.to_frame()["id2"])
-        assert seed_id_df == seed_id_stations
+        assert len(w.list) == 1
+        assert "is deprecated" in str(w.list[0])
 
-    def test_cat_cat(self, cat):
-        """ ensure it works with two catalogs """
-        df = get_distance_df(cat, cat)
-        event_ids = {str(x.resource_id) for x in cat}
-        combinations = set(itertools.permutations(event_ids, 2))
-        assert combinations == set(df.index)
 
-    def test_dataframe_input(self, cat):
-        """
-        Any dataframe should be valid input provided it has the required columns.
-        """
-        data = [[10.1, 10.1, 0, "some_id"]]
-        cols = ["latitude", "longitude", "elevation", "id"]
-        df = pd.DataFrame(data, columns=cols)
-        dist_df = get_distance_df(df, cat)
-        # make sure output has expected shape and ids
-        assert len(dist_df) == len(cat) * len(df)
-        id1 = dist_df.index.get_level_values("id1")
-        assert "some_id" in set(id1)
+class TestProgressBar:
+    """ Tests for progress bar functionality. """
+
+    def test_graceful_progress_fail(self, monkeypatch):
+        """ Ensure a progress bar that cant update returns None """
+        from progressbar import ProgressBar
+
+        def raise_exception():
+            raise Exception
+
+        monkeypatch.setattr(ProgressBar, "start", raise_exception)
+        assert obsplus.utils.misc.get_progressbar(100) is None
+
+    def test_simple_progress_bar(self,):
+        """ Ensure a simple progress bar can be used. """
+        from progressbar import ProgressBar
+
+        bar = obsplus.utils.misc.get_progressbar(max_value=100, min_value=1)
+        assert isinstance(bar, ProgressBar)
+        bar.update(1)  # if this doesn't raise the test passes
+
+    def test_none_if_min_value_not_met(self):
+        """ Bar should return None if the min value isn't met. """
+        bar = obsplus.utils.misc.get_progressbar(max_value=1, min_value=100)
+        assert bar is None
 
 
 class TestMD5:
@@ -406,6 +314,33 @@ class TestMD5:
         # the file1.txt should not have been included
         assert len(md5_out) == 1
         assert "file1.txt" not in md5_out
+
+
+class TestYieldObjectParentAttr:
+    """ tests for yielding objects, parents, and attributes. """
+
+    def test_get_origins(self):
+        """ A simple test to get origins from the default catalog. """
+        cat = obspy.read_events()
+        origins1 = [x[0] for x in yield_obj_parent_attr(cat, cls=ev.Origin)]
+        origins2 = list(itertools.chain.from_iterable([x.origins for x in cat]))
+        assert len(origins1) == len(origins2)
+
+    def test_object_with_slots(self):
+        """ Ensure it still works with slots objects. """
+
+        class Slot:
+            __slots__ = ("hey", "bob")
+
+            def __init__(self, hey, bob):
+                self.hey = hey
+                self.bob = bob
+
+        slot = Slot(hey=ev.ResourceIdentifier("bob"), bob="ugh")
+
+        rids = [x[0] for x in yield_obj_parent_attr(slot, ev.ResourceIdentifier)]
+        assert len(rids) == 1
+        assert str(rids[0]) == "bob"
 
 
 class TestIterFiles:

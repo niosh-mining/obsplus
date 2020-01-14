@@ -3,7 +3,6 @@ Module for adding a get_events method to obspy events.
 """
 
 import inspect
-
 from typing import Tuple, Union
 
 import numpy as np
@@ -13,6 +12,7 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import kilometers2degrees
 
 import obsplus
+import obsplus.utils.geodetics
 import obsplus.utils.misc
 from obsplus.constants import get_events_parameters
 from obsplus.utils.docs import compose_docstring
@@ -91,13 +91,13 @@ def _get_ids(df, kwargs) -> set:
         kwargs.update(_get_bounding_box(circular_kwargs))
         df = get_event_summary(df, **kwargs)
         filt = np.ones(len(df)).astype(bool)
-        # Trim based on circular kwargs
-        radius = obsplus.utils.misc.calculate_distance(
-            latitude=circular_kwargs["latitude"],
-            longitude=circular_kwargs["longitude"],
-            df=df,
-            degrees=circular_kwargs.get("degrees", True),
-        )
+        # Trim based on circular kwargs, first get distance dataframe.
+        input = (circular_kwargs["latitude"], circular_kwargs["longitude"], 0)
+        dist_calc = obsplus.utils.geodetics.SpatialCalculator()
+        dist_df = dist_calc(input, df)
+        # then get radius and filter if needed
+        degrees = circular_kwargs.get("distance_degrees", True)
+        radius = dist_df["distance_degrees" if degrees else "distance_m"].values
         if "minradius" in circular_kwargs:
             filt &= radius > circular_kwargs["minradius"]
         if "maxradius" in circular_kwargs:

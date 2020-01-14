@@ -20,8 +20,8 @@ from typing import (
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, Trace, UTCDateTime, Inventory, Catalog
-from obspy.core.event import Event
+from obspy import Stream, Trace, UTCDateTime, Inventory
+from obspy.core.event import Event, Catalog
 from obspy.core.util import AttribDict
 
 from obsplus.interfaces import EventClient, WaveformClient
@@ -160,13 +160,22 @@ PICK_DTYPES = OrderedDict(
 
 PICK_COLUMNS = tuple(PICK_DTYPES)
 
-# columns for distance dataframe
-
-DISTANCE_DTYPES = OrderedDict(
-    distance=float, horizontal_distance=float, depth_distance=float, azimuth=float
+# columns for distance dataframe (output)
+DISTANCE_COLUMN_DTYPES = OrderedDict(
+    distance_m=float,
+    azimuth=float,
+    back_azimuth=float,
+    distance_degrees=float,
+    vertical_distance_m=float,
 )
 
-DISTANCE_COLUMNS = tuple(DISTANCE_DTYPES)
+# Columns for dataframe inputs
+DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
+    latitude=float, longitude=float, elevation=float
+)
+
+# DISTANCE_COLUMNS = tuple(DISTANCE_COLUMN_DTYPES)
+# DISTANCE_INPUT_COLUMNS = tuple(DISTANCE_COLUMN_INPUT_DTYPES)
 
 # columns required for amplitudes
 AMPLITUDE_DTYPES = OrderedDict(
@@ -397,7 +406,7 @@ wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
 waveform_clientable_type = Union[WaveformClient, str, Path, Trace, Stream]
 
 # types accepted by DataFetcher for event info
-event_type = Union[Catalog, pd.DataFrame]
+event_type = Union[Catalog, pd.DataFrame, Event]
 
 # types from which and event client can be created
 event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
