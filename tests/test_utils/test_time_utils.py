@@ -77,6 +77,12 @@ class TestToNumpyDateTime:
         out = to_datetime64(ser)
         assert isinstance(out, np.ndarray)
 
+    def test_nullish_values_returns_default(self):
+        """ Nullish values should return default values. """
+        out1 = to_timedelta64(None)
+        assert pd.isnull(out1)
+        assert out1 is not None
+
 
 class TestTimeDelta:
     """ Tests for converting things to timedeltas. """
@@ -127,6 +133,19 @@ class TestTimeDelta:
         ints1 = deltas.astype("timedelta64[ns]").astype(int)
         ints2 = out.astype("timedelta64[ns]").astype(int)
         assert np.all(ints1 == ints2)
+
+    def test_tuple_and_list(self):
+        """ tests for tuples and lists. """
+        input1 = ["2020-01-03", obspy.UTCDateTime("2020-01-01").timestamp]
+        out1 = to_datetime64(input1)
+        out2 = to_datetime64(tuple(input1))
+        assert np.all(out1 == out2)
+
+    def test_nullish_values_returns_default(self):
+        """ Nullish values should return default values. """
+        default = np.timedelta64(0, "s")
+        out1 = to_timedelta64(None, default=default)
+        assert out1 == default
 
 
 class TestToUTC:
@@ -227,3 +246,8 @@ class TestGetReferenceTime:
         st = obspy.read()
         out = get_reference_time(st)
         assert out == min([tr.stats.starttime for tr in st])
+
+    def test_bad_type_raises(self):
+        """ Ensure a ValueError is raised when an unsupported type is used. """
+        with pytest.raises(TypeError):
+            get_reference_time(None)

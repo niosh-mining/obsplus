@@ -41,7 +41,7 @@ def trim_event_stream(
     Trim the waveforms to a common start time and end time.
 
     Uses latest start and earliest end for each trace, unless an abnormally
-    short trace is found
+    short trace is found.
 
     Parameters
     ----------
@@ -190,7 +190,7 @@ def stream_bulk_split(
         new = new_st.slice(starttime=t1, endtime=t2)
         # apply fill if needed
         if fill_value is not None:
-            new = new.trim(starttime=t1, endtime=t2, fill_value=fill_value)
+            new = new.trim(starttime=t1, endtime=t2, fill_value=fill_value, pad=True)
         if new is None or not len(new):
             out.append(obspy.Stream())
             continue

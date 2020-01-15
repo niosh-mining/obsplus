@@ -11,6 +11,7 @@ import pytest
 
 import obsplus
 from obsplus.constants import NSLC
+from obsplus.interfaces import WaveformClient
 from obsplus.utils.time import to_timedelta64
 from obsplus.utils.waveforms import (
     trim_event_stream,
@@ -19,7 +20,25 @@ from obsplus.utils.waveforms import (
     merge_traces,
     stream_bulk_split,
     assert_streams_almost_equal,
+    get_waveform_client,
 )
+
+
+class TestGetWaveformClient:
+    """ tests for getting a waveform client from various objects. """
+
+    def test_from_mseed_file(self, tmpdir):
+        """ A path to a file should return a stream from that file. """
+        st = obspy.read()
+        new_path = Path(tmpdir) / "stream.mseed"
+        st.write(str(new_path), "mseed")
+        client = get_waveform_client(new_path)
+        assert isinstance(client, WaveformClient)
+
+    def test_from_bank(self, default_wbank):
+        """ A waveform client should just return itself. """
+        client = get_waveform_client(default_wbank)
+        assert isinstance(client, WaveformClient)
 
 
 class TestTrimEventStream:
@@ -69,8 +88,21 @@ class TestTrimEventStream:
         stations = {tr.stats.station for tr in st}
         assert "BOB" not in stations
 
+    def test_empty_stream(self):
+        """ Ensure an empty stream returns an empty stream. """
+        st = obspy.Stream()
+        out = trim_event_stream(st)
+        assert isinstance(out, obspy.Stream)
+        assert len(out) == 0
 
-class TestMegeStream:
+    def test_stream_with_duplicates_merged(self):
+        """ Duplicate streams should be merged. """
+        st = obspy.read() + obspy.read()
+        out = trim_event_stream(st, merge=None)
+        assert len(out) == 3
+
+
+class TestMergeStream:
     """ Tests for obsplus' style for merging streams together. """
 
     def convert_stream_dtype(self, st, dtype):
@@ -339,9 +371,11 @@ class TestStreamBulkSplit:
         st = obspy.read()
         out = stream_bulk_split(st, [])
         assert len(out) == 0
+        out2 = stream_bulk_split(st, None)
+        assert len(out2) == 0
 
-    def test_empy_stream_returns_empty(self):
-        """ An empy stream should also return an empty stream """
+    def test_empty_stream_returns_empty(self):
+        """ An empty stream should also return an empty stream """
         st = obspy.read()
         t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
         nslc = st[0].id.split(".")
@@ -410,6 +444,15 @@ class TestStreamBulkSplit:
         for st1, (_, ser) in zip(st_list, bing_pick_bulk.iterrows()):
             st2 = st_client.get_waveforms(*ser.to_list())
             assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
+
+    def test_fill_value(self):
+        """ test for filling values. """
+        st_client = obspy.read()
+        bulk = self.get_bulk_from_stream(st_client, [0], [[-10, -20]])
+        out = stream_bulk_split(st_client, bulk, fill_value=0)[0]
+        assert len(out) == 1
+        # without fill value this would only be 10 sec long
+        assert abs(abs(out[0].stats.endtime - out[0].stats.starttime) - 20) < 0.1
 
 
 class TestAssertStreamsAlmostEqual:

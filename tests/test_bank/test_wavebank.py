@@ -94,19 +94,6 @@ def ta_index(ta_bank_index):
     return ta_bank_index.read_index()
 
 
-@pytest.fixture
-def default_wbank(tmpdir):
-    """ create a  directory out of the traces in default waveforms, init bank """
-    base = Path(tmpdir)
-    st = obspy.read()
-    for num, tr in enumerate(st):
-        name = base / f"{(num)}.mseed"
-        tr.write(str(name), "mseed")
-    bank = WaveBank(base)
-    bank.update_index()
-    return bank
-
-
 @pytest.fixture(scope="class")
 def empty_bank():
     """ init a bank with an empty directory, return """

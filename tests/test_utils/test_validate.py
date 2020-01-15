@@ -12,6 +12,7 @@ from obspy.core.stream import Stream, Trace
 
 import obsplus
 import obsplus.utils.misc
+from obsplus.exceptions import ValidationNameError
 from obsplus.utils.validate import (
     _temp_validate_namespace,
     validator,
@@ -118,6 +119,11 @@ class TestValidateBasics:
         validate(Thing3(), self.validate_namespace)
         assert registered_validators["multiple_validate"] == 1
 
+    def test_bad_namespace_raises(self):
+        """ A non-existent namespace should raise. """
+        with pytest.raises(ValidationNameError):
+            validate("hey", namespace="not a real validation space")
+
 
 class TestDecompose:
     """ Tests for decomposing objects into their respective classes. """
@@ -167,6 +173,10 @@ class TestDocumentationCase:
         def ensure_preferred_origin_set(origin):
             assert origin.latitude is not None
             assert origin.longitude is not None
+
+        @validator(self.namespace, ev.Event)
+        def magnitudes_exist(event):
+            assert len(event.magnitudes)
 
     @pytest.fixture
     def bad_catalog(self):
