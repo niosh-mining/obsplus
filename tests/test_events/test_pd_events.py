@@ -3,7 +3,7 @@ Tests for converting catalogs to dataframes.
 """
 import os
 import tempfile
-from os.path import join, exists
+from os.path import join
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +14,7 @@ import pytest
 from obspy import UTCDateTime
 
 import obsplus
-from obsplus import events_to_df, picks_to_df, get_preferred
+from obsplus import events_to_df, picks_to_df
 from obsplus.constants import (
     EVENT_COLUMNS,
     PICK_COLUMNS,
@@ -32,7 +32,6 @@ from obsplus.events.pd import (
     event_to_dataframe,
     magnitudes_to_dataframe,
 )
-from obsplus.utils.misc import getattrs
 from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.time import to_datetime64
 
@@ -241,6 +240,20 @@ def floatify_dict(some_dict):
     return out
 
 
+@pytest.fixture
+def event_directory():
+    """ Return the directory of the bingham catalog. """
+    ds = obsplus.load_dataset("bingham")
+    return ds.event_path
+
+
+@pytest.fixture
+def event_file(event_directory):
+    """ Return a path to the first event file in the bingham bank. """
+    first = list(Path(event_directory).rglob("*.xml"))[0]
+    return first
+
+
 # --------------- tests
 
 
@@ -248,120 +261,6 @@ class TestCat2Df:
     """ test the simplified dataframe conversion """
 
     required_columns = EVENT_COLUMNS
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def df(self, test_catalog):
-        """ call the catalog2df method, return result"""
-        cat = test_catalog.copy()
-        return event_to_dataframe(cat)
-
-    # tests
-    def test_method_exists(self, test_catalog):
-        """ test that the cat_name has the catalog2df method """
-        assert hasattr(test_catalog, "to_df")
-
-    def test_output_type(self, df):
-        """ make sure a df was returned """
-        assert isinstance(df, pd.DataFrame)
-
-    def test_columns(self, df):
-        """ make sure the required columns are in the dataframe """
-        assert set(df.columns).issuperset(self.required_columns)
-
-    def test_lengths(self, df, test_catalog):
-        """ ensure the lengths of the dataframe and events are the same """
-        assert len(df) == len(test_catalog)
-
-    def test_event_description(self, df, test_catalog):
-        """ ensure the event descriptions match """
-        for eve, description in zip(test_catalog, df.event_description):
-            if eve.event_descriptions:
-                ed = eve.event_descriptions[0].text
-            else:
-                ed = ""
-            assert ed == description
-
-    def test_str(self):
-        """ ensure there is a string rep for catalog_to_df. """
-        cat_to_df_str = str(events_to_df)
-        assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
-
-    def test_event_id_in_columns(self, df):
-        """ Sometime the event_id was changed to the index, make sure it is
-        still a column. """
-        cols = df.columns
-        assert "event_id" in cols
-
-    def test_column_datatypes(self, df):
-        """ Ensure the expected columns are numpy datetime objects. """
-        expected = df.astype(EVENT_DTYPES).dtypes
-        assert (expected == df.dtypes).all()
-
-
-class TestCat2DfPreferredThings:
-    """ Make sure the preferred origins/mags show up in the df """
-
-    # fixtures
-    @pytest.fixture(scope="class", autouse=True)
-    def preferred_magnitudes(self, test_catalog):
-        """ set the preferred magnitudes to the first magnitudes,
-        return list of magnitudes """
-        mags = []
-        for eve in test_catalog:
-            if len(eve.magnitudes):
-                magid = eve.magnitudes[0].resource_id.id
-                mags.append(eve.magnitudes[0])
-            else:
-                magid = None
-                mags.append(None)
-            eve.preferred_magnitude_id = magid
-        return mags
-
-    @pytest.fixture(scope="class", autouse=True)
-    def preferred_origins(self, test_catalog):
-        """ set the preferred magnitudes to the first magnitudes,
-        return list of magnitudes """
-        origins = []
-        for eve in test_catalog:
-            if len(eve.origins):
-                orid = eve.origins[0].resource_id
-                origins.append(eve.origins[0])
-            else:
-                orid = None
-                origins.append(None)
-            eve.preferred_origin_id = orid
-        return origins
-
-    @pytest.fixture(scope="class")
-    def df(self, test_catalog):
-        """ call the catalog2df method, return result """
-        out = events_to_df(test_catalog.copy())
-        out.reset_index(inplace=True, drop=True)
-        return out
-
-    # tests
-    def test_origins(self, df, preferred_origins):
-        """ ensure the origins are correct """
-        for ind, row in df.iterrows():
-            origin = preferred_origins[ind]
-            assert origin.latitude == row.latitude
-            assert origin.longitude == row.longitude
-            assert origin.time == obspy.UTCDateTime(row.time)
-
-    def test_magnitudes(self, df, preferred_magnitudes, test_catalog):
-        """ ensure the origins are correct """
-        for ind, row in df.iterrows():
-            mag = preferred_magnitudes[ind]
-            assert mag.mag == row.magnitude
-            mtype1 = str(row.magnitude_type).upper()
-            mtype2 = str(mag.magnitude_type or "").upper()
-            assert mtype1 == mtype2
-
-
-class TestReadEvents:
-    """ ensure events can be read in """
-
     fixtures = []
 
     # fixtures
@@ -434,7 +333,55 @@ class TestReadEvents:
                 pick.evaluation_status = "rejected"
         return cat
 
+    # fixtures
+    @pytest.fixture(scope="class")
+    def df(self, test_catalog):
+        """ call the catalog2df method, return result"""
+        cat = test_catalog.copy()
+        return event_to_dataframe(cat)
+
     # tests
+    def test_method_exists(self, test_catalog):
+        """ test that the cat_name has the catalog2df method """
+        assert hasattr(test_catalog, "to_df")
+
+    def test_output_type(self, df):
+        """ make sure a df was returned """
+        assert isinstance(df, pd.DataFrame)
+
+    def test_columns(self, df):
+        """ make sure the required columns are in the dataframe """
+        assert set(df.columns).issuperset(self.required_columns)
+
+    def test_lengths(self, df, test_catalog):
+        """ ensure the lengths of the dataframe and events are the same """
+        assert len(df) == len(test_catalog)
+
+    def test_event_description(self, df, test_catalog):
+        """ ensure the event descriptions match """
+        for eve, description in zip(test_catalog, df.event_description):
+            if eve.event_descriptions:
+                ed = eve.event_descriptions[0].text
+            else:
+                ed = ""
+            assert ed == description
+
+    def test_str(self):
+        """ ensure there is a string rep for catalog_to_df. """
+        cat_to_df_str = str(events_to_df)
+        assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
+
+    def test_event_id_in_columns(self, df):
+        """ Sometime the event_id was changed to the index, make sure it is
+        still a column. """
+        cols = df.columns
+        assert "event_id" in cols
+
+    def test_column_datatypes(self, df):
+        """ Ensure the expected columns are numpy datetime objects. """
+        expected = df.astype(EVENT_DTYPES).dtypes
+        assert (expected == df.dtypes).all()
+
     def test_basics(self, read_events_output):
         """ make sure a dataframe is returned """
         assert isinstance(read_events_output, pd.DataFrame)
@@ -445,43 +392,78 @@ class TestReadEvents:
         df = events_to_df(events_rejected_picks)
         assert (df.p_phase_count != 0).all()
 
+    def test_event_bank_to_df(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = obsplus.events_to_df(default_ebank)
+        assert isinstance(df, pd.DataFrame)
 
-class TestReadKemEvents:
-    """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
+    def test_event_directory_to_df(self, event_directory):
+        df = events_to_df(event_directory)
+        assert len(df)
+        assert isinstance(df, pd.DataFrame)
 
-    dataset_params = ["events.xml", "catalog.csv"]
-    base_path = obsplus.load_dataset("kemmerer").source_path.parent
+
+class TestCat2DfPreferredThings:
+    """ Make sure the preferred origins/mags show up in the df. """
 
     # fixtures
-    @pytest.fixture(scope="class", params=dataset_params)
-    def cat_df(self, request, kem_archive):
-        """ collect all the supported inputs are parametrize"""
-        return events_to_df(self.base_path / "kemmerer" / request.param)
+    @pytest.fixture(scope="class", autouse=True)
+    def preferred_magnitudes(self, test_catalog):
+        """ set the preferred magnitudes to the first magnitudes,
+        return list of magnitudes """
+        mags = []
+        for eve in test_catalog:
+            if len(eve.magnitudes):
+                magid = eve.magnitudes[0].resource_id.id
+                mags.append(eve.magnitudes[0])
+            else:
+                magid = None
+                mags.append(None)
+            eve.preferred_magnitude_id = magid
+        return mags
+
+    @pytest.fixture(scope="class", autouse=True)
+    def preferred_origins(self, test_catalog):
+        """ set the preferred magnitudes to the first magnitudes,
+        return list of magnitudes """
+        origins = []
+        for eve in test_catalog:
+            if len(eve.origins):
+                orid = eve.origins[0].resource_id
+                origins.append(eve.origins[0])
+            else:
+                orid = None
+                origins.append(None)
+            eve.preferred_origin_id = orid
+        return origins
 
     @pytest.fixture(scope="class")
-    def catalog(self, kem_archive):
-        """ return the events """
-        return obspy.read_events(str(self.base_path / "kemmerer" / "events.xml"))
+    def df(self, test_catalog):
+        """ call the catalog2df method, return result """
+        out = events_to_df(test_catalog.copy())
+        out.reset_index(inplace=True, drop=True)
+        return out
 
     # tests
-    def test_len(self, cat_df, catalog):
-        """ ensure the correct number of items was returned """
-        assert len(cat_df) == len(catalog.events)
+    def test_origins(self, df, preferred_origins):
+        """ ensure the origins are correct """
+        for ind, row in df.iterrows():
+            origin = preferred_origins[ind]
+            assert origin.latitude == row.latitude
+            assert origin.longitude == row.longitude
+            assert origin.time == obspy.UTCDateTime(row.time)
 
-    def test_column_order(self, cat_df):
-        """ ensure the order of the columns is correct """
-        cols = list(cat_df.columns)
-        assert list(EVENT_COLUMNS) == cols[: len(EVENT_COLUMNS)]
-
-    def test_cat_to_df_method(self):
-        """ ensure the events object has the to_df method bolted on """
-        cat = obspy.read_events()
-        df = cat.to_df()
-        assert isinstance(df, pd.DataFrame)
-        assert len(df) == len(cat)
+    def test_magnitudes(self, df, preferred_magnitudes, test_catalog):
+        """ ensure the origins are correct """
+        for ind, row in df.iterrows():
+            mag = preferred_magnitudes[ind]
+            assert mag.mag == row.magnitude
+            mtype1 = str(row.magnitude_type).upper()
+            mtype2 = str(mag.magnitude_type or "").upper()
+            assert mtype1 == mtype2
 
 
-class TestReadPhasePicks:
+class TestReadPicks:
     """ ensure phase picks can be read in """
 
     fixtures = []
@@ -592,44 +574,21 @@ class TestReadPhasePicks:
         assert df.onset.iloc[0] == ""
         assert df.polarity.iloc[0] == ""
 
+    def test_from_file(self, event_file):
+        """ test for reading phase picks from files. """
+        df = picks_to_df(event_file)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df)
 
-class TestReadKemPicks:
-    """ test for reading a variety of pick formats from the kemmerer
-    dataset """
+    def test_from_event_bank(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = picks_to_df(default_ebank)
+        assert isinstance(df, pd.DataFrame)
 
-    path = obsplus.load_dataset("kemmerer").source_path
-    csv_path = path / "picks.csv"
-    qml_path = str(path / "events.xml")
-    qml = obspy.read_events(str(qml_path))
-    picks = [pick for eve in qml for pick in eve.picks]
-    supported_inputs = [qml_path, qml, csv_path]
-
-    # fixtures
-    @pytest.fixture(scope="class", params=supported_inputs)
-    def pick_df(self, request):
-        """ collect all the supported inputs are parametrize"""
-        return picks_to_dataframe(request.param)
-
-    # tests
-    def test_len(self, pick_df):
-        """ ensure the correct number of items was returned """
-        assert len(pick_df) == len(self.picks)
-
-    def test_column_order(self, pick_df):
-        """ ensure the order of the columns is correct """
-        cols = list(pick_df.columns)
-        assert list(PICK_COLUMNS) == cols[: len(PICK_COLUMNS)]
-
-    def test_event_id(self, pick_df):
-        """ ensure nan values are not in dataframe event_id column """
-        assert not pick_df.event_id.isnull().any()
-
-    def test_seed_id(self, pick_df):
-        """ ensure valid seed_ids were created. """
-        # recreate seed_id and make sure columns are equal
-        df = pick_df
-        seed = get_seed_id_series(pick_df)
-        assert (seed == df["seed_id"]).all()
+    def test_from_event_directory(self, event_directory):
+        df = picks_to_df(event_directory)
+        assert len(df)
+        assert isinstance(df, pd.DataFrame)
 
 
 class TestReadArrivals:
@@ -724,6 +683,22 @@ class TestReadArrivals:
         assert not len(df)
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
 
+    def test_from_file(self, event_file):
+        """ test for reading phase picks from files. """
+        df = arrivals_to_dataframe(event_file)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df)
+
+    def test_from_event_bank(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = arrivals_to_dataframe(default_ebank)
+        assert isinstance(df, pd.DataFrame)
+
+    def test_from_event_directory(self, event_directory):
+        df = arrivals_to_dataframe(event_directory)
+        assert len(df)
+        assert isinstance(df, pd.DataFrame)
+
 
 class TestReadAmplitudes:
     # fixtures
@@ -813,13 +788,26 @@ class TestReadAmplitudes:
         assert amp_series["author"] == amplitude.creation_info.author
         assert amp_series["agency_id"] == amplitude.creation_info.agency_id
 
-    # empty catalog tests
     def test_empty_catalog(self, empty_cat):
         """ ensure returns empty df with required columns """
         df = amplitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
+
+    def test_from_file(self, event_file):
+        """ test for reading phase picks from files. """
+        df = amplitudes_to_dataframe(event_file)
+        assert isinstance(df, pd.DataFrame)
+
+    def test_from_event_bank(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = amplitudes_to_dataframe(default_ebank)
+        assert isinstance(df, pd.DataFrame)
+
+    def test_from_event_directory(self, event_directory):
+        df = amplitudes_to_dataframe(event_directory)
+        assert isinstance(df, pd.DataFrame)
 
 
 class TestReadStationMagnitudes:
@@ -923,6 +911,22 @@ class TestReadStationMagnitudes:
         assert not len(df)
         assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
 
+    def test_from_file(self, event_file):
+        """ test for reading phase picks from files. """
+        df = station_magnitudes_to_dataframe(event_file)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df)
+
+    def test_from_event_bank(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = station_magnitudes_to_dataframe(default_ebank)
+        assert isinstance(df, pd.DataFrame)
+
+    def test_from_event_directory(self, event_directory):
+        df = station_magnitudes_to_dataframe(event_directory)
+        assert len(df)
+        assert isinstance(df, pd.DataFrame)
+
 
 class TestReadMagnitudes:
     # fixtures
@@ -990,63 +994,102 @@ class TestReadMagnitudes:
         assert not len(df)
         assert set(df.columns).issubset(MAGNITUDE_COLUMNS)
 
+    def test_event_bank_to_df(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = obsplus.magnitudes_to_df(default_ebank)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df)
 
-class TestGetPreferred:
-    def test_bad_preferred_origin(self):
-        """ ensure the bad preferred just returns last in list """
-        eve = obspy.read_events()[0]
-        eve.preferred_origin_id = "bob"
-        with pytest.warns(UserWarning) as w:
-            preferred_origin = get_preferred(eve, "origin")
-        assert len(w) == 1
-        assert preferred_origin is eve.origins[-1]
+    def test_from_file(self, event_file):
+        """ test for reading phase picks from files. """
+        df = magnitudes_to_dataframe(event_file)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df)
+
+    def test_from_event_bank(self, default_ebank):
+        """ Ensure event banks can be used to get dataframes. """
+        df = magnitudes_to_dataframe(default_ebank)
+        assert isinstance(df, pd.DataFrame)
+
+    def test_from_event_directory(self, event_directory):
+        df = magnitudes_to_dataframe(event_directory)
+        assert len(df)
+        assert isinstance(df, pd.DataFrame)
 
 
-class TestParseOrDefault:
-    # tests
-    def test_none_returns_empty(self):
-        """ make sure None returns empty dict"""
-        out = getattrs(None, ["bob"])
-        assert isinstance(out, dict)
-        assert not out
+class TestReadKemEvents:
+    """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
 
-
-class TestReadDirectoryOfCatalogs:
-    """ tests that a directory of quakeml files can be read """
-
-    nest_name = "nest"
-
-    # helper functions
-    def nest_directly(self, nested_times, path):
-        """ make a directory nested n times """
-        nd_name = join(path, self.nest_name)
-        if not exists(nd_name) and nested_times:
-            os.makedirs(nd_name)
-        elif not nested_times:  # recursion limit reached
-            return path
-        return self.nest_directly(nested_times - 1, nd_name)
+    dataset_params = ["events.xml", "catalog.csv"]
+    base_path = obsplus.load_dataset("kemmerer").source_path.parent
 
     # fixtures
-    @pytest.fixture(scope="class")
-    def catalog_directory(self):
-        """ return a directory of catalogs """
-        cat = obspy.read_events()
-        with tempfile.TemporaryDirectory() as tempdir:
-            for num, eve in enumerate(cat.events):
-                new_cat = obspy.Catalog(events=[eve])
-                file_name = f"{num}.xml"
-                write_path = join(self.nest_directly(num, tempdir), file_name)
-                new_cat.write(write_path, "quakeml")
-            yield tempdir
+    @pytest.fixture(scope="class", params=dataset_params)
+    def cat_df(self, request, kem_archive):
+        """ collect all the supported inputs are parametrize"""
+        path = self.base_path / "kemmerer" / request.param
+        df = events_to_df(path)
+        if len(df) > 100:
+            events_to_df(path)
+        return df
 
     @pytest.fixture(scope="class")
-    def read_catalog(self, catalog_directory):
-        """ return the results of calling catalog_to_df on directory """
-        return events_to_df(catalog_directory)
+    def catalog(self, kem_archive):
+        """ return the events """
+        return obspy.read_events(str(self.base_path / "kemmerer" / "events.xml"))
 
     # tests
-    def test_df_are_same(self, read_catalog):
-        df = events_to_df(obspy.read_events())
-        assert (df.columns == read_catalog.columns).all()
-        assert len(df) == len(read_catalog)
-        assert set(df.time) == set(read_catalog.time)
+    def test_len(self, cat_df, catalog):
+        """ ensure the correct number of items was returned """
+        assert len(cat_df) == len(catalog.events)
+
+    def test_column_order(self, cat_df):
+        """ ensure the order of the columns is correct """
+        cols = list(cat_df.columns)
+        assert list(EVENT_COLUMNS) == cols[: len(EVENT_COLUMNS)]
+
+    def test_cat_to_df_method(self):
+        """ ensure the events object has the to_df method bolted on """
+        cat = obspy.read_events()
+        df = cat.to_df()
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == len(cat)
+
+
+class TestReadKemPicks:
+    """ test for reading a variety of pick formats from the kemmerer
+    dataset """
+
+    path = obsplus.load_dataset("kemmerer").source_path
+    csv_path = path / "picks.csv"
+    qml_path = str(path / "events.xml")
+    qml = obspy.read_events(str(qml_path))
+    picks = [pick for eve in qml for pick in eve.picks]
+    supported_inputs = [qml_path, qml, csv_path]
+
+    # fixtures
+    @pytest.fixture(scope="class", params=supported_inputs)
+    def pick_df(self, request):
+        """ collect all the supported inputs are parametrize"""
+        return picks_to_dataframe(request.param)
+
+    # tests
+    def test_len(self, pick_df):
+        """ ensure the correct number of items was returned """
+        assert len(pick_df) == len(self.picks)
+
+    def test_column_order(self, pick_df):
+        """ ensure the order of the columns is correct """
+        cols = list(pick_df.columns)
+        assert list(PICK_COLUMNS) == cols[: len(PICK_COLUMNS)]
+
+    def test_event_id(self, pick_df):
+        """ ensure nan values are not in dataframe event_id column """
+        assert not pick_df.event_id.isnull().any()
+
+    def test_seed_id(self, pick_df):
+        """ ensure valid seed_ids were created. """
+        # recreate seed_id and make sure columns are equal
+        df = pick_df
+        seed = get_seed_id_series(pick_df)
+        assert (seed == df["seed_id"]).all()

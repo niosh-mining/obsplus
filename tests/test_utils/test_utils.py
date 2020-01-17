@@ -261,6 +261,12 @@ class TestMisc:
         assert len(w.list) == 1
         assert "is deprecated" in str(w.list[0])
 
+    def test_getattrs_none_returns_empty(self):
+        """ make sure None returns empty dict"""
+        out = getattrs(None, ["bob"])
+        assert isinstance(out, dict)
+        assert not out
+
 
 class TestProgressBar:
     """ Tests for progress bar functionality. """

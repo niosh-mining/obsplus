@@ -386,6 +386,15 @@ class TestGetPreferred:
             ori = get_preferred(event, "origin", init_empty=True)
         assert isinstance(ori, ev.Origin)
 
+    def test_bad_preferred_origin(self):
+        """ ensure the bad preferred just returns last in list """
+        eve = obspy.read_events()[0]
+        eve.preferred_origin_id = "bob"
+        with pytest.warns(UserWarning) as w:
+            preferred_origin = get_preferred(eve, "origin")
+        assert len(w) == 1
+        assert preferred_origin is eve.origins[-1]
+
 
 class TestMakeOrigins:
     """ Tests for the ensure origin function. """
@@ -522,17 +531,6 @@ class TestGetSeedId:
 class TestGetEventClient:
     """ tests for getting an event client from various sources. """
 
-    @pytest.fixture(scope="class")
-    def simple_event_dir(self, tmp_path_factory):
-        path = tmp_path_factory.mktemp("_event_client_getting")
-        cat = obspy.read_events()
-        catalog_to_directory(cat, path)
-        return str(path)
-
-    @pytest.fixture(scope="class")
-    def ebank_from_dir(self, simple_event_dir):
-        return obsplus.EventBank(simple_event_dir)
-
     def test_from_catalog(self):
         """ tests for getting client from a catalog. """
         cat = obspy.read_events()
@@ -540,8 +538,8 @@ class TestGetEventClient:
         assert cat == out
         assert isinstance(cat, EventClient)
 
-    def test_from_event_bank(self, ebank_from_dir):
-        out = get_event_client(ebank_from_dir)
+    def test_from_event_bank(self, default_ebank):
+        out = get_event_client(default_ebank)
         assert isinstance(out, EventClient)
 
     def test_from_directory(self, simple_event_dir):

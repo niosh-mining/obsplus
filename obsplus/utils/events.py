@@ -15,6 +15,7 @@ from typing import Union, Optional, Callable, Iterable
 import obspy
 import obspy.core.event as ev
 import pandas as pd
+from obspy.core import event as ev
 from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamID
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
@@ -27,11 +28,14 @@ from obsplus.constants import (
     EVENT_ATTRS,
     UTC_KEYS,
     event_clientable_type,
+    EVENT_PATH_STRUCTURE,
+    EVENT_NAME_STRUCTURE,
 )
 from obsplus.interfaces import EventClient
+from obsplus.utils.bank import EVENT_EXT, _get_time_values
 from obsplus.utils.pd import get_seed_id_series
-from obsplus.utils.misc import yield_obj_parent_attr
-from obsplus.utils.time import get_reference_time
+from obsplus.utils.misc import yield_obj_parent_attr, _get_path
+from obsplus.utils.time import get_reference_time, _get_event_origin_time
 from obsplus.exceptions import ValidationError
 
 
@@ -668,3 +672,40 @@ def get_preferred(event: Event, what: str, init_empty=False):
     cls = pref_type[what]
     assert isinstance(obj, cls), f"{type(obj)} is not a {cls}, wrong type returned"
     return obj
+
+
+def _summarize_event(
+    event: ev.Event,
+    path: Optional[str] = None,
+    name: Optional[str] = None,
+    path_struct: Optional[str] = None,
+    name_struct: Optional[str] = None,
+) -> dict:
+    """
+    Function to extract info from events for indexing.
+
+    Parameters
+    ----------
+    event
+        The event object
+    path
+        Other Parameters to the file
+    name
+        Name of the file
+    path_struct
+        directory structure to create
+    name_struct
+    """
+    res_id = str(event.resource_id)
+    out = {
+        "ext": EVENT_EXT,
+        "event_id": res_id,
+        "event_id_short": res_id[-5:],
+        "event_id_end": res_id.split("/")[-1],
+    }
+    t1 = _get_event_origin_time(event)
+    out.update(_get_time_values(t1))
+    path_struct = path_struct or EVENT_PATH_STRUCTURE
+    name_struct = name_struct or EVENT_NAME_STRUCTURE
+    out.update(_get_path(out, path, name, path_struct, name_struct))
+    return out

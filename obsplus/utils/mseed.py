@@ -1,19 +1,31 @@
 """
-Slimmed down functions for indexing miniseed files.
-
-Contains hacked bits from obspy's mseed module.
-
-Copyrights to obspy developers still apply.
+Useful description.
 """
+import ctypes
 import os
 import warnings
+from functools import lru_cache
+from pathlib import Path
+from typing import Union, Dict, Tuple, Optional, Mapping, Sequence
 
+from obspy.io.mseed.headers import DATATYPES, clibmseed
+
+import obsplus
+import obspy
+import matplotlib.pyplot as plt
 import numpy as np
-from obspy.io.mseed.core import DATATYPES, C, clibmseed
+import pandas as pd
+import scipy
 
 
 def _get_lil(mseed_object):
-    """ get the lil object """
+    """
+    Slimmed down functions for indexing miniseed files.
+
+    Contains hacked bits from obspy's mseed module.
+
+    Copyrights to obspy developers still apply.
+    """
     # Parse the headonly and reclen flags.
     unpack_data = 0
     details = False

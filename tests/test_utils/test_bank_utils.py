@@ -12,11 +12,11 @@ from obspy import UTCDateTime as UTC
 
 from obsplus.utils.bank import (
     _summarize_trace,
-    _summarize_event,
     _try_read_stream,
-    summarize_mseed,
     summarize_generic_stream,
 )
+from obsplus.utils.mseed import summarize_mseed
+from obsplus.utils.events import _summarize_event
 from obsplus.constants import NSLC
 
 

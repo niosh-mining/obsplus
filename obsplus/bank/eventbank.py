@@ -22,12 +22,12 @@ import obsplus.events.pd
 from obsplus.bank.core import _Bank
 from obsplus.utils.bank import (
     _IndexCache,
-    _summarize_event,
     sql_connection,
     _read_table,
     _get_tables,
     _drop_rows,
 )
+from obsplus.utils.events import _summarize_event
 from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
@@ -83,8 +83,8 @@ class EventBank(_Bank):
         The path to the directory containing event files. If it does not
         exist an empty directory will be created.
     path_structure
-        Define the directory structure used by the event bank. Characters are
-        separated by /, regardless of operating system. The following
+        Defines the directory structure used by the event bank. Characters
+        are separated by /, regardless of operating system. The following
         words can be used in curly braces as data specific variables:
             year, month, day, julday, hour, minute, second, event_id,
             event_id_short

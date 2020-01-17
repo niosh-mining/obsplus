@@ -8,6 +8,7 @@ import os
 import sys
 import warnings
 from functools import wraps, partial, singledispatch
+from os.path import join
 from pathlib import Path
 from typing import (
     Generator,
@@ -457,3 +458,19 @@ def md5_directory(
         if keep:
             out[str(sub_path.relative_to(path))] = md5(sub_path)
     return out
+
+
+def _get_path(info, path, name, path_struct, name_strcut):
+    """ return a dict with path, and file name """
+    if path is None:  # if the path needs to be created
+        ext = info.get("ext", "")
+        # get name
+        fname = name or name_strcut.format_map(info)
+        fname = fname if fname.endswith(ext) else fname + ext  # add ext
+        # get structure
+        psplit = path_struct.format_map(info).split("/")
+        path = join(*psplit, fname)
+        out_name = fname
+    else:  # if the path is already known
+        out_name = os.path.basename(path)
+    return dict(path=path, filename=out_name)

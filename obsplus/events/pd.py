@@ -36,12 +36,7 @@ from obsplus.structures.dfextractor import (
 )
 from obsplus.utils.events import get_preferred
 from obsplus.utils.events import get_seed_id
-from obsplus.utils.misc import (
-    get_instances,
-    read_file,
-    apply_to_files_or_skip,
-    getattrs,
-)
+from obsplus.utils.misc import get_instances, read_file, getattrs
 from obsplus.utils.time import get_reference_time
 
 # -------------------- init extractors
@@ -183,6 +178,15 @@ def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = 
     return out
 
 
+def _path_or_event_bank(path):
+    """
+    Return either a path (str) to a function, or an EventBank if path is a directory.
+    """
+    if Path(path).is_dir():
+        return obsplus.EventBank(path).update_index()
+    return str(path)
+
+
 @events_to_df.extractor
 def _get_event_description(event):
     """ return a string of the first event description. """
@@ -277,13 +281,9 @@ def _get_magnitude_info(eve: ev.Event):
 @events_to_df.register(str)
 @events_to_df.register(Path)
 def _str_catalog_to_df(path):
-    # if applied to directory, recurse
-    path = str(path)  # convert possible path object to str
-    if isdir(path):
-        df = pd.concat(list(apply_to_files_or_skip(_str_catalog_to_df, path)))
-        df.reset_index(drop=True, inplace=True)
-        return df
-    # else try to read single file
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return events_to_df(path)
     funcs = (obspy.read_events, pd.read_csv)
     return events_to_df(read_file(path, funcs=funcs))
 
@@ -304,6 +304,9 @@ def _bank_to_catalog(bank):
 @picks_to_df.register(str)
 @picks_to_df.register(Path)
 def _file_to_picks_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return picks_to_df(path)
     return _file_to_df(path, picks_to_df)
 
 
@@ -333,6 +336,9 @@ def _pick_extractor(pick):
 @arrivals_to_df.register(str)
 @arrivals_to_df.register(Path)
 def _file_to_arrivals_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return arrivals_to_df(path)
     return _file_to_df(path, arrivals_to_df)
 
 
@@ -385,7 +391,10 @@ def _arrivals_extractor(arr):
 @amplitudes_to_df.register(str)
 @amplitudes_to_df.register(Path)
 def _file_to_amplitudes_df(path):
-    return _file_to_df(path, amplitudes_to_df)
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return amplitudes_to_df(path)
+    return _file_to_df(path, picks_to_df)
 
 
 @amplitudes_to_df.register(ev.Event)
@@ -419,6 +428,9 @@ def _amplitudes_extractor(amp):
 @station_magnitudes_to_df.register(str)
 @station_magnitudes_to_df.register(Path)
 def _file_to_station_magnitudes_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return station_magnitudes_to_df(path)
     return _file_to_df(path, station_magnitudes_to_df)
 
 
@@ -457,6 +469,9 @@ def _station_magnitudes_extractor(sm):
 @magnitudes_to_df.register(str)
 @magnitudes_to_df.register(Path)
 def _file_to_magnitudes_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return magnitudes_to_df(path)
     return _file_to_df(path, magnitudes_to_df)
 
 

@@ -3,17 +3,14 @@ Utils for banks
 """
 import contextlib
 import itertools
-import os
 import re
 import sqlite3
 import time
 import warnings
 from functools import singledispatch
-from os.path import join
 from typing import Optional, Sequence, Union
 
 import obspy
-import obspy.core.event as ev
 import pandas as pd
 from obspy import Inventory
 from tables.exceptions import ClosedNodeError
@@ -21,16 +18,14 @@ from tables.exceptions import ClosedNodeError
 from obsplus.constants import (
     NSLC,
     WAVEFORM_STRUCTURE,
-    EVENT_PATH_STRUCTURE,
     WAVEFORM_NAME_STRUCTURE,
-    EVENT_NAME_STRUCTURE,
     SMALLDT64,
     LARGEDT64,
     MININT64,
 )
-from obsplus.utils.misc import READ_DICT
-from obsplus.utils.time import _get_event_origin_time, to_datetime64, dict_times_to_ns
-from obsplus.bank.mseed import summarize_mseed
+from obsplus.utils.misc import READ_DICT, _get_path
+from obsplus.utils.time import to_datetime64, dict_times_to_ns
+from obsplus.utils.mseed import summarize_mseed
 
 # functions for summarizing the various formats
 summarizing_functions = dict(mseed=summarize_mseed)
@@ -57,22 +52,6 @@ def _get_time_values(time1, time2=None):
         out["endtime"] = time2.timestamp
     out["time"] = str(utc1).replace(":", "-").split(".")[0]
     return out
-
-
-def _get_path(info, path, name, path_struct, name_strcut):
-    """ return a dict with path, and file name """
-    if path is None:  # if the path needs to be created
-        ext = info.get("ext", "")
-        # get name
-        fname = name or name_strcut.format_map(info)
-        fname = fname if fname.endswith(ext) else fname + ext  # add ext
-        # get structure
-        psplit = path_struct.format_map(info).split("/")
-        path = join(*psplit, fname)
-        out_name = fname
-    else:  # if the path is already known
-        out_name = os.path.basename(path)
-    return dict(path=path, filename=out_name)
 
 
 def summarize_generic_stream(path, format=None):
@@ -135,44 +114,6 @@ def _summarize_trace(
 
     path_struct = path_struct or WAVEFORM_STRUCTURE
     name_struct = name_struct or WAVEFORM_NAME_STRUCTURE
-
-    out.update(_get_path(out, path, name, path_struct, name_struct))
-    return out
-
-
-def _summarize_event(
-    event: ev.Event,
-    path: Optional[str] = None,
-    name: Optional[str] = None,
-    path_struct: Optional[str] = None,
-    name_struct: Optional[str] = None,
-) -> dict:
-    """
-    Function to extract info from events for indexing.
-
-    Parameters
-    ----------
-    event
-        The event object
-    path
-        Other Parameters to the file
-    name
-        Name of the file
-    path_struct
-        directory structure to create
-    name_struct
-    """
-    res_id = str(event.resource_id)
-    out = {
-        "ext": EVENT_EXT,
-        "event_id": res_id,
-        "event_id_short": res_id[-5:],
-        "event_id_end": res_id.split("/")[-1],
-    }
-    t1 = _get_event_origin_time(event)
-    out.update(_get_time_values(t1))
-    path_struct = path_struct or EVENT_PATH_STRUCTURE
-    name_struct = name_struct or EVENT_NAME_STRUCTURE
 
     out.update(_get_path(out, path, name, path_struct, name_struct))
     return out
