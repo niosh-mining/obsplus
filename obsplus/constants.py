@@ -460,7 +460,7 @@ pd_time_types = (pd.Timestamp, np.datetime64)
 absolute_time_types = Union[UTCDateTime, pd.Timestamp, np.datetime64]
 
 # types used to represent relative time
-relative_time_types = Union[np.timedelta64]
+relative_time_types = Union[np.timedelta64, int, float]
 
 # combine the two
 time_types = Union[absolute_time_types, relative_time_types]

@@ -11,6 +11,7 @@ import pytest
 import obsplus
 from obsplus.constants import DISTANCE_COLUMN_DTYPES
 from obsplus.utils.geodetics import SpatialCalculator
+from obsplus.exceptions import DataFrameContentError
 
 
 class TestCalculateDistance:
@@ -91,9 +92,23 @@ class TestCalculateDistance:
         tuple1 = (45, -111, 0, "bob")
         tuple2 = (45, -111, 0)
         out = spatial_calc(tuple1, tuple2)
-        assert np.allclose(out.values, 0)
+        # distances should be close to 0
+        dist_cols = ["distance_m", "distance_degrees", "vertical_distance_m"]
+        distances = out[dist_cols].values
+        assert np.allclose(distances, 0)
+        # azimuths should be increments of 180
+        assert np.allclose(out["azimuth"] % 180, 0)
+        assert np.allclose(out["back_azimuth"] % 180, 0)
+        # check length and index names
         assert len(out) == 1
         assert set(out.index.to_list()) == {("bob", 0)}
+
+    def test_short_sequence(self, spatial_calc):
+        """ A sequence which is too short should raise. """
+        input1 = [(45, -111, 0), (46, -111, 0), (49, -112, 0)]
+        input2 = (45, -111)
+        with pytest.raises(ValueError):
+            spatial_calc(input1, input2)
 
     def test_list_of_tuples(self, spatial_calc):
         input1 = [(45, -111, 0), (46, -111, 0), (49, -112, 0)]
@@ -111,3 +126,10 @@ class TestCalculateDistance:
         with pytest.raises(ValueError) as e:
             spatial_calc(cat, (45, -111, 0))
         assert "multiple coordinates for" in e.value.args[0]
+
+    def test_invalid_df(self, spatial_calc):
+        """ Ensure dfs with missing columns raise. """
+        df = obsplus.events_to_df(obspy.read_events())
+        df2 = df.drop(columns="latitude")
+        with pytest.raises(DataFrameContentError):
+            spatial_calc(df, df2)

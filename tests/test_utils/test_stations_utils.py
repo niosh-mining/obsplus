@@ -3,9 +3,8 @@ Tests for station utilities.
 """
 import numpy as np
 import obspy
-import pytest
-
 import pandas as pd
+import pytest
 
 import obsplus
 from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
@@ -77,6 +76,13 @@ class TestDfToInventory:
         df = df.drop(columns="seed_id")
         return df
 
+    @pytest.fixture
+    def df_with_partial_responses(self, df_with_response):
+        """ test creating inv with partial responses. """
+        # set one row to None
+        df_with_response.loc[0, "sensor_keys"] = None
+        return df_with_response
+
     def test_type(self, inv_from_df):
         """ An inv should have been returned. """
         assert isinstance(inv_from_df, obspy.Inventory)
@@ -141,3 +147,33 @@ class TestDfToInventory:
             for sta in net:
                 for chan in sta:
                     assert chan.response is not None
+
+    @pytest.mark.requires_network
+    def test_response_one_missing(self, df_with_partial_responses):
+        """ Ensure responses which can be got are fetched. """
+        df = df_with_partial_responses
+        inv = df_to_inventory(df_with_partial_responses)
+
+        missing = df["sensor_keys"].isnull() | df["datalogger_keys"].isnull()
+        missing_chan_data = set(df[missing]["channel"])
+
+        for net in inv:
+            for sta in net:
+                for chan in sta:
+                    name = chan.code
+                    assert chan.response is not None or name in missing_chan_data
+
+    def test_make_station_level_inventory(self, df_from_inv):
+        """ Ensure station level invs can be constructed. """
+        df = df_from_inv.drop(columns="channel")
+        inv = df_to_inventory(df)
+        for net in inv:
+            for sta in net:
+                assert not sta.channels, "there should be no channels"
+
+    def test_make_network_level_inventory(self, df_from_inv):
+        """ Ensure station level invs can be constructed. """
+        df = df_from_inv.drop(columns=["channel", "station"])
+        inv = df_to_inventory(df)
+        for net in inv:
+            assert not net.stations

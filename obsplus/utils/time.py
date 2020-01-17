@@ -16,12 +16,17 @@ from obsplus.constants import (
     SMALLDT64,
     TIME_COLUMNS,
     pd_time_types,
+    relative_time_types,
 )
 from obsplus.utils.docs import compose_docstring
 
+rtype = relative_time_types
+
 
 @singledispatch
-def get_reference_time(obj: Union[event_time_type, wave_type],) -> obspy.UTCDateTime:
+def get_reference_time(
+    obj: Optional[Union[event_time_type, wave_type]],
+) -> Optional[obspy.UTCDateTime]:
     """
     Get a reference time inferred from an object.
 
@@ -135,7 +140,7 @@ def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -
 
 @singledispatch
 def to_datetime64(
-    value: Union[utc_able_type, Sequence[utc_able_type]], default=DEFAULT_TIME
+    value: Optional[Union[utc_able_type, Sequence[utc_able_type]]], default=DEFAULT_TIME
 ) -> Union[np.datetime64, np.ndarray]:
     """
     Convert time value to a numpy datetime64, or array of such.
@@ -227,9 +232,9 @@ def to_utc(
 
 @singledispatch
 def to_timedelta64(
-    value: Union[float, int, list, np.ndarray, pd.Series],
+    value: Optional[Union[rtype, Sequence[rtype], np.ndarray, pd.Series]],
     default=np.timedelta64(0, "s"),
-) -> np.timedelta64:
+) -> Union[np.timedelta64, np.ndarray]:
     """
     Convert a value to a timedelta[ns].
 
@@ -256,9 +261,10 @@ def to_timedelta64(
 
 @to_timedelta64.register(tuple)
 @to_timedelta64.register(list)
-def _list_tuple_to_datetime(obj):
+def _list_tuple_to_datetime(value, default=None):
     """ Convert sequences to timedeltas. """
-    return np.array(obj).astype("timedelta64")
+    out = [to_datetime64(x, default=default) for x in value]
+    return np.array(out)
 
 
 @to_timedelta64.register(pd.Series)

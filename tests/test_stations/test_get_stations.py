@@ -1,16 +1,17 @@
 """
 tests for get stations
 """
+from pathlib import Path
+
 import obspy
 import pytest
 
 import obsplus
 import pandas as pd
-
 import obsplus.utils.pd
 from obsplus.constants import NSLC
-
 from obsplus.utils.stations import df_to_inventory
+from obsplus.utils.stations import get_station_client
 
 
 @pytest.fixture
@@ -116,3 +117,10 @@ class TestGetStation:
         out = inv_issue_115.get_stations(channel="HHZ")
         assert len(out) == 1, "there should now be one network"
         assert len(out[0]) == 1, "and one station"
+
+    def test_read_inventory_from_file(self, tmpdir):
+        """ Should be able to read file into inventory. """
+        path = Path(tmpdir) / "inv"
+        inv = obspy.read_inventory()
+        inv.write(str(path), "stationxml")
+        assert inv == get_station_client(str(path))

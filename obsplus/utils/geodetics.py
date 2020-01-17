@@ -18,6 +18,7 @@ from obsplus.constants import (
     DISTANCE_COLUMN_INPUT_DTYPES,
 )
 from obsplus.utils.docs import compose_docstring
+from obsplus.exceptions import DataFrameContentError
 
 
 class SpatialCalculator:
@@ -117,7 +118,7 @@ class SpatialCalculator:
         lons_valid = abs(df["longitude"]) <= 180.0
         if not (lat_valid.all() & lons_valid.all()):
             msg = f"invalid lat/lon values found in {df}"
-            raise ValueError(msg)
+            raise DataFrameContentError(msg)
         return out
 
     # --- methods for calculating spatial relationships

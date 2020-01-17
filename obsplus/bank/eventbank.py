@@ -10,8 +10,9 @@ from operator import add
 from os.path import exists
 from os.path import getmtime, abspath
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Sequence, Set
 
+import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
@@ -40,6 +41,7 @@ from obsplus.constants import (
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
+from obsplus.utils import iterate
 from obsplus.utils.misc import try_read_catalog
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.time import dict_times_to_npdatetimes
@@ -345,6 +347,26 @@ class EventBank(_Bank):
             return reduce(add, mapped_values)
         except TypeError:  # empty events
             return obspy.Catalog()
+
+    def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
+        """
+        Determine if one or more event_ids are used by the bank.
+
+        This function is faster than reading the entire index into memory to
+        perform a similar check.
+
+        Parameters
+        ----------
+        event_id
+            A single event id or sequence of event ids.
+
+        Returns
+        -------
+        A set of event_ids which are also found in the bank.
+        """
+        eids = self.read_index(columns="event_id").values
+        unique = set(np.unique(eids))
+        return unique & {str(x) for x in iterate(event_id)}
 
     def put_events(self, catalog: Union[ev.Event, ev.Catalog], update_index=True):
         """

@@ -21,6 +21,14 @@ def simple_df():
     return df
 
 
+@pytest.fixture
+def waveform_df():
+    """ Create a dataframe with the basic required columns. """
+    st = obspy.read()
+    cols = list(NSLC) + ["starttime", "endtime"]
+    return pd.DataFrame([tr.stats for tr in st])[cols]
+
+
 class TestApplyFuncsToColumns:
     """ Test applying functions to various columns. """
 
@@ -130,13 +138,6 @@ class TestGetWaveformsBulkArgs:
             for date_thing in bulk_arg[4:]:
                 assert isinstance(date_thing, obspy.UTCDateTime)
 
-    @pytest.fixture
-    def waveform_df(self):
-        """ Create a dataframe with the basic required columns. """
-        st = obspy.read()
-        cols = list(NSLC) + ["starttime", "endtime"]
-        return pd.DataFrame([tr.stats for tr in st])[cols]
-
     def test_basic_get_nslc(self, waveform_df):
         """ Test bulk args with no only required columns. """
         bulk_args = upd.get_waveforms_bulk_args(waveform_df)
@@ -159,3 +160,36 @@ class TestGetWaveformsBulkArgs:
         waveform_df["bob"] = 10
         bulk = upd.get_waveforms_bulk_args(waveform_df)
         self.assert_wellformed_bulk_args(bulk)
+
+    def test_bad_start_endtime_raises(self, waveform_df):
+        """ If any starttime is before endtime it should raise. """
+        td = np.timedelta64(10, "s")
+        df = waveform_df.copy()
+        df["starttime"] = df["endtime"] + td
+        with pytest.raises(DataFrameContentError):
+            upd.get_waveforms_bulk_args(df)
+
+    def test_bad_seed_id_raises(self, waveform_df):
+        """ Seed ids cannot (currently) have wildcards """
+        waveform_df.loc[0, "network"] = "B?"
+        with pytest.raises(DataFrameContentError):
+            upd.get_waveforms_bulk_args(waveform_df)
+
+    def test_enddate_startdate(self, waveform_df):
+        """
+        enddate and startdate are also valid column names for starttime
+        endtime. These occur when getting data from inventories.
+        """
+        rename = dict(starttime="startdate", endtime="enddate")
+        df = waveform_df.rename(columns=rename)
+        bulk = upd.get_waveforms_bulk_args(df)
+        assert len(bulk) == len(df)
+        self.assert_wellformed_bulk_args(bulk)
+
+
+class TestMisc:
+    """ Misc. small tests. """
+
+    def test_replace_or_shallow_none(self, waveform_df):
+        out = upd.replace_or_swallow(waveform_df, None)
+        assert out.equals(waveform_df)

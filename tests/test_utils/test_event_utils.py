@@ -21,9 +21,12 @@ from obsplus.utils.events import (
     catalog_to_directory,
     make_origins,
     prune_events,
+    get_event_client,
 )
 from obsplus.utils.misc import get_instances
 from obsplus import get_preferred
+from obsplus.interfaces import EventClient
+from obsplus.exceptions import ValidationError
 
 CAT = obspy.read_events()
 
@@ -120,6 +123,16 @@ class TestPruneEvents:
         eve.origins.append(origin)
         return eve
 
+    @pytest.fixture
+    def catalog_rejected_orphan_origin(self):
+        """ Create a catalog with an orphaned rejected origin. """
+        cat = obspy.read_events()
+        origin = cat[0].origins[0]
+        origin.arrivals.clear()
+        origin.evaluation_status = "rejected"
+        cat[0].magnitudes.clear()
+        return cat
+
     def test_copy_made(self):
         """ Prune events should make a copy, not modify the original. """
         cat = obspy.read_events()
@@ -138,6 +151,13 @@ class TestPruneEvents:
         assert ev.picks[0].evaluation_status == "rejected"
         por = obsplus.utils.events.get_preferred(ev, "origin")
         assert len(por.arrivals) == 1
+
+    def test_one_rejected_origin(self, catalog_rejected_orphan_origin):
+        """ ensure a rejected origin, with no other references, is removed. """
+        event = catalog_rejected_orphan_origin[0]
+        origin_count_before = len(event.origins)
+        out = obsplus.utils.events.prune_events(event)
+        assert len(out[0].origins) < origin_count_before
 
 
 class TestBumpCreationVersion:
@@ -387,6 +407,18 @@ class TestMakeOrigins:
         return cat
 
     @pytest.fixture(scope="class")
+    def cat_bad_first_picks(self, cat_only_picks):
+        """ Return a catalog with only picks, no origins or magnitudes """
+        # change the first picks to a station not in the inventory
+        cat = cat_only_picks.copy()
+        bad_wid = ev.WaveformStreamID(seed_string="SM.RDD..HHZ")
+        for event in cat:
+            first_pick = sorted(event.picks, key=lambda x: x.time)[0]
+            first_pick.waveform_id = bad_wid
+            event.origins.clear()
+        return cat
+
+    @pytest.fixture(scope="class")
     def cat_added_origins(self, cat_only_picks, inv):
         """ run make_origins on the catalog with only picks and return """
         # get corresponding inventory
@@ -442,6 +474,19 @@ class TestMakeOrigins:
         t1, t2 = ori.time.timestamp, time.timestamp
         assert np.isclose(t1, t2)
 
+    def test_bad_first_not_in_inventory(self, cat_bad_first_picks, inv):
+        """ ensure function raises when bad first picks are found. """
+        with pytest.raises(ValidationError):
+            make_origins(cat_bad_first_picks, inv)
+
+    def test_no_picks(self, inv):
+        """ Should raise if no picks are found. """
+        cat = obspy.read_events()
+        for event in cat:
+            event.origins.clear()
+        with pytest.raises(ValidationError):
+            make_origins(cat, inv)
+
 
 class TestGetSeedId:
     """Tests for the get_seed_id function"""
@@ -472,3 +517,40 @@ class TestGetSeedId:
         """Make sure an unsupported object raises TypeError"""
         with pytest.raises(TypeError):
             obsplus.utils.events.get_seed_id(obspy.core.event.Origin())
+
+
+class TestGetEventClient:
+    """ tests for getting an event client from various sources. """
+
+    @pytest.fixture(scope="class")
+    def simple_event_dir(self, tmp_path_factory):
+        path = tmp_path_factory.mktemp("_event_client_getting")
+        cat = obspy.read_events()
+        catalog_to_directory(cat, path)
+        return str(path)
+
+    @pytest.fixture(scope="class")
+    def ebank_from_dir(self, simple_event_dir):
+        return obsplus.EventBank(simple_event_dir)
+
+    def test_from_catalog(self):
+        """ tests for getting client from a catalog. """
+        cat = obspy.read_events()
+        out = get_event_client(cat)
+        assert cat == out
+        assert isinstance(cat, EventClient)
+
+    def test_from_event_bank(self, ebank_from_dir):
+        out = get_event_client(ebank_from_dir)
+        assert isinstance(out, EventClient)
+
+    def test_from_directory(self, simple_event_dir):
+        out = get_event_client(simple_event_dir)
+        assert isinstance(out, EventClient)
+
+    def test_from_file(self, simple_event_dir):
+        # get first file
+        first = list(Path(simple_event_dir).rglob("*.xml"))[0]
+        out = get_event_client(first)
+        assert isinstance(out, EventClient)
+        assert isinstance(out, obspy.Catalog)

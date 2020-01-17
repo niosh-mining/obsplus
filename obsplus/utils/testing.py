@@ -7,14 +7,11 @@ from collections import Counter
 from contextlib import contextmanager
 from os.path import join
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import obspy
 import pandas as pd
 
-import obsplus
-from obsplus.constants import slice_types
 from obsplus.utils.time import make_time_chunks
 
 
@@ -130,7 +127,7 @@ class ArchiveDirectory:
         elif gap.start <= ts1 < gap.end < ts2:
             return self.create_stream(gap.end, ts2)
         else:  # should not reach here
-            raise ValueError("something went very wrong!")
+            raise ValueError("something went wrong!")  # pragma: no cover
 
     def create_directory(self):
         """ create the directory with gaps in it """
@@ -170,15 +167,3 @@ class ArchiveDirectory:
             time_name = str(t1).split(".")[0].replace(":", "-") + ".mseed"
             save_name = path / f"{net}_{sta}_{time_name}"
             st.write(str(save_name), "mseed")
-
-
-def make_wf_with_nan(
-    wf: Optional["obsplus.WaveFrame"],
-    y_inds: slice_types = slice(None),
-    x_inds: slice_types = slice(None),
-):
-    """ make a waveframe with NaN values. """
-    wf = wf or obsplus.WaveFrame.load_example_wf()
-    data = wf.data.values
-    data[y_inds, x_inds] = np.NaN
-    return wf.from_data(data)

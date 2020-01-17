@@ -156,7 +156,7 @@ def order_columns(
     # make sure required columns are there
     column_set = set(df.columns)
     missing_cols = set(required_columns) - set(df.columns)
-    extra_cols = sorted(list(column_set - set(required_columns)))
+    extra_cols = sorted(list(column_set - set(required_columns)), key=lambda x: str(x))
     if drop_columns:  # dont include extras if drop_columns
         extra_cols = []
     # raise a DataFrameContentError if required columns are not there

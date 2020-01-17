@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import warnings
+from contextlib import suppress
 from functools import lru_cache, singledispatch
 from pathlib import Path
 from typing import Union, Optional, Callable, Iterable
@@ -31,6 +32,7 @@ from obsplus.interfaces import EventClient
 from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.misc import yield_obj_parent_attr
 from obsplus.utils.time import get_reference_time
+from obsplus.exceptions import ValidationError
 
 
 def duplicate_events(
@@ -139,7 +141,7 @@ def prune_events(events: catalog_or_event) -> Catalog:
 
     This function first creates a copy of the event/catalog. Then it looks
     all objects with rejected evaluation status', which are not referred to
-    by any unrejected object, and removes them.
+    by any un-rejected object, and removes them.
 
     Parameters
     ----------
@@ -163,13 +165,9 @@ def prune_events(events: catalog_or_event) -> Catalog:
         a set of rejected resource_ids and a dict of
         {resource_id: (obj, parent, attr)}.
         """
-
-        # {status: [obj, ]}
         edges = []  # list of tuples (parent, child)
-        # {resource_id, }
-        rejected_rid = set()
-        # {resource_id: [obj, parent, attr]}
-        rejected_opa = {}
+        rejected_rid = set()  # {resource_id, }
+        rejected_opa = {}  # {resource_id: [obj, parent, attr]}
         # first make a list objects with eval status as well as all other
         # objects they refer to, using resource_ids
         opa_iter = yield_obj_parent_attr(event, has_attr="evaluation_status")
@@ -190,17 +188,17 @@ def prune_events(events: catalog_or_event) -> Catalog:
         Remove the object.
         """
         maybe_obj = getattr(parent, attr)
-        if maybe_obj is obj:
-            setattr(parent, attr, None)
-        else:
-            assert isinstance(maybe_obj, list)
-            maybe_obj.remove(obj)
+        # if maybe_obj is obj:
+        #     breakpoint()
+        #     setattr(parent, attr, None)
+        # else:
+        assert isinstance(maybe_obj, list)
+        maybe_obj.remove(obj)
 
     # iterate events, find and destroy rejected orphans (that sounds bad...)
     for event in events:
         event = event.copy()
         validate_catalog(event)
-        obsplus.debug = True
         edges, rejected_rid, rejected_opa = _get_edges_rids_opa(event)
         df = pd.DataFrame(edges, columns=["parent", "child"])
         # filter out non rejected children
@@ -258,7 +256,7 @@ def make_origins(
 
     If no origins are found for an event, create one with the time set to
     the earliest pick and the location set to the location of the first hit
-     station. Events are modified in place.
+    station. Events are modified in place.
 
     This may be useful for location codes that need a starting location.
 
@@ -293,14 +291,15 @@ def make_origins(
                 & (picks.phase_hint.isin(phase_hints))
             ]
             if not len(picks):
-                raise ValueError(f"{event} has no acceptable picks to create origin")
+                msg = f"{event} has no acceptable picks to create origin"
+                raise ValidationError(msg)
             # get first pick, determine time/station used
             first_pick = picks.loc[picks.time == picks.time.min()].iloc[0]
             seed_id = first_pick.seed_id
             # find channel corresponding to pick
             df_chan = df[nslc_series == seed_id]
             if not len(df_chan):
-                raise KeyError(f"{seed_id} not found in inventory")
+                raise ValidationError(f"{seed_id} not found in inventory")
             ser = df_chan.iloc[0]
             # create origin
             ori = _create_first_pick_origin(first_pick, ser, depth=depth)
@@ -420,7 +419,7 @@ def get_seed_id(obj: catalog_component) -> str:
     Returns
     -------
     str :
-        The NSLC, in the form of a seed string
+        The seed_id in the form of "network.station.location.channel"
     """
     if isinstance(obj, WaveformStreamID):
         # Get the seed id
@@ -439,10 +438,8 @@ def get_seed_id(obj: catalog_component) -> str:
     for att in attrs:
         val = getattr(obj, att, None)
         if val:
-            try:
+            with suppress((TypeError, AttributeError)):
                 return get_seed_id(val)
-            except (TypeError, AttributeError):
-                raise AttributeError(f"Unable to fetch a seed id for {obj.resource_id}")
     # If it makes it this far, it could not find a non-None attribute
     # raise assertion error so this still works in validators
     assert 0, f"Unable to fetch a seed id for {obj.resource_id}"
@@ -659,9 +656,8 @@ def get_preferred(event: Event, what: str, init_empty=False):
                 return _none_or_empty()
         else:  # there is an id, it has just come detached, try to find it
             potentials = {x.resource_id.id: x for x in getattr(event, whats)}
-            if pid.id in potentials:
-                obj = potentials[pid.id]
-            else:
+            obj = potentials.get(pid.id, None)
+            if obj is None:  # it wasn't found in the potentials.
                 var = (pid.id, whats, str(event))
                 warnings.warn("cannot find %s in %s for event %s" % var)
                 try:

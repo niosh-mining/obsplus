@@ -302,6 +302,29 @@ class TestBankBasics:
         assert set(df["time"].dt.year) == {2020}
 
 
+class TestEventIdInBank:
+    """ Tests for determining if ids are in the bank. """
+
+    def test_event_id_in_bank(self, ebank):
+        """ Tests for"""
+        cat = obspy.read_events()
+        ids = [str(x.resource_id) for x in cat]
+        assert set(ebank.ids_in_bank(ids)) == set(ids)
+
+    def test_ids_not_in_bank(self, ebank):
+        """ tests for ids that are not in the bank. """
+        bad_ids = ["hey", "this isnt", "in the bank!"]
+        assert ebank.ids_in_bank(bad_ids) is not None
+        assert not ebank.ids_in_bank(bad_ids)
+
+    def test_mixed_ids(self, ebank):
+        """ tests for a mix of ids that are and arent in the bank. """
+        cat = obspy.read_events()
+        first_id = str(cat[0].resource_id)
+        ids = [first_id, "bad_id"]
+        assert set(ebank.ids_in_bank(ids)) == {first_id}
+
+
 class TestReadIndexQueries:
     """ tests for index querying """
 

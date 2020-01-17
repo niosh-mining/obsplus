@@ -79,9 +79,16 @@ class TestToNumpyDateTime:
 
     def test_nullish_values_returns_default(self):
         """ Nullish values should return default values. """
-        out1 = to_timedelta64(None)
+        out1 = to_datetime64(None)
         assert pd.isnull(out1)
         assert out1 is not None
+
+    def test_tuple_and_list(self):
+        """ tests for tuples and lists. """
+        input1 = ["2020-01-03", obspy.UTCDateTime("2020-01-01").timestamp]
+        out1 = to_datetime64(input1)
+        out2 = to_datetime64(tuple(input1))
+        assert np.all(out1 == out2)
 
 
 class TestTimeDelta:
@@ -136,9 +143,9 @@ class TestTimeDelta:
 
     def test_tuple_and_list(self):
         """ tests for tuples and lists. """
-        input1 = ["2020-01-03", obspy.UTCDateTime("2020-01-01").timestamp]
-        out1 = to_datetime64(input1)
-        out2 = to_datetime64(tuple(input1))
+        input1 = [2, -3, 4.5]
+        out1 = to_timedelta64(input1)
+        out2 = to_timedelta64(tuple(input1))
         assert np.all(out1 == out2)
 
     def test_nullish_values_returns_default(self):
@@ -249,5 +256,6 @@ class TestGetReferenceTime:
 
     def test_bad_type_raises(self):
         """ Ensure a ValueError is raised when an unsupported type is used. """
+        assert get_reference_time(None) is None
         with pytest.raises(TypeError):
-            get_reference_time(None)
+            get_reference_time({})

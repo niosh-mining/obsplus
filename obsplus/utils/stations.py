@@ -58,9 +58,6 @@ def df_to_inventory(df) -> obspy.Inventory:
     def _groupby_if_exists(df, columns):
         """ Groupby columns if they exist on dataframe, else return empty. """
         cols = list(obsplus.utils.misc.iterate(columns))
-        if not set(cols).issubset(df.columns):
-            return
-
         # copy df and set missing start/end times to reasonable values
         # this is needed so they get included in a groupby
         df = df.copy()
@@ -121,19 +118,18 @@ def df_to_inventory(df) -> obspy.Inventory:
         if not {"sensor_keys", "datalogger_keys"}.issubset(set(series.index)):
             return
         # determine if both required columns are populated, else bail out
-        sensor_keys = _get_resp_key(series["sensor_keys"])
-        datalogger_keys = _get_resp_key(series["datalogger_keys"])
-        if not (sensor_keys and datalogger_keys):
+        sensor = series["sensor_keys"]
+        datalogger = series["datalogger_keys"]
+        if pd.isnull(sensor) or pd.isnull(datalogger):
             return
+        sensor_keys = _get_resp_key(sensor)
+        datalogger_keys = _get_resp_key(datalogger)
         # at this point all the required info for resp lookup should be there
         channel_kwargs["response"] = get_response(datalogger_keys, sensor_keys)
 
-    # Deal with pandas dtype weirdness
-    # TODO remove this when custom column functions are supported by DataFrame
-    #  Extractor (part of the big refactor in #131)
-    for col in NSLC:
+    # make sure all seed_id codes are str
+    for col in set(NSLC) & set(df.columns):
         df[col] = df[col].astype(str).str.replace(".0", "")
-
     # first get key_mappings
     net_map = _make_key_mappings(Network)
     sta_map = _make_key_mappings(Station)
@@ -149,8 +145,12 @@ def df_to_inventory(df) -> obspy.Inventory:
     for net_code, net_df in _groupby_if_exists(df, net_columns):
         stations = []
         for st_code, sta_df in _groupby_if_exists(net_df, sta_columns):
+            if not st_code[0]:
+                continue
             channels = []
             for ch_code, ch_df in _groupby_if_exists(sta_df, cha_columns):
+                if not ch_code[0]:  # skip empty channel lines
+                    continue
                 chan_series = ch_df.iloc[0]
                 kwargs = _get_kwargs(chan_series, cha_map)
                 # try to add the inventory
