@@ -11,9 +11,9 @@ from obspy.clients.fdsn.mass_downloader import (
 )
 from obspy.geodetics import kilometers2degrees
 
+import obsplus
 from obsplus import WaveBank, events_to_df
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.events import catalog_to_directory
 
 
 class Bingham(DataSet):
@@ -40,7 +40,7 @@ class Bingham(DataSet):
     def download_events(self):
         """ Simply copy events from base directory. """
         cat = obspy.read_events(str(self.source_path / "events.xml"))
-        catalog_to_directory(cat, self.event_path)
+        obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_bingham(self):
         """ Use obspy's mass downloader to get station/waveforms data. """

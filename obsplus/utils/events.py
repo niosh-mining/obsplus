@@ -4,18 +4,16 @@ General utility functions which are not specific to one data type.
 
 import copy
 import logging
-import os
 import re
 import warnings
 from contextlib import suppress
 from functools import lru_cache, singledispatch
 from pathlib import Path
-from typing import Union, Optional, Callable, Iterable
+from typing import Optional, Callable, Iterable
 
 import obspy
 import obspy.core.event as ev
 import pandas as pd
-from obspy.core import event as ev
 from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamID
 from obspy.core.event.base import QuantityError
 from obspy.core.util.obspy_types import Enum
@@ -31,12 +29,12 @@ from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
 )
+from obsplus.exceptions import ValidationError
 from obsplus.interfaces import EventClient
 from obsplus.utils.bank import EVENT_EXT, _get_time_values
-from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.misc import yield_obj_parent_attr, _get_path
+from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.time import get_reference_time, _get_event_origin_time
-from obsplus.exceptions import ValidationError
 
 
 def duplicate_events(
@@ -75,68 +73,6 @@ def duplicate_events(
         if rid.id in id_map and attr != "resource_id":
             setattr(parent, attr, id_map[rid.id])
     return new
-
-
-def catalog_to_directory(
-    cat: Union[str, Catalog, ev.Event, Path],
-    path: Union[str, Path],
-    file_format: str = "quakeml",
-    ext="xml",
-    event_bank_index=True,
-    check_duplicates=True,
-) -> None:
-    """
-    Parse a catalog and save each event to a time-based directory structure.
-
-    Saves each event based on preferred origin time. The format of the saved
-    file and directory is:
-        YYYY/MM/DD/YYYY-MM-DDThh-mm-ss-RID
-    where RID is the last 5 digits of the event id. If another event is found
-    with the same last 5 digits of the resource_id the event will be read into
-    memory. If the complete resource IDs are the same the old path will be
-    used. This helps avoid changing the path of the event when origin times
-    change slightly.
-
-    Parameters
-    ----------
-    cat
-        The obspy events, event or path to such.
-    path
-        A path to the directory. If one does not exist it will be created.
-    file_format.
-        Any obspy event format that can be written.
-    ext
-        The extention to add to each file.
-    event_bank_index
-        If True, create an event bank index on the newly created directory.
-    check_duplicates
-        If True check other events that may have the same resource id and
-        merge any duplicate events.
-    """
-    if isinstance(cat, (str, Path)):
-        cat = obspy.read_events(str(cat))
-    # ensure events is iterable and ext has a dot before it
-    cat = [cat] if not isinstance(cat, obspy.Catalog) else cat
-    ext = "." + ext if not ext.startswith(".") else ext
-    # make sure directory exists
-    path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
-    # iterate each event, get a time and resource id and save to disk
-    for event in cat:
-        event_path = Path(get_event_path(event, str(path), ext=ext))
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # determine if another event exists with same id, if so use its path
-        if check_duplicates:
-            rid = str(event.resource_id)[-5:]
-            possible_duplicate = list(event_path.parent.glob(f"*{rid}{ext}"))
-            for duplicate_path in possible_duplicate or []:
-                new_event = obspy.read_events(str(duplicate_path))[0]
-                if new_event.resource_id == event.resource_id:
-                    event_path = duplicate_path
-                    break
-        event.write(str(event_path), file_format)
-    if event_bank_index:
-        obsplus.EventBank(path).update_index()
 
 
 def prune_events(events: catalog_or_event) -> Catalog:
@@ -329,86 +265,6 @@ def _create_first_pick_origin(first_pick, channel_ser, depth):
     return ev.Origin(**odict)
 
 
-def get_event_path(
-    eve: Union[Catalog, Event],
-    base_directory: str = ".",
-    create_directories: bool = True,
-    ext=".xml",
-) -> str:
-    """
-    Get a path for the event (or len(1) catalog) to save to disk.
-
-    This function is used in internal NIOSH systems and as such is very
-    opinionated about how events should be named. It does the following:
-    The comments will first be scanned for seisan comments, identified
-    with the "ID:" tag. If one is found the date string used in the seisan
-    comment will be used for the file name. If a comment with the substring
-    "ID:" is not found the name will be generated based on the preferred
-    origin time.
-
-    The last 5 characters of the event ID will be included in the file name.
-
-    Parameters
-    ----------
-    eve : obspy.Event
-        The event to get a path for
-    base_directory : str
-        The path to the base directory
-    create_directories: bool
-        If True create any directories needed for path that do not exist
-    ext : str
-        The extension for the file to save
-
-    Returns
-    -------
-    str :
-        The path
-
-    """
-    if isinstance(eve, Catalog):
-        assert len(eve) == 1, "events must have only one event"
-        eve = eve[0]
-    utc = get_reference_time(eve)
-    path = get_utc_path(utc, base_dir=base_directory, create=create_directories)
-    fname = _get_comment_path(eve, ext) or _get_file_name_from_event(eve, ext)
-    return os.path.join(path, fname)
-
-
-def get_utc_path(
-    utc: obspy.UTCDateTime,
-    base_dir: str,
-    format: str = "year/month/day",
-    create: bool = True,
-):
-    """
-    Get a subdirectory structure from a UTCDateTime object according to format.
-
-    Parameters
-    ----------
-    utc : obspy.UTCDateTime
-        The time to use in the path creation
-    base_dir : str
-        The base directory
-    format : str
-        The format to return
-    create : bool
-        If True create the directory structure
-
-    Returns
-    -------
-
-    """
-    selected_fmts = format.split("/")
-    assert set(selected_fmts).issubset(UTC_FORMATS)
-    utc_list = [UTC_FORMATS[x] % getattr(utc, x) for x in selected_fmts]
-    out = os.path.join(*utc_list)
-    if base_dir:  # add base dir to start
-        out = os.path.join(base_dir, out)
-    if create and not os.path.exists(out):  # create dir/subdirs
-        os.makedirs(out)
-    return out
-
-
 def get_seed_id(obj: catalog_component) -> str:
     """
     Get the NSLC associated with an station-specific object.
@@ -472,22 +328,6 @@ def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
     if ext:
         fn = fn + ext
     return fn
-
-
-def _get_comment_path(eve, ext=".xml"):
-    """ scan comments, if any have the ID: tag use the following lines
-    to name the file (ID is added by seisan)"""
-    for comment in eve.comments:
-        txt = comment.text
-        if " ID:" in txt:
-            ymdhms = txt.split("ID:")[-1][:14]
-            year = ymdhms[:4]
-            month = ymdhms[4:6]
-            dayhour = ymdhms[6:8] + "T" + ymdhms[8:10]
-            minute = ymdhms[10:12]
-            second = ymdhms[12:14]
-            rid = eve.resource_id.id[-5:] + ext
-            return "-".join([year, month, dayhour, minute, second, rid])
 
 
 def _get_params_from_docs(obj):
@@ -556,6 +396,11 @@ def _catalog_to_client(path):
         return get_event_client(obsplus.EventBank(path))
     else:
         return get_event_client(obspy.read_events(str(path)))
+
+
+@get_event_client.register(ev.Event)
+def _event_to_catalog(event):
+    return get_event_client(obspy.Catalog(events=[event]))
 
 
 def obj_to_dict(obj):

@@ -580,8 +580,8 @@ def default_wbank(tmpdir):
 @pytest.fixture(scope="class")
 def simple_event_dir(tmp_path_factory):
     path = tmp_path_factory.mktemp("_event_client_getting")
-    cat = obspy.read_events()
-    obsplus.utils.events.catalog_to_directory(cat, path)
+    ebank = obsplus.EventBank(path)
+    ebank.put_events(obspy.read_events())
     return str(path)
 
 

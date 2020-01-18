@@ -1,8 +1,6 @@
 """
 Module for generating a pandas dataframe from an obspy events.
 """
-
-from os.path import isdir
 from pathlib import Path
 from typing import Optional, Sequence
 

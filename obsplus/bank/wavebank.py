@@ -213,7 +213,8 @@ class WaveBank(_Bank):
             format=self.format,
             summarizer=summarizing_functions.get(self.format, None),
         )
-        iterable = self._measured_unindexed_iterator(bar, paths)
+        file_yielder = self._unindexed_iterator(paths=paths)
+        iterable = self._measure_iterator(file_yielder, bar)
         updates = list(self._map(func, iterable))
         # push updates to index if any were found
         if len(updates):

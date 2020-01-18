@@ -6,7 +6,7 @@ import warnings
 from abc import ABC, abstractmethod
 from os.path import join
 from pathlib import Path
-from typing import Optional, TypeVar, Mapping
+from typing import Optional, TypeVar, Mapping, Iterable
 from types import MappingProxyType as MapProxy
 
 import pandas as pd
@@ -127,7 +127,7 @@ class _Bank(ABC):
                 warnings.warn(msg)
                 os.remove(self.index_path)
 
-    def _unindexed_iterator(self, sub_paths: Optional[bank_subpaths_type] = None):
+    def _unindexed_iterator(self, paths: Optional[bank_subpaths_type] = None):
         """ return an iterator of potential unindexed files """
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
@@ -136,22 +136,17 @@ class _Bank(ABC):
             mtime = last_updated - 0.001
         # get paths to iterate
         bank_path = self.bank_path
-        if sub_paths is None:
+        if paths is None:
             paths = self.bank_path
         else:
-            # TODO move this to bank utils
             paths = [
                 f"{self.bank_path}/{x}" if str(bank_path) not in str(x) else str(x)
-                for x in iterate(sub_paths)
+                for x in iterate(paths)
             ]
         # return file iterator
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
-    def _measured_unindexed_iterator(
-        self,
-        bar: Optional[ProgressBar] = None,
-        sub_paths: Optional[bank_subpaths_type] = None,
-    ):
+    def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
         """
         A generator to yield un-indexed files and update progress bar.
 
@@ -159,6 +154,7 @@ class _Bank(ABC):
         ----------
         bar
             Any object with an update method.
+        iterator
 
         Returns
         -------
@@ -167,7 +163,7 @@ class _Bank(ABC):
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator
-        for num, path in enumerate(self._unindexed_iterator(sub_paths)):
+        for num, path in enumerate(iterable):
             # update bar if count is in update interval
             if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)

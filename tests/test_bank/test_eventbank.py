@@ -2,6 +2,7 @@
 tests for event wavebank
 """
 import os
+import warnings
 from contextlib import suppress
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 import obsplus
 import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
-from obsplus.utils.events import catalog_to_directory
+from obsplus.utils.events import get_preferred
 from obsplus.utils.testing import handle_warnings, instrument_methods
 
 
@@ -32,9 +33,7 @@ def ebank(tmpdir):
     for event, desc_txt in zip(cat, descs):
         desc = ev.EventDescription(desc_txt)
         event.event_descriptions.insert(0, desc)
-    obsplus.utils.events.catalog_to_directory(cat, path)
-    ebank = EventBank(path)
-    ebank.update_index()
+    ebank = obsplus.EventBank(path).put_events(cat).update_index()
     return ebank
 
 
@@ -56,13 +55,14 @@ def bing_ebank(bingham_dataset, tmpdir_factory):
 def ebank_with_bad_files(tmpdir):
     """ create an event bank with bad files, ensure it doesn't choke
     indexer. """
-    path = Path(tmpdir)
+    bank = EventBank(Path(tmpdir))
     cat = obspy.read_events()
-    catalog_to_directory(cat, path)
+    bank.put_events(cat)
     # add stream file
     st = obspy.read()
-    st.write(str(path / "not_an_event.xml"), "mseed")
-    bank = EventBank(path)
+    stream_path = Path(bank.bank_path)
+    st.write(str(stream_path / "not_an_event.xml"), "mseed")
+    bank = EventBank(stream_path)
     # should issue warning
     with pytest.warns(UserWarning):
         bank.update_index()
@@ -158,10 +158,9 @@ class TestBankBasics:
     def test_get_events_empty_bank(self, tmp_path):
         """ Calling get_waveforms on an empty bank should update index. """
         cat1 = obspy.read_events()
-        catalog_to_directory(cat1, tmp_path, event_bank_index=False)
+        bank = obsplus.EventBank(tmp_path).put_events(cat1, update_index=False)
         cat1_dict = {str(x.resource_id): x for x in cat1}
         # get a bank, ensure it has no index and call get events
-        bank = obsplus.EventBank(tmp_path)
         index = Path(bank.index_path)
         if index.exists():
             index.unlink()
@@ -252,10 +251,7 @@ class TestBankBasics:
         cat = obspy.read_events()
         # create temporary directory of event files
         td = Path(tmpdir)
-        kwargs = dict(cat=cat, path=td, event_bank_index=False, check_duplicates=False)
-        obsplus.utils.events.catalog_to_directory(**kwargs)
-        # init bank and add index
-        bank = EventBank(td).update_index()
+        bank = EventBank(td).put_events(cat)
         # instrument bank, delete index, create new index
         with instrument_methods(bank) as ibank:
             os.remove(bank.index_path)
@@ -502,6 +498,54 @@ class TestPutEvents:
         assert len(index1) == len(index2)
         index_lat = index2.loc[index2["event_id"] == rid, "latitude"]
         assert index_lat.iloc[0] == new_lat
+
+    def test_files_created(self, tmpdir):
+        """ ensure a file is created for each event in default events,
+         and the bank index as well. """
+        cat = obspy.read_events()
+        bank = EventBank(Path(tmpdir)).put_events(cat)
+        qml_files = list(Path(bank.bank_path).rglob("*.xml"))
+        assert len(qml_files) == len(cat)
+        assert Path(bank.index_path).exists()
+
+    def test_events_different_time_same_id_not_duplicated(self, tmpdir):
+        """ events with different times but the same id should not be
+        duplicated; the old path should be used when detected. """
+        cat = obspy.read_events()
+        first_id = str(cat[0].resource_id)
+        bank = obsplus.EventBank(Path(tmpdir)).put_events(cat)
+        df = bank.read_index().set_index("event_id")
+        # modify first event preferred origin time slightly
+        event = cat[0]
+        origin = get_preferred(event, "origin")
+        origin.time += 10
+        # save to disk again
+        bank.put_events(event)
+        # ensure event count didnt change
+        assert len(df) == len(bank.read_index())
+        # read first path and make sure origin time was updated
+        cat2 = bank.get_events(event_id=first_id)
+        assert len(cat2) == 1
+        assert get_preferred(cat2[0], "origin").time == origin.time
+
+    def test_from_path(self, tmpdir):
+        """ catalog_to_directory should work with a path to a events. """
+        cat = obspy.read_events()
+        event_path = Path(tmpdir) / "events.xml"
+        bank1 = EventBank(event_path.parent / "catalog_dir1")
+        bank2 = EventBank(event_path.parent / "catalog_dir2")
+        # a slightly invalid uri is used, just ignore
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cat.write(str(event_path), "quakeml")
+        # test works with a Path instance
+        bank1.put_events(event_path)
+        assert Path(bank1.bank_path).exists()
+        assert not bank1.read_index().empty
+        # tests with a string
+        bank2.put_events(str(event_path))
+        assert Path(bank2.bank_path).exists()
+        assert not bank2.read_index().empty
 
 
 class TestProgressBar:

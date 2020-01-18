@@ -11,9 +11,9 @@ from obspy.clients.fdsn.mass_downloader import (
 )
 from obspy.geodetics import kilometers2degrees
 
+import obsplus
 from obsplus import WaveBank, events_to_df
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.events import catalog_to_directory
 
 
 class Crandall(DataSet):
@@ -46,7 +46,7 @@ class Crandall(DataSet):
     def download_events(self):
         """ Just copy the events into a directory. """
         cat = obspy.read_events(str(self.source_path / "events.xml"))
-        catalog_to_directory(cat, self.event_path)
+        obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_crandall(self):
         """ download waveform/station info for dataset. """

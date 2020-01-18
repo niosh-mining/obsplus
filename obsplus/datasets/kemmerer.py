@@ -9,8 +9,8 @@ from obspy.clients.fdsn.mass_downloader import (
     MassDownloader,
 )
 
+import obsplus
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.events import catalog_to_directory
 
 
 class Kemmerer(DataSet):
@@ -31,7 +31,7 @@ class Kemmerer(DataSet):
         cat_path = self.source_path / "events.xml"
         assert cat_path.exists(), "this should ship with obsplus"
         cat = obspy.read_events(str(cat_path))
-        catalog_to_directory(cat, self.event_path)
+        obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_kemmerer(self):
         """ downloads both stations and waveforms """

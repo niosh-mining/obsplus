@@ -386,6 +386,9 @@ CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
 
 # ------------------- type aliases (aliai?)
 
+# Path types
+path_types = Union[str, Path]
+
 # number types
 number_type = Union[float, int, np.float, np.int, np.complex]
 
@@ -445,7 +448,7 @@ series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
 column_function_map_type = Mapping[str, series_func_type]
 
 # subpaths type
-bank_subpaths_type = Union[str, Iterable[str]]
+bank_subpaths_type = Union[path_types, Iterable[path_types]]
 
 # types for bulk waveform requests
 bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
