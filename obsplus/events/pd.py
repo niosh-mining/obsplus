@@ -127,7 +127,7 @@ class _OriginQualityExtractor:
         uncert_attrs = (("horizontal_uncertainty", np.NaN),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
         for (attr, default) in uncert_attrs:
-            out[attr] = getattr(uncert, attr) or default
+            out[attr] = getattr(uncert, attr, default) or default
 
     def _get_depth_uncertainty_info(self, origin, out):
         """ Get info from depth info. """
@@ -159,6 +159,7 @@ class _OriginQualityExtractor:
         # now extract information
         self._get_origin_quality_info(origin, out)
         self._get_depth_uncertainty_info(origin, out)
+        self._get_origin_uncertainty(origin, out)
         # get phase and pick count
         self._get_phase_and_pick_counts(origin, out)
         return out
@@ -241,16 +242,6 @@ def _get_time(event):
         return {"time": obsplus.utils.time.get_reference_time(event)}
     except ValueError:  # no valid starttime
         return {"time": np.nan}
-
-
-def _get_used_stations(origin: ev.Origin, pid):
-    """ get the stations used in the origin, return str """
-    arrivals = origin.arrivals
-    picks = [pid.get(arr.pick_id.id) for arr in arrivals]
-    assert all(picks)
-    pset = {p.waveform_id.station_code for p in picks}
-    sl = sorted(list(pset))
-    return {"stations": ", ".join(sl), "station_count": len(sl)}
 
 
 @events_to_df.extractor

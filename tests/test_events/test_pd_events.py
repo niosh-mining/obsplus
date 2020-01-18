@@ -699,6 +699,12 @@ class TestReadArrivals:
         assert len(df)
         assert isinstance(df, pd.DataFrame)
 
+    def test_arrivals_from_origin(self, dummy_cat):
+        """ tests for specifically extracting arrivals from origin objects """
+        origin = dummy_cat[0].origins[0]
+        df = arrivals_to_dataframe(origin)
+        assert len(df) == len(origin.arrivals)
+
 
 class TestReadAmplitudes:
     # fixtures

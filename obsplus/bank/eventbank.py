@@ -58,13 +58,6 @@ STR_COLUMNS = {
 }
 INT_COLUMNS = {i for i, v in EVENT_TYPES_OUTPUT.items() if v is int}
 
-# unsupported query options
-
-UNSUPPORTED_QUERY_OPTIONS = set()
-
-
-# int_cols = {key for key, val in column_types.items() if val is int}
-
 
 class EventBank(_Bank):
     """
@@ -184,10 +177,6 @@ class EventBank(_Bank):
         {get_events_params}
         """
         self.ensure_bank_path_exists()
-        if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
-            unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
-            msg = f"Query parameters {unsupported_options} are not supported"
-            raise ValueError(msg)
         # Make sure all times are numpy datetime64
         kwargs = dict_times_to_npdatetimes(kwargs)
         # a simple switch to prevent infinite recursion

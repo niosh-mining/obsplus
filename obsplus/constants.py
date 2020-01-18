@@ -107,7 +107,6 @@ EVENT_DTYPES = OrderedDict(
     s_pick_count=float,
     standard_error=float,
     used_phase_count=float,
-    stations=str,
     station_count=float,
     vertical_uncertainty=float,
     updated="datetime64[ns]",
