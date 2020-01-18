@@ -366,6 +366,12 @@ def get_waveforms_bulk_args(
             df = df.rename(columns={"enddate": "endtime"})
         return df
 
+    def _times_to_utc(df):
+        """ Convert time columns to UTCDateTime."""
+        df["starttime"] = to_utc(df["starttime"])
+        df["endtime"] = to_utc(df["endtime"])
+        return df
+
     def _check_nslc_codes(df):
         """ Ensure there are no wildcards in NSLC columns. """
         for code in NSLC:
@@ -387,6 +393,11 @@ def get_waveforms_bulk_args(
 
     def _check_missing_data(df):
         """ There should be no missing data in the required columns."""
+        # first check if all required columns exist
+        if not set(BULK_WAVEFORM_COLUMNS).issubset(set(df.columns)):
+            missing_cols = set(BULK_WAVEFORM_COLUMNS) - set(df.columns)
+            msg = f"Dataframe is missing the following columns: {missing_cols}"
+            raise DataFrameContentError(msg)
         missing_date = df[list(BULK_WAVEFORM_COLUMNS)].isnull().any()
         no_data_cols = missing_date[missing_date].index
         if not no_data_cols.empty:
@@ -400,12 +411,13 @@ def get_waveforms_bulk_args(
 
     df = (
         rename_startdate_enddate(df)
+        .pipe(_check_missing_data)
+        .pipe(_times_to_utc)
         .pipe(order_columns, BULK_WAVEFORM_COLUMNS, **order_cols_kwargs)
         .pipe(_check_nslc_codes)
-        .pipe(_check_missing_data)
         .pipe(_check_starttime_endtime)
         .pipe(cast_dtypes, dtypes)
     )
-    df = order_columns(df, required_columns=BULK_WAVEFORM_COLUMNS)
+    # df = order_columns(df, required_columns=BULK_WAVEFORM_COLUMNS)
 
     return df[list(BULK_WAVEFORM_COLUMNS)].to_records(index=False).tolist()

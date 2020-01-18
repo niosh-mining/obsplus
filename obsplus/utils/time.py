@@ -223,6 +223,7 @@ def to_utc(
 
     # just use to_datetime64 for flexible handling of types
     dt64ish = to_datetime64(value)
+    # return
     if isinstance(dt64ish, np.datetime64):
         return _dt64_to_utc(dt64ish)
     # else assume a sequence of some sort and every element is a dt64

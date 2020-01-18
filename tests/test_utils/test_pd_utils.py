@@ -26,7 +26,10 @@ def waveform_df():
     """ Create a dataframe with the basic required columns. """
     st = obspy.read()
     cols = list(NSLC) + ["starttime", "endtime"]
-    return pd.DataFrame([tr.stats for tr in st])[cols]
+    df = pd.DataFrame([tr.stats for tr in st])[cols]
+    df["starttime"] = to_datetime64(df["starttime"])
+    df["endtime"] = to_datetime64(df["endtime"])
+    return df
 
 
 class TestApplyFuncsToColumns:
