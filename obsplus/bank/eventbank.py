@@ -125,7 +125,7 @@ class EventBank(_Bank):
         if isinstance(base_path, EventBank):
             self.__dict__.update(base_path.__dict__)
             return
-        self.bank_path = abspath(base_path)
+        self.bank_path = Path(base_path).absolute()
         self._index = None
         self.format = format
         self.ext = ext
@@ -219,12 +219,13 @@ class EventBank(_Bank):
         {bar_parameter_description}
         {paths_description}
         """
+        bank_path = str(self.bank_path)
 
         def func(path):
             """ Function to yield events, update_time and paths. """
             cat = try_read_catalog(path, format=self.format)
             update_time = getmtime(path)
-            path = path.replace(self.bank_path, "")
+            path = path.replace(bank_path, "")
             return cat, update_time, path
 
         self._enforce_min_version()  # delete index if schema has changed
@@ -311,11 +312,12 @@ class EventBank(_Bank):
 
     def get_event_path(self, event: ev.Event, index=None) -> Path:
         """ Get the path an event would be stored in a bank. """
+        bank_path = str(self.bank_path)
         df = self.read_index().set_index("event_id") if index is None else index
         rid = str(event.resource_id)
         if rid in df.index:  # event needs to be updated
             path = df.loc[rid, "path"]
-            save_path = self.bank_path + path
+            save_path = bank_path + path
             assert exists(save_path)
         else:  # event file does not yet exist
             path = _summarize_event(
@@ -344,7 +346,7 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = self.bank_path + self.read_index(**kwargs)["path"]
+        paths = str(self.bank_path) + self.read_index(**kwargs)["path"]
         read_func = partial(try_read_catalog, format=self.format)
         map_kwargs = dict(chunksize=len(paths) // self._max_workers)
         try:

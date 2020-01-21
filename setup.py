@@ -2,9 +2,6 @@
 Setup script for obsplus
 """
 import glob
-import os
-import shutil
-import stat
 import sys
 from collections import defaultdict
 from os.path import join, exists, isdir
@@ -15,7 +12,6 @@ except ImportError:
     pass
 
 from setuptools import setup
-from setuptools.command.develop import develop
 
 # define python versions
 
@@ -35,7 +31,6 @@ version_file = here / "obsplus" / "version.py"
 with version_file.open() as fi:
     content = fi.read().split("=")[-1].strip()
     __version__ = content.replace('"', "").replace("'", "")
-
 
 # --- get readme
 with open("README.rst") as readme_file:
@@ -70,8 +65,6 @@ def get_package_data_files():
 
 
 # --- requirements paths
-
-
 def read_requirements(path):
     """ Read a requirements.txt file, return a list. """
     with Path(path).open("r") as fi:
@@ -82,30 +75,10 @@ package_req_path = here / "requirements.txt"
 test_req_path = here / "tests" / "requirements.txt"
 doc_req_path = here / "docs" / "requirements.txt"
 
-
-class SetupDev(develop):
-    """
-    Install the obsplus git hook when development mode is run.
-    These hooks run the black formatter on the code base and clear
-    notebook outputs.
-    """
-
-    def run(self, *args, **kwargs):
-        super().run(*args, **kwargs)
-        # get path to get repo, do nothing if it doesnt exist
-        gitpath = Path(".git")
-        if not gitpath.exists():
-            return
-        # copy hooks
-        hook_script = Path("scripts") / "pre-commit.py"
-        assert hook_script.exists()
-        # copy to git directory
-        out_path = gitpath / "hooks" / "pre-commit"
-        shutil.copy(hook_script, out_path)
-        # make sure script is executable
-        st = os.stat(str(out_path))
-        os.chmod(out_path, st.st_mode | stat.S_IEXEC)
-
+requires = read_requirements(package_req_path)
+tests_require = read_requirements(test_req_path)
+docs_require = read_requirements(doc_req_path)
+dev_requires = tests_require + docs_require
 
 ENTRY_POINTS = {
     "obsplus.datasets": [
@@ -146,7 +119,6 @@ setup(
     install_requires=read_requirements(package_req_path),
     tests_require=read_requirements(test_req_path),
     setup_requires=["pytest-runner>=2.0"],
-    extras_require={"docs": read_requirements(doc_req_path)},
-    cmdclass={"develop": SetupDev},
+    extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
 )

@@ -1,5 +1,5 @@
 """
-Bank ABC
+Base class for ObsPlus' in-process databases, aka banks.
 """
 import os
 import warnings
@@ -33,7 +33,7 @@ class _Bank(ABC):
     _complevel = 9
     # attributes subclasses need to define
     ext = ""
-    bank_path = ""
+    bank_path: Path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
     executor = None  # an executor for using parallelism
@@ -56,16 +56,22 @@ class _Bank(ABC):
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
-        """ read the index filtering on various params """
+        """
+        Read the index filtering on various params
+        """
 
     @abstractmethod
     def update_index(self: BankType) -> BankType:
-        """ update the index """
+        """
+        Update the index
+        """
 
     @abstractmethod
     def last_updated(self) -> Optional[float]:
-        """ get the last modified time stored in the index. If
-        Not available return None
+        """
+        Get the last modified time stored in the index.
+
+        If Not available return None.
         """
 
     @abstractmethod
@@ -79,7 +85,7 @@ class _Bank(ABC):
         """
         The expected path to the index file.
         """
-        return join(self.bank_path, self.index_name)
+        return Path(self.bank_path) / self.index_name
 
     @property
     def _index_node(self):
