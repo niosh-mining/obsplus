@@ -1,16 +1,7 @@
 """
 Tests for general banks.
 """
-from functools import lru_cache
 from pathlib import Path
-from typing import Union, Dict, Tuple, Optional, Mapping, Sequence
-
-import obsplus
-import obspy
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import scipy
 
 import pytest
 

@@ -4,7 +4,6 @@ Base class for ObsPlus' in-process databases, aka banks.
 import os
 import warnings
 from abc import ABC, abstractmethod
-from os.path import join
 from pathlib import Path
 from typing import Optional, TypeVar, Mapping, Iterable
 from types import MappingProxyType as MapProxy

@@ -8,7 +8,7 @@ from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
 from os.path import exists
-from os.path import getmtime, abspath
+from os.path import getmtime
 from pathlib import Path
 from typing import Optional, Union, Sequence, Set
 
