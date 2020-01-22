@@ -60,9 +60,8 @@ class WaveBank(_Bank):
     """
     A class to interact with a directory of waveform files.
 
-    `WaveBank` reads through a directory structure of waveforms files,
-    collects info from each one, then creates and index to allow the files
-    to be efficiently queried.
+    WaveBank recursively reads each file in a directory and  creates an index
+    to allow the files to be efficiently queried.
 
     Implements a superset of the :class:`~obsplus.interfaces.WaveformClient`
     interface.

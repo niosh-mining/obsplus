@@ -63,9 +63,8 @@ class EventBank(_Bank):
     """
     A class to interact with a directory of event files.
 
-    Event bank reads through a directory structure of event files,
-    collects info from each one, then creates and index to allow the files
-    to be efficiently queried.
+    EventBank recursively reads each event file in a directory and creates
+    an index to allow the files to be efficiently queried.
 
     Implements a superset of the :class:`~obsplus.interfaces.EventClient`
     interface.
@@ -311,7 +310,20 @@ class EventBank(_Bank):
         self._index = None
 
     def get_event_path(self, event: ev.Event, index=None) -> Path:
-        """ Get the path an event would be stored in a bank. """
+        """
+        Get the path an event would be stored in a bank.
+
+        Parameters
+        ----------
+        event
+            An obspy Event.
+        index
+            If Not None, a dataframe of the current index.
+
+        Returns
+        -------
+
+        """
         bank_path = str(self.bank_path)
         df = self.read_index().set_index("event_id") if index is None else index
         rid = str(event.resource_id)
@@ -369,7 +381,7 @@ class EventBank(_Bank):
 
         Returns
         -------
-        A set of event_ids which are also found in the bank.
+            A set of event_ids which are also found in the bank.
         """
         eids = self.read_index(columns="event_id").values
         unique = set(np.unique(eids))
