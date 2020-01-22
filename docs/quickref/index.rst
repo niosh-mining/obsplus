@@ -7,8 +7,10 @@ A brief glance at ObsPlus' main features.
 
 Events
 ======
+
 .. autosummary::
      :toctree: stubs
+
      obsplus.get_event_client
      obsplus.EventBank
      obsplus.events_to_df
@@ -16,32 +18,44 @@ Events
      obsplus.json_to_cat
      obsplus.cat_to_json
 
+
 Stations
 ========
+
 .. autosummary::
      :toctree: stubs
+
      obsplus.get_station_client
      obsplus.StationBank
      obsplus.stations_to_df
 
 
+
 Waveforms
 =========
+
 .. autosummary::
      :toctree: stubs
+
      obsplus.get_waveform_client
      obsplus.WaveBank
 
+
 Datasets
 ========
+
 .. autosummary::
      :toctree: stubs
+
      obsplus.datasets.dataloader.DataSet
+
 
 Misc
 ====
+
 .. autosummary::
      :toctree: stubs
+
      obsplus.DataFrameExtractor
      obsplus.Fetcher
      obsplus.utils.yield_obj_parent_attr
