@@ -3,12 +3,12 @@ obsplus.utils
 
 .. automodule:: obsplus.utils
 
-   
-   
+
+
    .. rubric:: Functions
 
    .. autosummary::
-   
+
       apply_or_skip
       get_instances
       get_inventory
@@ -25,19 +25,19 @@ obsplus.utils
       to_timestamp
       try_read_catalog
       yield_obj_parent_attr
-   
-   
 
-   
-   
+
+off
+
+
+
    .. rubric:: Classes
 
    .. autosummary::
-   
-      DummyFile
-   
-   
 
-   
-   
-   
+      DummyFile
+
+
+
+
+

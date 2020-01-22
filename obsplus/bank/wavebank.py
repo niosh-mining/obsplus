@@ -8,7 +8,6 @@ from concurrent.futures import Executor
 from functools import partial, reduce
 from itertools import chain
 from operator import add
-from os.path import abspath
 from pathlib import Path
 from typing import Optional, Union, List
 
@@ -61,9 +60,8 @@ class WaveBank(_Bank):
     """
     A class to interact with a directory of waveform files.
 
-    `WaveBank` reads through a directory structure of waveforms files,
-    collects info from each one, then creates and index to allow the files
-    to be efficiently queried.
+    WaveBank recursively reads each file in a directory and  creates an index
+    to allow the files to be efficiently queried.
 
     Implements a superset of the :class:`~obsplus.interfaces.WaveformClient`
     interface.
@@ -154,7 +152,7 @@ class WaveBank(_Bank):
             return
         self.format = format
         self.ext = ext
-        self.bank_path = abspath(base_path)
+        self.bank_path = Path(base_path).absolute()
         self.inventory = get_inventory(inventory)
         # get waveforms structure based on structures of path and filename
         self.path_structure = path_structure or WAVEFORM_STRUCTURE
@@ -250,7 +248,7 @@ class WaveBank(_Bank):
     def _prep_write_df(self, df):
         """ Prepare the dataframe to put it into the HDF5 store. """
         # ensure the bank path is not in the path column
-        df["path"] = df["path"].str.replace(self.bank_path, "")
+        df["path"] = df["path"].str.replace(str(self.bank_path), "")
         dtype = WAVEFORM_DTYPES_INPUT
         df = (
             df.pipe(order_columns, required_columns=list(dtype))
@@ -662,7 +660,7 @@ class WaveBank(_Bank):
                 path_struct=self.path_structure,
                 name_struct=self.name_structure,
             )
-            path = os.path.join(self.bank_path, summary["path"])
+            path = os.path.join(str(self.bank_path), summary["path"])
             st_dic[path].append(tr)
         # iter all the unique paths and save
         for path, tr_list in st_dic.items():
@@ -689,7 +687,7 @@ class WaveBank(_Bank):
     ) -> Stream:
         """ return the waveforms in the index """
         # get abs path to each datafame
-        files: pd.Series = (self.bank_path + index.path).unique()
+        files: pd.Series = (str(self.bank_path) + index.path).unique()
         # make sure start and endtimes are in UTCDateTime
         starttime = to_utc(starttime) if starttime else None
         endtime = to_utc(endtime) if endtime else None

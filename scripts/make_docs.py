@@ -14,6 +14,8 @@ def main():
     # execute all the notebooks
     cmd = "jupyter nbconvert --to notebook --execute --inplace"
     for note_book_path in doc_path.rglob("*.ipynb"):
+        if "ipynb_checkpoints" in str(note_book_path):
+            continue
         result = run(cmd + f" {note_book_path}", shell=True)
         if result.returncode != 0:
             raise RuntimeError(f"failed to run {note_book_path}")

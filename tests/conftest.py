@@ -564,10 +564,10 @@ def fragmented_stream():
     return st + st2 + st3
 
 
-@pytest.fixture
-def default_wbank(tmpdir):
+@pytest.fixture(scope="class")
+def default_wbank(tmp_path_factory):
     """ create a  directory out of the traces in default waveforms, init bank """
-    base = Path(tmpdir)
+    base = Path(tmp_path_factory.mktemp("default_wbank"))
     st = obspy.read()
     for num, tr in enumerate(st):
         name = base / f"{(num)}.mseed"

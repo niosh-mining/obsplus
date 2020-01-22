@@ -3,24 +3,11 @@
 Quick References
 ################
 
-A brief glance at Obsplus' main features.
-
-
-Waveforms
-=========
-
-.. autosummary::
-     :toctree: stubs
-
-     obsplus.get_waveform_client
-     obsplus.WaveBank
-     obsplus.obspy_to_array
-     obsplus.array_to_obspy
-
-
+A brief glance at ObsPlus' main features.
 
 Events
 ======
+
 .. autosummary::
      :toctree: stubs
 
@@ -34,12 +21,24 @@ Events
 
 Stations
 ========
+
 .. autosummary::
      :toctree: stubs
 
      obsplus.get_station_client
      obsplus.StationBank
      obsplus.stations_to_df
+
+
+
+Waveforms
+=========
+
+.. autosummary::
+     :toctree: stubs
+
+     obsplus.get_waveform_client
+     obsplus.WaveBank
 
 
 Datasets
@@ -59,3 +58,6 @@ Misc
 
      obsplus.DataFrameExtractor
      obsplus.Fetcher
+     obsplus.utils.yield_obj_parent_attr
+     obsplus.utils.time.to_utc
+     obsplus.utils.time.to_datetime64

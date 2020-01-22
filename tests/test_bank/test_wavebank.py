@@ -152,8 +152,8 @@ class TestBankBasics:
         assert os.path.exists(index_path)
         # make sure all file paths are in the index
         index = ta_bank_no_index.read_index()
-        file_paths = set(ta_bank_no_index.bank_path + index.path)
-        for file_path in iter_files(bank_path, ext="mseed"):
+        file_paths = set(str(ta_bank_no_index.bank_path) + index.path)
+        for file_path in iter_files(str(bank_path), ext="mseed"):
             # go up two levels to match path reference
             file_path = os.path.abspath(file_path)
             assert file_path in file_paths
