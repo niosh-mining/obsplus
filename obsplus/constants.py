@@ -47,7 +47,7 @@ PREFERRED = {
 # ----- Extractor constants
 
 # Mapping numpy time types to their internal representation
-_DATETIME_TYPE_MAP = {"datetime64[ns]": int, "timedelta64[ns]": int}
+_DATETIME_TYPE_MAP = {"datetime64[ns]": np.int64, "timedelta64[ns]": np.int64}
 
 # columns required for station data
 STATION_DTYPES = OrderedDict(
@@ -125,7 +125,7 @@ EVENT_TYPES_OUTPUT.pop("stations", None)
 EVENT_TYPES_OUTPUT["path"] = str
 
 # input types for EventBank
-INPUT_MAP = {"datetime64[ns]": int}
+INPUT_MAP = {"datetime64[ns]": np.int64}
 EVENT_TYPES_INPUT = {i: INPUT_MAP.get(v, v) for i, v in EVENT_TYPES_OUTPUT.items()}
 
 # columns required for picks
