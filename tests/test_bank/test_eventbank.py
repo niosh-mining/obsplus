@@ -23,17 +23,35 @@ from obsplus.utils.testing import handle_warnings, instrument_methods
 # ----------- module fixtures
 
 
+def make_bank_from_catalog(path, catalog):
+    """ make a bank from a path and a given catalog. """
+    return EventBank(path).put_events(catalog, update_index=True)
+
+
 @pytest.fixture
-def ebank(tmpdir):
-    """ Create a bank from the default catalog. """
-    path = Path(tmpdir) / "events"
-    # get catalog, add event descriptions to it
+def cat_with_descs():
+    """ Create a catalog with some simple descriptions added. """
     cat = obspy.read_events()
     descs = ["LR", "LR", "SomeSillyEvent"]
     for event, desc_txt in zip(cat, descs):
         desc = ev.EventDescription(desc_txt)
         event.event_descriptions.insert(0, desc)
-    ebank = obsplus.EventBank(path).put_events(cat).update_index()
+    return cat
+
+
+@pytest.fixture
+def ebank(tmpdir, cat_with_descs):
+    """ Create a bank from the default catalog. """
+    cat = cat_with_descs
+    path = Path(tmpdir) / "events"
+    return make_bank_from_catalog(path, cat)
+
+
+@pytest.fixture
+def ebank_no_index(ebank):
+    """ return an event bank with no index file. """
+    with suppress((FileNotFoundError, PermissionError)):
+        Path(ebank.index_path).unlink()
     return ebank
 
 
@@ -77,12 +95,12 @@ class TestBankBasics:
     low_version_str: str = "0.0.-1"
 
     @pytest.fixture
-    def ebank_low_version(self, ebank, monkeypatch):
+    def ebank_low_version(self, tmpdir, monkeypatch):
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
+        ebank = make_bank_from_catalog(tmpdir, obspy.read_events())
         # write index with negative version
-        os.remove(ebank.index_path)
         ebank.update_index()
         monkeypatch.undo()
         assert ebank._index_version == self.low_version_str
@@ -105,13 +123,6 @@ class TestBankBasics:
             event.write(path, format="quakeml")
         # init, update, return bank
         return obsplus.EventBank(tmp_path).update_index()
-
-    @pytest.fixture
-    def ebank_no_index(self, ebank):
-        """ return an event bank with no index file. """
-        with suppress(FileNotFoundError):
-            Path(ebank.index_path).unlink()
-        return ebank
 
     def test_has_attrs(self, bing_ebank):
         """ ensure all the required attrs exist """
@@ -155,18 +166,12 @@ class TestBankBasics:
         bing_ebank.update_index()
         assert bing_ebank.get_service_version() == obsplus.__version__
 
-    def test_get_events_empty_bank(self, tmp_path):
+    def test_get_events_unindexed_bank(self, ebank_no_index, cat_with_descs):
         """ Calling get_waveforms on an empty bank should update index. """
-        cat1 = obspy.read_events()
-        bank = obsplus.EventBank(tmp_path).put_events(cat1, update_index=False)
-        cat1_dict = {str(x.resource_id): x for x in cat1}
-        # get a bank, ensure it has no index and call get events
-        index = Path(bank.index_path)
-        if index.exists():
-            index.unlink()
+        bank = ebank_no_index
+        cat1_dict = {str(x.resource_id): x for x in cat_with_descs}
         # now get events and assert equal to input (although order can change)
-        cat2 = bank.get_events()
-        cat2_dict = {str(x.resource_id): x for x in cat2}
+        cat2_dict = {str(x.resource_id): x for x in bank.get_events()}
         assert cat2_dict == cat1_dict
 
     def test_update_index_recreates_index(self, ebank_low_version):
@@ -571,15 +576,19 @@ class TestProgressBar:
         return Bar
 
     @pytest.fixture()
-    def bar_ebank(self, ebank, monkeypatch):
+    def bar_ebank(self, tmpdir, monkeypatch):
         """ return an event bank specifically for testing ProgressBar. """
         # set the interval and min files to 1 to ensure bar gets called
+        cat = obspy.read_events()
+        path = Path(tmpdir)
+        for event in cat:
+            file_name = str(event.resource_id)[-5:] + ".xml"
+            event.write(str(path / file_name), "quakeml")
+        ebank = obsplus.EventBank(path)
         monkeypatch.setattr(ebank, "_bar_update_interval", 1)
         monkeypatch.setattr(ebank, "_min_files_for_bar", 1)
         # move the index to make sure there are files to update
-        index_path = Path(ebank.index_path)
-        if index_path.exists():
-            os.remove(index_path)
+        assert not Path(ebank.index_name).exists()
         return ebank
 
     @pytest.fixture()

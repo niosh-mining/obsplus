@@ -7,8 +7,7 @@ import warnings
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
-from os.path import exists
-from os.path import getmtime
+from os.path import exists, getmtime
 from pathlib import Path
 from typing import Optional, Union, Sequence, Set
 
@@ -26,6 +25,8 @@ from obsplus.utils.bank import (
     _read_table,
     _get_tables,
     _drop_rows,
+    _remove_base_path,
+    _natify_paths,
 )
 from obsplus.utils.events import _summarize_event, get_event_client
 from obsplus.constants import (
@@ -259,7 +260,7 @@ class EventBank(_Bank):
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(events)
         df["updated"] = update_times
-        df["path"] = paths
+        df["path"] = _remove_base_path(pd.Series(paths))
         if len(df):
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)
             self._write_update(df_to_write, update_time)
@@ -345,7 +346,8 @@ class EventBank(_Bank):
         self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
-            return pd.read_sql(sql, con)
+            out = pd.read_sql(sql, con)
+        return out
 
     # --- read events stuff
 
@@ -358,7 +360,8 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = str(self.bank_path) + self.read_index(**kwargs)["path"]
+        files_paths = self.read_index(**kwargs)["path"]
+        paths = str(self.bank_path) + _natify_paths(files_paths)
         read_func = partial(try_read_catalog, format=self.format)
         map_kwargs = dict(chunksize=len(paths) // self._max_workers)
         try:

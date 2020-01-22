@@ -218,8 +218,8 @@ def to_utc(
     """
 
     def _dt64_to_utc(dt64):
-        ns = dt64.astype("datetime64[ns]").astype(int)
-        return obspy.UTCDateTime(ns=ns)
+        ns = dt64.astype("datetime64[ns]").astype(np.int64)
+        return obspy.UTCDateTime(ns=int(ns))
 
     # just use to_datetime64 for flexible handling of types
     dt64ish = to_datetime64(value)
@@ -323,7 +323,7 @@ def dict_times_to_ns(
     out = dict(input_dict)
     for time_key in set(input_dict) & set(time_keys):
         if not isinstance(out[time_key], int):  # assume ints are ns
-            out[time_key] = to_datetime64(out[time_key]).astype(int)
+            out[time_key] = to_datetime64(out[time_key]).astype(np.int64)
     return out
 
 

@@ -71,7 +71,9 @@ class TestStreamPathStructure:
         struc = "waveforms/{year}/{month}/{day}/{network}/{station}/{channel}"
         tr = obspy.read()[0]
         expected = "waveforms/2009/08/24/BW/RJOB/EHZ/2009-08-24T00-20-03.mseed"
-        assert _summarize_trace(tr, path_struct=struc)["path"] == expected
+        # expected_str = _expected.replace('/', os.sep)
+        out = _summarize_trace(tr, path_struct=struc)["path"]
+        assert out.replace(os.sep, "/") == expected
 
 
 class TestEventPathStructure:
@@ -80,7 +82,8 @@ class TestEventPathStructure:
     def test_basic(self):
         ev = obspy.read_events()[0]
         expected = "2012/04/04/2012-04-04T14-21-42_00041.xml"
-        assert _summarize_event(ev)["path"] == expected
+        out = _summarize_event(ev)["path"]
+        assert out.replace(os.sep, "/") == expected
 
 
 class TestReadStream:

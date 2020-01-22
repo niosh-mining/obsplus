@@ -532,7 +532,9 @@ class Fetcher:
         # iter events and save to disk
         t1, t2 = time_before_origin, time_after_origin
         for event_id, stream in self.yield_event_waveforms(t1, t2):
-            bank.put_waveforms(stream, name=event_id)
+            # get name, need to make valid for file names on all systems
+            name = event_id.replace("smi:local/", "").replace(":", "-")
+            bank.put_waveforms(stream, name=name)
 
     @property
     def picks_df(self):

@@ -31,6 +31,7 @@ from obsplus.constants import NSLC, EMPTYTD64
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils.misc import iter_files
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obsplus.utils.bank import _natify_paths
 from obsplus import get_reference_time
 
 # ----------------------------------- Helper functions
@@ -152,7 +153,8 @@ class TestBankBasics:
         assert os.path.exists(index_path)
         # make sure all file paths are in the index
         index = ta_bank_no_index.read_index()
-        file_paths = set(str(ta_bank_no_index.bank_path) + index.path)
+        index_paths = _natify_paths(index["path"])
+        file_paths = set(str(ta_bank_no_index.bank_path) + index_paths)
         for file_path in iter_files(str(bank_path), ext="mseed"):
             # go up two levels to match path reference
             file_path = os.path.abspath(file_path)

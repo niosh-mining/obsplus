@@ -41,6 +41,7 @@ from obsplus.utils.bank import (
     _try_read_stream,
     get_inventory,
     summarizing_functions,
+    _remove_base_path,
 )
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import replace_null_nlsc_codes
@@ -248,7 +249,7 @@ class WaveBank(_Bank):
     def _prep_write_df(self, df):
         """ Prepare the dataframe to put it into the HDF5 store. """
         # ensure the bank path is not in the path column
-        df["path"] = df["path"].str.replace(str(self.bank_path), "")
+        df["path"] = _remove_base_path(df["path"], self.bank_path)
         dtype = WAVEFORM_DTYPES_INPUT
         df = (
             df.pipe(order_columns, required_columns=list(dtype))
@@ -256,7 +257,7 @@ class WaveBank(_Bank):
             .pipe(convert_bytestrings, columns=self.index_str, inplace=True)
         )
         # populate index store and update metadata
-        assert not df.isnull().any().any(), "null values found in index dataframe"
+        assert not df.isnull().any().any(), "null values found in index"
         return df
 
     def _ensure_meta_table_exists(self):

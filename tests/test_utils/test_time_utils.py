@@ -32,9 +32,10 @@ class TestToNumpyDateTime:
     def test_simple(self):
         """ Test converting simple UTCDateTimable things """
         test_input = ("2019-01-10 11-12", obspy.UTCDateTime("2019-01-10T12-12"), 100)
-        expected = np.array([obspy.UTCDateTime(x)._ns for x in test_input])
-        out = np.array(to_datetime64(test_input)).astype(int)
-        assert np.equal(expected, out).all()
+        expected_ns = np.array([obspy.UTCDateTime(x)._ns for x in test_input])
+        dt64s = to_datetime64(test_input)
+        new_ns = np.array(dt64s).astype(np.int64)
+        assert np.equal(expected_ns, new_ns).all()
 
     def test_with_nulls(self):
         """ Test for handling nulls. """
@@ -42,13 +43,13 @@ class TestToNumpyDateTime:
         out = np.array(to_datetime64(test_input))
         # first make sure empty values worked
         assert pd.isnull(out[:3]).all()
-        assert out[-1].astype(int) == obspy.UTCDateTime(15)._ns
+        assert out[-1].astype(np.int64) == obspy.UTCDateTime(15)._ns
 
     def test_zero(self):
         """ Tests for input values as 0 or 0.0 """
         dt1 = to_datetime64(0)
         dt2 = to_datetime64(0.0)
-        assert dt1.astype(int) == dt2.astype(int) == 0
+        assert dt1.astype(np.int64) == dt2.astype(np.int64) == 0
 
     def test_npdatetime64_as_input(self):
         """ This should also work on np.datetime64. """
@@ -137,8 +138,8 @@ class TestTimeDelta:
         deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
         ser = pd.Series(deltas)
         out = to_timedelta64(ser)
-        ints1 = deltas.astype("timedelta64[ns]").astype(int)
-        ints2 = out.astype("timedelta64[ns]").astype(int)
+        ints1 = deltas.astype("timedelta64[ns]").astype(np.int64)
+        ints2 = out.astype("timedelta64[ns]").astype(np.int64)
         assert np.all(ints1 == ints2)
 
     def test_tuple_and_list(self):

@@ -713,7 +713,7 @@ class TestGetEventData:
     t1 = to_datetime64("2009-04-01")
     t2 = to_datetime64("2009-04-04")
 
-    path = "eventwaveforms/{year}/{julday}"
+    path = "eventwaveforms"
 
     # fixtures
     @pytest.fixture(scope="class")

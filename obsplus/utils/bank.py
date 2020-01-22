@@ -7,6 +7,7 @@ import re
 import sqlite3
 import time
 import warnings
+import os
 from functools import singledispatch
 from typing import Optional, Sequence, Union
 
@@ -119,6 +120,27 @@ def _summarize_trace(
     return out
 
 
+def _remove_base_path(series: pd.Series, base="") -> pd.Series:
+    """
+    Ensure paths stored in column name use unix style paths and have base
+    path removed.
+    """
+    if series.empty:
+        return series
+    unix_paths = series.str.replace(os.sep, "/")
+    unix_base_path = str(base).replace(os.sep, "/")
+    return unix_paths.str.replace(unix_base_path, "")
+
+
+def _natify_paths(series: pd.Series) -> pd.Series:
+    """
+    Natify paths in a series. IE, on windows replace / with \
+    """
+    if series.empty:
+        return series
+    return series.str.replace("/", os.sep)
+
+
 class _IndexCache:
     """ A simple class for caching indexes """
 
@@ -201,6 +223,7 @@ def sql_connection(path, **kwargs):
     con = sqlite3.connect(path, **kwargs)
     with con:
         yield con
+    con.close()  # this is needed on windows but not linux, weird...
 
 
 def get_kernel_query(starttime: int, endtime: int, buffer: int):

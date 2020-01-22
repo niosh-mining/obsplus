@@ -1,8 +1,6 @@
 """
 Tests for converting catalogs to dataframes.
 """
-import os
-import tempfile
 from os.path import join
 from pathlib import Path
 
@@ -290,16 +288,6 @@ class TestCat2Df:
         """ read in the partial list of events """
         path = join(Path(kem_archive).parent, "catalog_subset.csv")
         return events_to_df(path)
-
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
-    def rewritten_file_event_df(self, event_df_subset):
-        """ write the event_df to disk and try to read it in again """
-        with tempfile.NamedTemporaryFile() as tf:
-            event_df_subset.to_csv(tf.name)
-            yield events_to_df(tf.name)
-        if os.path.exists(tf.name):  # clean up temp file if needed
-            os.remove(tf.name)
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)

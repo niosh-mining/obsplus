@@ -139,7 +139,7 @@ class TestFilterDf:
         # this is mainly here to test the time filtering, because the bank
         # operations pass this off to the HDF5 kernel.
         index = crandall_dataset.waveform_client.read_index(network="UU")
-        t1_ns = int(index["starttime"].astype(int).mean())
+        t1_ns = int(index["starttime"].astype(np.int64).mean())
         t1 = np.datetime64(t1_ns, "ns")
         t2 = index["endtime"].max()
         kwargs = dict(network="UU", station="*", location="*", channel="*")
