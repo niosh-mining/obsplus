@@ -111,14 +111,6 @@ class TestBankBasics:
     low_version_str = "0.0.-1"
 
     # fixtures
-    @pytest.fixture(scope="function")
-    def ta_bank_no_index(self, ta_bank):
-        """ return the ta bank, but first delete the index if it exists """
-        index_path = os.path.join(ta_bank.bank_path, ".index.h5")
-        if os.path.exists(index_path):
-            os.remove(index_path)
-        return sbank.WaveBank(ta_bank.bank_path)
-
     @pytest.fixture
     def default_bank_low_version(self, default_wbank, monkeypatch):
         """ return the default bank with a negative version number. """
@@ -397,10 +389,6 @@ class TestYieldStreams:
          are used """
         return ta_bank_index.yield_waveforms(**self.query2)
 
-    @pytest.fixture
-    def yield_file_by_time(self):
-        """ Read all files that have data for a sequence of times, yield """
-
     # tests
     def test_type(self, yield1):
         """ test that calling yield_waveforms returns a generator """
@@ -676,10 +664,6 @@ class TestGetWaveformsBySeedId:
     def query_2_seeds(self, ta_bank):
         """ return the query using seed_ids """
         return ta_bank.get_waveforms_by_seed(self.seed_ids, self.t1, self.t2)
-
-    @pytest.fixture(scope="class")
-    def query_1_seed(self, ta_bank):
-        """ query using only one seed_id"""
 
     # tests
     def test_only_desired_channels(self, query_2_seeds):

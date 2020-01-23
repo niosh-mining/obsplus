@@ -167,3 +167,13 @@ class ArchiveDirectory:
             time_name = str(t1).split(".")[0].replace(":", "-") + ".mseed"
             save_name = path / f"{net}_{sta}_{time_name}"
             st.write(str(save_name), "mseed")
+
+
+def append_func_name(list_obj):
+    """ decorator to append a function name to list_obj """
+
+    def wrap(func):
+        list_obj.append(func.__name__)
+        return func
+
+    return wrap

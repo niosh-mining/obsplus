@@ -229,6 +229,9 @@ class TestGetReferenceTime:
         return get_reference_time(fixture_value)
 
     # tests
+    def test_gather(self, utc_object, timestamp, event, catalog):
+        """ Simply gather aggregated fixtures so they are marked as used. """
+
     def test_is_utc_date(self, time_outputs):
         """ ensure the output is a UTCDateTime """
         assert isinstance(time_outputs, obspy.UTCDateTime)

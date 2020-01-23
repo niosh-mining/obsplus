@@ -322,16 +322,6 @@ class TestStreamBulkSplit:
     """ Tests for converting a trace to a list of Streams. """
 
     @pytest.fixture
-    def multi_stream(self):
-        """ Create two streams with different station names/channels """
-        st1 = obspy.read()
-        st2 = obspy.read()
-        for tr in st2:
-            tr.stats.station = "BOB"
-            tr.stats.channel = "HH" + tr.stats.channel[-1]
-        return st1 + st2
-
-    @pytest.fixture
     def bing_pick_bulk(self, bingham_catalog):
         """ Create a dataframe from the bingham picks. """
         picks = obsplus.picks_to_df(bingham_catalog)

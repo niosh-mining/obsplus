@@ -16,23 +16,13 @@ from obspy.core.event import Event, Origin
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.testing import handle_warnings
+from obsplus.utils.testing import handle_warnings, append_func_name
 from obsplus.utils.time import to_datetime64, make_time_chunks
 
 WAVEFETCHERS = []
 
 
 # ----------------------------- helper functions
-
-
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
 
 
 def trim_kem_events(fetcher: Fetcher):
@@ -110,6 +100,12 @@ def kem_fetcher_limited():
     return wf
 
 
+def test_gather(
+    kem_fetcher, ta_fetcher, kem_fetcher_with_processor, kem_fetcher_limited
+):
+    """ Simply gather aggregated fixtures so they are marked as used. """
+
+
 # ---------------------------------- tests
 
 
@@ -128,11 +124,6 @@ class TestGeneric:
     def copied_fetcher(self, wavefetcher):
         """ init a wavefetcher from a wavefetcher, return tuple of both """
         return (wavefetcher, Fetcher(wavefetcher))
-
-    @pytest.fixture(scope="session")
-    def kem_copy(self, kem_fetcher):
-        """ return a copy of the kem_fetcher """
-        return kem_fetcher.copy()
 
     # general tests
     def test_has_attrs(self, wavefetcher):
@@ -209,6 +200,9 @@ class TestGetWaveforms:
         return request.getfixturevalue(request.param)
 
     # general waveforms tests tests
+    def test_gather(self, kem_stream, kem_stream_processed, ta_stream):
+        """ Simply gather aggregated fixtures so they are marked as used. """
+
     def test_streams_basics(self, stream):
         """ ensure a non-empty waveforms was returned """
         assert isinstance(stream, obspy.Stream)
@@ -350,6 +344,9 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
         return Fetcher(**kwargs)
 
     # general test
+    def test_gather(self, event_list_origin, event_list_p):
+        """ Simply gather aggregated fixtures so they are marked as used. """
+
     def test_duration(self, stream_list):
         """ ensure the duration of the streams is correct """
         for _, st in stream_list:

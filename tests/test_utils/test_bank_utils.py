@@ -48,11 +48,6 @@ class TestStreamPathStructure:
         """ return the structure strings associated with class"""
         return request.param
 
-    @pytest.fixture(scope="class", params=stream)
-    def trace(self, request):
-        """ return a trace from the waveforms"""
-        return request.param
-
     @pytest.fixture(scope="class")
     def output(self, struct_string, waveform_cache_trace):
         """ init a bank_structure class from the structure strings """

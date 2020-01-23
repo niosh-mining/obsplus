@@ -14,6 +14,7 @@ import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
 from obsplus.utils.time import is_time
+from obsplus.utils.testing import append_func_name
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
@@ -58,16 +59,18 @@ class TestInv2Df:
 class TestReadInventory:
     """ ensure inventories can be read in """
 
-    fixtures = ["df_from_inv", "df_from_inv_df"]
+    fixtures = []
 
     # fixtures
     @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
     def df_from_inv(self):
         """ read events from a events object """
         inv = obspy.read_inventory()
         return stations_to_df(inv)
 
     @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
     def df_from_inv_df(self):
         event_dict = {
             "start_date": obspy.UTCDateTime(),
@@ -130,6 +133,9 @@ class TestReadInventory:
             ser = df[col]
             for val in ser.values:
                 assert isinstance(val, str)
+
+    def test_gather(self, df_from_inv, df_from_inv_df):
+        """ Simply gather aggregated fixtures so they are marked as used. """
 
 
 class TestReadDirectoryOfInventories:

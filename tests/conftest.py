@@ -5,12 +5,11 @@ import copy
 import glob
 import os
 import shutil
-import tempfile
 import typing
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from os.path import basename
-from os.path import join, dirname, abspath, exists
+from os.path import join, dirname, abspath
 from pathlib import Path
 
 import numpy as np
@@ -38,8 +37,6 @@ SETUP_PATH = join(TEST_PATH, "setup_code")
 CATALOG_DIRECTORY = join(TEST_DATA_PATH, "test_catalogs")
 # Directory containing test inventories
 INVENTORY_DIRECTORY = join(TEST_DATA_PATH, "test_inventories")
-# Directory containing test data for grids
-GRID_DIRECTORY = join(TEST_DATA_PATH, "test_grid_inputs")
 # get a list of cat_name file paths
 catalogs = glob.glob(join(CATALOG_DIRECTORY, "*xml"))
 # get a list of stations file paths
@@ -270,12 +267,6 @@ def bingham_dataset():
     return ds
 
 
-@pytest.fixture(scope="session")
-def bingham_inventory(bingham_dataset):
-    """ load the bingham tests case """
-    return bingham_dataset.station_client
-
-
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
     """ load the bingham tests case """
@@ -304,42 +295,8 @@ def crandall_dataset():
 
 
 @pytest.fixture(scope="session")
-def crandall_fetcher(crandall_dataset):
-    """ Return a Fetcher from the crandall dataset. """
-    return crandall_dataset.get_fetcher()
-
-
-@pytest.fixture(scope="session")
-def crandall_data_array(crandall_fetcher):
-    """ return a data array (with attached picks) of crandall dataset. """
-    cat = crandall_fetcher.event_client.get_events()
-    st_dict = crandall_fetcher.get_event_waveforms(10, 50)
-    dar = obsplus.obspy_to_array_dict(st_dict)[40]
-    dar.ops.attach_events(cat)
-    return dar
-
-
-@pytest.fixture(scope="session")
 def crandall_bank(crandall_dataset):
     return obsplus.WaveBank(crandall_dataset.waveform_client)
-
-
-# ------------------------- session fixtures
-
-
-@pytest.fixture(scope="session")
-def stream_tester():
-    """ return the StreamTester. """
-    return StreamTester
-
-
-@pytest.yield_fixture(scope="module")
-def temp_dir():
-    """ create a temporary archive directory """
-    td = tempfile.mkdtemp()
-    yield td
-    if exists(td):
-        shutil.rmtree(td)
 
 
 @pytest.fixture(scope="session", params=cat_dict.values())
@@ -352,28 +309,12 @@ def test_catalog(request):
     return cat
 
 
-@pytest.fixture(scope="session")
-def catalog_dic():
-    """ a dictionary of catalogs based on name of cat_name file """
-    return cat_dict
-
-
 @pytest.fixture(scope="session", params=inventories)
 def test_inventory(request):
     """ return a list of test inventories from
     stationxml files saved on disk """
     inv = obspy.read_inventory(request.param)
     return inv
-
-
-@pytest.fixture(scope="session")
-def cd_2_test_directory():
-    """ cd to test directory, then cd back """
-    back = os.getcwd()
-    there = dirname(__file__)
-    os.chdir(there)
-    yield  # there and back again
-    os.chdir(back)
 
 
 @pytest.fixture(scope="session")
@@ -410,14 +351,6 @@ def tmp_ta_dir(class_tmp_dir):
     out = os.path.join(class_tmp_dir, "temp")
     shutil.copytree(path, out)
     yield out
-
-
-@pytest.fixture(scope="session")
-def bingham_bank_path(tmpdir_factory):
-    """ Create  bank structure using Bingham dataset """
-    tmpdir = tmpdir_factory.mktemp("data")
-    obsplus.utils.dataset.copy_dataset("bingham", tmpdir)
-    return str(tmpdir)
 
 
 @pytest.fixture(scope="class", params=waveform_cache_obj.keys)
@@ -479,22 +412,10 @@ def qml_to_merge_basic():
     return out[0]
 
 
-@pytest.fixture(scope="session")
-def station_cache():
-    """ Return the station cache. """
-    return station_cache_obj
-
-
 @pytest.fixture(scope="session", params=station_cache_obj.keys)
 def station_cache_inventory(request):
     """ Return the test inventories. """
     return station_cache_obj[request.param]
-
-
-@pytest.fixture(scope="session")
-def grid_path():
-    """ Return the path to the grid inputs """
-    return GRID_DIRECTORY
 
 
 @pytest.fixture(scope="class")
@@ -527,24 +448,6 @@ def disjointed_stream():
     st = obspy.read()
     st[0].stats.starttime += 3600
     return st
-
-
-@pytest.fixture(scope="class")
-def stream_dict(waveform_cache):
-    """ return a dictionary of streams """
-    out = {}
-    st = waveform_cache["coincidence_tutorial"]
-    for var in range(5):
-        st = st.copy()
-        for tr in st:
-            # change starttime
-            tr.stats.starttime += 3600 * 24 * var
-            # add noise
-            tr.data = tr.data.astype(np.float64)
-            med = np.median(tr.data)
-            tr.data += np.random.rand(len(tr.data)) * med
-        out["event_" + str(var)] = st
-    return out
 
 
 @pytest.fixture

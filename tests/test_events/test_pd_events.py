@@ -31,6 +31,7 @@ from obsplus.events.pd import (
     magnitudes_to_dataframe,
 )
 from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.testing import append_func_name
 from obsplus.utils.time import to_datetime64
 
 common_extractor_cols = {
@@ -49,16 +50,6 @@ common_obj_attrs = {"creation_info", "comments", "waveform_id"}
 
 
 # ---------------- helper functions
-
-
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
 
 
 def pick_generator(scnls):
@@ -390,6 +381,19 @@ class TestCat2Df:
         assert len(df)
         assert isinstance(df, pd.DataFrame)
 
+    def test_gather(
+        self,
+        events_from_catalog,
+        events_from_dataframe,
+        event_df_subset,
+        catalog_no_magnitude,
+        catalog_empty,
+    ):
+        """
+        This test simply gathers up all the aggregated fixtures so they
+        are properly marked as used.
+        """
+
 
 class TestCat2DfPreferredThings:
     """ Make sure the preferred origins/mags show up in the df. """
@@ -577,6 +581,9 @@ class TestReadPicks:
         df = picks_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
+
+    def test_gather(self, catalog_output, dataframe_output):
+        """ Simply gather aggregated fixtures so they are marked as used. """
 
 
 class TestReadArrivals:

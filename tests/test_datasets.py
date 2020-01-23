@@ -4,7 +4,6 @@ Tests for the datasets
 import os
 import shutil
 import tempfile
-from collections import defaultdict
 from pathlib import Path
 
 import obspy
@@ -83,31 +82,6 @@ class TestDatasets:
     def datafetcher(self, new_dataset):
         """ call the dataset (forces download) and return fetcher. """
         return new_dataset.get_fetcher()
-
-    @pytest.fixture(scope="class")
-    def downloaded_dataset(self, new_dataset, datafetcher):
-        """
-        Data should be downloaded and loaded into memory.
-        Monkey patch all methods that load data with pytest fails.
-        """
-        ds = new_dataset
-        old_load_funcs = ds._load_funcs
-        old_download_funcs = {}
-
-        def _fail(*args, **kwargs):
-            pytest.fail("this should not get called!")
-
-        for name in DATA_TYPES:
-            func_name = "download_" + name + "s"
-            old_download_funcs[name] = getattr(ds, func_name)
-            setattr(ds, func_name, _fail)
-        ds._load_funcs = defaultdict(lambda: _fail)
-        yield ds
-        # reset monkey patching
-        ds._load_funcs = old_load_funcs
-        for name in DATA_TYPES:
-            func_name = "download_" + name + "s"
-            setattr(ds, func_name, old_download_funcs[name])
 
     def test_clients(self, datafetcher):
         """ Each dataset should have waveform, event, and station clients """
