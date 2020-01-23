@@ -6,7 +6,6 @@ import glob
 import os
 import shutil
 import typing
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 from os.path import basename
 from os.path import join, dirname, abspath
@@ -21,6 +20,7 @@ import obsplus.utils.dataset
 import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
 from obsplus.utils.testing import instrument_methods
+from obsplus.utils.misc import suppress_warnings
 
 # ------------------------- define constants
 
@@ -53,8 +53,7 @@ old_func = ResourceIdentifier._get_similar_referred_object
 
 
 def _func(*args, **kwargs):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    with suppress_warnings():
         return old_func(*args, **kwargs)
 
 

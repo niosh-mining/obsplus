@@ -2,7 +2,6 @@
 tests for event wavebank
 """
 import os
-import warnings
 from contextlib import suppress
 from pathlib import Path
 
@@ -17,7 +16,8 @@ import obsplus
 import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
 from obsplus.utils.events import get_preferred
-from obsplus.utils.testing import handle_warnings, instrument_methods
+from obsplus.utils.testing import instrument_methods
+from obsplus.utils.misc import suppress_warnings
 
 
 # ----------- module fixtures
@@ -101,7 +101,8 @@ class TestBankBasics:
         monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
         ebank = make_bank_from_catalog(tmpdir, obspy.read_events())
         # write index with negative version
-        ebank.update_index()
+        with suppress_warnings():
+            ebank.update_index()
         monkeypatch.undo()
         assert ebank._index_version == self.low_version_str
         assert obsplus.__version__ != self.low_version_str
@@ -380,7 +381,7 @@ class TestReadIndexQueries:
 
     def test_query_circular(self, bing_ebank):
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
-        with handle_warnings():  # suppress install geographiclib warning
+        with suppress_warnings():  # suppress install geographiclib warning
             df = bing_ebank.read_index(
                 latitude=latitude,
                 longitude=longitude,
@@ -448,7 +449,7 @@ class TestGetEvents:
     def test_query_circular(self, bing_ebank, bingham_catalog):
         """ The bank query should return the same as get_events on catalog. """
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
-        with handle_warnings():
+        with suppress_warnings():
             cat1 = bing_ebank.get_events(
                 latitude=latitude,
                 longitude=longitude,
@@ -540,8 +541,7 @@ class TestPutEvents:
         bank1 = EventBank(event_path.parent / "catalog_dir1")
         bank2 = EventBank(event_path.parent / "catalog_dir2")
         # a slightly invalid uri is used, just ignore
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with suppress_warnings():
             cat.write(str(event_path), "quakeml")
         # test works with a Path instance
         bank1.put_events(event_path)

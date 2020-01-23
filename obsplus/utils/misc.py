@@ -474,3 +474,15 @@ def _get_path(info, path, name, path_struct, name_strcut):
     else:  # if the path is already known
         out_name = os.path.basename(path)
     return dict(path=path, filename=out_name)
+
+
+@contextlib.contextmanager
+def suppress_warnings():
+    """ Suppress all warnings. """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        yield
+    return None
+
+
+# suppress_warnings = WarningsCapture

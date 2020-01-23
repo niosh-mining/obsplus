@@ -1344,8 +1344,10 @@ class TestFilesWithDifferentFormats:
 
     # fixtures
     @pytest.fixture(scope="class")
-    def het_bank(self, class_tmp_dir):
-        """ create a directory that has multiple file types in it. """
+    def het_bank_path(self, class_tmp_dir):
+        """
+        create a directory that has waveforms saved to many file formats in it.
+        """
         new_dir = join(class_tmp_dir, "temp1")
         ardir = ArchiveDirectory(
             new_dir, self.start, self.end, self.sampling_rate, seed_ids=self.seed_ids
@@ -1358,9 +1360,10 @@ class TestFilesWithDifferentFormats:
             st.write(path + ".mseed", format)
         return obsplus.WaveBank(ardir.path)
 
-    def test_all_files_read_warning_issued(self, het_bank):
+    def test_all_files_read_warning_issued(self, het_bank_path):
         """ ensure all the files are read in and a warning issued. """
         with pytest.warns(UserWarning) as w:
-            df = het_bank.read_index()
+            bank = obsplus.WaveBank(het_bank_path).update_index()
+        df = bank.read_index()
         assert len(w)
         assert set(self.format_key).issubset(df.station.unique())

@@ -30,7 +30,7 @@ from obsplus.constants import (
 
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.events import get_event_client
-from obsplus.utils.misc import register_func
+from obsplus.utils.misc import register_func, suppress_warnings
 from obsplus.utils.pd import filter_index
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.time import get_reference_time
@@ -195,7 +195,10 @@ class Fetcher:
         except TypeError:
             self.station_client = getattr(self, "station_client", None)
         try:
-            self.station_df = stations_to_df(stations)
+            # since its common for inventories to have far out enddates this can
+            # raise a warning. These are safe to ignore.
+            with suppress_warnings():
+                self.station_df = stations_to_df(stations)
         except TypeError:
             # if unable to get station info from stations waveform client
             try:

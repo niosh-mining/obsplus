@@ -3,7 +3,6 @@ Class for interacting with events on a filesystem.
 """
 import inspect
 import time
-import warnings
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
@@ -43,7 +42,7 @@ from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar, EventClient
 from obsplus.utils import iterate
-from obsplus.utils.misc import try_read_catalog
+from obsplus.utils.misc import try_read_catalog, suppress_warnings
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.time import dict_times_to_npdatetimes
 
@@ -302,9 +301,8 @@ class EventBank(_Bank):
                 meta = self._make_meta_table()
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
-            with warnings.catch_warnings():  # ignore pandas collection warning
+            with suppress_warnings():  # ignore pandas collection warning
                 timestamp = update_time or time.time()
-                warnings.simplefilter("ignore")
                 dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
                 dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta

@@ -12,7 +12,7 @@ from obspy import UTCDateTime
 from obsplus import WaveFrame
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
-from obsplus.utils.testing import handle_warnings
+from obsplus.utils.misc import suppress_warnings
 
 
 class Testbasics:
@@ -257,7 +257,7 @@ class TestBasicOperations:
     def _generic_op_test(self, wf1, number, op):
         """ Apply generic operation tests. """
         # div 0 raises runtime warning, this is ok.
-        with handle_warnings():
+        with suppress_warnings():
             wf2 = op(wf1, number)
             data1 = op(wf1.data.values, number)
 

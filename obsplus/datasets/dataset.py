@@ -4,11 +4,11 @@ Module for loading, (and downloading) data sets
 import abc
 import copy
 import inspect
-import os
 import json
+import os
 import shutil
-from contextlib import suppress
 from collections import OrderedDict
+from contextlib import suppress
 from distutils.dir_util import copy_tree
 from functools import lru_cache
 from pathlib import Path
@@ -23,15 +23,15 @@ from obspy.clients.fdsn import Client
 import obsplus
 from obsplus import WaveBank, EventBank, copy_dataset
 from obsplus.constants import DATA_TYPES
-from obsplus.utils.dataset import _create_opsdata
-from obsplus.utils.events import get_event_client
 from obsplus.exceptions import (
     FileHashChangedError,
     MissingDataFileError,
     DataVersionError,
 )
-from obsplus.utils.stations import get_station_client
+from obsplus.utils.dataset import _create_opsdata
+from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import md5_directory
+from obsplus.utils.stations import get_station_client
 from obsplus.utils.waveforms import get_waveform_client
 
 

@@ -9,6 +9,7 @@ import pytest
 import obsplus
 from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
 from obsplus.utils.stations import df_to_inventory
+from obsplus.utils.misc import suppress_warnings
 
 
 class TestDfToInventory:
@@ -56,7 +57,9 @@ class TestDfToInventory:
         """
         _inv = obsplus.load_dataset("bingham").station_client.get_stations()
         inv = _inv.select(station="NOQ")
-        df = obsplus.stations_to_df(inv)
+
+        with suppress_warnings():
+            df = obsplus.stations_to_df(inv)
 
         # set instrument str
         sensor_keys = ("Nanometrics", "Trillium 120 Horizon")

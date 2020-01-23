@@ -2,7 +2,6 @@
 Testing utilities for ObsPlus.
 """
 import os
-import warnings
 from collections import Counter
 from contextlib import contextmanager
 from os.path import join
@@ -13,14 +12,6 @@ import obspy
 import pandas as pd
 
 from obsplus.utils.time import make_time_chunks
-
-
-@contextmanager
-def handle_warnings(mode="ignore"):
-    """ Supress Userwarnings. """
-    with warnings.catch_warnings():
-        warnings.simplefilter(mode)
-        yield
 
 
 @contextmanager

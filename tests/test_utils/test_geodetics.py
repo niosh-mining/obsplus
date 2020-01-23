@@ -12,6 +12,7 @@ import obsplus
 from obsplus.constants import DISTANCE_COLUMN_DTYPES
 from obsplus.utils.geodetics import SpatialCalculator
 from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.misc import suppress_warnings
 
 
 class TestCalculateDistance:
@@ -36,7 +37,8 @@ class TestCalculateDistance:
     @pytest.fixture(scope="class")
     def distance_df(self, cat, inv, spatial_calc):
         """ Return a dataframe from all the crandall events and stations. """
-        return spatial_calc(entity_1=cat, entity_2=inv)
+        with suppress_warnings():
+            return spatial_calc(entity_1=cat, entity_2=inv)
 
     def test_type(self, distance_df):
         """ ensure a dataframe was returned. """
@@ -56,7 +58,8 @@ class TestCalculateDistance:
 
     def test_cat_cat(self, cat, spatial_calc):
         """ ensure it works with two catalogs """
-        df = spatial_calc(cat, cat)
+        with suppress_warnings():
+            df = spatial_calc(cat, cat)
         event_ids = {str(x.resource_id) for x in cat}
         combinations = set(itertools.product(event_ids, event_ids))
         assert combinations == set(df.index)
@@ -68,7 +71,8 @@ class TestCalculateDistance:
         data = [[10.1, 10.1, 0, "some_id"]]
         cols = ["latitude", "longitude", "elevation", "id"]
         df = pd.DataFrame(data, columns=cols).set_index("id")
-        dist_df = spatial_calc(df, cat)
+        with suppress_warnings():
+            dist_df = spatial_calc(df, cat)
         # make sure output has expected shape and ids
         assert len(dist_df) == len(cat) * len(df)
         id1 = dist_df.index.get_level_values("id1")
@@ -81,7 +85,8 @@ class TestCalculateDistance:
         ser = df.iloc[0]
         # first test with no id
         tuple1 = (ser["latitude"], ser["longitude"], -ser["depth"])
-        out1 = spatial_calc(cat, tuple1)
+        with suppress_warnings():
+            out1 = spatial_calc(cat, tuple1)
         # the default index should be sequential
         assert set(out1.index.get_level_values("id2")) == {0}
         # expected len is 3
@@ -91,7 +96,8 @@ class TestCalculateDistance:
         """ Ensure if a 4th column is given the id works. """
         tuple1 = (45, -111, 0, "bob")
         tuple2 = (45, -111, 0)
-        out = spatial_calc(tuple1, tuple2)
+        with suppress_warnings():
+            out = spatial_calc(tuple1, tuple2)
         # distances should be close to 0
         dist_cols = ["distance_m", "distance_degrees", "vertical_distance_m"]
         distances = out[dist_cols].values
@@ -113,7 +119,8 @@ class TestCalculateDistance:
     def test_list_of_tuples(self, spatial_calc):
         input1 = [(45, -111, 0), (46, -111, 0), (49, -112, 0)]
         input2 = obspy.read_events()
-        out = spatial_calc(input1, input2)
+        with suppress_warnings():
+            out = spatial_calc(input1, input2)
         assert len(out) == 9
         assert not out.isnull().any().any()
 
