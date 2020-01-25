@@ -15,11 +15,11 @@ class TestChainClientBasic:
     """ test the chain client using standard python objects """
 
     @pytest.fixture
-    def client_chain(self, kem_fetcher, ta_archive):
-        wclients = [kem_fetcher.waveform_client, obsplus.WaveBank(ta_archive)]
+    def client_chain(self, bing_fetcher, ta_archive):
+        wclients = [bing_fetcher.waveform_client, obsplus.WaveBank(ta_archive)]
         kwargs = dict(
-            event_clients=[kem_fetcher.event_client.get_events()],
-            station_clients=kem_fetcher.station_client.get_stations(),
+            event_clients=[bing_fetcher.event_client.get_events()],
+            station_clients=bing_fetcher.station_client.get_stations(),
             waveform_clients=wclients,
         )
 

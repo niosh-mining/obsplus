@@ -121,7 +121,7 @@ def collect_catalogs():
         eve_id_cache[cat_id] = len(cat)
 
     # get catalog from datasets
-    out["kemmerer"] = obsplus.load_dataset("kemmerer").event_client.get_events()
+    # out["kemmerer"] = obsplus.load_dataset("kemmerer").event_client.get_events()
     out["bingham"] = obsplus.load_dataset("bingham").event_client.get_events()
     out["crandall"] = obsplus.load_dataset("crandall").event_client.get_events()
     return out
@@ -328,12 +328,6 @@ def kem_archive(kemmerer_dataset):
     """ download the kemmerer data (will take a few minutes but only
      done once) """
     return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
-
-
-@pytest.fixture(scope="session")
-def kem_fetcher():
-    """ return a wavefetcher of the kemmerer dataset, download if needed """
-    return obsplus.load_dataset("kemmerer").get_fetcher()
 
 
 @pytest.fixture(scope="class")

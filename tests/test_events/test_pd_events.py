@@ -1,7 +1,6 @@
 """
 Tests for converting catalogs to dataframes.
 """
-from os.path import join
 from pathlib import Path
 
 import numpy as np
@@ -275,13 +274,6 @@ class TestCat2Df:
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
-    def event_df_subset(self, kem_archive):
-        """ read in the partial list of events """
-        path = join(Path(kem_archive).parent, "catalog_subset.csv")
-        return events_to_df(path)
-
-    @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
     def catalog_no_magnitude(self):
         """ get a events with no magnitudes (should just fill with NaN) """
         t1 = obspy.UTCDateTime("2099-04-01T00-01-00")
@@ -381,11 +373,17 @@ class TestCat2Df:
         assert len(df)
         assert isinstance(df, pd.DataFrame)
 
+    def test_cat_to_df_method(self):
+        """ ensure the events object has the to_df method bolted on """
+        cat = obspy.read_events()
+        df = cat.to_df()
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == len(cat)
+
     def test_gather(
         self,
         events_from_catalog,
         events_from_dataframe,
-        event_df_subset,
         catalog_no_magnitude,
         catalog_empty,
     ):
@@ -581,6 +579,18 @@ class TestReadPicks:
         df = picks_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
+
+    def test_from_dataframe_int_location_codes(self, bingham_dataset):
+        """
+        Tests for a dataframe with an int column defining location code.
+        These can drop necessary 0s.
+        """
+        events = bingham_dataset.event_client.get_events()
+        df1 = obsplus.picks_to_df(events)
+        df = df1.copy()
+        df["location"] = df["location"].astype(int)
+        df2 = picks_to_df(df)
+        assert (df2["location"] == df1["location"]).all()
 
     def test_gather(self, catalog_output, dataframe_output):
         """ Simply gather aggregated fixtures so they are marked as used. """
@@ -1018,75 +1028,93 @@ class TestReadMagnitudes:
         assert isinstance(df, pd.DataFrame)
 
 
-class TestReadKemEvents:
+class TestReadBingham:
     """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
 
-    dataset_params = ["events.xml", "catalog.csv"]
-    base_path = obsplus.load_dataset("kemmerer").source_path.parent
-
-    # fixtures
-    @pytest.fixture(scope="class", params=dataset_params)
-    def cat_df(self, request, kem_archive):
-        """ collect all the supported inputs are parametrize"""
-        path = self.base_path / "kemmerer" / request.param
-        df = events_to_df(path)
-        if len(df) > 100:
-            events_to_df(path)
-        return df
+    event_fixtures = []
+    picks_fixtures = []
 
     @pytest.fixture(scope="class")
-    def catalog(self, kem_archive):
-        """ return the events """
-        return obspy.read_events(str(self.base_path / "kemmerer" / "events.xml"))
+    @append_func_name(event_fixtures)
+    @append_func_name(picks_fixtures)
+    def catalog(self, bingham_dataset):
+        """ return the bingham catalog """
+        return bingham_dataset.event_client.get_events()
 
-    # tests
-    def test_len(self, cat_df, catalog):
-        """ ensure the correct number of items was returned """
-        assert len(cat_df) == len(catalog.events)
+    @pytest.fixture(scope="class")
+    @append_func_name(picks_fixtures)
+    def picks_list(self, catalog):
+        """ Get the picks from the catalog. """
+        return [pick for eve in catalog for pick in eve.picks]
 
-    def test_column_order(self, cat_df):
+    @pytest.fixture(scope="class")
+    @append_func_name(event_fixtures)
+    def catalog_df(self, catalog):
+        """ Get a catalog of events. """
+        return events_to_df(catalog)
+
+    @pytest.fixture(scope="class")
+    @append_func_name(event_fixtures)
+    def event_csv_path(self, catalog_df, tmp_path_factory):
+        """ Return a path to a saved csv of event files. """
+        tmp_path = Path(tmp_path_factory.mktemp("ecsv")) / "events.csv"
+        catalog_df.to_csv(tmp_path)
+        return tmp_path
+
+    @pytest.fixture(scope="class")
+    @append_func_name(picks_fixtures)
+    def pick_dataframe(self, catalog):
+        """ return a dataframe of picks. """
+        return picks_to_df(catalog)
+
+    @pytest.fixture(scope="class")
+    @append_func_name(picks_fixtures)
+    def pick_csv_path(self, pick_dataframe, tmp_path_factory):
+        """ Return a path to a pick dataframe. """
+        tmp_path = Path(tmp_path_factory.mktemp("pickcsv")) / "picks.csv"
+        pick_dataframe.to_csv(tmp_path)
+        return tmp_path
+
+    # --- aggregation fixtures
+
+    @pytest.fixture(scope="class", params=event_fixtures)
+    def event_df(self, request):
+        """ collect all the supported inputs are parametrize"""
+        return events_to_df(request.getfixturevalue(request.param))
+
+    @pytest.fixture(scope="class", params=picks_fixtures)
+    def pick_df(self, request):
+        """ Collect everything in the pick dataframe. """
+        df = picks_to_df(request.getfixturevalue(request.param))
+        return df
+
+    # --- tests
+
+    def test_event_df_len(self, event_df, catalog):
+        """ Ensure the length of the event_df and catalog are equal """
+        assert len(event_df) == len(catalog)
+
+    def test_event_column_order(self, event_df):
         """ ensure the order of the columns is correct """
-        cols = list(cat_df.columns)
+        cols = list(event_df.columns)
         assert list(EVENT_COLUMNS) == cols[: len(EVENT_COLUMNS)]
 
-    def test_cat_to_df_method(self):
-        """ ensure the events object has the to_df method bolted on """
-        cat = obspy.read_events()
-        df = cat.to_df()
-        assert isinstance(df, pd.DataFrame)
-        assert len(df) == len(cat)
-
-
-class TestReadKemPicks:
-    """ test for reading a variety of pick formats from the kemmerer
-    dataset """
-
-    path = obsplus.load_dataset("kemmerer").source_path
-    csv_path = path / "picks.csv"
-    qml_path = str(path / "events.xml")
-    qml = obspy.read_events(str(qml_path))
-    picks = [pick for eve in qml for pick in eve.picks]
-    supported_inputs = [qml_path, qml, csv_path]
-
-    # fixtures
-    @pytest.fixture(scope="class", params=supported_inputs)
-    def pick_df(self, request):
-        """ collect all the supported inputs are parametrize"""
-        return picks_to_dataframe(request.param)
-
-    # tests
-    def test_len(self, pick_df):
+    def test_pick_len(self, pick_df, picks_list):
         """ ensure the correct number of items was returned """
-        assert len(pick_df) == len(self.picks)
+        assert len(pick_df) == len(picks_list)
 
-    def test_column_order(self, pick_df):
+    def test_pick_column_order(self, pick_df):
         """ ensure the order of the columns is correct """
         cols = list(pick_df.columns)
         assert list(PICK_COLUMNS) == cols[: len(PICK_COLUMNS)]
 
     def test_event_id(self, pick_df):
-        """ ensure nan values are not in dataframe event_id column """
-        assert not pick_df.event_id.isnull().any()
+        """
+        There can either be all Nan in the event_id column (for the case of the
+        dataframe from picks list) or all not NaN for other cases.
+        """
+        null_count = pick_df["event_id"].isnull().sum()
+        assert null_count == 0 or null_count == len(pick_df)
 
     def test_seed_id(self, pick_df):
         """ ensure valid seed_ids were created. """

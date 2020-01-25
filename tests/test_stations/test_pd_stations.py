@@ -155,9 +155,9 @@ class TestReadDirectoryOfInventories:
 
     # fixtures
     @pytest.fixture(scope="class")
-    def inventory(self, kemmerer_dataset):
+    def inventory(self, bingham_dataset):
         """ read the stations """
-        return kemmerer_dataset.station_client.get_stations()
+        return bingham_dataset.station_client.get_stations()
 
     @pytest.fixture(scope="class")
     def inv_directory(self, inventory):

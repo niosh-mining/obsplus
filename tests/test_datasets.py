@@ -127,17 +127,17 @@ class TestDatasets:
 class TestBasic:
     """ Basic misc. tests for dataset. """
 
-    def test_all_files_copied(self, kemmerer_dataset):
+    def test_all_files_copied(self, bingham_dataset):
         """ When the download logic fires all files in the source
         should be copied. """
         # iterate top level files and assert each was copied
-        for tlf in kemmerer_dataset.data_files:
-            expected = kemmerer_dataset.data_path / tlf.name
+        for tlf in bingham_dataset.data_files:
+            expected = bingham_dataset.data_path / tlf.name
             assert expected.exists()
 
-    def test_get_fetcher(self, kemmerer_dataset):
+    def test_get_fetcher(self, bingham_dataset):
         """ ensure a datafetcher can be created. """
-        fetcher = kemmerer_dataset.get_fetcher()
+        fetcher = bingham_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
 
 

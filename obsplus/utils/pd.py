@@ -30,6 +30,7 @@ OPS_DTYPE_FUNCS = {
     "ops_datetime": to_datetime64,
     "ops_timedelta": to_timedelta64,
     "utcdatetime": to_utc,
+    "location_code": lambda x: x.astype(str).str.pad(width=2, fillchar="0"),
 }
 
 # the dtype of the columns
@@ -37,6 +38,7 @@ OPS_DTYPES = {
     "ops_datetime": "datetime64",
     "ops_timedelta": "timedelta64",
     "utcdatetime": obspy.UTCDateTime,
+    "location_code": str,
 }
 
 

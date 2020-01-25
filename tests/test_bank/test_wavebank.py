@@ -1142,9 +1142,9 @@ class TestGetGaps:
         assert not len(gaps)
         assert set(WaveBank._gap_columns).issubset(set(gaps.columns))
 
-    def test_kemmerer_uptime(self, kem_fetcher):
+    def test_kemmerer_uptime(self, bing_fetcher):
         """ ensure the kemmerer bank returns an uptime df"""
-        bank = kem_fetcher.waveform_client
+        bank = bing_fetcher.waveform_client
         df = bank.get_uptime_df()
         diff = abs(df["uptime"] - df["duration"])
         tolerance = np.timedelta64(1, "s")
@@ -1164,9 +1164,9 @@ class TestGetGaps:
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 
-    def test_no_gaps_on_continuous_dataset(self, kemmerer_dataset):
+    def test_no_gaps_on_continuous_dataset(self, ta_dataset):
         """ test no gaps on kemmerer dataset. """
-        ds = obsplus.load_dataset("kemmerer")
+        ds = obsplus.load_dataset("ta")
         wbank = ds.waveform_client
         gap_df = wbank.get_gaps_df()
         assert len(gap_df) == 0

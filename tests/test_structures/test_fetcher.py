@@ -45,9 +45,9 @@ def trim_kem_events(fetcher: Fetcher):
 
 @pytest.fixture(scope="session")
 @append_func_name(WAVEFETCHERS)
-def kem_fetcher():
+def bing_fetcher():
     """ init a waveform fetcher passing a path to a directory as the arg """
-    return obsplus.load_dataset("kemmerer").get_fetcher()
+    return obsplus.load_dataset("bingham").get_fetcher()
 
 
 @pytest.fixture(scope="session")
@@ -62,7 +62,7 @@ def ta_fetcher(ta_dataset):
 @append_func_name(WAVEFETCHERS)
 def kem_fetcher_with_processor():
     """ same as kem fetcher but with a stream_processor """
-    dataset = obsplus.load_dataset("kemmerer")
+    dataset = obsplus.load_dataset("bingham")
 
     def processor(st):
         """ simple processor to apply bandpass filter """
@@ -102,7 +102,7 @@ def kem_fetcher_limited():
 
 
 def test_gather(
-    kem_fetcher, ta_fetcher, kem_fetcher_with_processor, kem_fetcher_limited
+    bing_fetcher, ta_fetcher, kem_fetcher_with_processor, kem_fetcher_limited
 ):
     """ Simply gather aggregated fixtures so they are marked as used. """
 
@@ -166,12 +166,12 @@ class TestGetWaveforms:
     # fixtures
     @pytest.fixture(scope="session")
     @append_func_name(generic_streams)
-    def kem_stream(self, kem_fetcher):
+    def kem_stream(self, bing_fetcher):
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
         starttime = obspy.UTCDateTime("2009-04-01")
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
-        return kem_fetcher.get_waveforms(**kwargs)
+        return bing_fetcher.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
     @append_func_name(generic_streams)
@@ -331,9 +331,9 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
         return request.getfixturevalue(request.param)
 
     @pytest.fixture(scope="session")
-    def stream_dict_zero_starttime(self, kem_fetcher):
+    def stream_dict_zero_starttime(self, bing_fetcher):
         """ yield waveforms into a dict using 0 for starttimes """
-        return dict(kem_fetcher.yield_event_waveforms(0, self.timeafter))
+        return dict(bing_fetcher.yield_event_waveforms(0, self.timeafter))
 
     @pytest.fixture(scope="class")
     def wavefetch_no_inv(self, bingham_dataset):
@@ -408,9 +408,9 @@ class TestStreamProcessor:
 
     # fixtures
     @pytest.fixture(scope="session")
-    def fetcher(self, kem_fetcher):
+    def fetcher(self, bing_fetcher):
         """ return the waveform fetcher and overwrite the stream_processor """
-        new_fetcher = copy.deepcopy(kem_fetcher)
+        new_fetcher = copy.deepcopy(bing_fetcher)
 
         def stream_processor(st: obspy.Stream) -> obspy.Stream:
             """ select the z component, detrend, and filter a waveforms """
@@ -457,34 +457,34 @@ class TestSwapAttrs:
         return obspy.Catalog(events=[event])
 
     @pytest.fixture(scope="session")
-    def new_event_stream(self, kem_fetcher, catalog):
+    def new_event_stream(self, bing_fetcher, catalog):
         """ get a single event from the fetcher, overwriting the attached
         events """
-        func = kem_fetcher.yield_event_waveforms
+        func = bing_fetcher.yield_event_waveforms
         result = func(time_before=self.tb, time_after=self.ta, events=catalog)
         return list(result)[0].stream
 
     @pytest.fixture(scope="session")
-    def yield_event_streams(self, kem_fetcher, kem_archive):
+    def yield_event_streams(self, bing_fetcher, kem_archive):
         """ yield a subset of the events in kem_fetcher """
         path = Path(kem_archive).parent / "catalog.csv"
         event_df = pd.read_csv(path).iloc[0:1]
         tb = 1
         ta = 3
-        ite = kem_fetcher.yield_event_waveforms(tb, ta, events=event_df)
+        ite = bing_fetcher.yield_event_waveforms(tb, ta, events=event_df)
         return list(ite)
 
     @pytest.fixture(scope="class")
-    def new_inventory_df(self, kem_fetcher):
+    def new_inventory_df(self, bing_fetcher):
         """ return a new stations dataframe with only the first row """
-        return kem_fetcher.station_df.iloc[0:1]
+        return bing_fetcher.station_df.iloc[0:1]
 
     @pytest.fixture(scope="class")
-    def new_inventory_stream(self, kem_fetcher, new_inventory_df):
+    def new_inventory_stream(self, bing_fetcher, new_inventory_df):
         """ swap out the stations to only return a subset of the channels """
         t1 = self.t1
         t2 = self.t1 + 60
-        return kem_fetcher.get_waveforms(
+        return bing_fetcher.get_waveforms(
             starttime=t1, endtime=t2, stations=new_inventory_df
         )
 
@@ -519,23 +519,23 @@ class TestCallWaveFetcher:
 
     # fixtures
     @pytest.fixture(scope="class")
-    def stream(self, kem_fetcher):
+    def stream(self, bing_fetcher):
         """ return a waveforms from calling the fetcher """
-        return kem_fetcher(self.t1, time_before=self.tb, time_after=self.ta)
+        return bing_fetcher(self.t1, time_before=self.tb, time_after=self.ta)
 
     # tests
-    def test_callable(self, kem_fetcher):
+    def test_callable(self, bing_fetcher):
         """ ensure the fetcher is callable """
-        assert callable(kem_fetcher)
+        assert callable(bing_fetcher)
 
     def test_is_stream(self, stream):
         """ ensure the waveforms is an instance of waveforms """
         assert isinstance(stream, obspy.Stream)
 
-    def test_channels(self, stream, kem_fetcher):
+    def test_channels(self, stream, bing_fetcher):
         """ ensure all channels are present """
         stream_channels = {tr.id for tr in stream}
-        sta_channels = set(kem_fetcher.station_df.seed_id)
+        sta_channels = set(bing_fetcher.station_df.seed_id)
         assert stream_channels == sta_channels
 
     def test_stream_duration(self, stream):
@@ -545,19 +545,19 @@ class TestCallWaveFetcher:
         sr = stats.sampling_rate
         assert abs(duration - self.duration) < 2 * sr
 
-    def test_zero_in_time_before(self, kem_fetcher):
+    def test_zero_in_time_before(self, bing_fetcher):
         """ ensure setting time_before parameter to 0 doesn't raise """
         starttime = obspy.UTCDateTime("2009-04-01")
         try:
-            kem_fetcher(starttime, time_before=0, time_after=1)
+            bing_fetcher(starttime, time_before=0, time_after=1)
         except AssertionError:
             pytest.fail("should not raise")
 
-    def test_zero_in_time_after(self, kem_fetcher):
+    def test_zero_in_time_after(self, bing_fetcher):
         """ ensure setting time_after parameter to 0 doesn't raise """
         starttime = obspy.UTCDateTime("2009-04-01")
         try:
-            kem_fetcher(starttime, time_before=1, time_after=0)
+            bing_fetcher(starttime, time_before=1, time_after=0)
         except AssertionError:
             pytest.fail("should not raise")
 
@@ -574,8 +574,8 @@ class TestYieldCallables:
 
     # fixtures
     @pytest.fixture(scope="session")
-    def callables(self, kem_fetcher):
-        it = kem_fetcher.yield_waveform_callable(
+    def callables(self, bing_fetcher):
+        it = bing_fetcher.yield_waveform_callable(
             self.starttime, self.endtime, self.duration, self.overlap
         )
         return list(it)
@@ -614,18 +614,18 @@ class TestClientNoGetBulkWaveForms:
 
     # fixtures
     @pytest.fixture
-    def kem_bank_no_bulk(self, kem_archive, monkeypatch):
+    def bing_bank_no_bulk(self, bingham_dataset, monkeypatch):
         """ remove the get_waveforms_bulk from Sbank class """
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
         monkeypatch.delattr(WaveBank, "get_waveforms_by_seed")
         # return a bank
-        yield WaveBank(kem_archive)
+        yield WaveBank(bingham_dataset.waveform_path)
 
     @pytest.fixture
-    def wavefetcher_no_bulk(self, kem_bank_no_bulk, kemmerer_dataset):
+    def wavefetcher_no_bulk(self, bing_bank_no_bulk, bingham_dataset):
         """ return a wavefetcher from the bank """
-        inv = kemmerer_dataset.station_client.get_stations()
-        return Fetcher(waveforms=kem_bank_no_bulk, stations=inv)
+        inv = bingham_dataset.station_client.get_stations()
+        return Fetcher(waveforms=bing_bank_no_bulk, stations=inv)
 
     @pytest.fixture
     def yielded_streams(self, wavefetcher_no_bulk):
@@ -680,9 +680,9 @@ class TestFilterInventoryByAvailability:
         return fetcher._get_bulk_arg(starttime=self.t0, endtime=self.t1)
 
     @pytest.fixture
-    def fetcher(self, altered_inv, kem_fetcher):
+    def fetcher(self, altered_inv, bing_fetcher):
         """ return a fetcher with the modified times """
-        return Fetcher(kem_fetcher.waveform_client, stations=altered_inv)
+        return Fetcher(bing_fetcher.waveform_client, stations=altered_inv)
 
     # tests
     def test_bulk_arg_is_limited(self, bulk_arg_later_time, altered_inv):
@@ -722,10 +722,10 @@ class TestGetEventData:
             yield out
 
     @pytest.fixture(scope="class")
-    def fetcher(self, kem_fetcher):
+    def fetcher(self, bing_fetcher):
         """ make a copy of the kem_fetcher and restrict scope of events to
         when data are available."""
-        fet = kem_fetcher.copy()
+        fet = bing_fetcher.copy()
         df = fet.event_df
         fet.event_df = df[(df.time >= self.t1) & (df.time <= self.t2)]
         return fet
@@ -795,7 +795,7 @@ class TestGetContinuousData:
             yield out
 
     @pytest.fixture(scope="class")
-    def download_data(self, temp_dir_path, kem_fetcher: Fetcher):
+    def download_data(self, temp_dir_path, bing_fetcher):
         """ download data from the kem fetcher into the tempdir, return
         path to tempdir """
         path = Path(temp_dir_path) / self.path
@@ -806,7 +806,7 @@ class TestGetContinuousData:
             overlap=self.overlap,
             path=path,
         )
-        kem_fetcher.download_waveforms(**params)
+        bing_fetcher.download_waveforms(**params)
         return temp_dir_path
 
     @pytest.fixture(scope="class")
@@ -817,9 +817,9 @@ class TestGetContinuousData:
         return sb
 
     @pytest.fixture(scope="class")
-    def continuous_fetcher(self, continuous_sbank, kem_fetcher):
+    def continuous_fetcher(self, continuous_sbank, bing_fetcher):
         """ init a fetcher using the old fetcher """
-        fet = kem_fetcher.copy()
+        fet = bing_fetcher.copy()
         fet._download_client = continuous_sbank
         return fet
 
