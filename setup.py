@@ -84,7 +84,6 @@ ENTRY_POINTS = {
     "obsplus.datasets": [
         "bingham = obsplus.datasets.bingham",
         "crandall = obsplus.datasets.crandall",
-        "kemmerer = obsplus.datasets.kemmerer",
         "ta = obsplus.datasets.ta",
     ]
 }

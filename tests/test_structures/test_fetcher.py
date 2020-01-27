@@ -77,26 +77,6 @@ def ta_fetcher_with_processor(ta_dataset):
     return fetcher
 
 
-@pytest.fixture(scope="session")
-@register_func(WAVEFETCHERS)
-def kem_fetcher_limited():
-    """ init a fetcher with a subset of the events """
-    kemmerer_dataset = obsplus.load_dataset("kemmerer")
-    # load in a subset of the full events dataframe
-    event_ids = {
-        "smi:local/042f78e9-6089-4ed8-8f9b-47c2189a1c75",
-        "smi:local/16459ce7-69ff-4fe0-8639-a980b47498bb",
-    }
-    df = pd.read_csv(kemmerer_dataset.data_path / "catalog.csv")
-    df = df[df.event_id.isin(event_ids)]
-    wf = Fetcher(
-        waveforms=kemmerer_dataset.waveform_client,
-        events=df,
-        stations=kemmerer_dataset.station_client,
-    )
-    return wf
-
-
 @pytest.fixture(scope="class")
 def bing_first_time(bingham_dataset):
     """ Get a new time based on the first event in bingham event + 1"""
@@ -115,9 +95,7 @@ def ta_time_range(ta_wavebank):
     return to_utc(start), to_utc(end)
 
 
-def test_gather(
-    bing_fetcher, ta_fetcher, subbing_fetcher_with_processor, kem_fetcher_limited
-):
+def test_gather(bing_fetcher, ta_fetcher, subbing_fetcher_with_processor):
     """ Simply gather aggregated fixtures so they are marked as used. """
 
 

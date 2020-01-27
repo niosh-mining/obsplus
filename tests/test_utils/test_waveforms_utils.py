@@ -255,17 +255,16 @@ class TestArchiveToSDS:
     """ Tests for converting archives to SDS. """
 
     stream_process_count = 0
-    dataset_name = "kemmerer"  # dataset used for testing
 
     def stream_processor(self, st):
         self.stream_process_count += 1
         return st
 
     @pytest.fixture(scope="class")
-    def converted_archive(self, tmpdir_factory):
+    def converted_archive(self, tmpdir_factory, ta_dataset):
         """ Convert a dataset archive to a SDS archive. """
         out = tmpdir_factory.mktemp("new_sds")
-        ds = obsplus.load_dataset(self.dataset_name)
+        ds = ta_dataset
         wf_path = ds.waveform_path
         archive_to_sds(wf_path, out, stream_processor=self.stream_processor)
         # Because fixtures run in different context then tests this we
@@ -281,10 +280,9 @@ class TestArchiveToSDS:
         return wb
 
     @pytest.fixture(scope="class")
-    def old_wavebank(self):
+    def old_wavebank(self, ta_dataset):
         """ get the wavebank of the archive before converting to sds """
-        ds = obsplus.load_dataset(self.dataset_name)
-        bank = ds.waveform_client
+        bank = ta_dataset.waveform_client
         assert isinstance(bank, obsplus.WaveBank)
         return bank
 

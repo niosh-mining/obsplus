@@ -280,10 +280,9 @@ class TestStationDfFromCatalog:
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
 
-    def test_kem_catalog(self):
+    def test_kem_catalog(self, bingham_dataset):
         """ test converting the kemmerer catalog to an inv dataframe. """
-        ds = obsplus.load_dataset("kemmerer")
-        df = stations_to_df(ds.event_client.get_events())
+        df = stations_to_df(bingham_dataset.event_client.get_events())
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
 
