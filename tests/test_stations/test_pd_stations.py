@@ -14,7 +14,7 @@ import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS
 from obsplus.utils.time import is_time
-from obsplus.utils.testing import append_func_name
+from obsplus.utils.misc import register_func
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
 
@@ -63,14 +63,14 @@ class TestReadInventory:
 
     # fixtures
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def df_from_inv(self):
         """ read events from a events object """
         inv = obspy.read_inventory()
         return stations_to_df(inv)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def df_from_inv_df(self):
         event_dict = {
             "start_date": obspy.UTCDateTime(),
@@ -193,19 +193,19 @@ class TestReadTAInventory:
     fixtures = []
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def ta_inventory(self, ta_dataset):
         """ Return the bingham inventory """
         return ta_dataset.station_client.get_stations()
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def ta_inv_df(self, ta_inventory):
         """ Return the Bingham inventory as a dataframe. """
         return obsplus.stations_to_df(ta_inventory)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def inventory_csv_path(self, ta_inv_df, tmp_path_factory):
         """ Return a csv path to the bingham inventory. """
         path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.csv"
@@ -213,7 +213,7 @@ class TestReadTAInventory:
         return path
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def inventory_xml_path(self, ta_inventory, tmp_path_factory):
         """ Return a to the bingham inventory saved as an xml. """
         path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.xml"

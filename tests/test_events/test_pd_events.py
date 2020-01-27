@@ -30,7 +30,7 @@ from obsplus.events.pd import (
     magnitudes_to_dataframe,
 )
 from obsplus.utils.pd import get_seed_id_series
-from obsplus.utils.testing import append_func_name
+from obsplus.utils.misc import register_func
 from obsplus.utils.time import to_datetime64
 
 common_extractor_cols = {
@@ -253,14 +253,14 @@ class TestCat2Df:
 
     # fixtures
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def events_from_catalog(self):
         """ read events from a events object """
         cat = obspy.read_events()
         return event_to_dataframe(cat)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def events_from_dataframe(self):
         event_dict = {
             "time": obspy.UTCDateTime(),
@@ -273,7 +273,7 @@ class TestCat2Df:
         return events_to_df(df)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def catalog_no_magnitude(self):
         """ get a events with no magnitudes (should just fill with NaN) """
         t1 = obspy.UTCDateTime("2099-04-01T00-01-00")
@@ -283,7 +283,7 @@ class TestCat2Df:
         return events_to_df(cat)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def catalog_empty(self):
         """ get a with one blank event """
         event = ev.Event()
@@ -465,13 +465,13 @@ class TestReadPicks:
         return catalog_cache[self.cat_name]
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def catalog_output(self, tcat):
         """ call read_picks on the events, return result """
         return picks_to_dataframe(tcat)
 
     @pytest.fixture(scope="class")
-    @append_func_name(fixtures)
+    @register_func(fixtures)
     def dataframe_output(self, tcat):
         """ return read_picks result from reading dataframe """
         df = picks_to_df(tcat)
@@ -1035,26 +1035,26 @@ class TestReadBingham:
     picks_fixtures = []
 
     @pytest.fixture(scope="class")
-    @append_func_name(event_fixtures)
-    @append_func_name(picks_fixtures)
+    @register_func(event_fixtures)
+    @register_func(picks_fixtures)
     def catalog(self, bingham_dataset):
         """ return the bingham catalog """
         return bingham_dataset.event_client.get_events()
 
     @pytest.fixture(scope="class")
-    @append_func_name(picks_fixtures)
+    @register_func(picks_fixtures)
     def picks_list(self, catalog):
         """ Get the picks from the catalog. """
         return [pick for eve in catalog for pick in eve.picks]
 
     @pytest.fixture(scope="class")
-    @append_func_name(event_fixtures)
+    @register_func(event_fixtures)
     def catalog_df(self, catalog):
         """ Get a catalog of events. """
         return events_to_df(catalog)
 
     @pytest.fixture(scope="class")
-    @append_func_name(event_fixtures)
+    @register_func(event_fixtures)
     def event_csv_path(self, catalog_df, tmp_path_factory):
         """ Return a path to a saved csv of event files. """
         tmp_path = Path(tmp_path_factory.mktemp("ecsv")) / "events.csv"
@@ -1062,13 +1062,13 @@ class TestReadBingham:
         return tmp_path
 
     @pytest.fixture(scope="class")
-    @append_func_name(picks_fixtures)
+    @register_func(picks_fixtures)
     def pick_dataframe(self, catalog):
         """ return a dataframe of picks. """
         return picks_to_df(catalog)
 
     @pytest.fixture(scope="class")
-    @append_func_name(picks_fixtures)
+    @register_func(picks_fixtures)
     def pick_csv_path(self, pick_dataframe, tmp_path_factory):
         """ Return a path to a pick dataframe. """
         tmp_path = Path(tmp_path_factory.mktemp("pickcsv")) / "picks.csv"

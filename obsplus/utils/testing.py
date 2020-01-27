@@ -161,16 +161,6 @@ class ArchiveDirectory:
             st.write(str(save_name), "mseed")
 
 
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
-
-
 def assert_streams_almost_equal(
     st1: obspy.Stream,
     st2: obspy.Stream,
@@ -268,8 +258,14 @@ class _StreamEqualTester:
     def _assert_arrays_almost_equal(self, tr1, tr2):
         """ Assert that the data arrays of the traces are almost equal. """
         ars = sorted([tr1.data, tr2.data], key=lambda x: len(x))
+        len1, len2 = len(ars[0]), len(ars[1])
+        len_diff = len2 - len1
         kwargs = dict(atol=self.atol, rtol=self.rtol, equal_nan=self.equal_nan)
-        close = np.allclose(ars[0], ars[1], **kwargs)
+        # check for off by one error
+        if len_diff != 0:  # if they aren't equal in len
+            close = False
+        else:
+            close = np.allclose(ars[0], ars[1], **kwargs)
         if not close and self.allow_off_by_one:
             # If the arrays are within 2 samples of each other in length
             if abs(len(ars[0]) - len(ars[1])) <= 2:

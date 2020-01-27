@@ -254,6 +254,12 @@ def ta_dataset():
 
 
 @pytest.fixture(scope="session")
+def ta_wavebank(ta_dataset):
+    """ Return a wavebank from TA dataset. """
+    return ta_dataset.waveform_client
+
+
+@pytest.fixture(scope="session")
 def bingham_dataset():
     """ load the bingham dataset """
     ds = load_and_update_dataset("bingham")

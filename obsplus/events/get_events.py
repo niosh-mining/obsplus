@@ -19,7 +19,6 @@ from obsplus.utils.docs import compose_docstring
 from obsplus.utils.time import dict_times_to_npdatetimes
 
 CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
-
 NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
 
 UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}

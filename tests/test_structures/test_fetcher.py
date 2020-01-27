@@ -16,9 +16,9 @@ from obspy.core.event import Event, Origin
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.misc import suppress_warnings
-from obsplus.utils.testing import append_func_name
-from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc
+from obsplus.utils.misc import suppress_warnings, register_func
+from obsplus.utils.testing import assert_streams_almost_equal
+from obsplus.utils.time import make_time_chunks, to_utc
 
 WAVEFETCHERS = []
 
@@ -28,7 +28,6 @@ WAVEFETCHERS = []
 
 def processor(st):
     """ simple processor to apply bandpass filter """
-    st.filter("bandpass", freqmin=1, freqmax=10)
     # mark that the processor ran
     for tr in st:
         tr.stats["processor_ran"] = True
@@ -36,14 +35,14 @@ def processor(st):
 
 
 @pytest.fixture(scope="session")
-@append_func_name(WAVEFETCHERS)
+@register_func(WAVEFETCHERS)
 def bing_fetcher():
     """ init a waveform fetcher passing a path to a directory as the arg """
     return obsplus.load_dataset("bingham").get_fetcher()
 
 
 @pytest.fixture(scope="session")
-@append_func_name(WAVEFETCHERS)
+@register_func(WAVEFETCHERS)
 def ta_fetcher(ta_dataset):
     """ init a waveform fetcher using an active obspy client and the TA
     stations """
@@ -51,13 +50,14 @@ def ta_fetcher(ta_dataset):
 
 
 @pytest.fixture(scope="session")
-@append_func_name(WAVEFETCHERS)
-def bing_fetcher_with_processor(bingham_dataset):
-    """ A fetcher with a stream_processor """
+@register_func(WAVEFETCHERS)
+def subbing_fetcher_with_processor(bingham_dataset):
+    """ A fetcher with a stream_processor, only use last event of bingham. """
     dataset = bingham_dataset
+    events = dataset.event_client.get_events()[-1]
     fetcher = Fetcher(
         waveforms=dataset.waveform_client.get_waveforms(),
-        events=dataset.event_client.get_events(),
+        events=events,
         stations=dataset.station_client.get_stations(),
         stream_processor=processor,
     )
@@ -65,7 +65,7 @@ def bing_fetcher_with_processor(bingham_dataset):
 
 
 @pytest.fixture(scope="session")
-@append_func_name(WAVEFETCHERS)
+@register_func(WAVEFETCHERS)
 def ta_fetcher_with_processor(ta_dataset):
     """ The TA fetcher with a stream_processor """
     fetcher = Fetcher(
@@ -78,7 +78,7 @@ def ta_fetcher_with_processor(ta_dataset):
 
 
 @pytest.fixture(scope="session")
-@append_func_name(WAVEFETCHERS)
+@register_func(WAVEFETCHERS)
 def kem_fetcher_limited():
     """ init a fetcher with a subset of the events """
     kemmerer_dataset = obsplus.load_dataset("kemmerer")
@@ -97,8 +97,26 @@ def kem_fetcher_limited():
     return wf
 
 
+@pytest.fixture(scope="class")
+def bing_first_time(bingham_dataset):
+    """ Get a new time based on the first event in bingham event + 1"""
+    df = obsplus.events_to_df(bingham_dataset.event_client.get_events())
+    return to_utc(df.iloc[0]["time"])
+
+
+@pytest.fixture(scope="session")
+def ta_time_range(ta_wavebank):
+    """ return a tuple of time from TA bank. """
+    df = ta_wavebank.read_index()
+    t1 = to_utc(df["starttime"].min()) + 3600
+    # move to nearest hour
+    start = to_utc(t1.timestamp - t1.timestamp % 3600)
+    end = start + 3600 * 6
+    return to_utc(start), to_utc(end)
+
+
 def test_gather(
-    bing_fetcher, ta_fetcher, bing_fetcher_with_processor, kem_fetcher_limited
+    bing_fetcher, ta_fetcher, subbing_fetcher_with_processor, kem_fetcher_limited
 ):
     """ Simply gather aggregated fixtures so they are marked as used. """
 
@@ -161,7 +179,7 @@ class TestGetWaveforms:
 
     # fixtures
     @pytest.fixture(scope="session")
-    @append_func_name(generic_streams)
+    @register_func(generic_streams)
     def kem_stream(self, bing_fetcher):
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
@@ -170,18 +188,18 @@ class TestGetWaveforms:
         return bing_fetcher.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
-    @append_func_name(generic_streams)
-    def kem_stream_processed(self, bing_fetcher_with_processor):
+    @register_func(generic_streams)
+    def kem_stream_processed(self, subbing_fetcher_with_processor):
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
-        cat = bing_fetcher_with_processor.event_client.get_events()
+        cat = subbing_fetcher_with_processor.event_client.get_events()
         starttime = cat[0].origins[0].time - 2
-        fetch = bing_fetcher_with_processor
+        fetch = subbing_fetcher_with_processor
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         return fetch.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
-    @append_func_name(generic_streams)
+    @register_func(generic_streams)
     def ta_stream(self, ta_fetcher):
         """ using the ta_fetcher and get_waveforms, return a data waveforms """
         starttime = obspy.UTCDateTime("2007-02-20")
@@ -268,9 +286,9 @@ class TestYieldWaveforms:
 
     # fixtures
     @pytest.fixture(scope="session")
-    def ta_stream(self, bing_fetcher_with_processor):
+    def ta_stream(self, subbing_fetcher_with_processor):
         """ return a list of streams yielded from TA fetcher """
-        fet = bing_fetcher_with_processor
+        fet = subbing_fetcher_with_processor
         return list(
             fet.yield_waveforms(
                 self.starttime, self.endtime, self.duration, self.overlap
@@ -300,7 +318,6 @@ class TestYieldEventWaveforms:
     commons = []
 
     # helper functions
-
     check_duration = TestYieldWaveforms.check_duration
     check_stream_processor_ran = TestYieldWaveforms.check_stream_processor_ran
 
@@ -312,24 +329,25 @@ class TestYieldEventWaveforms:
 
     # fixtures
     @pytest.fixture(scope="session")
-    @append_func_name(commons)
-    def event_list_origin(self, bing_fetcher_with_processor):
+    @register_func(commons)
+    def event_list_origin(self, subbing_fetcher_with_processor):
         """ return a list of event waveforms, each starttime referenced
         at origin """
-        func = bing_fetcher_with_processor.yield_event_waveforms
-        return list(func(self.time_before, self.time_after))
+        func = subbing_fetcher_with_processor.yield_event_waveforms
+        return dict(func(self.time_before, self.time_after))
 
     @pytest.fixture(scope="session")
-    @append_func_name(commons)
-    def event_list_p(self, bing_fetcher_with_processor):
+    @register_func(commons)
+    def event_dict_p(self, subbing_fetcher_with_processor):
         """ return a list of event waveforms, each starttime referenced
         at the pwave for the channel """
-        func = bing_fetcher_with_processor.yield_event_waveforms
-        out = list(func(self.time_before, self.time_after, reference="p"))
+        # fetcher = bing_fetcher_with_processor
+        func = subbing_fetcher_with_processor.yield_event_waveforms
+        out = dict(func(self.time_before, self.time_after, reference="p"))
         return out
 
     @pytest.fixture(scope="session", params=commons)
-    def stream_list(self, request):
+    def stream_dict(self, request):
         """ collect all waveforms lists to apply general tests on """
         return request.getfixturevalue(request.param)
 
@@ -349,27 +367,26 @@ class TestYieldEventWaveforms:
 
     # general test
 
-    def test_duration(self, stream_list):
+    def test_duration(self, stream_dict):
         """ ensure the duration of the streams is correct """
-        for _, st in stream_list:
-            if not self.check_duration(st):
-                breakpoint()
-                self.check_duration(st)
+        for _, st in stream_dict.items():
             assert self.check_duration(st)
 
-    def test_stream_processor(self, stream_list):
+    def test_stream_processor(self, stream_dict):
         """ ensure the waveforms processor ran """
-        assert len(stream_list)
-        for _, st in stream_list:
+        assert len(stream_dict)
+        for _, st in stream_dict.items():
             assert self.check_stream_processor_ran(st)
 
     # phase tests
-    def test_only_p_phases(self, event_list_p, bing_fetcher_with_processor):
+    def test_only_p_phases(self, event_dict_p, subbing_fetcher_with_processor):
         """ make sure only stations that have p picks are returned """
-        stream = bing_fetcher_with_processor.waveform_client.get_waveforms()
-        df = bing_fetcher_with_processor.picks_df
-        for eve_id, st in event_list_p:
-            pick_df = df[df.event_id == eve_id]
+        stream = subbing_fetcher_with_processor.waveform_client.get_waveforms()
+        df = subbing_fetcher_with_processor.picks_df
+        for eve_id, st in event_dict_p.items():
+            con1 = df["event_id"] == eve_id
+            con2 = df["phase_hint"].str.upper() == "P"
+            pick_df = df[con1 & con2]
             # iterate each pick, determine if it has data in the bank
             for ind, row in pick_df.iterrows():
                 time = to_utc(row["time"])
@@ -380,7 +397,7 @@ class TestYieldEventWaveforms:
                 )
                 st1 = stream.get_waveforms(**kwargs)
                 st2 = st.get_waveforms(**kwargs)
-                assert st1 == st2
+                assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
     # zero starttime test
     def test_zero_starttime(self, stream_dict_zero_starttime):
@@ -416,7 +433,19 @@ class TestYieldEventWaveforms:
         st_dict = dict(wavefetch_no_inv.yield_event_waveforms(**kwargs))
         self.check_stream_dict(st_dict)
 
-    def test_gather(self, event_list_origin, event_list_p):
+    def test_events_no_data(self, subbing_fetcher_with_processor):
+        """ Create a fetcher with events it doesn't have data for.
+        It should empty strings. """
+        fetcher = subbing_fetcher_with_processor
+        events = obspy.read_events()
+        wave_iterator = fetcher.yield_event_waveforms(1, 1, events=events)
+        wave_list = list(wave_iterator)
+        assert len(wave_list) == len(events)
+        for _, st in wave_list:
+            assert isinstance(st, obspy.Stream)
+            assert len(st) == 0
+
+    def test_gather(self, event_list_origin, event_dict_p):
         """ Simply gather aggregated fixtures so they are marked as used. """
 
 
@@ -460,20 +489,26 @@ class TestStreamProcessor:
 class TestSwapAttrs:
     """ ensure events, stations, and picks objects can be temporarily swapped out """
 
-    t1 = obspy.UTCDateTime("2009-04-01T00-01-00")
     tb = 1
-    ta = 9
+    ta = 3
 
     # fixtures
-    @pytest.fixture(scope="session")
-    def catalog(self):
+
+    @pytest.fixture(scope="class")
+    def new_time(self, bing_first_time):
+        """ Get a new time based on the first event in bingham event + 1"""
+        return to_utc(bing_first_time + 1)
+
+    @pytest.fixture(scope="class")
+    def catalog(self, bingham_dataset, new_time):
         """ assemble a events to test yield_event_waveforms with an event
         that was not initiated from the start """
-        ori = Origin(time=self.t1, latitude=47.1, longitude=-100.22)
+        # get first event, create new origin to slightly add some time.
+        ori = Origin(time=new_time, latitude=47.1, longitude=-100.22)
         event = Event(origins=[ori])
         return obspy.Catalog(events=[event])
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="class")
     def new_event_stream(self, bing_fetcher, catalog):
         """ get a single event from the fetcher, overwriting the attached
         events """
@@ -481,7 +516,7 @@ class TestSwapAttrs:
         result = func(time_before=self.tb, time_after=self.ta, events=catalog)
         return list(result)[0].stream
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="class")
     def yield_event_streams(self, bingham_dataset):
         """ yield a subset of the events in the bingham dataset """
         event_df = bingham_dataset.event_client.get_events().to_df()
@@ -497,21 +532,20 @@ class TestSwapAttrs:
         return bing_fetcher.station_df.iloc[0:1]
 
     @pytest.fixture(scope="class")
-    def new_inventory_stream(self, bing_fetcher, new_inventory_df):
+    def new_inventory_stream(self, bing_fetcher, new_inventory_df, new_time):
         """ swap out the stations to only return a subset of the channels """
-        t1 = self.t1
-        t2 = self.t1 + 60
+        t1, t2 = new_time - self.tb, new_time + self.ta
         return bing_fetcher.get_waveforms(
             starttime=t1, endtime=t2, stations=new_inventory_df
         )
 
     # tests for events swaps
-    def test_time(self, new_event_stream):
+    def test_time(self, new_event_stream, new_time):
         """ ensure the new time was returned """
         assert len(new_event_stream)
-        t1 = new_event_stream[0].stats.starttime.timestamp
-        t2 = new_event_stream[0].stats.endtime.timestamp
-        assert t1 < self.t1.timestamp < t2
+        t1 = to_utc(new_event_stream[0].stats.starttime.timestamp)
+        t2 = to_utc(new_event_stream[0].stats.endtime.timestamp)
+        assert t1 < new_time < t2
 
     def test_iter(self, yield_event_streams):
         """ ensure the yield events worked """
@@ -529,16 +563,16 @@ class TestCallWaveFetcher:
     """ test that calling the wavefetcher provides a simplified interface for
     getting waveforms """
 
-    t1 = obspy.UTCDateTime("2009-04-01")
     tb = 1
     ta = 9
     duration = tb + ta
 
     # fixtures
     @pytest.fixture(scope="class")
-    def stream(self, bing_fetcher):
+    def stream(self, bing_fetcher, bing_first_time):
         """ return a waveforms from calling the fetcher """
-        return bing_fetcher(self.t1, time_before=self.tb, time_after=self.ta)
+        time = bing_first_time
+        return bing_fetcher(time, time_before=self.tb, time_after=self.ta)
 
     # tests
     def test_callable(self, bing_fetcher):
@@ -582,28 +616,24 @@ class TestCallWaveFetcher:
 class TestYieldCallables:
     """ tests for yielding callables that return streams """
 
-    starttime = obspy.UTCDateTime("2009-04-01")
-    endtime = obspy.UTCDateTime("2009-04-01T00-00-01")
-    duration = 600
+    duration = 3600
     overlap = 10
 
-    # f
-
     # fixtures
-    @pytest.fixture(scope="session")
-    def callables(self, bing_fetcher):
-        it = bing_fetcher.yield_waveform_callable(
-            self.starttime, self.endtime, self.duration, self.overlap
-        )
+    @pytest.fixture(scope="class")
+    def callables(self, ta_fetcher, ta_time_range):
+        start, end = ta_time_range
+        it = ta_fetcher.yield_waveform_callable(start, end, self.duration, self.overlap)
         return list(it)
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="class")
     def streams(self, callables):
         return [x() for x in callables]
 
-    @pytest.fixture(scope="session")
-    def time_tuple(self):
-        tc = make_time_chunks(self.starttime, self.endtime, self.duration, self.overlap)
+    @pytest.fixture(scope="class")
+    def time_tuple(self, ta_time_range):
+        t1, t2 = ta_time_range
+        tc = make_time_chunks(t1, t2, self.duration, self.overlap)
         return list(tc)
 
     # tests
@@ -624,31 +654,30 @@ class TestYieldCallables:
 class TestClientNoGetBulkWaveForms:
     """ test that clients without get bulk waveforms, ie earthworm, work """
 
-    starttime = obspy.UTCDateTime("2009-04-01")
-    endtime = obspy.UTCDateTime("2009-04-01T00-00-01")
     duration = 600
     overlap = 10
 
     # fixtures
     @pytest.fixture
-    def bing_bank_no_bulk(self, bingham_dataset, monkeypatch):
+    def ta_bank_no_bulk(self, ta_dataset, monkeypatch):
         """ remove the get_waveforms_bulk from Sbank class """
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
         monkeypatch.delattr(WaveBank, "get_waveforms_by_seed")
         # return a bank
-        yield WaveBank(bingham_dataset.waveform_path)
+        yield WaveBank(ta_dataset.waveform_path)
 
     @pytest.fixture
-    def wavefetcher_no_bulk(self, bing_bank_no_bulk, bingham_dataset):
+    def wavefetcher_no_bulk(self, ta_bank_no_bulk, ta_dataset):
         """ return a wavefetcher from the bank """
-        inv = bingham_dataset.station_client.get_stations()
-        return Fetcher(waveforms=bing_bank_no_bulk, stations=inv)
+        inv = ta_dataset.station_client.get_stations()
+        return Fetcher(waveforms=ta_bank_no_bulk, stations=inv)
 
     @pytest.fixture
-    def yielded_streams(self, wavefetcher_no_bulk):
+    def yielded_streams(self, wavefetcher_no_bulk, ta_time_range):
         """ yield streams from wavefetcher """
+        t1, t2 = ta_time_range
         fun = wavefetcher_no_bulk.yield_waveforms
-        ite = fun(self.starttime, self.endtime, self.duration, self.overlap)
+        ite = fun(t1, t2, self.duration, self.overlap)
         return list(ite)
 
     # tests
@@ -660,7 +689,7 @@ class TestClientNoGetBulkWaveForms:
 
 
 class TestFilterInventoryByAvailability:
-    """ ensure that only times in the stations get used in get_bulk stuff """
+    """ ensure that only times in the stations get used in get_bulk_args call """
 
     t0 = obspy.UTCDateTime("2015-12-01")
     t1 = obspy.UTCDateTime("2016-01-01")
@@ -688,13 +717,13 @@ class TestFilterInventoryByAvailability:
     @pytest.fixture
     def bulk_arg_later_time(self, altered_inv):
         fetcher = Fetcher(None, stations=altered_inv)
-        return fetcher._get_bulk_arg(starttime=self.t1 + 10, endtime=self.t2)
+        return fetcher.get_bulk_args(starttime=self.t1 + 10, endtime=self.t2)
 
     @pytest.fixture
     def bulk_arg_none_end_date(self, inv_with_none):
         """ return the bulk args from an inv with None endate """
         fetcher = Fetcher(None, stations=inv_with_none)
-        return fetcher._get_bulk_arg(starttime=self.t0, endtime=self.t1)
+        return fetcher.get_bulk_args(starttime=self.t0, endtime=self.t1)
 
     @pytest.fixture
     def fetcher(self, altered_inv, bing_fetcher):
@@ -724,9 +753,8 @@ class TestFilterInventoryByAvailability:
         assert not len(st)
 
 
-class TestGetEventData:
-    t1 = to_datetime64("2009-04-01")
-    t2 = to_datetime64("2009-04-04")
+class TestDownloadEventWaveforms:
+    """ Misc tests for downloading event waveforms. """
 
     path = "eventwaveforms"
 
@@ -743,8 +771,6 @@ class TestGetEventData:
         """ make a copy of the kem_fetcher and restrict scope of events to
         when data are available."""
         fet = bing_fetcher.copy()
-        df = fet.event_df
-        fet.event_df = df[(df.time >= self.t1) & (df.time <= self.t2)]
         return fet
 
     @pytest.fixture(scope="class")
@@ -752,8 +778,8 @@ class TestGetEventData:
         """ download data from the kem fetcher into the tempdir, return
         path to tempdir """
         path = os.path.join(temp_dir_path, self.path)
-        params = dict(time_before_origin=0, time_after_origin=10, path=path)
-        fetcher.download_event_waveforms(**params)
+        kwargs = dict(time_before_origin=0, time_after_origin=10, path=path)
+        fetcher.download_event_waveforms(**kwargs)
         return temp_dir_path
 
     @pytest.fixture(scope="class")
@@ -796,48 +822,41 @@ class TestGetEventData:
             assert len(stream)
 
 
-class TestGetContinuousData:
-    t1 = obspy.UTCDateTime("2009-04-01").timestamp
-    t2 = obspy.UTCDateTime("2009-04-01T03-00-00").timestamp
-    duration = 1800
+class TestDownloadContinuousData:
+    """
+    Tests for downloading continuous data
+    """
+
+    duration = 3600
     overlap = 60
-    path = "continuouswaveforms/{year}/{julday}/{network}/{station}"
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def temp_dir_path(self):
-        """ return a path to a temporary directory """
-        with tempfile.TemporaryDirectory() as tempdir:
-            out = os.path.join(tempdir, "temp")
-            yield out
+    path = "waveforms/{year}/{julday}/{network}/{station}"
 
     @pytest.fixture(scope="class")
-    def download_data(self, temp_dir_path, bing_fetcher):
+    def download_data(self, tmp_path_factory, ta_fetcher, ta_time_range):
         """ download data from the kem fetcher into the tempdir, return
         path to tempdir """
-        path = Path(temp_dir_path) / self.path
+        path = Path(tmp_path_factory.mktemp("cont_data")) / "waveforms"
+        t1, t2 = ta_time_range
         params = dict(
-            starttime=self.t1,
-            endtime=self.t2,
+            starttime=t1,
+            endtime=t2,
             duration=self.duration,
             overlap=self.overlap,
             path=path,
         )
-        bing_fetcher.download_waveforms(**params)
-        return temp_dir_path
+        ta_fetcher.download_waveforms(**params)
+        return path
 
     @pytest.fixture(scope="class")
-    def continuous_sbank(self, download_data):
-        """ return an sbank pointed at the temp_dir_path """
-        sb = WaveBank(download_data)
-        sb.update_index()
-        return sb
+    def continuous_wavebank(self, download_data):
+        """ return a WaveBank pointed at the temp_dir_path """
+        return WaveBank(download_data).update_index()
 
     @pytest.fixture(scope="class")
-    def continuous_fetcher(self, continuous_sbank, bing_fetcher):
+    def continuous_fetcher(self, continuous_wavebank, ta_fetcher):
         """ init a fetcher using the old fetcher """
-        fet = bing_fetcher.copy()
-        fet._download_client = continuous_sbank
+        fet = ta_fetcher.copy()
+        fet._download_client = continuous_wavebank
         return fet
 
     @pytest.fixture(scope="class")
@@ -846,12 +865,11 @@ class TestGetContinuousData:
         return glob.glob(os.path.join(download_data, "**", "*mseed"), recursive=True)
 
     @pytest.fixture(scope="class")
-    def stream_list(self, continuous_fetcher: Fetcher):
+    def stream_list(self, continuous_fetcher: Fetcher, ta_time_range):
         """ return a dict of the events contained in the waveforms """
-        utc1 = self.t1
-        utc2 = self.t2
+        t1, t2 = ta_time_range
         input_dict = dict(
-            starttime=utc1, endtime=utc2, duration=self.duration, overlap=self.overlap
+            starttime=t1, endtime=t2, duration=self.duration, overlap=self.overlap
         )
         return list(continuous_fetcher.yield_waveforms(**input_dict))
 

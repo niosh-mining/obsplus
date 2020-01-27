@@ -160,17 +160,6 @@ def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
     raise IOError(f"failed to read {file_path}")
 
 
-def register_func(dict, key=None):
-    """ decorator to register a function in a list or dict """
-
-    def wrapper(func):
-        dkey = key or func.__name__
-        dict[dkey] = func
-        return func
-
-    return wrapper
-
-
 def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
     """
     Generator for applying func to all files in directory.
@@ -485,4 +474,27 @@ def suppress_warnings():
     return None
 
 
-# suppress_warnings = WarningsCapture
+def register_func(list_or_dict: Union[list, dict], key: Optional[str] = None):
+    """
+    Decorator for registering a function name in a list or dict.
+
+    If list_or_dict is a list only append the name of the function. If it is
+    as dict append name (as key) and function as the value.
+
+    Parameters
+    ----------
+    list_or_dict
+        A list or dict to which the wrapped function will be added.
+    key
+        The name to use, if different than the name of the function.
+    """
+
+    def wrapper(func):
+        name = key or func.__name__
+        if hasattr(list_or_dict, "append"):
+            list_or_dict.append(name)
+        else:
+            list_or_dict[name] = func
+        return func
+
+    return wrapper

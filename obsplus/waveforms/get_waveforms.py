@@ -26,7 +26,7 @@ def get_waveforms(
     channel: str = "*",
     starttime: Optional[UTC] = None,
     endtime: Optional[UTC] = None,
-):
+) -> obspy.Stream:
     """
     A subset of the Client.get_waveforms method.
 
@@ -53,10 +53,11 @@ def get_waveforms(
     Stream
     """
     stream = stream.copy()
+    time1, time2 = UTC(starttime or SMALL_UTC), UTC(endtime or BIG_UTC)
     st = stream.select(
         network=network, station=station, location=location, channel=channel
     )
-    st = st.trim(starttime=UTC(starttime or SMALL_UTC), endtime=UTC(endtime or BIG_UTC))
+    st.trim(starttime=time1, endtime=time2)
     return st
 
 

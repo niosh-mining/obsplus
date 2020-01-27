@@ -25,6 +25,7 @@ from obsplus.constants import (
     EVENT_WAVEFORM_PATH_STRUCTURE,
     WAVEFORM_STRUCTURE,
     get_waveforms_parameters,
+    bulk_waveform_arg_type,
     LARGEDT64,
 )
 
@@ -224,7 +225,7 @@ class Fetcher:
         obspy.Stream
         """
         # get a list of tuples for get_waveforms_bulk call
-        nslcs = self._get_bulk_arg(*args, **kwargs)
+        nslcs = self.get_bulk_args(*args, **kwargs)
         return self._get_bulk_wf(nslcs)
 
     def yield_waveforms(
@@ -339,7 +340,7 @@ class Fetcher:
         event_ids = self.event_df.event_id.values
         reftimes = {x: self.reference_funcs[reference](self, x) for x in event_ids}
         # if using a wavebank preload index over entire time-span for speedup
-        if isinstance(self.waveform_client, WaveBank):
+        if isinstance(self.waveform_client, WaveBank) and len(reftimes):
             mt = min([x.min() if hasattr(x, "min") else x for x in reftimes.values()])
             mx = max([x.max() if hasattr(x, "max") else x for x in reftimes.values()])
             index = self.waveform_client.read_index(starttime=mt, endtime=mx)
@@ -349,8 +350,11 @@ class Fetcher:
         # iterate each event in the events and yield the waveform
         for event_id in event_ids:
             # make sure ser is either a single datetime or a series of datetimes
+            reftime = reftimes[event_id]
             ti_ = to_datetime64(reftimes[event_id])
-            bulk_args = self._get_bulk_arg(starttime=ti_ - tb, endtime=ti_ + ta)
+            if isinstance(reftime, pd.Series):  # convert back to series
+                ti_ = pd.Series(ti_, index=reftime.index)
+            bulk_args = self.get_bulk_args(starttime=ti_ - tb, endtime=ti_ + ta)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))
             except Exception:
@@ -451,29 +455,42 @@ class Fetcher:
         else:
             return out
 
-    def _get_bulk_arg(self, starttime=None, endtime=None, **kwargs) -> list:
-        """ get the argument passed to get_waveforms_bulk, see
-        obspy.fdsn.client for more info """
+    def get_bulk_args(
+        self, starttime=None, endtime=None, **kwargs
+    ) -> bulk_waveform_arg_type:
+        """
+        Get the bulk waveform arguments based on given start/end times.
+
+        This method also takes into account data availability as contained
+        in the stations data.
+
+        Parameters
+        ----------
+        starttime
+            Start times for query.
+        endtime
+            End times for query.
+        Returns
+        -------
+        List of tuples of the form:
+            [(network, station, location, channel, starttime, endtime)]
+        """
         station_df = self.station_df.copy()
         inv = station_df[filter_index(station_df, **kwargs)]
         # replace None/Nan with larger number
         inv.loc[inv["end_date"].isnull(), "end_date"] = LARGEDT64
         inv["end_date"] = inv["end_date"].astype("datetime64[ns]")
         # remove station/channels that dont have data for requested time
-        # starttime = to_datetime64(starttime, default=inv["start_date"].min())
-        # endtime = to_datetime64(endtime, default=inv["end_date"].max())
         min_time = to_datetime64(starttime, default=inv["start_date"].min())
         max_time = to_datetime64(endtime, default=inv["end_date"].max())
         con1, con2 = (inv["start_date"] > max_time), (inv["end_date"] < min_time)
-
-        inv = inv[~(con1 | con2)]
-        df = inv[list(NSLC)]
+        df = inv[~(con1 | con2)].set_index("seed_id")[list(NSLC)]
         if df.empty:  # return empty list if no data found
             return []
-        df.loc[:, "starttime"] = starttime
-        df.loc[:, "endtime"] = endtime
+        df["starttime"] = starttime
+        df["endtime"] = endtime
         # remove any rows that don't have defined start/end times
-        out = df[(~df["starttime"].isnull()) & (~df["endtime"].isnull())]
+        out = df[~(df["starttime"].isnull() | df["endtime"].isnull())]
         # ensure we have UTCDateTime objects
         out["starttime"] = [to_utc(x) for x in out["starttime"]]
         out["endtime"] = [to_utc(x) for x in out["endtime"]]
@@ -591,4 +608,4 @@ def _get_phase_reference_time(fetcher: Fetcher, event_id, phase):
     assert (df.phase_hint.str.upper() == pha).any(), f"no {phase} picks found"
     dff = df[(df.event_id == event_id) & (df.phase_hint == pha)]
     merge = pd.merge(inv, dff[["time", "station"]], on="station", how="left")
-    return merge["time"]
+    return merge.set_index("seed_id")["time"]
