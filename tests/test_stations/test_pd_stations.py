@@ -3,7 +3,7 @@ Tests for gettting station dataframes from objects.
 """
 import os
 import tempfile
-from os.path import join, exists
+from pathlib import Path
 
 import numpy as np
 import obspy
@@ -95,7 +95,7 @@ class TestReadInventory:
     @pytest.fixture
     def numeric_csv(self, tmpdir):
         """ write a csv with numeric net/sta/loc codes, return path """
-        f1 = tmpdir.mkdir("data").join("stations.csv")
+        f1 = Path(tmpdir.mkdir("data")) / "stations.csv"
         t1 = obspy.UTCDateTime("2012-01-01").timestamp
         t2 = t1 + 3600
         data = [
@@ -146,8 +146,8 @@ class TestReadDirectoryOfInventories:
     # help functions
     def nest_directly(self, nested_times, path):
         """ make a directory nested n times """
-        nd_name = join(path, self.nest_name)
-        if not exists(nd_name) and nested_times:
+        nd_name = Path(path) / self.nest_name
+        if not Path(nd_name).exists() and nested_times:
             os.makedirs(nd_name)
         elif not nested_times:  # recursion limit reached
             return path
@@ -169,8 +169,9 @@ class TestReadDirectoryOfInventories:
                 network, station, location, channel = seed_id.split(".")
                 inv = inventory.select(channel=channel, station=station)
                 file_name = seed_id + ".xml"
-                write_path = join(self.nest_directly(num, tempdir), file_name)
-                inv.write(write_path, "stationxml")
+                nest_dir = self.nest_directly(num, tempdir)
+                write_path = Path(nest_dir) / file_name
+                inv.write(str(write_path), "stationxml")
             yield tempdir
 
     @pytest.fixture(scope="class")
@@ -186,27 +187,50 @@ class TestReadDirectoryOfInventories:
         assert set(inv_df["seed_id"]) == set(read_inventory["seed_id"])
 
 
-class TestReadKemInventory:
-    """ read the kemmerer inventories (csv and xml) and run tests """
+class TestReadTAInventory:
+    """ read the TA inventories (csv and xml) and run tests """
 
-    kem_ds = obsplus.load_dataset("kemmerer")
-    csv_path = kem_ds.source_path / "inventory.csv"
-    sml_path = kem_ds.source_path / "inventory.xml"
-    sml = obspy.read_inventory(str(sml_path))
-    df = pd.read_csv(csv_path)
-    supported_inputs = ["sml_path", "sml", "csv_path", "df"]
+    fixtures = []
 
-    # fixtures
-    @pytest.fixture(scope="class", params=supported_inputs)
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def ta_inventory(self, ta_dataset):
+        """ Return the bingham inventory """
+        return ta_dataset.station_client.get_stations()
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def ta_inv_df(self, ta_inventory):
+        """ Return the Bingham inventory as a dataframe. """
+        return obsplus.stations_to_df(ta_inventory)
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def inventory_csv_path(self, ta_inv_df, tmp_path_factory):
+        """ Return a csv path to the bingham inventory. """
+        path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.csv"
+        ta_inv_df.to_csv(path, index=False)
+        return path
+
+    @pytest.fixture(scope="class")
+    @append_func_name(fixtures)
+    def inventory_xml_path(self, ta_inventory, tmp_path_factory):
+        """ Return a to the bingham inventory saved as an xml. """
+        path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.xml"
+        ta_inventory.write(str(path), "stationxml")
+        return path
+
+    @pytest.fixture(scope="class", params=fixtures)
     def inv_df(self, request):
         """ collect all the supported inputs are parametrize"""
-        name = request.param
-        return stations_to_df(getattr(self, name))
+        value = request.getfixturevalue(request.param)
+        return stations_to_df(value)
 
     # tests
-    def test_size(self, inv_df):
+    def test_size(self, inv_df, ta_inventory):
         """ ensure the correct number of items is in df """
-        assert len(inv_df) == len(self.df)
+        channel_count = len(ta_inventory.get_contents()["channels"])
+        assert len(inv_df) == channel_count
 
     def test_column_order(self, inv_df):
         """ ensure the order of the columns is correct """

@@ -7,40 +7,32 @@ import os
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import obspy
 import pandas as pd
 import pytest
-import numpy as np
 from obspy.core.event import Event, Origin
 
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.testing import append_func_name
 from obsplus.utils.misc import suppress_warnings
-from obsplus.utils.time import to_datetime64, make_time_chunks
+from obsplus.utils.testing import append_func_name
+from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc
 
 WAVEFETCHERS = []
 
 
-# ----------------------------- helper functions
-
-
-def trim_kem_events(fetcher: Fetcher):
-    """ trim the events in the kemmerer data set to only includes times
-    when continuous data is available. """
-    t1 = obspy.UTCDateTime("2009-04-01").timestamp
-    t2 = obspy.UTCDateTime("2009-04-04").timestamp
-    cat = fetcher.event_client.get_events(starttime=t1, endtime=t2)
-    return Fetcher(
-        waveforms=fetcher.waveform_client,
-        events=cat,
-        stations=fetcher.station_client,
-        stream_processor=fetcher.stream_processor,
-    )
-
-
 # ---------------------------- class level fixtures
+
+
+def processor(st):
+    """ simple processor to apply bandpass filter """
+    st.filter("bandpass", freqmin=1, freqmax=10)
+    # mark that the processor ran
+    for tr in st:
+        tr.stats["processor_ran"] = True
+    return st
 
 
 @pytest.fixture(scope="session")
@@ -60,25 +52,29 @@ def ta_fetcher(ta_dataset):
 
 @pytest.fixture(scope="session")
 @append_func_name(WAVEFETCHERS)
-def kem_fetcher_with_processor():
-    """ same as kem fetcher but with a stream_processor """
-    dataset = obsplus.load_dataset("bingham")
-
-    def processor(st):
-        """ simple processor to apply bandpass filter """
-        st.filter("bandpass", freqmin=1, freqmax=10)
-        # mark that the processor ran
-        for tr in st:
-            tr.stats["processor_ran"] = True
-        return st
-
-    wf = Fetcher(
+def bing_fetcher_with_processor(bingham_dataset):
+    """ A fetcher with a stream_processor """
+    dataset = bingham_dataset
+    fetcher = Fetcher(
         waveforms=dataset.waveform_client.get_waveforms(),
         events=dataset.event_client.get_events(),
         stations=dataset.station_client.get_stations(),
         stream_processor=processor,
     )
-    return trim_kem_events(wf)
+    return fetcher
+
+
+@pytest.fixture(scope="session")
+@append_func_name(WAVEFETCHERS)
+def ta_fetcher_with_processor(ta_dataset):
+    """ The TA fetcher with a stream_processor """
+    fetcher = Fetcher(
+        waveforms=ta_dataset.waveform_client.get_waveforms(),
+        events=ta_dataset.event_client.get_events(),
+        stations=ta_dataset.station_client.get_stations(),
+        stream_processor=processor,
+    )
+    return fetcher
 
 
 @pytest.fixture(scope="session")
@@ -102,7 +98,7 @@ def kem_fetcher_limited():
 
 
 def test_gather(
-    bing_fetcher, ta_fetcher, kem_fetcher_with_processor, kem_fetcher_limited
+    bing_fetcher, ta_fetcher, bing_fetcher_with_processor, kem_fetcher_limited
 ):
     """ Simply gather aggregated fixtures so they are marked as used. """
 
@@ -169,17 +165,18 @@ class TestGetWaveforms:
     def kem_stream(self, bing_fetcher):
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
-        starttime = obspy.UTCDateTime("2009-04-01")
+        starttime = bing_fetcher.event_client.get_events()[0].origins[0].time - 2
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         return bing_fetcher.get_waveforms(**kwargs)
 
     @pytest.fixture(scope="session")
     @append_func_name(generic_streams)
-    def kem_stream_processed(self, kem_fetcher_with_processor):
+    def kem_stream_processed(self, bing_fetcher_with_processor):
         """ using the kem fetcher, return a data waveforms returned
         by get_waveforms"""
-        starttime = obspy.UTCDateTime("2009-04-01")
-        fetch = kem_fetcher_with_processor
+        cat = bing_fetcher_with_processor.event_client.get_events()
+        starttime = cat[0].origins[0].time - 2
+        fetch = bing_fetcher_with_processor
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         return fetch.get_waveforms(**kwargs)
 
@@ -271,9 +268,9 @@ class TestYieldWaveforms:
 
     # fixtures
     @pytest.fixture(scope="session")
-    def kem_stream(self, kem_fetcher_with_processor):
-        """ return a list of streams yielded from fetcher """
-        fet = kem_fetcher_with_processor
+    def ta_stream(self, bing_fetcher_with_processor):
+        """ return a list of streams yielded from TA fetcher """
+        fet = bing_fetcher_with_processor
         return list(
             fet.yield_waveforms(
                 self.starttime, self.endtime, self.duration, self.overlap
@@ -281,27 +278,32 @@ class TestYieldWaveforms:
         )
 
     # tests
-    def test_durations(self, kem_stream):
+    def test_durations(self, ta_stream):
         """ensure the duration are as expected """
-        for st in kem_stream:
+        for st in ta_stream:
             assert self.check_duration(st)
 
-    def test_stream_processor_ran(self, kem_stream):
+    def test_stream_processor_ran(self, ta_stream):
         """ ensure the waveforms processor ran on each waveforms """
-        for st in kem_stream:
+        for st in ta_stream:
             for tr in st:
                 assert tr.stats["processor_ran"]
 
 
-class TestYieldEventWaveforms(TestYieldWaveforms):
+class TestYieldEventWaveforms:
     """ tests for getting waveforms that correspond to events """
 
-    timebefore = 1
-    timeafter = 10
-    duration = timeafter + timeafter
+    time_before = 1
+    time_after = 10
+    duration = time_before + time_after
+    overlap = 2.0
     commons = []
 
     # helper functions
+
+    check_duration = TestYieldWaveforms.check_duration
+    check_stream_processor_ran = TestYieldWaveforms.check_stream_processor_ran
+
     def check_stream_dict(self, st_dict):
         """ test waveforms dict """
         assert isinstance(st_dict, dict) and st_dict
@@ -311,19 +313,20 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
     # fixtures
     @pytest.fixture(scope="session")
     @append_func_name(commons)
-    def event_list_origin(self, kem_fetcher_with_processor):
+    def event_list_origin(self, bing_fetcher_with_processor):
         """ return a list of event waveforms, each starttime referenced
         at origin """
-        func = kem_fetcher_with_processor.yield_event_waveforms
-        return list(func(self.timeafter, self.timeafter))
+        func = bing_fetcher_with_processor.yield_event_waveforms
+        return list(func(self.time_before, self.time_after))
 
     @pytest.fixture(scope="session")
     @append_func_name(commons)
-    def event_list_p(self, kem_fetcher_with_processor):
+    def event_list_p(self, bing_fetcher_with_processor):
         """ return a list of event waveforms, each starttime referenced
         at the pwave for the channel """
-        func = kem_fetcher_with_processor.yield_event_waveforms
-        return list(func(1, 10, reference="p"))
+        func = bing_fetcher_with_processor.yield_event_waveforms
+        out = list(func(self.time_before, self.time_after, reference="p"))
+        return out
 
     @pytest.fixture(scope="session", params=commons)
     def stream_list(self, request):
@@ -333,7 +336,7 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
     @pytest.fixture(scope="session")
     def stream_dict_zero_starttime(self, bing_fetcher):
         """ yield waveforms into a dict using 0 for starttimes """
-        return dict(bing_fetcher.yield_event_waveforms(0, self.timeafter))
+        return dict(bing_fetcher.yield_event_waveforms(0, self.time_after))
 
     @pytest.fixture(scope="class")
     def wavefetch_no_inv(self, bingham_dataset):
@@ -345,12 +348,13 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
         return Fetcher(**kwargs)
 
     # general test
-    def test_gather(self, event_list_origin, event_list_p):
-        """ Simply gather aggregated fixtures so they are marked as used. """
 
     def test_duration(self, stream_list):
         """ ensure the duration of the streams is correct """
         for _, st in stream_list:
+            if not self.check_duration(st):
+                breakpoint()
+                self.check_duration(st)
             assert self.check_duration(st)
 
     def test_stream_processor(self, stream_list):
@@ -360,13 +364,23 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
             assert self.check_stream_processor_ran(st)
 
     # phase tests
-    def test_only_p_phases(self, event_list_p, kem_fetcher_with_processor):
+    def test_only_p_phases(self, event_list_p, bing_fetcher_with_processor):
         """ make sure only stations that have p picks are returned """
-        df = kem_fetcher_with_processor.picks_df
+        stream = bing_fetcher_with_processor.waveform_client.get_waveforms()
+        df = bing_fetcher_with_processor.picks_df
         for eve_id, st in event_list_p:
             pick_df = df[df.event_id == eve_id]
-            assert len(pick_df), f"{st} has no picks!"
-            assert set(pick_df.station) == {tr.stats.station for tr in st}
+            # iterate each pick, determine if it has data in the bank
+            for ind, row in pick_df.iterrows():
+                time = to_utc(row["time"])
+                kwargs = dict(
+                    starttime=time - self.time_before,
+                    endtime=time + self.time_after,
+                    station=row["station"],
+                )
+                st1 = stream.get_waveforms(**kwargs)
+                st2 = st.get_waveforms(**kwargs)
+                assert st1 == st2
 
     # zero starttime test
     def test_zero_starttime(self, stream_dict_zero_starttime):
@@ -378,7 +392,7 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
             sr = stream[0].stats.sampling_rate
             t1, t2 = stream[0].stats.starttime, stream[0].stats.endtime
             duration = abs(t2.timestamp - t1.timestamp)
-            assert abs(duration - self.timeafter) < 2 * sr
+            assert abs(duration - self.time_after) < 2 * sr
 
     def test_correct_stream(self, bingham_dataset, bingham_stream_dict):
         """ ensure the correct streams are given for ids """
@@ -401,6 +415,9 @@ class TestYieldEventWaveforms(TestYieldWaveforms):
         kwargs = dict(time_after=10, time_before=20, reference="p")
         st_dict = dict(wavefetch_no_inv.yield_event_waveforms(**kwargs))
         self.check_stream_dict(st_dict)
+
+    def test_gather(self, event_list_origin, event_list_p):
+        """ Simply gather aggregated fixtures so they are marked as used. """
 
 
 class TestStreamProcessor:
@@ -465,13 +482,13 @@ class TestSwapAttrs:
         return list(result)[0].stream
 
     @pytest.fixture(scope="session")
-    def yield_event_streams(self, bing_fetcher, kem_archive):
-        """ yield a subset of the events in kem_fetcher """
-        path = Path(kem_archive).parent / "catalog.csv"
-        event_df = pd.read_csv(path).iloc[0:1]
+    def yield_event_streams(self, bingham_dataset):
+        """ yield a subset of the events in the bingham dataset """
+        event_df = bingham_dataset.event_client.get_events().to_df()
+        fetcher = bingham_dataset.get_fetcher()
         tb = 1
         ta = 3
-        ite = bing_fetcher.yield_event_waveforms(tb, ta, events=event_df)
+        ite = fetcher.yield_event_waveforms(tb, ta, events=event_df)
         return list(ite)
 
     @pytest.fixture(scope="class")

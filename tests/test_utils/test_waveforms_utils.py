@@ -19,9 +19,9 @@ from obsplus.utils.waveforms import (
     archive_to_sds,
     merge_traces,
     stream_bulk_split,
-    assert_streams_almost_equal,
     get_waveform_client,
 )
+from obsplus.utils.testing import assert_streams_almost_equal
 
 
 class TestGetWaveformClient:

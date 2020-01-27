@@ -254,12 +254,6 @@ def ta_dataset():
 
 
 @pytest.fixture(scope="session")
-def kemmerer_dataset():
-    """ Load the kemmerer test case """
-    return load_and_update_dataset("kemmerer")
-
-
-@pytest.fixture(scope="session")
 def bingham_dataset():
     """ load the bingham dataset """
     ds = load_and_update_dataset("bingham")
@@ -323,11 +317,11 @@ def ta_archive(ta_dataset):
     return Path(obsplus.WaveBank(ta_dataset.waveform_client).index_path).parent
 
 
-@pytest.fixture(scope="session")
-def kem_archive(kemmerer_dataset):
-    """ download the kemmerer data (will take a few minutes but only
-     done once) """
-    return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
+# @pytest.fixture(scope="session")
+# def kem_archive(kemmerer_dataset):
+#     """ download the kemmerer data (will take a few minutes but only
+#      done once) """
+#     return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
 
 
 @pytest.fixture(scope="class")

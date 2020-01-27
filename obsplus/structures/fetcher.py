@@ -460,9 +460,11 @@ class Fetcher:
         inv.loc[inv["end_date"].isnull(), "end_date"] = LARGEDT64
         inv["end_date"] = inv["end_date"].astype("datetime64[ns]")
         # remove station/channels that dont have data for requested time
-        starttime = to_datetime64(starttime, default=inv["start_date"].min())
-        endtime = to_datetime64(endtime, default=inv["end_date"].max())
-        con1, con2 = (inv["start_date"] > endtime), (inv["end_date"] < starttime)
+        # starttime = to_datetime64(starttime, default=inv["start_date"].min())
+        # endtime = to_datetime64(endtime, default=inv["end_date"].max())
+        min_time = to_datetime64(starttime, default=inv["start_date"].min())
+        max_time = to_datetime64(endtime, default=inv["end_date"].max())
+        con1, con2 = (inv["start_date"] > max_time), (inv["end_date"] < min_time)
 
         inv = inv[~(con1 | con2)]
         df = inv[list(NSLC)]
@@ -473,8 +475,8 @@ class Fetcher:
         # remove any rows that don't have defined start/end times
         out = df[(~df["starttime"].isnull()) & (~df["endtime"].isnull())]
         # ensure we have UTCDateTime objects
-        out["starttime"] = [to_utc(x) for x in df["starttime"]]
-        out["endtime"] = [to_utc(x) for x in df["endtime"]]
+        out["starttime"] = [to_utc(x) for x in out["starttime"]]
+        out["endtime"] = [to_utc(x) for x in out["endtime"]]
         # convert to list of tuples and return
         return [tuple(x) for x in out.to_records(index=False)]
 
