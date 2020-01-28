@@ -13,7 +13,7 @@ from obsplus.utils.misc import yield_obj_parent_attr
 @pytest.fixture(scope="class")
 def catalog():
     """ load the Crandal events """
-    return obsplus.load_dataset("crandall").event_client
+    return obsplus.load_dataset("crandall_test").event_client
 
 
 @pytest.fixture(scope="class")

@@ -1,5 +1,5 @@
 """
-The TA dataset.
+The test TA dataset.
 """
 import obspy
 
@@ -10,12 +10,12 @@ from obsplus.utils.time import make_time_chunks
 
 class TA(DataSet):
     """
-    A small dataset from the TA with low sampling rate channels.
+    A small dataset from the ta_test with low sampling rate channels.
 
     Contains about 10 days of data from two stations: M11A and M14A.
     """
 
-    name = "TA"
+    name = "ta_test"
     version = "0.0.0"
 
     level = "response"

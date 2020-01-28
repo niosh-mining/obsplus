@@ -180,7 +180,7 @@ class TestStreamDict2DataArray:
         assert "starttime" in dar.coords
 
     def test_bingham_data_array(self, bingham_dar, bingham_stream_dict):
-        """ ensure the bingham data array does not contain NaNs and has
+        """ ensure the bingham_test data array does not contain NaNs and has
         correct starttimes """
         assert not bingham_dar.isnull().any()
         assert set(bingham_dar.stream_id.values) == set(bingham_stream_dict)
@@ -415,9 +415,9 @@ class TestArray2Dict:
         assert self.equal_without_processing(st1, st2)
 
     def test_crandall_arrays(self):
-        """ Ensure the crandall canyon arrays can be converted back """
-        # create data arrays from crandall
-        ds = obsplus.load_dataset("crandall")
+        """ Ensure the crandall_test canyon arrays can be converted back """
+        # create data arrays from crandall_test
+        ds = obsplus.load_dataset("crandall_test")
         fetcher = ds.get_fetcher()
         st_dict = dict(fetcher.yield_event_waveforms(10, 50))
         dars = list(obsplus.obspy_to_array_dict(st_dict).values())
@@ -1097,7 +1097,7 @@ class TestGetSid:
         assert set(df.channel.values) == set(["EHZ"])
 
     def test_network_channel_filter(self, bingham_dar):
-        """ tests for filtering on network and channel using bingham data """
+        """ tests for filtering on network and channel using bingham_test data """
         filtered_dar = bingham_dar.ops.sel_sid("UU.*.*.ENZ")
         assert len(filtered_dar.seed_id)
         for seed_id in filtered_dar.seed_id.values:

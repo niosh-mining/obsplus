@@ -37,8 +37,8 @@ sys.path.insert(0, project_root)
 import obsplus
 
 # load the datasets used by docs here so notebooks don't have to
-obsplus.load_dataset("crandall")
-obsplus.load_dataset("TA")
+obsplus.load_dataset("crandall_test")
+obsplus.load_dataset("ta_test")
 
 # -- General configuration ---------------------------------------------
 
@@ -293,17 +293,3 @@ texinfo_documents = [
 autodoc_default_flags = ["members"]
 autosummary_generate = True
 nbsphinx_timeout = 600
-
-#
-# def setup(app):
-#     """ Run the setup script """
-#     doc_path = Path(__file__).absolute().parent
-#     # --- make api documentation
-#     api_path = doc_path / "api"
-#     if api_path.exists():
-#         shutil.rmtree(api_path)
-#     # --- run auto api-doc
-#     run(f" sphinx-apidoc ../obsplus -o api", cwd=doc_path, shell=True)
-#     # download datasets
-#     obsplus.load_dataset("crandall")
-#     obsplus.load_dataset("TA")

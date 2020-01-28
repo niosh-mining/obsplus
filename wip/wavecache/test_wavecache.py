@@ -13,7 +13,7 @@ from obsplus.structures.wavecache import WaveCache
 
 @pytest.fixture
 def wavecache(bingham_dataset):
-    """ return a wavecache of bingham archive """
+    """ return a wavecache of bingham_test archive """
     bank = WaveBank(bingham_dataset.waveform_client)
     return WaveCache(bank)
 

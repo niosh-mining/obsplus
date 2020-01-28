@@ -28,7 +28,7 @@ class Bingham(DataSet):
     and demonstration purposes only.
     """
 
-    name = "bingham"
+    name = "bingham_test"
     version = "0.0.0"
     time_before = np.timedelta64(10, "s")
     time_after = np.timedelta64(60, "s")

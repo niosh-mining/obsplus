@@ -187,7 +187,7 @@ class TestCopyDataset:
         """ no data should be downloaded when copying a dataset that
         has already been downloaded. """
         # this ensures dataset is loaded
-        ds = obsplus.load_dataset("bingham")
+        ds = obsplus.load_dataset("bingham_test")
         cls = ds.__class__
 
         def fail(*args, **kwargs):
@@ -199,12 +199,12 @@ class TestCopyDataset:
             monkeypatch.setattr(cls, attr, fail)
 
         # if this proceeds without downloading data the test passes
-        new_ds = obsplus.utils.dataset.copy_dataset("bingham")
+        new_ds = obsplus.utils.dataset.copy_dataset("bingham_test")
         assert isinstance(new_ds, DataSet)
 
     def test_copy_dataset_with_dataset(self):
         """ ensure a dataset can be the first argument to copy_dataset """
-        ds = obsplus.load_dataset("bingham")
+        ds = obsplus.load_dataset("bingham_test")
         out = obsplus.utils.dataset.copy_dataset(ds)
         assert isinstance(out, DataSet)
         assert out.name == ds.name
@@ -217,7 +217,7 @@ class TestCopyDataset:
 
     def test_str_and_repr(self):
         """ ensure str is returned from str and repr """
-        ds = obsplus.load_dataset("bingham")
+        ds = obsplus.load_dataset("bingham_test")
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
 
@@ -227,10 +227,10 @@ class TestMD5Hash:
 
     @pytest.fixture
     def copied_crandall(self, tmpdir_factory):
-        """ Copy the crandall ds to a new directory, create fresh hash
+        """ Copy the crandall_test ds to a new directory, create fresh hash
         and return. """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
-        ds = obsplus.load_dataset("crandall").copy_to(newdir)
+        ds = obsplus.load_dataset("crandall_test").copy_to(newdir)
         ds.create_md5_hash()
         return ds
 

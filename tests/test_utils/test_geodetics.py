@@ -27,7 +27,7 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def cat(self):
-        """ return the first 3 events from the crandall dataset. """
+        """ return the first 3 events from the crandall_test dataset. """
         return obspy.read_events()
 
     @pytest.fixture(scope="class")
@@ -36,7 +36,7 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def distance_df(self, cat, inv, spatial_calc):
-        """ Return a dataframe from all the crandall events and stations. """
+        """ Return a dataframe from all the crandall_test events and stations. """
         with suppress_warnings():
             return spatial_calc(entity_1=cat, entity_2=inv)
 

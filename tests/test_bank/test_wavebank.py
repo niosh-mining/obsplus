@@ -67,7 +67,7 @@ def strip_processing(st: obspy.Stream) -> obspy.Stream:
 
 @pytest.fixture(scope="class")
 def ta_bank(tmp_ta_dir):
-    """ init a bank on the test TA dataset """
+    """ init a bank on the test ta_test dataset """
     inventory_path = os.path.join(tmp_ta_dir, "inventory.xml")
     bank_path = os.path.join(tmp_ta_dir, "waveforms")
     return sbank.WaveBank(bank_path, inventory=inventory_path)
@@ -128,7 +128,7 @@ class TestBankBasics:
 
     # tests
     def test_type(self, ta_bank):
-        """ make sure TA bank is a bank """
+        """ make sure ta_test bank is a bank """
         assert isinstance(ta_bank, sbank.WaveBank)
 
     def test_index(self, ta_bank_index):
@@ -344,7 +344,7 @@ class TestGetIndex:
         assert not index.empty
 
     def test_crandall_query(self, crandall_dataset):
-        """ tests that querying the crandall dataset's event_waveforms.
+        """ tests that querying the crandall_test dataset's event_waveforms.
         There was one event that didn't correctly get the waveforms
         on read index. """
         bank = crandall_dataset.waveform_client
@@ -462,7 +462,7 @@ class TestGetWaveforms:
 
     @pytest.fixture(scope="class")
     def stream3(self, bingham_dataset):
-        """ return a waveforms from query params 3 on bingham dataset """
+        """ return a waveforms from query params 3 on bingham_test dataset """
         bank = bingham_dataset.waveform_client
         return bank.get_waveforms(**self.query3)
 
@@ -690,7 +690,7 @@ class TestBankCache:
 
     @pytest.fixture(scope="class")
     def query_twice_mp_ta(self, mp_ta_bank):
-        """ query the instrumented TA bank twice """
+        """ query the instrumented ta_test bank twice """
         _ = mp_ta_bank.read_index(**self.query_1)
         _ = mp_ta_bank.read_index(**self.query_1)
         return mp_ta_bank
@@ -750,10 +750,10 @@ class TestPutWaveForm:
             assert np.all(tr1.data == tr2.data)
 
     def test_put_waveforms_to_crandall_copy(self, tmpdir):
-        """ ran into issue in docs where putting data into the crandall
+        """ ran into issue in docs where putting data into the crandall_test
         copy didn't work. """
         ds = obsplus.utils.dataset.copy_dataset(
-            dataset="crandall", destination=Path(tmpdir)
+            dataset="crandall_test", destination=Path(tmpdir)
         )
         bank = WaveBank(ds.waveform_client)
         bank.read_index()  # this sets cache
@@ -1166,7 +1166,7 @@ class TestGetGaps:
 
     def test_no_gaps_on_continuous_dataset(self, ta_dataset):
         """ test no gaps on ta dataset. """
-        ds = obsplus.load_dataset("ta")
+        ds = ta_dataset
         wbank = ds.waveform_client
         gap_df = wbank.get_gaps_df()
         assert len(gap_df) == 0

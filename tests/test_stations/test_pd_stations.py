@@ -188,14 +188,14 @@ class TestReadDirectoryOfInventories:
 
 
 class TestReadTAInventory:
-    """ read the TA inventories (csv and xml) and run tests """
+    """ read the ta_test inventories (csv and xml) and run tests """
 
     fixtures = []
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def ta_inventory(self, ta_dataset):
-        """ Return the bingham inventory """
+        """ Return the bingham_test inventory """
         return ta_dataset.station_client.get_stations()
 
     @pytest.fixture(scope="class")
@@ -207,7 +207,7 @@ class TestReadTAInventory:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def inventory_csv_path(self, ta_inv_df, tmp_path_factory):
-        """ Return a csv path to the bingham inventory. """
+        """ Return a csv path to the bingham_test inventory. """
         path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.csv"
         ta_inv_df.to_csv(path, index=False)
         return path
@@ -215,7 +215,7 @@ class TestReadTAInventory:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def inventory_xml_path(self, ta_inventory, tmp_path_factory):
-        """ Return a to the bingham inventory saved as an xml. """
+        """ Return a to the bingham_test inventory saved as an xml. """
         path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.xml"
         ta_inventory.write(str(path), "stationxml")
         return path

@@ -58,12 +58,12 @@ def ebank_no_index(ebank):
 @pytest.fixture(scope="class")
 def bing_ebank(bingham_dataset, tmpdir_factory):
     """
-    Create a copy of the bingham data set. Then return an inited event bank
-    using the temporary bingham bank
+    Create a copy of the bingham_test data set. Then return an inited event bank
+    using the temporary bingham_test bank
     """
-    new = Path(str(tmpdir_factory.mktemp("bingham")))
-    copy_dataset("bingham", new)
-    path = new / "bingham" / "events"
+    new = Path(str(tmpdir_factory.mktemp("bingham_test")))
+    copy_dataset("bingham_test", new)
+    path = new / "bingham_test" / "events"
     ebank = EventBank(path)
     ebank.update_index()
     return ebank

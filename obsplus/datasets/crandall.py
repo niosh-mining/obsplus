@@ -31,7 +31,7 @@ class Crandall(DataSet):
     and demonstration purposes only.
     """
 
-    name = "crandall"
+    name = "crandall_test"
     version = "0.0.1"
     # Days of interest. The collapse occurred on Aug 6th
     starttime = obspy.UTCDateTime("2007-08-06")

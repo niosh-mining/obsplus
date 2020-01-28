@@ -16,7 +16,7 @@ from obsplus.exceptions import DataFrameContentError
 @pytest.fixture
 def simple_df():
     """ Return a simple dataframe. """
-    cat = obsplus.load_dataset("bingham").event_client.get_events()
+    cat = obsplus.load_dataset("bingham_test").event_client.get_events()
     df = obsplus.events_to_df(cat)
     return df
 

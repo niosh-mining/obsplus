@@ -55,7 +55,7 @@ class TestDfToInventory:
         Note: The datalogger is probably not correct for the test station.
         It is just to ensure the NRL can be used to get a response.
         """
-        _inv = obsplus.load_dataset("bingham").station_client.get_stations()
+        _inv = obsplus.load_dataset("bingham_test").station_client.get_stations()
         inv = _inv.select(station="NOQ")
 
         with suppress_warnings():

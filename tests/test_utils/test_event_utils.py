@@ -274,7 +274,7 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def inv(self):
-        ds = obsplus.load_dataset("crandall")
+        ds = obsplus.load_dataset("crandall_test")
         return ds.station_client.get_stations()
 
     @pytest.fixture(scope="class")

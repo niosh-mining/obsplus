@@ -38,13 +38,13 @@ def processor(st):
 @register_func(WAVEFETCHERS)
 def bing_fetcher():
     """ init a waveform fetcher passing a path to a directory as the arg """
-    return obsplus.load_dataset("bingham").get_fetcher()
+    return obsplus.load_dataset("bingham_test").get_fetcher()
 
 
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def ta_fetcher(ta_dataset):
-    """ init a waveform fetcher using an active obspy client and the TA
+    """ init a waveform fetcher using an active obspy client and the ta_test
     stations """
     return ta_dataset.get_fetcher()
 
@@ -52,7 +52,7 @@ def ta_fetcher(ta_dataset):
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def subbing_fetcher_with_processor(bingham_dataset):
-    """ A fetcher with a stream_processor, only use last event of bingham. """
+    """ A fetcher with a stream_processor, only use last event of bingham_test. """
     dataset = bingham_dataset
     events = dataset.event_client.get_events()[-1]
     fetcher = Fetcher(
@@ -67,7 +67,7 @@ def subbing_fetcher_with_processor(bingham_dataset):
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def ta_fetcher_with_processor(ta_dataset):
-    """ The TA fetcher with a stream_processor """
+    """ The ta_test fetcher with a stream_processor """
     fetcher = Fetcher(
         waveforms=ta_dataset.waveform_client.get_waveforms(),
         events=ta_dataset.event_client.get_events(),
@@ -79,14 +79,14 @@ def ta_fetcher_with_processor(ta_dataset):
 
 @pytest.fixture(scope="class")
 def bing_first_time(bingham_dataset):
-    """ Get a new time based on the first event in bingham event + 1"""
+    """ Get a new time based on the first event in bingham_test event + 1"""
     df = obsplus.events_to_df(bingham_dataset.event_client.get_events())
     return to_utc(df.iloc[0]["time"])
 
 
 @pytest.fixture(scope="session")
 def ta_time_range(ta_wavebank):
-    """ return a tuple of time from TA bank. """
+    """ return a tuple of time from ta_test bank. """
     df = ta_wavebank.read_index()
     t1 = to_utc(df["starttime"].min()) + 3600
     # move to nearest hour
@@ -265,7 +265,7 @@ class TestYieldWaveforms:
     # fixtures
     @pytest.fixture(scope="session")
     def ta_stream(self, subbing_fetcher_with_processor):
-        """ return a list of streams yielded from TA fetcher """
+        """ return a list of streams yielded from ta_test fetcher """
         fet = subbing_fetcher_with_processor
         return list(
             fet.yield_waveforms(
@@ -474,7 +474,7 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def new_time(self, bing_first_time):
-        """ Get a new time based on the first event in bingham event + 1"""
+        """ Get a new time based on the first event in bingham_test event + 1"""
         return to_utc(bing_first_time + 1)
 
     @pytest.fixture(scope="class")
@@ -496,7 +496,7 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def yield_event_streams(self, bingham_dataset):
-        """ yield a subset of the events in the bingham dataset """
+        """ yield a subset of the events in the bingham_test dataset """
         event_df = bingham_dataset.event_client.get_events().to_df()
         fetcher = bingham_dataset.get_fetcher()
         tb = 1

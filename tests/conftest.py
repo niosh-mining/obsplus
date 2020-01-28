@@ -121,9 +121,9 @@ def collect_catalogs():
         eve_id_cache[cat_id] = len(cat)
 
     # get catalog from datasets
-    # out["kemmerer"] = obsplus.load_dataset("kemmerer").event_client.get_events()
-    out["bingham"] = obsplus.load_dataset("bingham").event_client.get_events()
-    out["crandall"] = obsplus.load_dataset("crandall").event_client.get_events()
+    for name in ("bingham_test", "crandall_test"):
+        ds = obsplus.load_dataset(name)
+        out[name] = ds.event_client.get_events()
     return out
 
 
@@ -249,26 +249,26 @@ def instrumented_thread_executor(thread_executor):
 
 @pytest.fixture(scope="session")
 def ta_dataset():
-    """ Load the small TA test case into a dataset """
-    return load_and_update_dataset("TA")
+    """ Load the small ta_test test case into a dataset """
+    return load_and_update_dataset("ta_test")
 
 
 @pytest.fixture(scope="session")
 def ta_wavebank(ta_dataset):
-    """ Return a wavebank from TA dataset. """
+    """ Return a wavebank from ta_test dataset. """
     return ta_dataset.waveform_client
 
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
-    """ load the bingham dataset """
-    ds = load_and_update_dataset("bingham")
+    """ load the bingham_test dataset """
+    ds = load_and_update_dataset("bingham_test")
     return ds
 
 
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
-    """ load the bingham tests case """
+    """ load the bingham_test tests case """
     cat = bingham_dataset.event_client.get_events()
     assert len(cat), "catalog is empty"
     return cat
@@ -276,7 +276,7 @@ def bingham_catalog(bingham_dataset):
 
 @pytest.fixture()
 def bingham_stream(bingham_dataset):
-    """ load the bingham tests case """
+    """ load the bingham_test tests case """
     return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
@@ -289,8 +289,8 @@ def bingham_stream_dict(bingham_dataset):
 
 @pytest.fixture(scope="session")
 def crandall_dataset():
-    """ load the crandall canyon dataset. """
-    return load_and_update_dataset("crandall")
+    """ load the crandall_test canyon dataset. """
+    return load_and_update_dataset("crandall_test")
 
 
 @pytest.fixture(scope="session")
@@ -318,16 +318,9 @@ def test_inventory(request):
 
 @pytest.fixture(scope="session")
 def ta_archive(ta_dataset):
-    """ make sure the TA archive, generated with the setup_test_archive
+    """ make sure the ta_test archive, generated with the setup_test_archive
     script, has been downloaded, else download it """
     return Path(obsplus.WaveBank(ta_dataset.waveform_client).index_path).parent
-
-
-# @pytest.fixture(scope="session")
-# def kem_archive(kemmerer_dataset):
-#     """ download the kemmerer data (will take a few minutes but only
-#      done once) """
-#     return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
 
 
 @pytest.fixture(scope="class")
@@ -337,9 +330,9 @@ def class_tmp_dir(tmpdir_factory):
 
 
 @pytest.fixture(scope="class")
-def tmp_ta_dir(class_tmp_dir):
-    """ Make a temp copy of the TA bank """
-    bank = obsplus.load_dataset("TA").waveform_client
+def tmp_ta_dir(class_tmp_dir, ta_dataset):
+    """ Make a temp copy of the ta_test bank """
+    bank = ta_dataset.waveform_client
     path = dirname(dirname(bank.index_path))
     out = os.path.join(class_tmp_dir, "temp")
     shutil.copytree(path, out)

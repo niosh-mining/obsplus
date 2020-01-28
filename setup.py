@@ -82,9 +82,9 @@ dev_requires = tests_require + docs_require
 
 ENTRY_POINTS = {
     "obsplus.datasets": [
-        "bingham = obsplus.datasets.bingham",
-        "crandall = obsplus.datasets.crandall",
-        "ta = obsplus.datasets.ta",
+        "bingham_test = obsplus.datasets.bingham_test",
+        "crandall_test = obsplus.datasets.crandall_test",
+        "ta_test = obsplus.datasets.ta",
     ]
 }
 

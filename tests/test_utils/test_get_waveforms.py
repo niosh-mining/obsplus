@@ -49,12 +49,12 @@ class TestGetWaveforms:
 class TestGetWaveformsBulk:
     @pytest.fixture(scope="class")
     def bingham_st(self, bingham_dataset):
-        """ Return a stream with all data from bingham. """
+        """ Return a stream with all data from bingham_test. """
         return bingham_dataset.waveform_client.get_waveforms()
 
     @pytest.fixture(scope="class")
     def bingham_bulk_args(self, bingham_st):
-        """ Return bulk arguments which encompass all of the bingham dataset """
+        """ Return bulk arguments which encompass all of the bingham_test dataset """
         bulk = []
         for tr in bingham_st:
             bulk.append(tr.id.split(".") + [tr.stats.starttime, tr.stats.endtime])

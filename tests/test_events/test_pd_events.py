@@ -230,14 +230,14 @@ def floatify_dict(some_dict):
 
 @pytest.fixture
 def event_directory():
-    """ Return the directory of the bingham catalog. """
-    ds = obsplus.load_dataset("bingham")
+    """ Return the directory of the bingham_test catalog. """
+    ds = obsplus.load_dataset("bingham_test")
     return ds.event_path
 
 
 @pytest.fixture
 def event_file(event_directory):
-    """ Return a path to the first event file in the bingham bank. """
+    """ Return a path to the first event file in the bingham_test bank. """
     first = list(Path(event_directory).rglob("*.xml"))[0]
     return first
 
@@ -506,7 +506,7 @@ class TestReadPicks:
 
     @pytest.fixture
     def bingham_cat_only_picks(self, bingham_dataset):
-        """ return bingham catalog with everything but picks removed """
+        """ return bingham_test catalog with everything but picks removed """
         events = []
         for eve in bingham_dataset.event_client.get_events().copy():
             events.append(ev.Event(picks=eve.picks))
@@ -1038,7 +1038,7 @@ class TestReadBingham:
     @register_func(event_fixtures)
     @register_func(picks_fixtures)
     def catalog(self, bingham_dataset):
-        """ return the bingham catalog """
+        """ return the bingham_test catalog """
         return bingham_dataset.event_client.get_events()
 
     @pytest.fixture(scope="class")

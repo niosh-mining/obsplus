@@ -321,7 +321,7 @@ class TestStreamBulkSplit:
 
     @pytest.fixture
     def bing_pick_bulk(self, bingham_catalog):
-        """ Create a dataframe from the bingham picks. """
+        """ Create a dataframe from the bingham_test picks. """
         picks = obsplus.picks_to_df(bingham_catalog)
         df = picks[list(NSLC)]
         df["starttime"] = picks["time"] - to_timedelta64(1.011)
