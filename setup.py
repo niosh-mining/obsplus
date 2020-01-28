@@ -2,6 +2,7 @@
 Setup script for obsplus
 """
 import glob
+import importlib.util as iutil
 import sys
 from collections import defaultdict
 from os.path import join, exists, isdir
@@ -25,19 +26,26 @@ if sys.version_info < python_version:
 
 # get path references
 here = Path(__file__).absolute().parent
-version_file = here / "obsplus" / "version.py"
-
-# --- get version
-with version_file.open() as fi:
-    content = fi.read().split("=")[-1].strip()
-    __version__ = content.replace('"', "").replace("'", "")
-
-# --- get readme
-with open("README.rst") as readme_file:
-    readme = readme_file.read()
+version_path = here / "obsplus" / "version.py"
+readme_path = here / "README.rst"
+# get requirement paths
+package_req_path = here / "requirements.txt"
+test_req_path = here / "tests" / "requirements.txt"
+doc_req_path = here / "docs" / "requirements.txt"
 
 
-# --- get sub-packages
+# --- utils
+
+
+def get_version(path, name="obsplus.version"):
+    """ Load a python module with and return its __version__ attribute. """
+    spec = iutil.spec_from_file_location(name, path)
+    version = iutil.module_from_spec(spec)
+    spec.loader.exec_module(version)
+    assert hasattr(version, "__version__"), "no __version__ defined in file."
+    return version.__version__
+
+
 def find_packages(base_dir="."):
     """ setuptools.find_packages wasn't working so I rolled this """
     out = []
@@ -64,16 +72,21 @@ def get_package_data_files():
     return list(out.items())
 
 
-# --- requirements paths
 def read_requirements(path):
     """ Read a requirements.txt file, return a list. """
     with Path(path).open("r") as fi:
         return fi.readlines()
 
 
-package_req_path = here / "requirements.txt"
-test_req_path = here / "tests" / "requirements.txt"
-doc_req_path = here / "docs" / "requirements.txt"
+def load_file(path):
+    """ Load a file into memory. """
+    with Path(path).open() as w:
+        contents = w.read()
+    return contents
+
+
+# --- get sub-packages
+
 
 requires = read_requirements(package_req_path)
 tests_require = read_requirements(test_req_path)
@@ -92,9 +105,9 @@ df = get_package_data_files()
 
 setup(
     name="obsplus",
-    version=__version__,
+    version=get_version(version_path),
     description="Some add-ons to obspy",
-    long_description=readme,
+    long_description=load_file(readme_path),
     author="Derrick Chambers",
     author_email="djachambeador@gmail.com",
     url="https://github.com/niosh-mining/obsplus",
