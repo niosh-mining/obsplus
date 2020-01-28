@@ -468,8 +468,7 @@ def get_preferred(event: Event, what: str, init_empty=False):
     object.
 
     Parameters
-
-    -----------
+    ----------
     event: obspy.core.event.Event
         The instance for which the preferred should be sought.
     what: the preferred item to get

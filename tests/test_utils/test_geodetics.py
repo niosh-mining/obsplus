@@ -32,6 +32,7 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def inv(self):
+        """Return the default inventory."""
         return obspy.read_inventory()
 
     @pytest.fixture(scope="class")
@@ -52,6 +53,7 @@ class TestCalculateDistance:
         assert event_ids_cat == event_ids_df
 
     def test_all_seed_id_in_df(self, distance_df, inv):
+        """Ensure all the seed ids are in the dataframe."""
         seed_id_stations = set(obsplus.stations_to_df(inv)["seed_id"])
         seed_id_df = set(distance_df.index.to_frame()["id2"])
         assert seed_id_df == seed_id_stations
@@ -117,6 +119,7 @@ class TestCalculateDistance:
             spatial_calc(input1, input2)
 
     def test_list_of_tuples(self, spatial_calc):
+        """Test a list of tuples."""
         input1 = [(45, -111, 0), (46, -111, 0), (49, -112, 0)]
         input2 = obspy.read_events()
         with suppress_warnings():

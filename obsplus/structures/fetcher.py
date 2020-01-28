@@ -45,8 +45,10 @@ EventStream = namedtuple("EventStream", "event_id stream")
 
 
 def _enable_swaps(cls):
-    """ enable swapping out events, stations, and picks info on any
-    function that gets waveforms """
+    """
+    Enable swapping out events, stations, and picks info on any
+    function that gets waveforms.
+    """
     for name, value in cls.__dict__.items():
         if "waveform" in name or name == "__call__":
             setattr(cls, name, _temporary_override(value))
@@ -54,8 +56,11 @@ def _enable_swaps(cls):
 
 
 def _temporary_override(func):
-    """ decorator to enable temporary override of various parameters
-    (eg events, stations, picks, etc.)"""
+    """
+    Decorator to enable temporary override of various parameters.
+
+    This is commonly used for events, stations, picks, etc.
+    """
 
     @functools.wraps(func)
     def wraper(self, *args, **kwargs):
@@ -250,7 +255,7 @@ class Fetcher:
             The overlap between streams added to the end of the waveforms
 
         Yields
-        -------
+        ------
         Stream
         """
         time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
@@ -282,7 +287,7 @@ class Fetcher:
             The overlap between streams added to the end of the waveforms
 
         Yields
-        -------
+        ------
         Callable[..., Stream]
         """
 
@@ -440,6 +445,7 @@ class Fetcher:
     # ------------------------------- misc
 
     def copy(self):
+        """Return a deep copy of the fetcher."""
         return copy.deepcopy(self)
 
     def _get_bulk_wf(self, *args, **kwargs):
@@ -470,6 +476,7 @@ class Fetcher:
             Start times for query.
         endtime
             End times for query.
+
         Returns
         -------
         List of tuples of the form:
@@ -580,7 +587,7 @@ class Fetcher:
 
 @register_func(Fetcher.reference_funcs, key="origin")
 def _get_origin_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
+    """Get the reference times for origins."""
     df = fetcher.event_df
     row = df[df.event_id == event_id].iloc[0]
     return UTCDateTime(row.time)
@@ -588,19 +595,21 @@ def _get_origin_reference_times(fetcher: Fetcher, event_id):
 
 @register_func(Fetcher.reference_funcs, key="p")
 def _get_p_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
+    """Get the reference times for p arrivals."""
     return _get_phase_reference_time(fetcher, event_id, "p")
 
 
 @register_func(Fetcher.reference_funcs, key="s")
 def _get_s_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
+    """Get the reference times for s arrivals."""
     return _get_phase_reference_time(fetcher, event_id, "s")
 
 
 def _get_phase_reference_time(fetcher: Fetcher, event_id, phase):
-    """ get reference times to specified phases, apply over all channels in a
-    station """
+    """
+    Get reference times to specified phases, apply over all channels in a
+    station.
+    """
     pha = phase.upper()
     df = fetcher.picks_df
     inv = fetcher.station_df

@@ -61,8 +61,7 @@ def dataset(request):
 
 @pytest.mark.dataset
 class TestDatasets:
-    """ generic tests for all loaded datasets. These require downloaded a few
-     mb of data. """
+    """Generic tests for all loaded datasets."""
 
     client_types = {
         "event": EventClient,
@@ -72,8 +71,10 @@ class TestDatasets:
 
     @pytest.fixture(scope="class")
     def new_dataset(self, dataset, tmpdir_factory) -> DataSet:
-        """ init a copy of each dataset and set its base directory to a temp
-        directory to force download. """
+        """
+        Init a copy of each dataset and set its base directory to a temp
+        directory to force download.
+        """
         td = Path(tmpdir_factory.mktemp("datasets"))
         ds = dataset(base_path=td)
         return ds
@@ -128,8 +129,10 @@ class TestBasic:
     """ Basic misc. tests for dataset. """
 
     def test_all_files_copied(self, tmp_path):
-        """ When the download logic fires all files in the source
-        should be copied. """
+        """
+        When the download logic fires all files in the source
+        should be copied.
+        """
         ds = obsplus.copy_dataset("ta_test", tmp_path)
         # iterate top level files and assert each was copied
         for tlf in ds.data_files:
@@ -191,8 +194,10 @@ class TestCopyDataset:
     """ tests for copying datasets. """
 
     def test_no_new_data_downloaded(self, monkeypatch):
-        """ no data should be downloaded when copying a dataset that
-        has already been downloaded. """
+        """
+        No data should be downloaded when copying a dataset that
+        has already been downloaded.
+        """
         # this ensures dataset is loaded
         ds = obsplus.load_dataset("bingham_test")
         cls = ds.__class__
@@ -234,8 +239,10 @@ class TestMD5Hash:
 
     @pytest.fixture
     def copied_crandall(self, tmpdir_factory):
-        """ Copy the crandall_test ds to a new directory, create fresh hash
-        and return. """
+        """
+        Copy the crandall_test ds to a new directory, create fresh hash
+        and return.
+        """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
         ds = obsplus.load_dataset("crandall_test").copy_to(newdir)
         ds.create_md5_hash()
@@ -286,6 +293,7 @@ class TestVersioning:
 
     # Helper Functions
     def check_dataset(self, ds, redownloaded=True):
+        """Perform sanity-checks on a dataset."""
         if redownloaded:
             assert ds.data_file.exists()
             with open(ds.data_file1) as f:
@@ -298,13 +306,15 @@ class TestVersioning:
     # Fixtures
     @pytest.fixture(scope="class")
     def dataset(self):
-        """ Create a stupidly simple dataset """
+        """Create a stupidly simple dataset."""
 
         return make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
 
     @pytest.fixture
     def dummy_dataset(self, tmpdir_factory, dataset):
-        """ Instantiate our simple dataset for the first data download """
+        """
+        Instantiate our simple dataset for the first data download.
+        """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
         ds = dataset(base_path=newdir)
         ds.create_md5_hash()
@@ -312,8 +322,10 @@ class TestVersioning:
 
     @pytest.fixture  # These should be able to be combined somehow, I would think...
     def proper_version(self, dummy_dataset):
-        """ Make sure there is a version file with the correct version number from
-        what is attached to the DataSet """
+        """
+        Make sure there is a version file with the correct version number from
+        what is attached to the DataSet.
+        """
         version = "1.0.0"
         with dummy_dataset._version_path.open("w") as fi:
             fi.write(version)
@@ -334,6 +346,7 @@ class TestVersioning:
 
     @pytest.fixture
     def high_version(self, dummy_dataset):
+        """Return a dummy dataset with a large version."""
         version = "2.0.0"
         with open(dummy_dataset._version_path, "w") as fi:
             fi.write(version)
@@ -342,6 +355,7 @@ class TestVersioning:
 
     @pytest.fixture
     def no_version(self, dummy_dataset):
+        """Return a dummy dataset with no version info."""
         path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
@@ -350,6 +364,7 @@ class TestVersioning:
 
     @pytest.fixture
     def re_download(self, dummy_dataset):
+        """Re-download the dummy dataset and return."""
         path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
@@ -363,6 +378,7 @@ class TestVersioning:
 
     @pytest.fixture
     def corrupt_version(self, dummy_dataset):
+        """Return a dummy dataset with a corrupt version."""
         with open(dummy_dataset._version_path, "w") as fi:
             fi.write("abcd")
         dummy_dataset.adjust_data()
@@ -370,8 +386,10 @@ class TestVersioning:
 
     # Tests <- It's probably possible to combine some of these, somehow...
     def test_version_matches(self, proper_version, dataset):
-        """ Try re-loading the dataset and verify that it is possible with a
-        matching version number """
+        """
+        Try re-loading the dataset and verify that it is possible with a
+        matching version number.
+        """
         dataset(base_path=proper_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(proper_version, redownloaded=False)
@@ -418,8 +436,10 @@ class TestVersioning:
         assert expected in str(e.value.args[0])
 
     def test_doesnt_delete_extra_files(self, no_version, dataset):
-        """ Make sure an extra file that was added doesn't get harmed by the
-        re-download process """
+        """
+        Make sure an extra file that was added doesn't get harmed by the
+        re-download process.
+        """
         path = no_version.station_path / "test.txt"
         with open(path, "w") as f:
             f.write("ijkl")

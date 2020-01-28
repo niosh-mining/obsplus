@@ -14,6 +14,7 @@ class TestAssertStreamsAlmostEqual:
 
     @pytest.fixture
     def streams(self):
+        """Return two default streams."""
         return obspy.read(), obspy.read()
 
     def test_unequal_len(self, streams):

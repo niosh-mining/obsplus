@@ -59,8 +59,10 @@ def _generate_pick_phase_maps(eve1, eve2):
 
 
 def _merge_picks(eve1, eve2, delete_old=False):
-    """ Merges a list of objects that have waveform ids (arrivals, picks,
-     amplitudes) """
+    """
+    Merge a list of objects that have waveform ids (arrivals, picks,
+    amplitudes)
+    """
     maps = _generate_pick_phase_maps(eve1, eve2)
     # new attributes that should overwrite old ones
     attrs_no_update = {"resource_id", "force_resource_id"}
@@ -84,7 +86,7 @@ def _merge_picks(eve1, eve2, delete_old=False):
 
 
 def _merge_amplitudes(eve1, eve2, delete_old=False):
-    """ merge the amplitudes together """
+    """Merge the amplitudes together."""
     attrs_no_update = {"pick_id", "resource_id", "force_resource_id"}
     maps = _generate_pick_phase_maps(eve1, eve2)
 
@@ -115,7 +117,7 @@ def _merge_amplitudes(eve1, eve2, delete_old=False):
 
 
 def _ensure_arrival_have_picks(new_event, new_origin):
-    """ ensure the arrivals all have picks """
+    """Ensure the arrivals all have picks."""
     pick_dict = {x.resource_id.id: x for x in new_event.picks}
     for arrival in new_origin.arrivals:
         pid = arrival.pick_id.id

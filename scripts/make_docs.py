@@ -8,6 +8,7 @@ from clean_docs import main as clean_docs
 
 
 def main():
+    """Make the obsplus documentation."""
     doc_path = Path(__file__).absolute().parent.parent / "docs"
     # clean out all the old docs
     clean_docs()

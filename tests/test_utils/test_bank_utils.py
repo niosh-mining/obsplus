@@ -55,8 +55,7 @@ class TestStreamPathStructure:
 
     # general tests
     def test_output(self, output):
-        """ test that a dict was returned with required keys when bank
-        is called"""
+        """Test that a dict was returned with required keys."""
         assert isinstance(output, dict)
         assert isinstance(output["path"], str)
 
@@ -75,6 +74,7 @@ class TestEventPathStructure:
     """ tests for event structures """
 
     def test_basic(self):
+        """Simple sanity check."""
         ev = obspy.read_events()[0]
         expected = "2012/04/04/2012-04-04T14-21-42_00041.xml"
         out = _summarize_event(ev)["path"]
@@ -118,6 +118,7 @@ class TestSummarizeStreams:
     gap_end = UTC("2017-09-20T01-25-40")
 
     def clean_dataframe(self, df):
+        """Function to fix some common issues with the dataframe."""
         for id_code in NSLC:
             df[id_code] = (
                 df[id_code].astype(str).str.replace("b'", "").str.replace("'", "")
@@ -157,6 +158,7 @@ class TestSummarizeStreams:
 
     @pytest.fixture
     def gappy_mseed_path(self, gappy_stream, tmp_path):
+        """Return a path to the saved mseed file with gaps."""
         out_path = tmp_path / "out.mseed"
         gappy_stream.write(str(out_path), format="mseed")
         return out_path

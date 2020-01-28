@@ -1,3 +1,5 @@
+"""Tests for docstring utils."""
+
 import textwrap
 
 from obsplus.utils.docs import compose_docstring

@@ -33,6 +33,8 @@ def iris_client():
 
 
 class TestEventClient:
+    """Tests for event client interface."""
+
     not_event_client_instances = ["a", 1, EventBank]
 
     def test_fdsn_isinstance(self, iris_client):
@@ -41,6 +43,7 @@ class TestEventClient:
         assert not isinstance(10, EventClient)
 
     def test_fdsn_issubclass(self):
+        """ Test client FDSN client meets EventClient interface. """
         issubclass(str, EventClient)
         assert issubclass(Client, EventClient)
         assert not issubclass(str, EventClient)
@@ -52,6 +55,7 @@ class TestEventClient:
         assert issubclass(obspy.Catalog, EventClient)
 
     def test_eventbank(self, bingham_dataset):
+        """ Ensure eventbank meets event client interface."""
         ebank = EventBank(bingham_dataset.event_path)
         assert isinstance(ebank, EventClient)
         assert issubclass(EventBank, EventClient)
@@ -68,21 +72,26 @@ class TestEventClient:
 
 
 class TestWaveformClient:
+    """Tests for waveform client interface."""
+
     def test_fdsn_isinstance(self, iris_client):
         """ ensure the client is an instance of EventClient """
         assert isinstance(iris_client, WaveformClient)
         assert not isinstance(10, WaveformClient)
 
     def test_fdsn_issubclass(self):
+        """Ensure fdsn client meets interface."""
         assert issubclass(Client, WaveformClient)
         assert not issubclass(str, WaveformClient)
 
     def test_stream(self):
+        """Ensure Stream meet client interface."""
         st = obspy.read()
         assert isinstance(st, WaveformClient)
         assert issubclass(obspy.Stream, WaveformClient)
 
     def test_wavebank(self, bingham_dataset):
+        """Ensure wavebank meets waveform client interface."""
         wavebank = bingham_dataset.waveform_client
         assert isinstance(wavebank, WaveformClient)
         assert issubclass(WaveBank, WaveformClient)
@@ -94,16 +103,20 @@ class TestWaveformClient:
 
 
 class TestStationClient:
+    """Tests for station client interface."""
+
     def test_fdsn_isinstance(self, iris_client):
         """ ensure the client is an instance of EventClient """
         assert isinstance(iris_client, StationClient)
         assert not isinstance(10, StationClient)
 
     def test_fdsn_issubclass(self):
+        """FDSN client should be a sublcass of station client."""
         assert issubclass(Client, StationClient)
         assert not issubclass(str, StationClient)
 
     def test_inventory(self):
+        """ Tests inventory meet station client interface."""
         inv = obspy.read_inventory()
         assert isinstance(inv, StationClient)
         assert issubclass(obspy.Inventory, StationClient)

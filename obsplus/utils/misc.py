@@ -41,6 +41,21 @@ READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
 
 
 def deprecated_callable(func=None, replacement_str=None):
+    """
+    Mark a function as deprecated.
+
+    Whenever it is used a userwarning will be issued. You can optionally
+    provide a string to indicate which function should be used in its place.
+
+    Parameters
+    ----------
+    func
+    replacement_str
+
+    Returns
+    -------
+
+    """
     fname = str(getattr(func, "__name__", func))
 
     if callable(func):
@@ -70,7 +85,7 @@ def yield_obj_parent_attr(
     stored (attr).
 
     Parameters
-    -----------
+    ----------
     obj
         The object to recurse through attributes of lists, tuples, and other
         instances.
@@ -123,6 +138,7 @@ def yield_obj_parent_attr(
 
 
 def get_instances(*args, **kwargs):
+    """Get all instances in an object tree."""
     return [x[0] for x in yield_obj_parent_attr(*args, **kwargs)]
 
 
@@ -175,7 +191,7 @@ def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
         A directory that exists.
 
     Yields
-    -------
+    ------
     outputs of func
     """
     path = Path(directory)
@@ -357,7 +373,7 @@ def iter_files(
     mtime : int or float
         Time stamp indicating the minimum mtime.
     skip_hidden : bool
-        If True skip files that begin with a '.'
+        If True skip files or folders (they begin with a '.')
 
     Yields
     ------
@@ -369,7 +385,7 @@ def iter_files(
                 if mtime is None or entry.stat().st_mtime >= mtime:
                     if entry.name[0] != "." or not skip_hidden:
                         yield entry.path
-            elif entry.is_dir():
+            elif entry.is_dir() and entry.name[0] != ".":
                 yield from iter_files(
                     entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
                 )

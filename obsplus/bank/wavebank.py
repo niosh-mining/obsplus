@@ -61,14 +61,14 @@ class WaveBank(_Bank):
     """
     A class to interact with a directory of waveform files.
 
-    WaveBank recursively reads each file in a directory and  creates an index
+    WaveBank recursively reads each file in a directory and creates an index
     to allow the files to be efficiently queried.
 
     Implements a superset of the :class:`~obsplus.interfaces.WaveformClient`
     interface.
 
     Parameters
-    -------------
+    ----------
     base_path : str
         The path to the directory containing waveform files. If it does not
         exist an empty directory will be created.
@@ -346,6 +346,20 @@ class WaveBank(_Bank):
         location: str = None,
         channel: str = None,
     ) -> availability_type:
+        """
+        Get availability for a given group of instruments.
+
+        Parameters
+        ----------
+        network
+            The network code.
+        station
+            The station code.
+        location
+            The location code
+        channel
+            The chanel code.
+        """
         df = self.get_availability_df(network, station, location, channel)
         # convert timestamps to UTCDateTime objects
         df["starttime"] = df.starttime.apply(UTCDateTime)

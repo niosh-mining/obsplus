@@ -56,6 +56,16 @@ def _get_time_values(time1, time2=None):
 
 
 def summarize_generic_stream(path, format=None):
+    """
+    Return summary information for a stream stored on disk.
+
+    Parameters
+    ----------
+    path
+        The path to the stream.
+    format
+        The format code, as used by obspy.
+    """
     st = _try_read_stream(path, format=format) or _try_read_stream(path) or []
     out = []
     for tr in st:
@@ -220,6 +230,14 @@ class _IndexCache:
 
 @contextlib.contextmanager
 def sql_connection(path, **kwargs):
+    """
+    A simple context manager for a sqlite connection.
+
+    Parameters
+    ----------
+    path
+        A path to the sqlite database.
+    """
     con = sqlite3.connect(str(path), **kwargs)
     with con:
         yield con
@@ -227,9 +245,13 @@ def sql_connection(path, **kwargs):
 
 
 def get_kernel_query(starttime: int, endtime: int, buffer: int):
-    """" get the HDF5 kernel query parameters (this is necessary because
-    hdf5 doesnt accept invert conditions for some reason. A slight buffer
-    is applied to the ranges to make sure no edge files are left out"""
+    """
+    Create a HDF5 kernel query based on start and end times.
+
+    This is necessary because hdf5 doesnt accept inverted conditions.
+    A slight buffer is applied to the ranges to make sure no edge files
+    are excluded.
+    """
     t1 = starttime - buffer
     t2 = endtime + buffer
     con = (
@@ -363,7 +385,7 @@ def _drop_rows(table_name, con, columns=None, **kwargs):
 
 
 def _try_read_stream(stream_path, format=None, **kwargs):
-    """" Try to read a waveforms from file, if raises return None """
+    """Try to read a waveforms from file, if raises return None"""
     read = READ_DICT.get(format, obspy.read)
     stt = None
     try:

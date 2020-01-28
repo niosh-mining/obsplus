@@ -72,6 +72,7 @@ class TestReadInventory:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def df_from_inv_df(self):
+        """Return a df from an inventory dataframe."""
         event_dict = {
             "start_date": obspy.UTCDateTime(),
             "end_date": None,
@@ -126,8 +127,10 @@ class TestReadInventory:
         assert len(read_inventory_output)
 
     def test_read_inv_with_numeric_codes(self, numeric_csv):
-        """ ensure numeric network, station, location, codes are interpreted
-        as strs """
+        """
+        Ensure numeric network, station, location, codes are interpreted
+        as strs
+        """
         df = stations_to_df(str(numeric_csv))
         for col in ["network", "station", "location", "channel"]:
             ser = df[col]
@@ -176,10 +179,12 @@ class TestReadDirectoryOfInventories:
 
     @pytest.fixture(scope="class")
     def read_inventory(self, inv_directory):
+        """Convert the inventory directory to a dataframe."""
         return stations_to_df(inv_directory)
 
     # tests
-    def test_something(self, read_inventory, inventory):
+    def test_read_inventory_directories(self, read_inventory, inventory):
+        """Tests for reading a directory of inventories."""
         inv_df = stations_to_df(inventory)
         assert (read_inventory.columns == inv_df.columns).all()
         assert not read_inventory.empty
@@ -276,6 +281,7 @@ class TestStationDfFromCatalog:
 
     # tests
     def test_basic_inventories(self, station_cache_inventory):
+        """Test for all basic inventories."""
         df = stations_to_df(station_cache_inventory)
         assert isinstance(df, pd.DataFrame)
         assert not df.empty

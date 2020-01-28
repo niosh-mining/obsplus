@@ -18,6 +18,7 @@ version = obsplus.__version__
 
 @contextmanager
 def change_directory(new_path):
+    """ Temporarily change directories. """
     here = Path(".")
     os.chdir(new_path)
     yield

@@ -98,8 +98,7 @@ def _filter(obj, cls, **kwargs):
 
 
 def _get_keep_ids(inv, **kwargs):
-    """ return the id of all objects that either meet the filter
-    requirements """
+    """Return the id of objects that meet the filter requirements."""
     _add_codes(inv)
     nets = {id(x) for x in _filter(inv, Network, **kwargs)}
     stas = {id(x) for x in _filter(inv, Station, **kwargs)}

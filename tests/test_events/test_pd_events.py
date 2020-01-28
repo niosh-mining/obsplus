@@ -52,6 +52,7 @@ common_obj_attrs = {"creation_info", "comments", "waveform_id"}
 
 
 def pick_generator(scnls):
+    """Create picks for testing."""
     picks = []
     for scnl in scnls:
         p = ev.Pick(
@@ -62,6 +63,7 @@ def pick_generator(scnls):
 
 
 def make_arrivals(picks):
+    """Create arrivals for testing."""
     counter = 1
     params = {"phase": "P"}
     arrivals = []
@@ -91,6 +93,7 @@ def make_arrivals(picks):
 
 
 def make_amplitudes(scnls=None, picks=None):
+    """Create amplitudes for testing."""
     counter = 1
     amps = []
     scnls = scnls or []
@@ -151,6 +154,7 @@ def make_amplitudes(scnls=None, picks=None):
 
 
 def sm_generator(scnls=None, amplitudes=None):
+    """ Function to create station magntiudes for testing."""
     counter = 1
     sms = []
     scnls = scnls or []
@@ -189,6 +193,7 @@ def sm_generator(scnls=None, amplitudes=None):
 
 
 def mag_generator(mag_types):
+    """Function to create magnitudes for testing."""
     params = {
         "origin_id": ev.ResourceIdentifier(),
         "method_id": ev.ResourceIdentifier("mag_calculator"),
@@ -242,6 +247,14 @@ def event_file(event_directory):
     return first
 
 
+@pytest.fixture(scope="class")
+def empty_catalog():
+    """ run an empty events through the picks_to_df function """
+    event = ev.Event()
+    cat = obspy.Catalog(events=[event])
+    return picks_to_dataframe(cat)
+
+
 # --------------- tests
 
 
@@ -262,6 +275,7 @@ class TestCat2Df:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def events_from_dataframe(self):
+        """ Create events df from an event dataframe."""
         event_dict = {
             "time": obspy.UTCDateTime(),
             "latitude": 41,
@@ -343,8 +357,10 @@ class TestCat2Df:
         assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
 
     def test_event_id_in_columns(self, df):
-        """ Sometime the event_id was changed to the index, make sure it is
-        still a column. """
+        """
+        Sometime the event_id was changed to the index, make sure it is
+        still a column.
+        """
         cols = df.columns
         assert "event_id" in cols
 
@@ -369,6 +385,7 @@ class TestCat2Df:
         assert isinstance(df, pd.DataFrame)
 
     def test_event_directory_to_df(self, event_directory):
+        """Test for getting dataframe from event directory."""
         df = events_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -399,8 +416,10 @@ class TestCat2DfPreferredThings:
     # fixtures
     @pytest.fixture(scope="class", autouse=True)
     def preferred_magnitudes(self, test_catalog):
-        """ set the preferred magnitudes to the first magnitudes,
-        return list of magnitudes """
+        """
+        Set the preferred magnitudes to the first magnitudes,
+        return list of magnitudes.
+        """
         mags = []
         for eve in test_catalog:
             if len(eve.magnitudes):
@@ -414,8 +433,10 @@ class TestCat2DfPreferredThings:
 
     @pytest.fixture(scope="class", autouse=True)
     def preferred_origins(self, test_catalog):
-        """ set the preferred magnitudes to the first magnitudes,
-        return list of magnitudes """
+        """
+        Set the preferred magnitudes to the first magnitudes,
+        return list of magnitudes.
+        """
         origins = []
         for eve in test_catalog:
             if len(eve.origins):
@@ -476,13 +497,6 @@ class TestReadPicks:
         """ return read_picks result from reading dataframe """
         df = picks_to_df(tcat)
         return picks_to_dataframe(df)
-
-    @pytest.fixture(scope="class")
-    def empty_catalog(self):
-        """ run an empty events through the picks_to_df function """
-        event = ev.Event()
-        cat = obspy.Catalog(events=[event])
-        return picks_to_dataframe(cat)
 
     @pytest.fixture(scope="class")
     def picks_no_origin(self):
@@ -576,6 +590,7 @@ class TestReadPicks:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
+        """Test extacting info from an event directory."""
         df = picks_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -597,9 +612,12 @@ class TestReadPicks:
 
 
 class TestReadArrivals:
+    """Test case for reading arrivals into a dataframe."""
+
     # fixtures
     @pytest.fixture(scope="class")
     def dummy_cat(self):
+        """Return a dummy catalog for testing arrival reading."""
         scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
         cat = ev.Catalog()
         eve1 = ev.Event()
@@ -619,17 +637,15 @@ class TestReadArrivals:
         return cat
 
     @pytest.fixture(scope="class")
-    def empty_cat(self):
-        return ev.Catalog()
-
-    @pytest.fixture(scope="class")
     def no_origin(self):
+        """Return a catalog with no origin."""
         cat = ev.Catalog()
         cat.append(ev.Event())
         return cat
 
     @pytest.fixture(scope="class")
     def read_arr_output(self, dummy_cat):
+        """Read the dummy_catalog into an arrival dataframe."""
         return arrivals_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
@@ -700,6 +716,7 @@ class TestReadArrivals:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
+        """Test for extacting info from a directory of events."""
         df = arrivals_to_dataframe(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -712,9 +729,12 @@ class TestReadArrivals:
 
 
 class TestReadAmplitudes:
+    """Tests for reading amplitudes into dataframes."""
+
     # fixtures
     @pytest.fixture(scope="class")
     def dummy_cat(self):
+        """Return a dummy catalog for testing."""
         scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
         cat = ev.Catalog()
         eve1 = ev.Event()
@@ -729,19 +749,18 @@ class TestReadAmplitudes:
         return cat
 
     @pytest.fixture(scope="class")
-    def empty_cat(self):
-        return ev.Catalog()
-
-    @pytest.fixture(scope="class")
     def read_amps_output(self, dummy_cat):
+        """Convert the amplitudes to dataframes."""
         return amplitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
     def amplitude(self, dummy_cat):
+        """Return the first amplitude."""
         return dummy_cat[0].amplitudes[0]
 
     @pytest.fixture(scope="class")
     def amp_series(self, read_amps_output):
+        """Return an amplitude series."""
         return read_amps_output.iloc[0]
 
     @pytest.fixture(scope="class")
@@ -793,6 +812,7 @@ class TestReadAmplitudes:
         assert floatify_dict(ser_dict) == floatify_dict(amp_dict)
 
     def test_creation_time(self, amplitude, amp_series):
+        """Ensure creation time was included."""
         assert amp_series["creation_time"] == to_datetime64(
             amplitude.creation_info.creation_time
         )
@@ -817,14 +837,18 @@ class TestReadAmplitudes:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
+        """Test extracting info from a test directory."""
         df = amplitudes_to_dataframe(event_directory)
         assert isinstance(df, pd.DataFrame)
 
 
 class TestReadStationMagnitudes:
+    """Tests for reading station magnitude info into a dataframe."""
+
     # fixtures
     @pytest.fixture(scope="class")
     def dummy_cat(self):
+        """ Return a dummy catalog for testing."""
         scnls1 = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
         cat = ev.Catalog()
         eve1 = ev.Event()
@@ -840,6 +864,7 @@ class TestReadStationMagnitudes:
 
     @pytest.fixture(scope="class")
     def dummy_mag(self):
+        """Return a dummy magnitude."""
         scnls = ["UK.STA1..HHZ", "UK.STA2..HHZ"]
         eve = ev.Event()
         sms = sm_generator(scnls=scnls)
@@ -854,11 +879,8 @@ class TestReadStationMagnitudes:
         return eve
 
     @pytest.fixture(scope="class")
-    def empty_cat(self):
-        return ev.Catalog()
-
-    @pytest.fixture(scope="class")
     def read_sms_output(self, dummy_cat):
+        """Read station magnitudes from the dummy catalog."""
         return station_magnitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
@@ -908,6 +930,7 @@ class TestReadStationMagnitudes:
 
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
+        """Test getting info form magnitudes."""
         dummy_mag = dummy_mag.magnitudes[0]
         mag_df = station_magnitudes_to_dataframe(dummy_mag)
         assert len(mag_df) == len(dummy_mag.station_magnitude_contributions)
@@ -934,15 +957,19 @@ class TestReadStationMagnitudes:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
+        """Test extracting info from a directory of events."""
         df = station_magnitudes_to_dataframe(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
 
 
 class TestReadMagnitudes:
+    """Tests for getting magnitude info into a dataframe."""
+
     # fixtures
     @pytest.fixture(scope="class")
     def dummy_cat(self):
+        """Return a dummy catalog for testing."""
         cat = ev.Catalog()
         eve = ev.Event()
         eve.origins.append(ev.Origin(time=UTCDateTime()))
@@ -952,6 +979,7 @@ class TestReadMagnitudes:
 
     @pytest.fixture(scope="class")
     def read_mags_output(self, dummy_cat):
+        """Convert dummy catalog to magnitude df."""
         return magnitudes_to_dataframe(dummy_cat)
 
     @pytest.fixture(scope="class")
@@ -1023,6 +1051,7 @@ class TestReadMagnitudes:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
+        """Tests read magnitudes on event directory."""
         df = magnitudes_to_dataframe(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)

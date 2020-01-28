@@ -77,8 +77,9 @@ def _str_inv_to_df(path):
 @stations_to_df.register(Event)
 @stations_to_df.register(Catalog)
 def _event_to_inv_df(event):
-    """ Pull all waveform steam IDS out of an event and put it in a
-    dataframe """
+    """
+    Pull waveform steam IDS out of an event and put it in a dataframe.
+    """
     wids = {x.get_seed_string() for x in get_instances(event, WaveformStreamID)}
     df = pd.DataFrame(sorted(wids), columns=["seed_id"])
     seed = df["seed_id"].str.split(".", expand=True)
@@ -109,6 +110,7 @@ def _bank_to_df(bank):
 
 
 def inventory_to_dataframe(inventory_like):
+    """Convert an inventory to a dataframe."""
     return stations_to_df(inventory_like)
 
 

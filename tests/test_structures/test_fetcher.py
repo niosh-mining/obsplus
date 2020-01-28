@@ -44,8 +44,9 @@ def bing_fetcher():
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def ta_fetcher(ta_dataset):
-    """ init a waveform fetcher using an active obspy client and the ta_test
-    stations """
+    """
+    Init a waveform fetcher using an active obspy client and the ta_test stations.
+    """
     return ta_dataset.get_fetcher()
 
 
@@ -111,6 +112,7 @@ class TestGeneric:
     # fixtures
     @pytest.fixture(scope="session", params=WAVEFETCHERS)
     def wavefetcher(self, request):
+        """Return a fetcher from a list of fetchers"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture(scope="session")
@@ -159,8 +161,9 @@ class TestGetWaveforms:
     @pytest.fixture(scope="session")
     @register_func(generic_streams)
     def kem_stream(self, bing_fetcher):
-        """ using the kem fetcher, return a data waveforms returned
-        by get_waveforms"""
+        """
+        Using the kem fetcher, return a data waveforms returned by get_waveforms.
+        """
         starttime = bing_fetcher.event_client.get_events()[0].origins[0].time - 2
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         return bing_fetcher.get_waveforms(**kwargs)
@@ -168,8 +171,9 @@ class TestGetWaveforms:
     @pytest.fixture(scope="session")
     @register_func(generic_streams)
     def kem_stream_processed(self, subbing_fetcher_with_processor):
-        """ using the kem fetcher, return a data waveforms returned
-        by get_waveforms"""
+        """
+        Using the kem fetcher, return a data waveforms returned by get_waveforms.
+        """
         cat = subbing_fetcher_with_processor.event_client.get_events()
         starttime = cat[0].origins[0].time - 2
         fetch = subbing_fetcher_with_processor
@@ -189,8 +193,9 @@ class TestGetWaveforms:
 
     @pytest.fixture(scope="session", params=generic_streams)
     def stream(self, request):
-        """ a meta fixture for collecting all streams to perform common test
-        on"""
+        """
+        A meta fixture for collecting all streams to perform common test on.
+        """
         return request.getfixturevalue(request.param)
 
     # general waveforms tests tests
@@ -203,8 +208,10 @@ class TestGetWaveforms:
         assert len(stream)
 
     def test_stream_durations(self, stream):
-        """ ensure a waveforms of the correct length (under 2 samples)
-        was returned """
+        """
+        Ensure a waveforms of the correct length (under 2 samples)
+        was returned.
+        """
         for tr in stream:
             t1 = tr.stats.starttime
             t2 = tr.stats.endtime
@@ -214,14 +221,18 @@ class TestGetWaveforms:
 
     # specific tests
     def test_stream_processor_ran(self, kem_stream_processed):
-        """ ensure the waveforms returned has been run through the
-         custom processing function """
+        """
+        Ensure the waveforms returned has been run through the
+        custom processing function.
+        """
         for tr in kem_stream_processed:
             assert tr.stats["processor_ran"]
 
     def test_get_waveforms_no_params(self, bingham_dataset):
-        """ Get waveforms with no params should use start_date and
-        end_date in inventory. """
+        """
+        Get waveforms with no params should use start_date and
+        end_date in inventory.
+        """
         fetcher = bingham_dataset.get_fetcher()
         st = fetcher.get_waveforms()
         assert isinstance(st, obspy.Stream)
@@ -254,6 +265,7 @@ class TestYieldWaveforms:
         return True
 
     def check_stream_processor_ran(self, st):
+        """ Helper function to verify the function has run."""
         for tr in st:
             try:
                 if not tr.stats["processor_ran"]:
@@ -309,16 +321,20 @@ class TestYieldEventWaveforms:
     @pytest.fixture(scope="session")
     @register_func(commons)
     def event_list_origin(self, subbing_fetcher_with_processor):
-        """ return a list of event waveforms, each starttime referenced
-        at origin """
+        """
+        Return a list of event waveforms, each starttime referenced
+        at origin.
+        """
         func = subbing_fetcher_with_processor.yield_event_waveforms
         return dict(func(self.time_before, self.time_after))
 
     @pytest.fixture(scope="session")
     @register_func(commons)
     def event_dict_p(self, subbing_fetcher_with_processor):
-        """ return a list of event waveforms, each starttime referenced
-        at the pwave for the channel """
+        """
+        Return a list of event waveforms, each starttime referenced
+        at the pwave for the channel.
+        """
         # fetcher = bing_fetcher_with_processor
         func = subbing_fetcher_with_processor.yield_event_waveforms
         out = dict(func(self.time_before, self.time_after, reference="p"))
@@ -390,7 +406,7 @@ class TestYieldEventWaveforms:
             assert abs(duration - self.time_after) < 2 * sr
 
     def test_correct_stream(self, bingham_dataset, bingham_stream_dict):
-        """ ensure the correct streams are given for ids """
+        """ Ensure the correct streams are given for ids. """
         cat = bingham_dataset.event_client.get_events()
         evs = {str(ev.resource_id): ev for ev in cat}
         for eve_id, st in bingham_stream_dict.items():
@@ -401,8 +417,10 @@ class TestYieldEventWaveforms:
 
     # wavefetch with no stations
     def test_yield_event_waveforms_no_inv(self, wavefetch_no_inv):
-        """ WaveFetchers backed by WaveBanks should be able to pull
-        station data from wavebank index df in most cases. """
+        """
+        WaveFetchers backed by WaveBanks should be able to pull
+        station data from wavebank index df in most cases.
+        """
         # ensure the inv_df is not None
         inv_df = wavefetch_no_inv.station_df
         assert inv_df is not None
@@ -412,8 +430,10 @@ class TestYieldEventWaveforms:
         self.check_stream_dict(st_dict)
 
     def test_events_no_data(self, subbing_fetcher_with_processor):
-        """ Create a fetcher with events it doesn't have data for.
-        It should empty strings. """
+        """
+        Create a fetcher with events it doesn't have data for.
+        It should empty strings.
+        """
         fetcher = subbing_fetcher_with_processor
         events = obspy.read_events()
         wave_iterator = fetcher.yield_event_waveforms(1, 1, events=events)
@@ -449,6 +469,7 @@ class TestStreamProcessor:
 
     @pytest.fixture(scope="session")
     def stream_list(self, fetcher):
+        """ Return a list of streams from yield waveforms. """
         t1 = obspy.UTCDateTime("2009-04-01T00-00-00")
         t2 = obspy.UTCDateTime("2009-04-01T03-59-59")
         duration = 7200
@@ -457,8 +478,10 @@ class TestStreamProcessor:
 
     # tests
     def test_streams_only_z_components(self, stream_list):
-        """ ensure the st.select part of the waveforms processor discarded other
-        channels """
+        """
+        Ensure the st.select part of the waveforms processor discarded other
+        channels.
+        """
         for st in stream_list:
             for tr in st:
                 assert tr.id.endswith("Z")
@@ -479,8 +502,10 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def catalog(self, bingham_dataset, new_time):
-        """ assemble a events to test yield_event_waveforms with an event
-        that was not initiated from the start """
+        """
+        Assemble a events to test yield_event_waveforms with an event
+        that was not initiated from the start.
+        """
         # get first event, create new origin to slightly add some time.
         ori = Origin(time=new_time, latitude=47.1, longitude=-100.22)
         event = Event(origins=[ori])
@@ -488,8 +513,10 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def new_event_stream(self, bing_fetcher, catalog):
-        """ get a single event from the fetcher, overwriting the attached
-        events """
+        """
+        Get a single event from the fetcher, overwriting the attached
+        events.
+        """
         func = bing_fetcher.yield_event_waveforms
         result = func(time_before=self.tb, time_after=self.ta, events=catalog)
         return list(result)[0].stream
@@ -538,8 +565,10 @@ class TestSwapAttrs:
 
 
 class TestCallWaveFetcher:
-    """ test that calling the wavefetcher provides a simplified interface for
-    getting waveforms """
+    """
+    Test that calling the wavefetcher provides a simplified interface for
+    getting waveforms.
+    """
 
     tb = 1
     ta = 9
@@ -600,16 +629,19 @@ class TestYieldCallables:
     # fixtures
     @pytest.fixture(scope="class")
     def callables(self, ta_fetcher, ta_time_range):
+        """Return callables."""
         start, end = ta_time_range
         it = ta_fetcher.yield_waveform_callable(start, end, self.duration, self.overlap)
         return list(it)
 
     @pytest.fixture(scope="class")
     def streams(self, callables):
+        """Return a list of streams from callables."""
         return [x() for x in callables]
 
     @pytest.fixture(scope="class")
     def time_tuple(self, ta_time_range):
+        """Return a tuple of ta times."""
         t1, t2 = ta_time_range
         tc = make_time_chunks(t1, t2, self.duration, self.overlap)
         return list(tc)
@@ -630,7 +662,7 @@ class TestYieldCallables:
 
 
 class TestClientNoGetBulkWaveForms:
-    """ test that clients without get bulk waveforms, ie earthworm, work """
+    """Test that clients without get bulk waveforms, ie earthworm, work"""
 
     duration = 600
     overlap = 10
@@ -660,14 +692,16 @@ class TestClientNoGetBulkWaveForms:
 
     # tests
     def test_streams_yielded(self, yielded_streams):
-        """ assert streams were yielded, ensuring get_waveforms rather
-        than get_waveform_bulk was used """
+        """
+        Assert streams were yielded, ensuring get_waveforms rather
+        than get_waveform_bulk was used.
+        """
         for st in yielded_streams:
             assert isinstance(st, obspy.Stream)
 
 
 class TestFilterInventoryByAvailability:
-    """ ensure that only times in the stations get used in get_bulk_args call """
+    """Ensure that only times in the stations get used in get_bulk_args call."""
 
     t0 = obspy.UTCDateTime("2015-12-01")
     t1 = obspy.UTCDateTime("2016-01-01")
@@ -694,6 +728,7 @@ class TestFilterInventoryByAvailability:
 
     @pytest.fixture
     def bulk_arg_later_time(self, altered_inv):
+        """Return bulk args for latter time test."""
         fetcher = Fetcher(None, stations=altered_inv)
         return fetcher.get_bulk_args(starttime=self.t1 + 10, endtime=self.t2)
 
@@ -710,8 +745,10 @@ class TestFilterInventoryByAvailability:
 
     # tests
     def test_bulk_arg_is_limited(self, bulk_arg_later_time, altered_inv):
-        """ ensure bulk arg doesn't include times the stations doesnt
-        have data """
+        """
+        Ensure bulk arg doesn't include times the stations doesnt
+        have data.
+        """
         assert len(bulk_arg_later_time) == 1
         ba = bulk_arg_later_time[0]
         ser = altered_inv.iloc[0]
@@ -724,8 +761,10 @@ class TestFilterInventoryByAvailability:
         assert len(bulk_arg_none_end_date) == len(inv_with_none)
 
     def test_empty_stream_from_before_start(self, fetcher):
-        """ ensure when data is requested before stations starttime that an
-        empty string is returned """
+        """
+        Ensure when data is requested before stations starttime that an
+        empty string is returned.
+        """
         st = fetcher(obspy.UTCDateTime("1970-01-01"), 10, 40)
         assert isinstance(st, obspy.Stream)
         assert not len(st)
@@ -746,15 +785,19 @@ class TestDownloadEventWaveforms:
 
     @pytest.fixture(scope="class")
     def fetcher(self, bing_fetcher):
-        """ make a copy of the kem_fetcher and restrict scope of events to
-        when data are available."""
+        """
+        Make a copy of the kem_fetcher and restrict scope of events to
+        when data are available.
+        """
         fet = bing_fetcher.copy()
         return fet
 
     @pytest.fixture(scope="class")
     def download_data(self, temp_dir_path, fetcher: Fetcher):
-        """ download data from the kem fetcher into the tempdir, return
-        path to tempdir """
+        """
+        Download data from the kem fetcher into the tempdir, return
+        path to tempdir.
+        """
         path = os.path.join(temp_dir_path, self.path)
         kwargs = dict(time_before_origin=0, time_after_origin=10, path=path)
         fetcher.download_event_waveforms(**kwargs)
@@ -811,8 +854,10 @@ class TestDownloadContinuousData:
 
     @pytest.fixture(scope="class")
     def download_data(self, tmp_path_factory, ta_fetcher, ta_time_range):
-        """ download data from the kem fetcher into the tempdir, return
-        path to tempdir """
+        """
+        Download data from the kem fetcher into the tempdir, return
+        path to tempdir.
+        """
         path = Path(tmp_path_factory.mktemp("cont_data")) / "waveforms"
         t1, t2 = ta_time_range
         params = dict(
@@ -872,9 +917,11 @@ class TestFetchersFromDatasets:
 
     @pytest.fixture(scope="class", params=DataSet.datasets)
     def data_fetcher(self, request):
+        """Return a datafetcher from all datasets."""
         return obsplus.load_dataset(request.param).get_fetcher()
 
     def test_type(self, data_fetcher):
+        """Ensure a fetcher was returned."""
         assert isinstance(data_fetcher, Fetcher)
 
     def test_event_df(self, data_fetcher):

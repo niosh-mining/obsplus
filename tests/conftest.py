@@ -175,6 +175,7 @@ class StreamTester:
         """
         Return True if two streams are almost equal.
         Will only look at default params for stats objects.
+
         Parameters
         ----------
         st1
@@ -289,20 +290,20 @@ def bingham_stream_dict(bingham_dataset):
 
 @pytest.fixture(scope="session")
 def crandall_dataset():
-    """ load the crandall_test canyon dataset. """
+    """Load the crandall_test canyon dataset."""
     return load_and_update_dataset("crandall_test")
 
 
 @pytest.fixture(scope="session")
 def crandall_bank(crandall_dataset):
+    """Return a WaveBank of Crandall Canyon dataset."""
     return obsplus.WaveBank(crandall_dataset.waveform_client)
 
 
 @pytest.fixture(scope="session", params=cat_dict.values())
 def test_catalog(request):
     """
-    return a list of test events (as catalogs) from
-    quakeml saved on disk
+    Return a list of test events (as catalogs) from quakeml saved on disk.
     """
     cat = request.param
     return cat
@@ -310,28 +311,31 @@ def test_catalog(request):
 
 @pytest.fixture(scope="session", params=inventories)
 def test_inventory(request):
-    """ return a list of test inventories from
-    stationxml files saved on disk """
+    """
+    Return a list of test inventories from stationxml files saved on disk.
+    """
     inv = obspy.read_inventory(request.param)
     return inv
 
 
 @pytest.fixture(scope="session")
 def ta_archive(ta_dataset):
-    """ make sure the ta_test archive, generated with the setup_test_archive
-    script, has been downloaded, else download it """
+    """
+    Make sure the ta_test archive, generated with the setup_test_archive
+    script, has been downloaded, else download it.
+    """
     return Path(obsplus.WaveBank(ta_dataset.waveform_client).index_path).parent
 
 
 @pytest.fixture(scope="class")
 def class_tmp_dir(tmpdir_factory):
-    """ create a temporary directory on the class scope """
+    """Create a temporary directory on the class scope."""
     return tmpdir_factory.mktemp("base")
 
 
 @pytest.fixture(scope="class")
 def tmp_ta_dir(class_tmp_dir, ta_dataset):
-    """ Make a temp copy of the ta_test bank """
+    """Make a temp copy of the ta_test bank."""
     bank = ta_dataset.waveform_client
     path = dirname(dirname(bank.index_path))
     out = os.path.join(class_tmp_dir, "temp")
@@ -406,8 +410,10 @@ def station_cache_inventory(request):
 
 @pytest.fixture(scope="class")
 def basic_stream_with_gap(waveform_cache):
-    """ return a waveforms with a 2 second gap in center, return combined
-    waveforms with gaps, first chunk, second chunk """
+    """
+    Return a waveforms with a 2 second gap in center, return combined
+    waveforms with gaps, first chunk, second chunk.
+    """
     st = waveform_cache["default"]
     st1 = st.copy()
     st2 = st.copy()
@@ -468,6 +474,7 @@ def default_wbank(tmp_path_factory):
 
 @pytest.fixture(scope="class")
 def simple_event_dir(tmp_path_factory):
+    """Create an event directory from the default catalog."""
     path = tmp_path_factory.mktemp("_event_client_getting")
     ebank = obsplus.EventBank(path)
     ebank.put_events(obspy.read_events())
@@ -476,6 +483,7 @@ def simple_event_dir(tmp_path_factory):
 
 @pytest.fixture(scope="class")
 def default_ebank(simple_event_dir):
+    """Return the default eventbank."""
     return obsplus.EventBank(simple_event_dir)
 
 
@@ -483,6 +491,7 @@ def default_ebank(simple_event_dir):
 
 
 def pytest_addoption(parser):
+    """Add obsplus' pytest command options."""
     parser.addoption(
         "--datasets",
         action="store_true",
@@ -500,6 +509,7 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    """Configure obsplus' pytest command line options."""
     marks = {}
     if not config.getoption("--datasets"):
         msg = "needs --dataset option to run"

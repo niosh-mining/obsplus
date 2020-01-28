@@ -1,3 +1,4 @@
+"""Obsplus utilities for working with times."""
 import warnings
 from functools import singledispatch
 from typing import Union, Optional, Sequence, Dict, Any, TypeVar, Generator, Tuple
@@ -360,11 +361,11 @@ def make_time_chunks(
         The overlap each chunk should have (added at end)
 
     Yields
-    -------
+    ------
     (time1, time2)
 
     Examples
-    ----------
+    --------
     >>> t1 = obspy.UTCDateTime('2016-01-01')
     >>> t2 = t1 + 2 * 3600
     >>> out = list(make_time_chunks(t1, t2, 3600))

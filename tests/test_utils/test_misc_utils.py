@@ -1,4 +1,4 @@
-""" tests for various utility functions """
+""" tests for misc. utility functions """
 import itertools
 import os
 import time
@@ -28,6 +28,8 @@ from obsplus.utils.time import to_timestamp
 
 
 class TestIterate:
+    """Test case for iterate."""
+
     def test_none(self):
         """ None should return an empty tuple """
         assert obsplus.utils.misc.iterate(None) == tuple()
@@ -56,8 +58,10 @@ class TestReplaceNullSeedCodes:
 
     @pytest.fixture
     def null_catalog(self):
-        """ create a catalog object, hide some nullish station codes in
-        picks and such """
+        """
+        Create a catalog object, hide some nullish station codes in
+        picks and such.
+        """
 
         def make_wid(net="UU", sta="TMU", loc="01", chan="HHZ"):
             kwargs = dict(
@@ -106,6 +110,8 @@ class TestReplaceNullSeedCodes:
             assert wid.location_code == ""
 
     def test_inventory(self, null_inventory):
+        """Test for replacing null codes on inventories."""
+
         def _valid_code(code):
             """ return True if the code is valid. """
             return code not in NULL_SEED_CODES
@@ -122,6 +128,8 @@ class TestReplaceNullSeedCodes:
 
 
 class TestFilterDf:
+    """Tests for filtering dataframes."""
+
     @pytest.fixture
     def example_df(self):
         """ create a simple df for testing. Example from Chris Albon. """
@@ -350,20 +358,21 @@ class TestYieldObjectParentAttr:
 
 
 class TestIterFiles:
-    """" Tests for iterating directories of files. """
+    """Tests for iterating directories of files."""
 
     sub = {"D": {"C": ".mseed"}, "F": ".json", "G": {"H": ".txt"}}
     file_paths = {"A": ".txt", "B": sub}
 
     # --- helper functions
     def setup_test_directory(self, some_dict: dict, path: Path):
+        """Build the test directory."""
         for path in self.get_file_paths(some_dict, path):
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("w") as fi:
                 fi.write("useful text")
 
     def get_file_paths(self, some_dict, path):
-        """ return expected paths to files. """
+        """Return expected paths to files."""
         for i, v in some_dict.items():
             if isinstance(v, dict):
                 yield from self.get_file_paths(v, path / i)
@@ -373,6 +382,7 @@ class TestIterFiles:
     # --- fixtures
     @pytest.fixture(scope="class")
     def simple_dir(self, tmp_path_factory):
+        """Return a simple directory for iterating."""
         path = Path(tmp_path_factory.mktemp("iterfiles"))
         self.setup_test_directory(self.file_paths, path)
         return path
@@ -384,11 +394,13 @@ class TestIterFiles:
         assert files == out
 
     def test_one_subdir(self, simple_dir):
+        """Test with one sub directory."""
         subdirs = simple_dir / "B" / "D"
         out = set(iter_files(subdirs))
         assert len(out) == 1
 
     def test_multiple_subdirs(self, simple_dir):
+        """Test with multiple sub directories."""
         path1 = simple_dir / "B" / "D"
         path2 = simple_dir / "B" / "G"
         out = {Path(x) for x in iter_files([path1, path2])}
@@ -401,11 +413,13 @@ class TestIterFiles:
         assert out == expected
 
     def test_extention(self, simple_dir):
+        """Test filtering based on extention."""
         out = set(iter_files(simple_dir, ext=".txt"))
         for val in out:
             assert val.endswith(".txt")
 
     def test_mtime(self, simple_dir):
+        """Test filtering based on modified time"""
         files = list(self.get_file_paths(self.file_paths, simple_dir))
         # set the first file mtime in future
         now = time.time()

@@ -71,8 +71,9 @@ def bing_ebank(bingham_dataset, tmpdir_factory):
 
 @pytest.fixture
 def ebank_with_bad_files(tmpdir):
-    """ create an event bank with bad files, ensure it doesn't choke
-    indexer. """
+    """
+    Create an event bank with bad files, ensure it doesn't choke indexer.
+    """
     bank = EventBank(Path(tmpdir))
     cat = obspy.read_events()
     bank.put_events(cat)
@@ -91,6 +92,8 @@ def ebank_with_bad_files(tmpdir):
 
 
 class TestBankBasics:
+    """Tests for basics of the banks."""
+
     expected_attrs = ["update_index", "read_index"]
     low_version_str: str = "0.0.-1"
 
@@ -131,8 +134,10 @@ class TestBankBasics:
             assert hasattr(bing_ebank, attr)
 
     def test_read_index(self, bing_ebank, bingham_catalog):
-        """ read index, ensure its length matches events and id sets are
-        equal """
+        """
+        Read index, ensure its length matches events and id sets are
+        equal.
+        """
         df = bing_ebank.read_index()
         assert isinstance(df, pd.DataFrame)
         assert len(bingham_catalog) == len(df)
@@ -214,8 +219,10 @@ class TestBankBasics:
         assert cat.events[0:limit] == cat2.events
 
     def test_can_put_to_empty_bank(self, tmpdir):
-        """ An empty bank should be init'able created when an event is
-        put into it """
+        """
+        An empty bank should be init'able created when an event is put into
+        it.
+        """
         path = Path(tmpdir) / "new_bank"
         bank = EventBank(path)
         assert not path.exists()
@@ -380,6 +387,7 @@ class TestReadIndexQueries:
             bing_ebank.read_index(minradius=20)
 
     def test_query_circular(self, bing_ebank):
+        """Test circular queries in bank."""
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
         with suppress_warnings():  # suppress install geographiclib warning
             df = bing_ebank.read_index(
@@ -506,8 +514,10 @@ class TestPutEvents:
         assert index_lat.iloc[0] == new_lat
 
     def test_files_created(self, tmpdir):
-        """ ensure a file is created for each event in default events,
-         and the bank index as well. """
+        """
+        Ensure a file is created for each event in default events,
+        and the bank index as well.
+        """
         cat = obspy.read_events()
         bank = EventBank(Path(tmpdir)).put_events(cat)
         qml_files = list(Path(bank.bank_path).rglob("*.xml"))
@@ -515,8 +525,10 @@ class TestPutEvents:
         assert Path(bank.index_path).exists()
 
     def test_events_different_time_same_id_not_duplicated(self, tmpdir):
-        """ events with different times but the same id should not be
-        duplicated; the old path should be used when detected. """
+        """
+        Events with different times but the same id should not be
+        duplicated; the old path should be used when detected.
+        """
         cat = obspy.read_events()
         first_id = str(cat[0].resource_id)
         bank = obsplus.EventBank(Path(tmpdir)).put_events(cat)

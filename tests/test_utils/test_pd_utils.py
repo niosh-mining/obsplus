@@ -83,6 +83,7 @@ class TestCastDtypes:
         assert all([isinstance(x, str) for x in out["time"]])
 
     def test_inplace(self, simple_df):
+        """Ensure the changes can be made inplace."""
         out = upd.cast_dtypes(simple_df, {"latitude": int}, inplace=True)
         assert out is simple_df
         out2 = upd.cast_dtypes(simple_df, {"longitude": int})
@@ -194,5 +195,6 @@ class TestMisc:
     """ Misc. small tests. """
 
     def test_replace_or_shallow_none(self, waveform_df):
+        """Test when replace is non the dataframe is simply returned."""
         out = upd.replace_or_swallow(waveform_df, None)
         assert out.equals(waveform_df)

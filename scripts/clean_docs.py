@@ -7,6 +7,7 @@ from subprocess import run
 
 
 def main():
+    """Clean all the docs"""
     doc_path = Path(__file__).absolute().parent.parent / "docs"
     # first delete all checkpoints
     for checkpoint in doc_path.rglob("*.ipynb_checkpoint"):

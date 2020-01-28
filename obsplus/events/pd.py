@@ -252,9 +252,10 @@ def _get_origin_quality(eve: ev.Event):
 
 @events_to_df.extractor
 def _get_magnitude_info(eve: ev.Event):
-    """ extract magnitude information. Get base magnitude, as well as various
-     other magnitude types (where applicable). """
-
+    """
+    Extract magnitude information. Get base magnitude, as well as various
+    other magnitude types (where applicable).
+    """
     out = {}
     magnitude = get_preferred(eve, "magnitude", init_empty=True)
     out["magnitude"] = magnitude.mag

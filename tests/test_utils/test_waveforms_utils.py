@@ -47,8 +47,10 @@ class TestTrimEventStream:
     # fixtures
     @pytest.fixture(scope="class")
     def stream_with_short_end(self):
-        """ snip off some waveform from the end, return the new waveforms with
-        the time the waveform was snipped """
+        """
+        Snip off some waveform from the end, return the new waveforms with
+        the time the waveform was snipped.
+        """
         st = obspy.read()
         t2 = st[0].stats.endtime
         new_t2 = t2 - 10
@@ -74,8 +76,10 @@ class TestTrimEventStream:
             assert "the following waveforms is disjointed" in str(e)
 
     def test_trim_tolerance(self, stream_with_short_end):
-        """ ensure a value error is raised when the difference in start or
-        end times exceeds the supplied trim tolerance """
+        """
+        Ensure a value error is raised when the difference in start or
+        end times exceeds the supplied trim tolerance.
+        """
         with pytest.raises(ValueError) as e:
             trim_event_stream(stream_with_short_end[0], trim_tolerance=2.0)
         assert "trim tolerance" in str(e.value.args[0])
@@ -183,8 +187,10 @@ class TestStream2Contiguous:
     # helper functions
     @staticmethod
     def streams_are_equal(st1, st2):
-        """ test that the streams are equal minus the processing attr of
-        stats dict """
+        """
+        Test that the streams are equal minus the processing attr of
+        stats dict.
+        """
         st1.sort()
         st2.sort()
         for tr1, tr2 in zip(st1.traces, st2.traces):
@@ -201,7 +207,7 @@ class TestStream2Contiguous:
     # fixtures
     @pytest.fixture(scope="class")
     def one_trace_gap_overlaps_stream(self):
-        """ a waveforms a gap on one trace """
+        """Return a waveforms a gap on one trace."""
         st = obspy.read()
         st1 = st.copy()
         st2 = st.copy()
@@ -217,6 +223,7 @@ class TestStream2Contiguous:
 
     # tests
     def test_contiguous(self, basic_stream_with_gap):
+        """Test basic functionality."""
         st, st1, st2 = basic_stream_with_gap
         out = stream2contiguous(st)
         assert inspect.isgenerator(out)
@@ -232,16 +239,20 @@ class TestStream2Contiguous:
         assert self.streams_are_equal(st_out_2, st2)
 
     def test_disjoint(self, disjointed_stream):
-        """ ensure nothing is returned if waveforms has not times were all
-        three channels have data """
+        """
+        Ensure nothing is returned if waveforms has not times were all
+        three channels have data.
+        """
         out = stream2contiguous(disjointed_stream)
         assert inspect.isgenerator(out)
         slist = list(out)
         assert not len(slist)
 
     def test_one_trace_gap(self, one_trace_gap_overlaps_stream):
-        """ ensure nothing is returned if waveforms has not times were all
-        three channels have data """
+        """
+        Ensure nothing is returned if waveforms has not times were all
+        three channels have data.
+        """
         st = one_trace_gap_overlaps_stream
         out = stream2contiguous(st)
         assert inspect.isgenerator(out)
@@ -257,6 +268,7 @@ class TestArchiveToSDS:
     stream_process_count = 0
 
     def stream_processor(self, st):
+        """A simple stream processor which increments the call count."""
         self.stream_process_count += 1
         return st
 
@@ -329,8 +341,10 @@ class TestStreamBulkSplit:
         return df
 
     def get_bulk_from_stream(self, st, tr_inds, times):
-        """ Create a bulk argument from a stream for traces specified and
-        relative times. """
+        """
+        Create a bulk argument from a stream for traces specified and
+        relative times.
+        """
         out = []
         for tr_ind, times in zip(tr_inds, times):
             tr = st[tr_ind]
@@ -385,8 +399,10 @@ class TestStreamBulkSplit:
             assert isinstance(tr, obspy.Stream)
 
     def test_two_overlap(self):
-        """ Tests for when there is an overlap of available data and
-        requested data but some data are not available."""
+        """
+        Tests for when there is an overlap of available data and
+        requested data but some data are not available.
+        """
         # setup stream and bulk args
         st = obspy.read()
         duration = st[0].stats.endtime - st[0].stats.starttime

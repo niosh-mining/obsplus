@@ -61,9 +61,6 @@ def json_to_cat(cjson: Union[str, dict]) -> obspy.Catalog:
     ----------
     cjson
         A str or dict produced by cat_to_dict or cat_to_json.
-    Returns
-    -------
-    obspy.Catalog instance
     """
     # load json to dict
     if isinstance(cjson, str):

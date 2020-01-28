@@ -39,16 +39,19 @@ class Thing4:
 
 @pytest.fixture()
 def temporary_validate_space():
+    """Create a temporary validation namespace."""
     with _temp_validate_namespace() as state:
         yield state
 
 
 class TestValidateBasics:
+    """Test case for basic validation."""
+
     validate_namespace = "_test_validators"
 
     @pytest.fixture
     def registered_validators(self, temporary_validate_space):
-        # A simple dict for storing count of how often validators are called
+        """A simple dict for storing count of how often validators are called."""
         outdist = defaultdict(int)
 
         @validator(self.validate_namespace, Thing1)
@@ -164,6 +167,8 @@ class TestDocumentationCase:
 
     @pytest.fixture(scope="class")
     def validators(self):
+        """Register several test validators."""
+
         @validator(self.namespace, ev.Event)
         def ensure_events_have_four_picks(event):
             picks = event.picks

@@ -39,8 +39,10 @@ from obsplus.utils.testing import ArchiveDirectory
 
 
 def count_calls(instance, bound_method, counter_attr):
-    """ given an instance, count how many times bound_method is called and
-    store the result on instance in an attr named counter_attr """
+    """
+    Given an instance, count how many times bound_method is called and
+    store the result on instance in an attr named counter_attr.
+    """
     # set counter
     setattr(instance, counter_attr, 0)
 
@@ -153,8 +155,10 @@ class TestBankBasics:
             assert file_path in file_paths
 
     def test_update_index_bumps_only_for_new_files(self, ta_bank_index):
-        """ test that updating the index does not modify the last_updated
-         time if no new files were added """
+        """
+        Test that updating the index does not modify the last_updated
+        time if no new files were added.
+        """
         last_updated1 = ta_bank_index.last_updated
         ta_bank_index.update_index()
         last_updated2 = ta_bank_index.last_updated
@@ -344,9 +348,11 @@ class TestGetIndex:
         assert not index.empty
 
     def test_crandall_query(self, crandall_dataset):
-        """ tests that querying the crandall_test dataset's event_waveforms.
+        """
+        Tests that querying the crandall_test dataset's event_waveforms.
         There was one event that didn't correctly get the waveforms
-        on read index. """
+        on read index.
+        """
         bank = crandall_dataset.waveform_client
         utc1 = obspy.UTCDateTime(2007, 8, 6, 10, 47, 25, 600_000)
         utc2 = obspy.UTCDateTime(2007, 8, 6, 10, 47, 25, 600_000)
@@ -385,8 +391,9 @@ class TestYieldStreams:
 
     @pytest.fixture(scope="function")
     def yield2(self, ta_bank_index):
-        """ the second yield set of parameters, duration and overlap
-         are used """
+        """
+        The second yield set of parameters, duration and overlap are used.
+        """
         return ta_bank_index.yield_waveforms(**self.query2)
 
     # tests
@@ -401,8 +408,10 @@ class TestYieldStreams:
         assert count  # ensure some files were found
 
     def test_yield_with_durations(self, yield2, ta_index):
-        """ when durations is used each waveforms should have all the
-        channels"""
+        """
+        When durations is used each waveforms should have all the
+        channels.
+        """
         expected_stations = set(ta_index.station)
         t1 = self.query2["starttime"]
         dur = self.query2["duration"]
@@ -521,8 +530,10 @@ class TestGetWaveforms:
             assert isinstance(tr.stats.response, Response)
 
     def test_bracket_matches(self, stream2):
-        """ make sure the bracket style filters work (eg VH[NE] for both
-        VHN and VHE"""
+        """
+        Make sure the bracket style filters work (eg VH[NE] for both
+        VHN and VHE.
+        """
         channels = {tr.stats.channel for tr in stream2}
         assert channels == {"VHN", "VHE"}
 
@@ -702,8 +713,10 @@ class TestBankCache:
 
 
 class TestBankCacheWithKwargs:
-    """ kwargs should get hashed as well, so the same times with different
-    kwargs should be cached """
+    """
+    kwargs should get hashed as well, so the same times with different
+    kwargs should be cached.
+    """
 
     @pytest.fixture
     def got_gaps_bank(self, ta_bank):
@@ -712,8 +725,10 @@ class TestBankCacheWithKwargs:
         return ta_bank
 
     def test_get_gaps_doesnt_overwrite_cache(self, got_gaps_bank):
-        """ ensure that calling get gaps doesn't result in read_index
-        not returning the path column """
+        """
+        Ensure that calling get gaps doesn't result in read_index
+        not returning the path column.
+        """
         inds = got_gaps_bank.read_index()
         assert "path" in inds.columns
 
@@ -750,8 +765,10 @@ class TestPutWaveForm:
             assert np.all(tr1.data == tr2.data)
 
     def test_put_waveforms_to_crandall_copy(self, tmpdir):
-        """ ran into issue in docs where putting data into the crandall_test
-        copy didn't work. """
+        """
+        Ran into issue in docs where putting data into the crandall_test
+        copy didn't work.
+        """
         ds = obsplus.utils.dataset.copy_dataset(
             dataset="crandall_test", destination=Path(tmpdir)
         )
@@ -799,6 +816,7 @@ class TestPutMultipleTracesOneFile:
 
     @pytest.fixture(scope="class")
     def banked_stream(self, mseed_files):
+        """Return a stream of all the bank contents."""
         st = obspy.Stream()
         for ftr in mseed_files:
             st += obspy.read(ftr)
@@ -815,8 +833,10 @@ class TestPutMultipleTracesOneFile:
         assert number_of_files == 1
 
     def test_all_streams(self, banked_stream):
-        """ ensure all the channels in the waveforms where written to
-        the bank """
+        """
+        Ensure all the channels in the waveforms where written to
+        the bank.
+        """
         banked_seed_ids = {tr.id for tr in banked_stream}
         assert banked_seed_ids == self.expected_seeds
 
@@ -982,6 +1002,7 @@ class TestGetAvailability:
         assert df.iloc[0].channel == "VHZ"
 
     def test_availability(self, avail):
+        """Test output shape of availability."""
         for av in avail:
             assert len(av) == 6
             # first four values should be strings
@@ -1136,8 +1157,10 @@ class TestGetGaps:
         assert (df["gap_duration"] == EMPTYTD64).all()
 
     def test_empty_directory(self, empty_bank):
-        """ ensure an empty bank get_gaps returns and empty df with expected
-        columns """
+        """
+        Ensure an empty bank get_gaps returns and empty df with expected
+        columns.
+        """
         gaps = empty_bank.get_gaps_df()
         assert not len(gaps)
         assert set(WaveBank._gap_columns).issubset(set(gaps.columns))
@@ -1244,8 +1267,10 @@ class TestConcurrentUpdateIndex:
 
     @pytest.fixture
     def thread_read(self, concurrent_bank, thread_executor):
-        """ run a bunch of update index operations in different threads,
-        return list of results """
+        """
+        Run a bunch of update index operations in different threads,
+        return list of results.
+        """
         out = []
         concurrent_bank.update_index()
         func = functools.partial(self.func, wbank=concurrent_bank)
@@ -1261,8 +1286,10 @@ class TestConcurrentUpdateIndex:
 
     @pytest.fixture
     def process_read(self, concurrent_bank, process_pool):
-        """ run a bunch of update index operations in different processes,
-        return list of results """
+        """
+        Run a bunch of update index operations in different processes,
+        return list of results.
+        """
         concurrent_bank.update_index()
         out = []
         func = functools.partial(self.func, wbank=concurrent_bank)
@@ -1333,8 +1360,10 @@ class TestSelectDoesntReturnSuperset:
 
 
 class TestFilesWithDifferentFormats:
-    """ Files saved to index with different formats (other than specified)
-    should still be readable. """
+    """
+    Files saved to index with different formats (other than specified)
+    should still be readable.
+    """
 
     start = UTC("2017-09-18")
     end = UTC("2017-09-19")

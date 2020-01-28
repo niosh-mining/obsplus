@@ -58,6 +58,7 @@ def trim_event_stream(
     required_len
         The fraction of the longest len a trace must have to be considered
         good. If any trace is shorter remove it.
+
     Returns
     -------
     stream
@@ -83,8 +84,10 @@ def trim_event_stream(
 
 
 def _trim_stream(df, stream, required_len, trim_tolerance):
-    """ get the starttimes and endtimes for trimming, raise ValueError
-    if the waveforms is disjointed """
+    """
+    Get the starttimes and endtimes for trimming, raise ValueError
+    if the waveforms is disjointed.
+    """
     # check trim tolerance
     if trim_tolerance is not None:
         con1 = (df.start.max() - df.start.min()) > trim_tolerance
@@ -311,8 +314,10 @@ def stream2contiguous(stream: Stream):
 
 
 def _get_start_end(stream):
-    """ get the start and end times of each contiguous chunk,
-     return two lists that can be zipped and iterated """
+    """
+    Get the start and end times of each contiguous chunk, return two lists
+    that can be zipped and iterated.
+    """
     starts = [max([tr.stats.starttime for tr in stream]).timestamp]
     ends = [min([tr.stats.endtime for tr in stream]).timestamp]
     gaps = stream.get_gaps(min_gap=0.01)
@@ -330,8 +335,10 @@ def _get_start_end(stream):
 
 
 def _get_stream_start_end(stream, gap_df):
-    """ return a list of the latest start time of initial chunk and earliest
-    endtime of last time chunk """
+    """
+    Return a list of the latest start time of initial chunk and earliest
+    endtime of last time chunk.
+    """
     st1 = stream.slice(endtime=UTCDateTime(gap_df.t1.min()))
     st2 = stream.slice(starttime=UTCDateTime(gap_df.t2.max()))
     t1 = max([tr.stats.starttime.timestamp for tr in st1])

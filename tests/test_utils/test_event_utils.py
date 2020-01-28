@@ -30,6 +30,8 @@ CAT = obspy.read_events()
 
 
 class TestDuplicateEvent:
+    """Tests for duplicating events."""
+
     @pytest.fixture
     def catalog(self):
         """ return default events """
@@ -42,6 +44,7 @@ class TestDuplicateEvent:
 
     @pytest.fixture
     def duplicated_big_catalog(self, catalog_cache):
+        """Duplicate the big catalog."""
         return obsplus.duplicate_events(catalog_cache["cat6"])
 
     def test_return_type(self, duplicated_catalog):
@@ -179,8 +182,9 @@ class TestBumpCreationVersion:
 
     @pytest.fixture(scope="class")
     def multi_version(self, cat):
-        """ bump version, copy event, bump version again,
-        return creation info """
+        """
+        Bump version, copy event, bump version again, return creation info.
+        """
         eve1 = cat[0]
         bump_creation_version(eve1)
         eve2 = eve1.copy()
@@ -190,8 +194,10 @@ class TestBumpCreationVersion:
 
     @pytest.fixture(scope="class")
     def int_version(self, cat):
-        """ bump version, copy event, bump version again,
-        set version to int, bump again """
+        """
+        Bump version, copy event, bump version again, set version to int,
+        bump again.
+        """
         eve1 = cat[0]
         bump_creation_version(eve1)
         eve1.creation_info.version = 0
@@ -225,8 +231,10 @@ class TestBumpCreationVersion:
         assert int_version.version == "1"
 
     def test_bump_version_on_bad_object(self):
-        """ ensure bumping the version on a non-obspy object doesnt
-         error and doesnt add creation_info """
+        """
+        Ensure bumping the version on a non-obspy object doesnt error
+        and doesnt add creation_info.
+        """
         test_obj = "some_string"
         bump_creation_version(test_obj)
         assert not hasattr(test_obj, "creation_info")
@@ -244,8 +252,10 @@ class TestGetPreferred:
         assert event.origins[-1] == get_preferred(event, "origin")
 
     def test_preferred_no_origins(self):
-        """ when the preferred id is set but origin is empty None should be
-        returned. """
+        """
+        When the preferred id is set but origin is empty None should be
+        returned.
+        """
         event = obspy.read_events()[0]
         # clear origins and ensure resource_id is not holding a reference
         event.origins.clear()
@@ -274,6 +284,7 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def inv(self):
+        """Return the crandall inventory."""
         ds = obsplus.load_dataset("crandall_test")
         return ds.station_client.get_stations()
 
@@ -402,24 +413,27 @@ class TestGetSeedId:
 
 
 class TestGetEventClient:
-    """ tests for getting an event client from various sources. """
+    """Tests for getting an event client from various sources."""
 
     def test_from_catalog(self):
-        """ tests for getting client from a catalog. """
+        """Tests for getting client from a catalog."""
         cat = obspy.read_events()
         out = get_event_client(cat)
         assert cat == out
         assert isinstance(cat, EventClient)
 
     def test_from_event_bank(self, default_ebank):
+        """Test getting events from an eventbank."""
         out = get_event_client(default_ebank)
         assert isinstance(out, EventClient)
 
     def test_from_directory(self, simple_event_dir):
+        """Test getting events from a directory."""
         out = get_event_client(simple_event_dir)
         assert isinstance(out, EventClient)
 
     def test_from_file(self, simple_event_dir):
+        """Test getting events from a file."""
         # get first file
         first = list(Path(simple_event_dir).rglob("*.xml"))[0]
         out = get_event_client(first)

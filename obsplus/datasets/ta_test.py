@@ -28,12 +28,14 @@ class TA(DataSet):
     ]
 
     def download_stations(self):
+        """Download TA stations."""
         inv_path = self.station_path / "stations.xml"
         inv_path.parent.mkdir(exist_ok=True, parents=True)
         inv = self._download_client.get_stations_bulk(self.bulk, level=self.level)
         inv.write(str(inv_path), "stationxml")
 
     def download_waveforms(self):
+        """Download TA waveforms."""
         st = self._download_client.get_waveforms_bulk(self.bulk)
         self.build_archive(st)
         # update the index
@@ -41,7 +43,7 @@ class TA(DataSet):
 
     def build_archive(self, st, starttime=None, endtime=None):
         """
-        Build the archive (don't use mass downloader for a little variety)
+        Build the archive (don't use mass downloader for a little variety).
         """
         starttime = starttime or self.starttime
         endtime = endtime or self.endtime

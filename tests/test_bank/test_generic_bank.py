@@ -11,6 +11,7 @@ bank_params = ["default_ebank", "default_wbank"]
 
 @pytest.fixture(scope="class", params=bank_params)
 def some_bank(request):
+    """Parametrized gathering fixture for banks."""
     return request.getfixturevalue(request.param)
 
 

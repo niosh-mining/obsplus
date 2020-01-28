@@ -192,7 +192,7 @@ def assert_streams_almost_equal(
         If True, allow the arrays and time alignments to be off by one sample.
 
     Notes
-    -------
+    -----
     See numpy.allclose for description of atol and rtol paramter.
 
     Raises

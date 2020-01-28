@@ -330,14 +330,17 @@ class DataSet(abc.ABC):
 
     @property
     def waveform_path(self) -> Path:
+        """Return the path to the waveforms."""
         return self.data_path / "waveforms"
 
     @property
     def event_path(self) -> Path:
+        """Return the path to the events."""
         return self.data_path / "events"
 
     @property
     def station_path(self) -> Path:
+        """Return the path to the stations."""
         return self.data_path / "stations"
 
     # --- checks for if each type of data is downloaded
@@ -574,10 +577,10 @@ class DataSet(abc.ABC):
         """
 
     def pre_download_hook(self):
-        """ Code to run before any downloads. """
+        """Code to run before any downloads."""
 
     def post_download_hook(self):
-        """ code to run after any downloads. """
+        """Code to run after any downloads."""
 
     def __str__(self):
         return f"Dataset: {self.name}"

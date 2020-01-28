@@ -67,13 +67,14 @@ class TestToNumpyDateTime:
         assert out == expected_out
 
     def test_utc_to_large(self):
+        """Test a time larger than can fit into int64."""
         too_big = obspy.UTCDateTime("2600-01-01")
         with pytest.warns(UserWarning):
             out = to_datetime64(too_big)
         assert pd.Timestamp(out).year == 2262
 
     def test_series_to_datetimes(self):
-        """ Series should be convertible to datetimes, but returns ndarray """
+        """Series should be convertible to datetimes, but returns ndarray """
         ser = pd.Series([10, "2010-01-01"])
         out = to_datetime64(ser)
         assert isinstance(out, np.ndarray)
@@ -179,8 +180,8 @@ class TestToUTC:
 
     @pytest.mark.parametrize("value", utc_values)
     def test_single_value(self, value):
+        """Test either a sequence or UTCDateTime"""
         out = to_utc(value)
-        # either a sequence or UTCDateTime should be returned
         assert isinstance(out, (Sequence, UTCDateTime, np.ndarray))
 
 
@@ -194,32 +195,38 @@ class TestGetReferenceTime:
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
     def utc_object(self):
+        """Return a UTCDateTime object from reference time."""
         return obspy.UTCDateTime(self.time)
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
     def timestamp(self):
+        """Get the timestamp from reference time."""
         return self.time.timestamp
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
     def event(self):
+        """Create an event with an origin."""
         origin = Origin(time=self.time, latitude=47, longitude=-111.7)
         return Event(origins=[origin])
 
     @pytest.fixture(scope="class")
     @append_func_name(fixtures)
     def catalog(self, event):
+        """Return a catalog from the event."""
         return Catalog(events=[event])
 
     @pytest.fixture(scope="class")
     def picks(self):
+        """Create picks for testing."""
         t1, t2 = UTCDateTime("2016-01-01"), UTCDateTime("2015-01-01")
         picks = [ev.Pick(time=t1), ev.Pick(time=t2), ev.Pick()]
         return picks
 
     @pytest.fixture(scope="class")
     def event_only_picks(self, picks):
+        """Return an event with only picks."""
         return ev.Event(picks=picks)
 
     @pytest.fixture(scope="class", params=fixtures)

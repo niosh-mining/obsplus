@@ -182,6 +182,7 @@ class DataFrameExtractor(UserDict):
         return pd.DataFrame(rows)
 
     def copy(self):
+        """Return a deep copy of the fetcher."""
         return copy.deepcopy(self)
 
     def __call__(self, obj, **kwargs) -> pd.DataFrame:

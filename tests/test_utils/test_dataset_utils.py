@@ -7,9 +7,10 @@ from obsplus.utils.dataset import _create_opsdata
 
 
 class TestDirectoryCreated:
-    """ tests for creating the ops_data directory. """
+    """Tests for creating the ops_data directory."""
 
     def test_directory_created(self, tmpdir):
+        """Test that the directory now exists."""
         path = Path(tmpdir) / "_ops_data_test"
         _create_opsdata(path)
         assert path.exists()

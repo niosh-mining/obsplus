@@ -1,6 +1,4 @@
-"""
-Base class for ObsPlus' in-process databases, aka banks.
-"""
+"""Base class for ObsPlus' in-process databases (aka banks)."""
 import os
 import warnings
 from abc import ABC, abstractmethod
@@ -23,8 +21,9 @@ BankType = TypeVar("BankType", bound="_Bank")
 
 class _Bank(ABC):
     """
-    The abstract base class for ObsPlus' banks. Used to access local
-    archives in a client-like fashion.
+    The abstract base class for ObsPlus' banks.
+
+    Used to access local archives in a client-like fashion.
     """
 
     # hdf5 compression defaults
@@ -55,15 +54,11 @@ class _Bank(ABC):
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
-        """
-        Read the index filtering on various params
-        """
+        """Read the index filtering on various params."""
 
     @abstractmethod
     def update_index(self: BankType) -> BankType:
-        """
-        Update the index
-        """
+        """Update the index."""
 
     @abstractmethod
     def last_updated(self) -> Optional[float]:
@@ -75,48 +70,37 @@ class _Bank(ABC):
 
     @abstractmethod
     def _read_metadata(self) -> pd.DataFrame:
-        """ Return a dictionary of metadata. """
+        """Return a dictionary of metadata."""
 
     # --- path/node related objects
 
     @property
     def index_path(self):
-        """
-        The expected path to the index file.
-        """
+        """Return the expected path to the index file."""
         return Path(self.bank_path) / self.index_name
 
     @property
     def _index_node(self):
-        """
-        The node, or table, the index information is stored in the database.
-        """
+        """Return the node/table where the index information is stored."""
         return "/".join([self.namespace, "index"])
 
     @property
     def _index_version(self) -> str:
-        """
-        Get the version of obsplus used to create the index.
-        """
+        """Get the version of obsplus used to create the index."""
         return self._read_metadata()["obsplus_version"].iloc[0]
 
     @property
     def _time_node(self):
-        """
-        The node, or table, the update time information is stored in the database.
-        """
+        """The node/table where the update time information is stored."""
         return "/".join([self.namespace, "last_updated"])
 
     @property
     def _meta_node(self):
-        """
-        The node, or table, the update metadata is stored in the database.
-        """
+        """The node/table where the update metadata is stored."""
         return "/".join([self.namespace, "metadata"])
 
     def _enforce_min_version(self):
-        """
-        Check version of obsplus used to create index and delete index if the
+        """Check version of obsplus used to create index and delete index if the
         minimum version requirement is not met.
         """
         try:
@@ -133,7 +117,7 @@ class _Bank(ABC):
                 os.remove(self.index_path)
 
     def _unindexed_iterator(self, paths: Optional[bank_subpaths_type] = None):
-        """ return an iterator of potential unindexed files """
+        """Return an iterator of potential unindexed files."""
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
         last_updated = self.last_updated  # this needs db so only call once
@@ -152,19 +136,7 @@ class _Bank(ABC):
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
     def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
-        """
-        A generator to yield un-indexed files and update progress bar.
-
-        Parameters
-        ----------
-        bar
-            Any object with an update method.
-        iterator
-
-        Returns
-        -------
-
-        """
+        """A generator to yield un-indexed files and update progress bar."""
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator

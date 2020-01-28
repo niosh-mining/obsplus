@@ -30,7 +30,7 @@ def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:
     """
     Check for clashes between circular-search and box-search kwargs.
 
-    returns
+    Returns
     -------
     Two separate dictionaries of the circular kwargs and everything else.
     """

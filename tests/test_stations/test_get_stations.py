@@ -16,10 +16,13 @@ from obsplus.utils.stations import get_station_client
 
 @pytest.fixture
 def inventory():
+    """Return the default inventory."""
     return obspy.read_inventory()
 
 
 class TestGetStation:
+    """Test for getting stations from inventory."""
+
     @pytest.fixture
     def inv_issue_115(self):
         """ Get an inventory for testing issue 115. """
