@@ -112,9 +112,9 @@ class _OriginQualityExtractor:
         """ Get information from quality info."""
         quality_attrs = (
             ("standard_error", np.NaN),
-            ("associated_phase_count", 0),
+            ("associated_phase_count", out.get("associated_phase_count", 0)),
             ("azimuthal_gap", np.NaN),
-            ("used_phase_count", 0),
+            ("used_phase_count", out.get("used_phase_count", 0)),
         )
         quality = getattr(origin, "quality", ev.OriginQuality())
         for (attr, default) in quality_attrs:
@@ -154,16 +154,16 @@ class _OriginQualityExtractor:
         """ Return a dict of origin quality attributes. """
         out = {}
         origin = get_preferred(self.event, "origin", init_empty=True)
+        # get phase and pick count
+        self._get_phase_and_pick_counts(origin, out)
         # now extract information
         self._get_origin_quality_info(origin, out)
         self._get_depth_uncertainty_info(origin, out)
-        # get phase and pick count
-        self._get_phase_and_pick_counts(origin, out)
         return out
 
 
 def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = None):
-    """ Get the quality of the last magnitude, optionally of a given type. """
+    """ Get the value of the last magnitude, optionally of a given type. """
     out = np.NaN
     for mag in mags:
         if mag_type is not None:
@@ -557,7 +557,35 @@ def _get_seed_id(obj):
 
 # event_to_dataframe
 def event_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a Dataframe summary. """
+    """
+    Given a catalog or event, return a DataFrame summary.
+
+    Notes
+    -----
+    Because of the complexity of obspy catalog and event objects, this extractor
+    makes some assumptions to determine the appropriate information to include.
+
+    These assumptions are as follows:
+
+    The origin information is based on the preferred origin, or the last origin
+    attached to the event if the preferred origin is not set.
+
+    The event description uses the first object in the list of event descriptions.
+
+    The magnitude information is based on the preferred magnitude. Additionally,
+    it will look for the latest magnitudes with a magnitude of "MD", "ML", and
+    "MW" magnitudes and report those magnitudes.
+
+    For the origin quality information, specifically the associated and used
+    phase counts, the information attached to origin's OriginQuality object.
+    If this information is not available, it will attempt to estimate this
+    by counting the number of P and S picks and arrivals attached to the
+    event/origin.
+
+    The updated time is the latest of all creation times attached to an
+    object, while the reported creation time, author, and agency id are all
+    based on the Event object itself.
+    """
     return events_to_df(cat_or_event)
 
 

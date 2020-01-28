@@ -40,6 +40,11 @@ obsplus master:
     * Added the validators created in (#64) to PR (#122).
   - obsplus.events
     * Dataframe_to_inventory can now fetch NRL responses (#125).
+    * Changed event_to_dataframe (events_to_df) to report the used_phase_count
+      attached to the preferred origin and fall back on counting the arrivals
+      otherwise.
+    * Added notes to the docstring of event_to_dataframe listing the
+      assumptions that are made when extracting information from an Event.
   - obsplus.waveforms
     * Added assert_streams_almost_equal method (see #128).
     * The function obsplus.waveforms.stream_split_bulk now has more flexible

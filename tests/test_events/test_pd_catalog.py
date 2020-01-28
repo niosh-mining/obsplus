@@ -282,7 +282,7 @@ class TestCat2Df:
             assert ed == description
 
     def test_str(self):
-        """ ensure there is a string rep for catalog_to_df. """
+        """ ensure there is a string rep for events_to_df. """
         cat_to_df_str = str(events_to_df)
         assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
 
@@ -1043,7 +1043,7 @@ class TestReadDirectoryOfCatalogs:
 
     @pytest.fixture(scope="class")
     def read_catalog(self, catalog_directory):
-        """ return the results of calling catalog_to_df on directory """
+        """ return the results of calling events_to_df on directory """
         return events_to_df(catalog_directory)
 
     # tests
