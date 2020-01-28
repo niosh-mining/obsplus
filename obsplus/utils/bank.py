@@ -220,7 +220,7 @@ class _IndexCache:
 
 @contextlib.contextmanager
 def sql_connection(path, **kwargs):
-    con = sqlite3.connect(path, **kwargs)
+    con = sqlite3.connect(str(path), **kwargs)
     with con:
         yield con
     con.close()  # this is needed on windows but not linux, weird...
