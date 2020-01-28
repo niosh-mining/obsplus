@@ -250,6 +250,7 @@ class DataSet(abc.ABC):
                 # If a plugin was register but no longer exists it can raise.
                 with suppress(ModuleNotFoundError):
                     cls._entry_points[name].load()
+                    assert name in cls.datasets, "dataset should now be loaded."
                     return load_dataset(name)
             msg = f"{name} is not in the known datasets {list(cls.datasets)}"
             raise ValueError(msg)
