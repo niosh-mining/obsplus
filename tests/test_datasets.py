@@ -127,18 +127,25 @@ class TestDatasets:
 class TestBasic:
     """ Basic misc. tests for dataset. """
 
-    def test_all_files_copied(self, bingham_dataset):
+    def test_all_files_copied(self, tmp_path):
         """ When the download logic fires all files in the source
         should be copied. """
+        ds = obsplus.copy_dataset("ta_test", tmp_path)
         # iterate top level files and assert each was copied
-        for tlf in bingham_dataset.data_files:
-            expected = bingham_dataset.data_path / tlf.name
+        for tlf in ds.data_files:
+            expected = ds.data_path / tlf.name
             assert expected.exists()
 
     def test_get_fetcher(self, bingham_dataset):
         """ ensure a datafetcher can be created. """
         fetcher = bingham_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
+
+    def test_can_copy_twice(self, ta_dataset, tmp_path):
+        """ copying a dataset to the same location twice should work. """
+        ta_dataset.copy_to(tmp_path)
+        ta_dataset.copy_to(tmp_path)
+        assert Path(tmp_path).exists()
 
 
 class TestDatasetDownloadMemory:

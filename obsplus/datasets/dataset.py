@@ -182,6 +182,8 @@ class DataSet(abc.ABC):
         """
         Copy the dataset to a destination.
 
+        If the destination already exists simply do nothing.
+
         Parameters
         ----------
         destination

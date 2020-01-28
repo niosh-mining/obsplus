@@ -4,6 +4,7 @@ Simple utility for DataSet.
 import shutil
 import tempfile
 import textwrap
+from contextlib import suppress
 from pathlib import Path
 from typing import Optional, Union
 
@@ -41,6 +42,8 @@ def copy_dataset(
     """
     Copy a dataset to a destination.
 
+    If the destination already exists simply do nothing.
+
     Parameters
     ----------
     dataset
@@ -65,6 +68,7 @@ def copy_dataset(
         dest_dir = Path(destination)
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / dataset.name
-    shutil.copytree(str(expected_path), str(dest))
+    with suppress(FileExistsError):
+        shutil.copytree(str(expected_path), str(dest))
     # init new dataset of same class with updated base_path and return
     return dataset.__class__(base_path=dest.parent)
