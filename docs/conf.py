@@ -61,6 +61,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "numpydoc",
     "nbsphinx",
+    "sphinx_automodapi.automodapi",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -68,6 +69,9 @@ templates_path = ["_templates"]
 
 # The suffix of source filenames.
 source_suffix = ".rst"
+
+# Needed to avoid showing numpy documentation twice.
+numpydoc_show_class_members = False
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -163,7 +167,7 @@ html_logo = "images/obsplus_panda.png"
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
-html_static_path = ["_static"]
+html_static_path = []
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
