@@ -118,7 +118,7 @@ class WaveBank(_Bank):
 
     >>> # --- Read the index used by WaveBank as a DataFrame.
     >>> df = wbank.read_index()
-    >>> assert len(df) == 4, 'there should now be 4 traces in the bank.'
+    >>> assert len(df) == 3, 'there should be 3 traces in the bank.'
 
     >>> # --- Get availability of archive as dataframe
     >>> avail = wbank.get_availability_df()

@@ -161,10 +161,10 @@ class TestReadDirectoryOfInventories:
         return self.nest_directly(nested_times - 1, nd_name)
 
     # fixtures
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def inventory(self, bingham_dataset):
         """ read the stations """
-        return bingham_dataset.station_client.get_stations()
+        return bingham_dataset.station_client.get_stations().copy()
 
     @pytest.fixture(scope="class")
     def inv_directory(self, inventory):
@@ -181,7 +181,7 @@ class TestReadDirectoryOfInventories:
                 inv.write(str(write_path), "stationxml")
             yield tempdir
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def read_inventory(self, inv_directory):
         """Convert the inventory directory to a dataframe."""
         return stations_to_df(inv_directory)

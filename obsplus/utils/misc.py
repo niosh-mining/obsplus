@@ -40,7 +40,7 @@ BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
 
 
-def _get_progress_bar():
+def _get_progressbar():
     """Suppress ProgressBar's warning."""
     # TODO remove this when progress no longer issues warning
     with suppress_warnings():
@@ -257,7 +257,7 @@ def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Optional:
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
-        ProgressBar = _get_progress_bar()
+        ProgressBar = _get_progressbar()
         bar = ProgressBar(max_value=max_value, *args, **kwargs)
         bar.start()
         bar.update = _new_update(bar)
@@ -409,7 +409,7 @@ def iter_files(
                 if mtime is None or entry.stat().st_mtime >= mtime:
                     if entry.name[0] != "." or not skip_hidden:
                         yield entry.path
-            elif entry.is_dir() and entry.name[0] != ".":
+            elif entry.is_dir() and not (skip_hidden and entry.name[0] == "."):
                 yield from iter_files(
                     entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
                 )

@@ -281,7 +281,7 @@ class TestProgressBar:
 
     def test_graceful_progress_fail(self, monkeypatch):
         """ Ensure a progress bar that cant update returns None """
-        from progressbar import ProgressBar
+        ProgressBar = obsplus.utils.misc._get_progressbar()
 
         def raise_exception():
             raise Exception
@@ -291,7 +291,7 @@ class TestProgressBar:
 
     def test_simple_progress_bar(self,):
         """ Ensure a simple progress bar can be used. """
-        from progressbar import ProgressBar
+        ProgressBar = obsplus.utils.misc._get_progressbar()
 
         bar = obsplus.utils.misc.get_progressbar(max_value=100, min_value=1)
         assert isinstance(bar, ProgressBar)
@@ -387,6 +387,15 @@ class TestIterFiles:
         self.setup_test_directory(self.file_paths, path)
         return path
 
+    @pytest.fixture(scope="class")
+    def dir_with_hidden_dir(self, tmp_path_factory):
+        path = Path(tmp_path_factory.mktemp("iterfiles_hidden"))
+        struct = dict(self.file_paths)
+        # add hidden directory with files in it.
+        struct[".Hidden"] = {"Another": {"hidden_by_parent": ".txt"}}
+        self.setup_test_directory(struct, path)
+        return path
+
     def test_basic(self, simple_dir):
         """ test basic usage of iterfiles. """
         files = set(self.get_file_paths(self.file_paths, simple_dir))
@@ -429,3 +438,13 @@ class TestIterFiles:
         out = list(iter_files(simple_dir, mtime=now))
         assert len(out) == 1
         assert Path(out[0]) == first_file
+
+    def test_skips_files_in_hidden_directory(self, dir_with_hidden_dir):
+        """Hidden directory files should be skipped. """
+        out1 = list(iter_files(dir_with_hidden_dir))
+        has_hidden_by_parent = ["hidden_by_parent" in x for x in out1]
+        assert not any(has_hidden_by_parent)
+        # But if skip_hidden is False it should be there
+        out2 = list(iter_files(dir_with_hidden_dir, skip_hidden=False))
+        has_hidden_by_parent = ["hidden_by_parent" in x for x in out2]
+        assert sum(has_hidden_by_parent) == 1

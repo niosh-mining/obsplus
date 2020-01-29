@@ -4,9 +4,9 @@ Ensure the interface isinstance and issubclass methods work
 import obspy
 import pytest
 from obspy.clients.fdsn.client import Client, FDSNException
-from progressbar import ProgressBar as ProgBar
 
 from obsplus import EventBank, WaveBank
+from obsplus.utils.misc import _get_progressbar
 from obsplus.interfaces import EventClient, WaveformClient, StationClient, ProgressBar
 
 
@@ -132,6 +132,7 @@ class TestBar:
 
     def test_progressbar_isinstance(self):
         """ Ensure the ProgressBar2 ProgressBar is an instance. """
+        ProgBar = _get_progressbar()
         assert issubclass(ProgBar, ProgressBar)
 
     def test_custom_progress_bar(self):
