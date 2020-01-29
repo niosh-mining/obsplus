@@ -4,6 +4,6 @@ Class for interacting with station information on a file system.
 
 
 class StationBank:
-    """An in-memory database for station data."""
+    """A place-holder for the future in-memory database for station data."""
 
     pass

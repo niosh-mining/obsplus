@@ -32,12 +32,20 @@ from obspy.core import event as ev
 from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
-from progressbar import ProgressBar
 
 from obsplus.constants import NULL_SEED_CODES, NSLC
 
+
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
+
+
+def _get_progress_bar():
+    """Suppress ProgressBar's warning."""
+    # TODO remove this when progress no longer issues warning
+    with suppress_warnings():
+        from progressbar import ProgressBar
+    return ProgressBar
 
 
 def deprecated_callable(func=None, replacement_str=None):
@@ -79,10 +87,9 @@ def yield_obj_parent_attr(
     """
     Recurse an object, yield a tuple of object, parent, attr.
 
-    Can be used, for example, to yield all ResourceIdentifier instances
-    contained in any obspy.core.event object tree, as well as the objects
-    they are attached to (parents) and the attribute name in which they are
-    stored (attr).
+    Useful when data need to be changed or the provided DataFrame extractors
+    don't quite perform the desired task. Can also be used to extract
+    relationships between entities in object trees to build a connecting graph.
 
     Parameters
     ----------
@@ -97,6 +104,24 @@ def yield_obj_parent_attr(
         Only return objects that have attribute has_attr, if None return all.
     basic_types
         If True, yield non-sequence basic types (int, float, str, bool).
+
+    Examples
+    --------
+    >>> # --- get all picks from a complicated catalog object
+    >>> import obsplus
+    >>> import obspy.core.event as ev
+    >>> cat = obsplus.load_dataset('bingham_test').event_client.get_events()
+    >>> picks = []  # put all the picks in a list.
+    >>> for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):
+    ...     picks.append(pick)
+    >>> assert len(picks)
+
+    >>> # --- yield all objects which have resource identifiers
+    >>> objects = []  # list of (rid, parent)
+    >>> RID = ev.ResourceIdentifier
+    >>> for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):
+    ...     objects.append((str(rid), parent))
+    >>> assert len(objects)
     """
     ids: Set[int] = set()  # id cache to avoid circular references
 
@@ -204,9 +229,7 @@ def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
                 pass
 
 
-def get_progressbar(
-    max_value, min_value=None, *args, **kwargs
-) -> Optional[ProgressBar]:
+def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Optional:
     """
     Get a progress bar object using the ProgressBar2 library.
 
@@ -234,6 +257,7 @@ def get_progressbar(
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
+        ProgressBar = _get_progress_bar()
         bar = ProgressBar(max_value=max_value, *args, **kwargs)
         bar.start()
         bar.update = _new_update(bar)
@@ -466,7 +490,7 @@ def md5_directory(
 
 
 def _get_path(info, path, name, path_struct, name_strcut):
-    """ return a dict with path, and file name """
+    """return a dict with path, and file name"""
     if path is None:  # if the path needs to be created
         ext = info.get("ext", "")
         # get name

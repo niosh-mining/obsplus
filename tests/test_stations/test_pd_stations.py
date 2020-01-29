@@ -12,11 +12,15 @@ import pytest
 
 import obsplus
 from obsplus import stations_to_df
-from obsplus.constants import STATION_COLUMNS
-from obsplus.utils.time import is_time
-from obsplus.utils.misc import register_func
+from obsplus.constants import STATION_COLUMNS, pd_time_types
+from obsplus.utils.misc import register_func, suppress_warnings
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
+
+
+def is_time(obj):
+    """Return True if an object is a time type."""
+    return isinstance(obj, pd_time_types) or pd.isnull(obj)
 
 
 class TestInv2Df:
@@ -185,7 +189,8 @@ class TestReadDirectoryOfInventories:
     # tests
     def test_read_inventory_directories(self, read_inventory, inventory):
         """Tests for reading a directory of inventories."""
-        inv_df = stations_to_df(inventory)
+        with suppress_warnings():
+            inv_df = stations_to_df(inventory)
         assert (read_inventory.columns == inv_df.columns).all()
         assert not read_inventory.empty
         assert len(inv_df) == len(read_inventory)

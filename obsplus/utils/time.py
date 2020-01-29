@@ -16,7 +16,6 @@ from obsplus.constants import (
     LARGEDT64,
     SMALLDT64,
     TIME_COLUMNS,
-    pd_time_types,
     relative_time_types,
 )
 from obsplus.utils.docs import compose_docstring
@@ -146,6 +145,9 @@ def to_datetime64(
     """
     Convert time value to a numpy datetime64, or array of such.
 
+    This function essentially uses the same logic as ~:class:`obspy.UTCDateTime`
+    but also accounts for native numpy types.
+
     Parameters
     ----------
     value
@@ -153,6 +155,18 @@ def to_datetime64(
         an ndarray of type "datetime64[ns]" is returned.
     default
         A value for missing data. pandas.NaT is used by default.
+
+    Examples
+    --------
+    >>> import obspy
+    >>> import pandas as pd
+    >>> timestr = '2020-01-03T11:00:00'
+    >>> inputs = [obspy.UTCDateTime(timestr), None, 2525, np.datetime64(timestr)]
+    >>> out = to_datetime64(inputs)
+    >>> for t in out:
+    ...     assert isinstance(t, np.datetime64) or pd.isnull(t)
+    >>> assert pd.isnull(out[1])
+
     """
     # null values return default (usually NaT)
     if pd.isnull(value):
@@ -209,13 +223,22 @@ def to_utc(
     value: Union[utc_able_type, Sequence[utc_able_type]]
 ) -> Union[obspy.UTCDateTime, np.ndarray]:
     """
-    Convert an object to a UTCDateTime object.
+    Convert an object or sequence to a UTCDateTime object.
 
     Parameters
     ----------
     value
         Any value readable by ~:class:`obspy.UTCDateTime`,
         ~:class:`numpy.datetime64` or a sequence of such.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import obspy
+    >>> inputs = [1, '2017-09-18', np.datetime64('2020-01-03')]
+    >>> out = to_utc(inputs)
+    >>> for utc in out:
+    ...     assert isinstance(utc, obspy.UTCDateTime)
     """
 
     def _dt64_to_utc(dt64):
@@ -247,9 +270,14 @@ def to_timedelta64(
     ----------
     value
         A float or an int to convert to datetime.
-
     default
         The default to return if the input value is not truthy.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> inputs = [1, 2.3232, np.timedelta64(5, 'Y')]
+    >>> out = to_timedelta64(inputs)
     """
     if pd.isnull(value):
         return default
@@ -284,7 +312,7 @@ def _array_to_timedelta(obj):
 
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))
-def dict_times_to_npdatetimes(
+def _dict_times_to_npdatetimes(
     input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
 ) -> Dict[str, Any]:
     """
@@ -306,7 +334,7 @@ def dict_times_to_npdatetimes(
 
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))
-def dict_times_to_ns(
+def _dict_times_to_ns(
     input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
 ) -> Dict[str, Any]:
     """
@@ -326,11 +354,6 @@ def dict_times_to_ns(
         if not isinstance(out[time_key], int):  # assume ints are ns
             out[time_key] = to_datetime64(out[time_key]).astype(np.int64)
     return out
-
-
-def is_time(obj):
-    """ return True if an object is a time type. """
-    return isinstance(obj, pd_time_types) or pd.isnull(obj)
 
 
 utc_var = TypeVar("utc_var", utc_able_type, Sequence[utc_able_type])

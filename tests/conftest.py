@@ -105,15 +105,11 @@ def collect_catalogs():
     target a specific cat_name
     """
 
-    def _get_origin_time(cat):
-        ori = obsplus.get_preferred(cat, "origin")
-        return ori.time
-
     out = {}
     for cat_path in catalogs:
         cat = obspy.read_events(cat_path)
         # sort events by origin time
-        cat.events.sort(key=_get_origin_time)
+        cat.events.sort(key=obsplus.get_reference_time)
         out[os.path.basename(cat_path).split(".")[0]] = cat
         # add to cache and assert cat_name resource id is unique
         cat_id = cat.resource_id.id

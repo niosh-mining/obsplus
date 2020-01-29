@@ -44,7 +44,7 @@ from obsplus.interfaces import ProgressBar, EventClient
 from obsplus.utils import iterate
 from obsplus.utils.misc import try_read_catalog, suppress_warnings
 from obsplus.utils.docs import compose_docstring
-from obsplus.utils.time import dict_times_to_npdatetimes
+from obsplus.utils.time import _dict_times_to_npdatetimes
 
 # --- define static types
 
@@ -78,11 +78,13 @@ class EventBank(_Bank):
         Defines the directory structure used by the event bank. Characters
         are separated by /, regardless of operating system. The following
         words can be used in curly braces as data specific variables:
-            year, month, day, julday, hour, minute, second, event_id,
-            event_id_short
+
+        year, month, day, julday, hour, minute, second, event_id,
+        event_id_short
+
         If no structure is provided it will be read from the index, if no
-        index exists the default is {year}/{month}/{day}
-    name_structure : str
+        index exists the default is {year}/{month}/{day}.
+    name_structure
         The same as path structure but for the file name. Supports the same
         variables and a slash cannot be used in a file name on most operating
         systems. The default extension (.xml) will be added.
@@ -129,11 +131,9 @@ class EventBank(_Bank):
     >>> print(ebank.get_events(eventid=new_event_id))
     1 Event(s) in Catalog:...
 
-    >>> # --- Read the index used by event bank as a dataframe.
+    >>> # --- Read the index used by EventBank as a DataFrame.
     >>> df = ebank.read_index()
     >>> assert len(df) == 4, 'there should now be 4 events in the bank.'
-
-    .. _Executor:
     """
 
     namespace = "/events"
@@ -210,7 +210,7 @@ class EventBank(_Bank):
         """
         self.ensure_bank_path_exists()
         # Make sure all times are numpy datetime64
-        kwargs = dict_times_to_npdatetimes(kwargs)
+        kwargs = _dict_times_to_npdatetimes(kwargs)
         # a simple switch to prevent infinite recursion
         allow_update = kwargs.pop("_allow_update", True)
         # Circular search requires work to be done on the dataframe - we need

@@ -294,8 +294,28 @@ def _get_dtype(trace_list: List[trace_sequence]) -> np.dtype:
     return dtype[0]
 
 
-def stream2contiguous(stream: Stream):
-    """ generator to yield contiguous streams from disjointed streams """
+def stream2contiguous(stream: Stream) -> Stream:
+    """
+    Yield contiguous streams from disjointed streams.
+
+    This will essentially just trim out any times in the stream for which
+    all traces don't have data.
+
+    Parameters
+    ----------
+    stream
+        The input stream
+
+    Examples
+    --------
+    >>> import obspy
+    >>> st = obspy.read()
+    >>> t1, t2 = st[0].stats.starttime, st[0].stats.endtime
+    >>> _ = st[0].trim(endtime=t2 - 2)  # remove data at end of one trace
+    >>> out = stream2contiguous(st)
+    >>> # stream2contiguous should now have trimmed all traces to match
+    >>> assert all(len(tr.data) for tr in st)
+    """
     # pre-process waveforms by combining overlaps then breaking up masks
     stream.merge(method=1)
     stream = stream.split()
@@ -476,7 +496,7 @@ def get_waveform_client(waveforms: waveform_clientable_type) -> WaveformClient:
 
     Notes
     -----
-    If the output does define a `get_waveform_bulk` method one will be added.
+    If the output does not define a `get_waveform_bulk` method one will be added.
     """
     if not isinstance(waveforms, WaveformClient):
         msg = f"a waveform client could not be extracted from {waveforms}"

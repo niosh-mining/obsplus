@@ -3,17 +3,15 @@ Utils for banks
 """
 import contextlib
 import itertools
+import os
 import re
 import sqlite3
 import time
 import warnings
-import os
-from functools import singledispatch
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import obspy
 import pandas as pd
-from obspy import Inventory
 from tables.exceptions import ClosedNodeError
 
 from obsplus.constants import (
@@ -25,8 +23,8 @@ from obsplus.constants import (
     MININT64,
 )
 from obsplus.utils.misc import READ_DICT, _get_path
-from obsplus.utils.time import to_datetime64, dict_times_to_ns
 from obsplus.utils.mseed import summarize_mseed
+from obsplus.utils.time import to_datetime64, _dict_times_to_ns
 
 # functions for summarizing the various formats
 summarizing_functions = dict(mseed=summarize_mseed)
@@ -325,7 +323,7 @@ def _make_wheres(queries):
                 out.append(f"{key} = {val}")
         return " AND ".join(out).replace("'", '"')
 
-    kwargs = dict_times_to_ns(queries)
+    kwargs = _dict_times_to_ns(queries)
     kwargs = _rename_keys(kwargs)
     kwargs = _handle_nat(kwargs)
     return _build_query(kwargs)
@@ -400,27 +398,3 @@ def _try_read_stream(stream_path, format=None, **kwargs):
             warnings.warn(msg, UserWarning)
     finally:
         return stt if stt else None
-
-
-@singledispatch
-def get_inventory(inventory: Union[str, Inventory]):
-    """
-    Get an stations from stations parameter if path or stations else
-    return None
-
-    Parameters
-    ----------
-    inventory : str, obspy.Inventory, or None
-
-    Returns
-    -------
-    obspy.Inventory or None
-    """
-    assert isinstance(inventory, Inventory) or inventory is None
-    return inventory
-
-
-@get_inventory.register(str)
-def _get_inv_str(inventory):
-    """ if str is provided """
-    return obspy.read_inventory(inventory)

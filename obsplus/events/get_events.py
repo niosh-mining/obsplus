@@ -16,7 +16,7 @@ import obsplus.utils.geodetics
 import obsplus.utils.misc
 from obsplus.constants import get_events_parameters
 from obsplus.utils.docs import compose_docstring
-from obsplus.utils.time import dict_times_to_npdatetimes
+from obsplus.utils.time import _dict_times_to_npdatetimes
 
 CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
 NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
@@ -140,7 +140,7 @@ def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
         msg = f"{bad_params} are not supported get_events parameters"
         raise TypeError(msg)
     # Ensure all times are numpy datetimes
-    kwargs = dict_times_to_npdatetimes(kwargs)
+    kwargs = _dict_times_to_npdatetimes(kwargs)
     event_ids = _get_ids(obsplus.events_to_df(cat), kwargs)
     events = [eve for eve in cat if str(eve.resource_id) in event_ids]
     return obspy.Catalog(events=events)

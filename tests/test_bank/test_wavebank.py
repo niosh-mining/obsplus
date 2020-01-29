@@ -22,7 +22,6 @@ from obspy import UTCDateTime as UTC
 
 import obsplus
 import obsplus.utils.bank
-import obsplus.bank.wavebank as sbank
 import obsplus.utils.dataset
 import obsplus.utils.misc
 import obsplus.utils.pd
@@ -70,9 +69,8 @@ def strip_processing(st: obspy.Stream) -> obspy.Stream:
 @pytest.fixture(scope="class")
 def ta_bank(tmp_ta_dir):
     """ init a bank on the test ta_test dataset """
-    inventory_path = os.path.join(tmp_ta_dir, "inventory.xml")
     bank_path = os.path.join(tmp_ta_dir, "waveforms")
-    return sbank.WaveBank(bank_path, inventory=inventory_path)
+    return WaveBank(bank_path)
 
 
 @pytest.fixture(scope="function")
@@ -131,7 +129,7 @@ class TestBankBasics:
     # tests
     def test_type(self, ta_bank):
         """ make sure ta_test bank is a bank """
-        assert isinstance(ta_bank, sbank.WaveBank)
+        assert isinstance(ta_bank, WaveBank)
 
     def test_index(self, ta_bank_index):
         """ ensure the index exists """
@@ -282,7 +280,7 @@ class TestBankBasics:
 
 
 class TestEmptyBank:
-    """ tests for graceful handling of empty sbanks"""
+    """ tests for graceful handling of empty WaveBanks"""
 
     @pytest.fixture(scope="class")
     def empty_index(self, empty_bank):
@@ -438,7 +436,6 @@ class TestGetWaveforms:
         "station": "*",
         "network": "*",
         "channel": "VHE",
-        "attach_response": True,
     }
 
     query2 = {
@@ -460,8 +457,7 @@ class TestGetWaveforms:
     @pytest.fixture(scope="class")
     def stream1(self, ta_bank):
         """ return the waveforms using query1 as params """
-        with pytest.warns(UserWarning) as _:
-            out = ta_bank.get_waveforms(**self.query1)
+        out = ta_bank.get_waveforms(**self.query1)
         return out
 
     @pytest.fixture(scope="class")
@@ -521,13 +517,6 @@ class TestGetWaveforms:
         assert len(channels) == 1
         assert abs(starttime - self.query1["starttime"]) <= 1.0
         assert abs(endtime - self.query1["endtime"]) <= 1.0
-
-    def test_attach_response(self, stream1):
-        """ make sure the responses were attached """
-        Response = obspy.core.inventory.response.Response
-        for tr in stream1:
-            assert hasattr(tr.stats, "response")
-            assert isinstance(tr.stats.response, Response)
 
     def test_bracket_matches(self, stream2):
         """
@@ -855,7 +844,7 @@ class TestBadWaveforms:
         # remove old index if it exists
         if os.path.exists(ta_bank.index_path):
             os.remove(ta_bank.index_path)
-        return sbank.WaveBank(path)
+        return WaveBank(path)
 
     @pytest.fixture
     def ta_bank_empty_files(self, ta_bank, tmpdir):
@@ -872,7 +861,7 @@ class TestBadWaveforms:
         index_path = new_path / (Path(ta_bank.index_path).name)
         if index_path.exists():
             os.remove(index_path)
-        bank = sbank.WaveBank(old_path)
+        bank = WaveBank(old_path)
         bank.update_index()
         return bank
 
@@ -1055,7 +1044,7 @@ class TestGetGaps:
 
     @pytest.fixture(scope="class")
     def gappy_bank(self, gappy_dir):
-        """ init a sbank on the gappy data """
+        """ init a WaveBank on the gappy data """
         bank = WaveBank(gappy_dir)
         # make sure index is updated after gaps are introduced
         if os.path.exists(bank.index_path):
@@ -1210,7 +1199,7 @@ class TestBadInputs:
     def test_bad_inventory(self, tmp_ta_dir):
         """ ensure giving a bad stations str raises """
         with pytest.raises(Exception):
-            sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
+            WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
 class TestConcurrentReads:
@@ -1344,10 +1333,10 @@ class TestSelectDoesntReturnSuperset:
     @pytest.fixture(scope="class")
     def bank(self, df_index, ta_archive):
         """ return a bank with monkeypatched index """
-        sbank = WaveBank(ta_archive)
-        sbank.update_index = lambda: None
-        sbank._index_cache = lambda *args, **kwargs: df_index
-        return sbank
+        wbank = WaveBank(ta_archive)
+        wbank.update_index = lambda: None
+        wbank._index_cache = lambda *args, **kwargs: df_index
+        return wbank
 
     # test
     def test_only_one_station_returned(self, bank):

@@ -37,7 +37,9 @@ from obsplus.utils.waveforms import get_waveform_client
 
 class DataSet(abc.ABC):
     """
-    Class for downloading and serving datasets.
+    Abstract Base Class for downloading and serving datasets.
+
+    This is not intended to be used directly, but rather through subclassing.
 
     By default the data will be downloaded to obsplus' datasets module
     but this can be changed using the base_path argument. All data will
@@ -47,11 +49,6 @@ class DataSet(abc.ABC):
     ----------
     base_path
         The path to which the dataset will be saved as base_path / name.
-
-    Attributes
-    ----------
-    source_path
-        The path to the directory containing the source of DataSet code.
     """
 
     _entry_points = {}
@@ -239,6 +236,22 @@ class DataSet(abc.ABC):
         name
             The name of the dataset to load or a DataSet object. If a DataSet
             object is passed a copy of it will be returned.
+
+        Examples
+        --------
+        >>> # --- Load an example dataset for testing
+        >>> import obsplus
+        >>> ds = obsplus.load_dataset('default_test')
+        >>> # if you plan to make changes to the dataset be sure to copy it first
+        >>> ds = obsplus.copy_dataset('default_test')  # creates a tempdir for ds
+
+        >>> # --- Use dataset clients to load waveforms, stations, and events
+        >>> cat = ds.event_client.get_events()
+        >>> st = ds.waveform_client.get_waveforms()
+        >>> inv = ds.station_client.get_stations()
+
+        >>> # --- get a fetcher for more "dataset aware" querying
+        >>> fetcher = ds.get_fetcher()
         """
         if isinstance(name, DataSet):
             return name.copy()

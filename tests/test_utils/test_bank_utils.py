@@ -82,7 +82,7 @@ class TestEventPathStructure:
 
 
 class TestReadStream:
-    """ test the read waveforms function """
+    """test the read waveforms function """
 
     # fixtures
     @pytest.fixture()

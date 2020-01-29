@@ -199,7 +199,7 @@ def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Serie
     Any "nullish" values (defined by the parameter null_codes) will be
     replaced with an empty string.
 
-    6Parameters
+    Parameters
     ----------
     df
         Any Dataframe that has columns with str dtype named:
@@ -210,6 +210,16 @@ def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Serie
     Returns
     -------
     A series of concatenated seed_ids codes.
+
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+    >>> # get a dataframe with only network station location channel columns
+    >>> cat = obspy.read_inventory()
+    >>> NSLC = ['network', 'station', 'location', 'channel']
+    >>> df = obsplus.stations_to_df(cat)[NSLC]
+    >>> out = get_seed_id_series(df)
     """
     assert set(NSLC).issubset(df.columns), f"dataframe must have columns {NSLC}"
     replace_dict = {x: "" for x in null_codes}
@@ -351,12 +361,10 @@ def get_waveforms_bulk_args(
     df
         A dataframe with required columns:
             network, station, location, channel, starttime, endtime
-    bulk_waveform_arg_type
-        The dtype that is used to represent time.
 
     Returns
     -------
-    A list of tuples (network, station, location, channel, starttime, endtime)
+    A list of tuples [(network, station, location, channel, starttime, endtime),]
     """
 
     def rename_startdate_enddate(df):

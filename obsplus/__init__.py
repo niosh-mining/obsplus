@@ -35,9 +35,6 @@ from obsplus.bank.wavebank import WaveBank
 from obsplus.bank.eventbank import EventBank
 from obsplus.bank.stationbank import StationBank
 
-# Sbank is depreciated, but better to not break codes
-Sbank = WaveBank
-
 from obsplus.structures.fetcher import Fetcher
 
 # misc functions

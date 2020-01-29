@@ -88,8 +88,8 @@ class Fetcher:
     """
     A class for serving up data from various sources.
 
-    Integrates station, event, and waveform client for requests that
-    are aware of the complete dataset.
+    Integrates station, event, and waveform clients to enable dataset-aware
+    querying.
 
     Parameters
     ----------
@@ -117,6 +117,12 @@ class Fetcher:
         The default time after a supplied time to fetch.
     event_query
         A dict of arguments used to filter events.
+
+    Examples
+    --------
+
+
+
     """
 
     # -------------------------------- class init
