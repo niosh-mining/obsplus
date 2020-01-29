@@ -98,6 +98,7 @@ ENTRY_POINTS = {
         "bingham_test = obsplus.datasets.bingham_test",
         "crandall_test = obsplus.datasets.crandall_test",
         "ta_test = obsplus.datasets.ta_test",
+        "default_test = obsplus.datasets.default_test",
     ]
 }
 

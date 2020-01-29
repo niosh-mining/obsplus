@@ -352,7 +352,7 @@ class TestCat2Df:
             assert ed == description
 
     def test_str(self):
-        """ ensure there is a string rep for catalog_to_df. """
+        """ ensure there is a string rep for events_to_df. """
         cat_to_df_str = str(events_to_df)
         assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
 
@@ -690,8 +690,9 @@ class TestReadArrivals:
         assert floatify_dict(ser_dict) == floatify_dict(arr_dict)
 
     # empty catalog tests
-    def test_empty_catalog(self, empty_cat):
+    def test_empty_catalog(self,):
         """ ensure returns empty df with required columns """
+        empty_cat = ev.Catalog()
         df = arrivals_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
@@ -819,9 +820,9 @@ class TestReadAmplitudes:
         assert amp_series["author"] == amplitude.creation_info.author
         assert amp_series["agency_id"] == amplitude.creation_info.agency_id
 
-    def test_empty_catalog(self, empty_cat):
+    def test_empty_catalog(self,):
         """ ensure returns empty df with required columns """
-        df = amplitudes_to_dataframe(empty_cat)
+        df = amplitudes_to_dataframe(ev.Catalog())
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
@@ -938,8 +939,9 @@ class TestReadStationMagnitudes:
         assert sm.magnitude_id == dummy_mag.resource_id.id
 
     # empty catalog tests
-    def test_empty_catalog(self, empty_cat):
+    def test_empty_catalog(self,):
         """ ensure returns empty df with required columns """
+        empty_cat = ev.Catalog()
         df = station_magnitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)

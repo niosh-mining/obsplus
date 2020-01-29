@@ -245,6 +245,12 @@ class TestGetWaveforms:
             assert tr.stats.network == "UU"
             assert tr.stats.channel.endswith("Z")
 
+    def test_get_event_waveforms(self, subbing_fetcher_with_processor):
+        """Ensure the event waveforms can be returned."""
+        st = subbing_fetcher_with_processor.get_event_waveforms()
+        assert isinstance(st, obspy.Stream)
+        assert len(st)
+
 
 class TestYieldWaveforms:
     """ tests for yielding chunks of data between a time range """

@@ -1,10 +1,12 @@
 """Base class for ObsPlus' in-process databases (aka banks)."""
 import os
+import shutil
+import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, TypeVar, Mapping, Iterable
 from types import MappingProxyType as MapProxy
+from typing import Optional, TypeVar, Mapping, Iterable, Union
 
 import pandas as pd
 from pandas.io.sql import DatabaseError
@@ -233,3 +235,43 @@ class _Bank(ABC):
             return self.executor.map(func, args, chunksize=chunksize)
         else:
             return (func(x) for x in args)
+
+    @classmethod
+    def load_example_bank(
+        cls: BankType,
+        dataset: str = "default_test",
+        path: Optional[Union[str, Path]] = None,
+    ) -> BankType:
+        """
+        Create an example bank which is safe to modify.
+
+        Copies relevant files from a dataset to a specified path, or a
+        temporary directory if non is specified.
+
+        Parameters
+        ----------
+        dataset
+            The name of the dataset.
+        path
+            The path to which the dataset files will be copied. If None
+            just create a temporary directory.
+        """
+        # determine which directory in the dataset this bank needs
+        data_types = {
+            obsplus.EventBank: "event_path",
+            obsplus.StationBank: "station_path",
+            obsplus.WaveBank: "waveform_path",
+        }
+        ds = obsplus.load_dataset(dataset)
+        destination = Path(tempfile.mkdtemp() if path is None else path) / "temp"
+        assert cls in data_types, f"{cls} Bank type not supported."
+        path_to_copy = getattr(ds, data_types[cls])
+        shutil.copytree(path_to_copy, destination)
+        return cls(destination)
+
+    def __repr__(self):
+        """Return the class name with bank path."""
+        name = type(self).__name__
+        return f"{name}(base_path={self.bank_path})"
+
+    __str__ = __repr__
