@@ -28,18 +28,23 @@ class TestBasic:
         assert isinstance(bank_path, Path)
         assert isinstance(index_path, Path)
 
-    def test_load_example_event_bank(self):
+    def test_load_example_event_bank(self, tmp_path):
         """Test for loading the example banks."""
-        ebank = obsplus.EventBank.load_example_bank()
+        ebank = obsplus.EventBank.load_example_bank(path=tmp_path)
         assert isinstance(ebank, obsplus.EventBank)
         cat = ebank.get_events()
         assert isinstance(cat, obspy.Catalog)
         assert len(cat)
 
-    def test_load_example_wave_bank(self):
+    def test_load_example_wave_bank(self, tmp_path):
         """Test for loading the example banks."""
-        wbank = obsplus.WaveBank.load_example_bank()
+        wbank = obsplus.WaveBank.load_example_bank(path=tmp_path)
         assert isinstance(wbank, obsplus.WaveBank)
         st = wbank.get_waveforms()
         assert isinstance(st, obspy.Stream)
         assert len(st)
+
+    def test_repr(self, default_ebank):
+        """Tests for the repr method."""
+        out = repr(default_ebank)
+        assert "EventBank" in out

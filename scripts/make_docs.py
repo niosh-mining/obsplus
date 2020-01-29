@@ -21,7 +21,7 @@ def main():
         if result.returncode != 0:
             raise RuntimeError(f"failed to run {note_book_path}")
     # run auto api-doc
-    run(f" sphinx-apidoc ../obsplus -o api", cwd=doc_path, shell=True)
+    run(f"sphinx-apidoc ../obsplus -o api", cwd=doc_path, shell=True)
     run(f"make html", cwd=doc_path, shell=True)
 
 

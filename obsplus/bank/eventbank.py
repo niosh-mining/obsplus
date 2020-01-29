@@ -98,25 +98,28 @@ class EventBank(_Bank):
         the database multiple times for queries involving the same start and
         end times.
     executor
-        An executor with the same interface as concurrent.futures.Executor,
-        the map method of the executor will be used for reading files and
-        updating indices.
+        An executor with the same interface as
+        :py:class:`concurrent.futures.Executor, the map method of the executor
+        will be used for reading files and updating indices.
+
+    Attributes
+    ----------
+    name_structure
 
     Examples
     --------
-
-    1. Create an `EventBank` from path to a directory with quakeml files.
+    >>> # --- Create an `EventBank` from a path to a directory with quakeml files.
     >>> import obsplus
     >>> event_path = obsplus.copy_dataset('default_test').event_path
     >>> # init an EventBank and index the event files.
     >>> ebank = obsplus.EventBank(event_path).update_index()
 
-    2. Create catalog objects from the bank
+    >>> # --- Retrieve catalog objects from the bank.
     >>> cat = ebank.get_events(minmagnitude=4.3, minlatitude=40.12)
     >>> print(cat)
     1 Event(s) in Catalog:...
 
-    3. Put event files bank into the bank
+    >>> # --- Put event files bank into the bank.
     >>> # get an event from another dataset, keep track of its id
     >>> ds = obsplus.load_dataset('bingham_test')
     >>> new_events = ds.event_client.get_events(limit=1)
@@ -126,10 +129,11 @@ class EventBank(_Bank):
     >>> print(ebank.get_events(eventid=new_event_id))
     1 Event(s) in Catalog:...
 
-    4. Read the index
-    >>> # Read the index used by event bank as a dataframe
+    >>> # --- Read the index used by event bank as a dataframe.
     >>> df = ebank.read_index()
-    >>> assert len(df) == 4, 'there should be four events in the bank.'
+    >>> assert len(df) == 4, 'there should now be 4 events in the bank.'
+
+    .. _Executor:
     """
 
     namespace = "/events"
