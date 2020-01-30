@@ -22,7 +22,7 @@ jobs:
       - name: flake8
         run: flake8 .
 
-  build:
+  test_code:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -47,7 +47,7 @@ jobs:
           pip install -e .
 
       - name: print package info
-        run: conda info -ac
+        run: conda info -a
 
       - name: run test suite
         run: pytest --cov obsplus
