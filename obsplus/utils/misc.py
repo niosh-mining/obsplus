@@ -420,9 +420,9 @@ def iter_files(
         yield paths
 
 
-def md5(path: Union[str, Path]):
+def hash_file(path: Union[str, Path]):
     """
-    Calculate the md5 hash of a file.
+    Calculate the sha256 hash of a file.
 
     Reads the file in chunks to allow using large files. Taken from this stack
     overflow answer: http://bit.ly/2Jqb1Jr
@@ -438,21 +438,21 @@ def md5(path: Union[str, Path]):
 
     """
     path = Path(path)
-    hash_md5 = hashlib.md5()
+    hasher = hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
-def md5_directory(
+def hash_directory(
     path: Union[Path, str],
     match: str = "*",
     exclude: Optional[Union[str, Collection[str]]] = None,
     hidden=False,
 ) -> Dict[str, str]:
     """
-    Calculate the md5 hash of all files in a directory.
+    Calculate the sha256 hash of all files in a directory.
 
     Parameters
     ----------
@@ -485,7 +485,7 @@ def md5_directory(
         if not hidden and sub_path.name.startswith("."):
             keep = False
         if keep:
-            out[str(sub_path.relative_to(path))] = md5(sub_path)
+            out[str(sub_path.relative_to(path))] = hash_file(sub_path)
     return out
 
 

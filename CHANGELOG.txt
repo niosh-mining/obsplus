@@ -59,6 +59,8 @@ obsplus master:
     * Removed large kemmerer dataset as it could cause CI to fail (see #147).
     * Added suffix "_test" to all other datasets to indicate they are just for
       testing and not for research (see #147).
+    * Switched from MD5 hashing to SHA256 as the latter is more secure and the
+      computational differences were negligible (see #147).
   - general
     * All obsplus objects now use pandas datetimes and/or numpy datetime64 for
       representing dates and times (see #88 and #131).

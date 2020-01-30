@@ -1,6 +1,7 @@
 """
 Tests for gettting station dataframes from objects.
 """
+import copy
 import os
 import tempfile
 from pathlib import Path
@@ -164,7 +165,7 @@ class TestReadDirectoryOfInventories:
     @pytest.fixture()
     def inventory(self, bingham_dataset):
         """ read the stations """
-        return bingham_dataset.station_client.get_stations().copy()
+        return copy.deepcopy(bingham_dataset.station_client.get_stations())
 
     @pytest.fixture()
     def inv_directory(self, inventory):
@@ -184,7 +185,8 @@ class TestReadDirectoryOfInventories:
     @pytest.fixture()
     def read_inventory(self, inv_directory):
         """Convert the inventory directory to a dataframe."""
-        return stations_to_df(inv_directory)
+        with suppress_warnings():
+            return stations_to_df(inv_directory)
 
     # tests
     def test_read_inventory_directories(self, read_inventory, inventory):

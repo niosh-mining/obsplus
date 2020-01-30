@@ -321,7 +321,7 @@ class TestMD5:
     @pytest.fixture(scope="class")
     def md5_out(self, directory_md5):
         """ return the md5 of the directory. """
-        return obsplus.utils.misc.md5_directory(directory_md5, exclude="*1.txt")
+        return obsplus.utils.misc.hash_directory(directory_md5, exclude="*1.txt")
 
     def test_files_exist(self, md5_out):
         """ make sure the hashes exist for the files and such """

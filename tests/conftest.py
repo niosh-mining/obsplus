@@ -47,7 +47,7 @@ eve_id_cache = {}
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
 
-# Monkey patch the resource_id to avoid emmitting millions of warnings
+# Monkey patch the resource_id to avoid emitting millions of warnings
 # TODO Remove this when obspy 1.2 is released
 old_func = ResourceIdentifier._get_similar_referred_object
 

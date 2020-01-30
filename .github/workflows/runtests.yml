@@ -5,6 +5,7 @@ on: [push]
 jobs:
   lint_code:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v1
 
@@ -44,6 +45,9 @@ jobs:
           conda install pytest obspy pandas pytables flake8 flake8-black
           pip install -r tests/requirements.txt
           pip install -e .
+
+      - name: print package info
+        run: conda info -ac
 
       - name: run test suite
         run: pytest --cov obsplus

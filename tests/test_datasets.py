@@ -2,8 +2,11 @@
 Tests for the datasets
 """
 import os
+import string
+import random
 import shutil
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 import obspy
@@ -19,6 +22,7 @@ from obsplus.exceptions import (
     DataVersionError,
 )
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.utils.misc import no_std_out
 
 
 def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
@@ -29,6 +33,10 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
         version = cls_version
 
         source_path = Path(tempfile.mkdtemp())
+
+        def __init__(self, *args, **kwargs):
+            with no_std_out():
+                super().__init__(*args, **kwargs)
 
         def download_events(self) -> None:
             self.data_file = self.event_path / "dummy_file.txt"
@@ -49,6 +57,15 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
             os.remove(self.data_file)
             with open(self.data_file1, "w") as f:
                 f.write("efgh")
+
+        @classmethod
+        def cleanup(cls):
+            """ Remove dataset source files, data files, and unregister."""
+            self = cls()
+            for path in [self.data_path, self.source_path]:
+                with suppress(FileNotFoundError):
+                    shutil.rmtree(str(path))
+            DataSet.datasets.pop(self.__class__.name.lower(), None)
 
     return DummyDataset
 
@@ -133,15 +150,15 @@ class TestBasic:
         When the download logic fires all files in the source
         should be copied.
         """
-        ds = obsplus.copy_dataset("ta_test", tmp_path)
+        ds = obsplus.copy_dataset("default_test", tmp_path)
         # iterate top level files and assert each was copied
         for tlf in ds.data_files:
             expected = ds.data_path / tlf.name
             assert expected.exists()
 
-    def test_get_fetcher(self, bingham_dataset):
+    def test_get_fetcher(self, ta_dataset):
         """ ensure a datafetcher can be created. """
-        fetcher = bingham_dataset.get_fetcher()
+        fetcher = ta_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
 
     def test_can_copy_twice(self, ta_dataset, tmp_path):
@@ -158,36 +175,60 @@ class TestDatasetDownloadMemory:
     """
 
     expected_default_data_path = Path().home() / "opsdata"
+    cls_name = "download_class_test"
 
-    def test_datasets_remember_download(self, tmp_path):
+    def read_saved_file_path(self, ds):
+        """Read the contents of the saved datapath file."""
+        path = ds._path_to_saved_path_file
+        with path.open() as fi:
+            contents = fi.read().rstrip()
+        return contents
+
+    @pytest.fixture
+    def dummy_dataset_class(self):
+        """Return a dummy dataset for testing, cleanup after it."""
+        randstr = "".join(random.sample(string.ascii_uppercase, 12))
+        name = "TESTDATASET" + randstr
+        DS = make_dummy_dataset(name)
+        yield DS
+        DS.cleanup()
+
+    def test_datasets_remember_download(self, dummy_dataset_class, tmp_path):
         """
         Datasets should remember where they have downloaded data.
 
-        This enables users to store data in places other than the default.
+        This enables users to store data in places other than the default, on
+        a per-dataset basis.
         """
         # simply download a new dataset with a specified path. Init new
-        NewData = make_dummy_dataset(cls_name="downloadtest")
-        newdata1 = NewData(base_path=tmp_path)
+        newdata1 = dummy_dataset_class(base_path=tmp_path)
         # the data source should share the same data_path
-        newdata2 = NewData()
+        newdata2 = dummy_dataset_class()
         assert newdata1.data_path == newdata2.data_path
 
-    def test_default_used_when_old_deleted(self, tmp_path):
+    def test_default_used_when_old_deleted(self, tmp_path, dummy_dataset_class):
         """ Ensure the default is used if the saved datapath is deleted. """
-        NewData = make_dummy_dataset(cls_name="delete_old_test")
-        newdata1 = NewData(base_path=tmp_path)
-        newdata2 = NewData()
+        newdata1 = dummy_dataset_class(base_path=tmp_path)
+        newdata2 = dummy_dataset_class()
         # these should be the same data path
         assert newdata2.data_path == newdata1.data_path
         # until the data path gets deleted
         newdata1.delete_data_directory()
         # then it should default back to normal directory
-        dataset3 = NewData()
+        dataset3 = dummy_dataset_class()
         assert dataset3.data_path != newdata1.data_path
         assert self.expected_default_data_path == dataset3.data_path.parent
         dataset3.delete_data_directory()
 
-    # def test_default_
+    def test_copying_doesnt_change_file(self, tmp_path, dummy_dataset_class):
+        """Making a copy of the dataset shouldn't change the stored path."""
+        ds = dummy_dataset_class(base_path=tmp_path)
+        path1 = self.read_saved_file_path(ds)
+        ds2 = ds.copy()
+        path2 = self.read_saved_file_path(ds2)
+        ds3 = ds.copy_to(tmp_path)
+        path3 = self.read_saved_file_path(ds3)
+        assert path1 == path2 == path3
 
 
 class TestCopyDataset:
@@ -234,8 +275,8 @@ class TestCopyDataset:
         assert isinstance(ds.__repr__(), str)
 
 
-class TestMD5Hash:
-    """ Ensure a MD5 hash can be created of directory contents. """
+class TestFileHashing:
+    """Ensure a hash can be created for each file in a directory."""
 
     @pytest.fixture
     def copied_crandall(self, tmpdir_factory):
@@ -245,7 +286,7 @@ class TestMD5Hash:
         """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
         ds = obsplus.load_dataset("crandall_test").copy_to(newdir)
-        ds.create_md5_hash()
+        ds.create_sha256_hash()
         return ds
 
     @pytest.fixture
@@ -307,8 +348,9 @@ class TestVersioning:
     @pytest.fixture(scope="class")
     def dataset(self):
         """Create a stupidly simple dataset."""
-
-        return make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
+        ds_cls = make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
+        yield ds_cls
+        ds_cls.cleanup()
 
     @pytest.fixture
     def dummy_dataset(self, tmpdir_factory, dataset):
@@ -317,7 +359,7 @@ class TestVersioning:
         """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
         ds = dataset(base_path=newdir)
-        ds.create_md5_hash()
+        ds.create_sha256_hash()
         return ds
 
     @pytest.fixture  # These should be able to be combined somehow, I would think...

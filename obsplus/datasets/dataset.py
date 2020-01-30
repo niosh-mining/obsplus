@@ -1,5 +1,5 @@
 """
-Module for loading, (and downloading) data sets
+Module for loading, (and downloading) data sets.
 """
 import abc
 import copy
@@ -30,7 +30,7 @@ from obsplus.exceptions import (
 )
 from obsplus.utils.dataset import _create_opsdata
 from obsplus.utils.events import get_event_client
-from obsplus.utils.misc import md5_directory
+from obsplus.utils.misc import hash_directory
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.waveforms import get_waveform_client
 
@@ -41,22 +41,49 @@ class DataSet(abc.ABC):
 
     This is not intended to be used directly, but rather through subclassing.
 
-    By default the data will be downloaded to obsplus' datasets module
-    but this can be changed using the base_path argument. All data will
-    be saved in base_path / name.
-
     Parameters
     ----------
     base_path
-        The path to which the dataset will be saved as base_path / name.
+        The path to which the dataset will be saved.
+
+    Attributes
+    ----------
+    data_path
+        The path containing the data. By default it is base_path / name.
+    source_path
+        The path which contains the original files included in the dataset
+        before download. By default this is found in the same directory as
+        the dataset's code (.py) file in a folder with the same name as the
+        dataset.
+
+
+    Notes
+    -----
+        Importantly, each dataset references *two* directories, the source_path
+        and data_path. The source_path contains all data included which the
+        dataset and should not be altered. The data_path has a copy of
+        everything in the source_path, plus the files created during the
+        downloading process.
+
+        The base_path (the parent of data_path) is resolved for each
+        dataset using the following priorities:
+
+            1. The `base_path` provided to `Dataset`'s __init__ method.
+            2. .data_path.txt file stored in the data source
+            3. An environmental name OPSDATA_PATH
+            4. The opsdata_path variable from obsplus.constants
+
+        By default the data will be downloaded to the user's home directory
+        in a folder called "ops_data", but again, this is easily changed
+        by setting the OPSDATA_PATH environmental variable.
     """
 
     _entry_points = {}
     datasets = {}
     data_loaded = False
     # variables for hashing datafiles and versioning
-    _version_filename = ".dataset_version.txt"
-    _hash_filename = ".dataset_md5_hash.json"
+    _version_filename = "dataset_version.txt"
+    _hash_filename = "dataset_hash.json"
     # the name of the file that saves where the data file were downloaded
     _saved_dataset_path_filename = ".dataset_data_path.txt"
     _hash_excludes = (
@@ -106,12 +133,6 @@ class DataSet(abc.ABC):
         """
         Get the location where datasets are stored.
 
-        Uses the following priorities:
-
-        1. Provided Path via opsdata_path
-        2. .data_path.txt file stored in the data source
-        3. An environmental name OPSDATA_PATH
-        4. The opsdata_path variable from obsplus.constants
 
         Returns
         -------
@@ -172,6 +193,17 @@ class DataSet(abc.ABC):
     def copy(self, deep=True):
         """
         Return a copy of the dataset.
+
+        Parameters
+        ----------
+        deep
+            If True deep copy the objects attached to the dataset.
+
+        Notes
+        -----
+        This only copies data in memory, not on disk. If you plan to make
+        any changes to the dataset's on disk resources please use
+        :method:`~obsplus.Dataset.copy_to`.
         """
         return copy.deepcopy(self) if deep else copy.copy(self)
 
@@ -274,7 +306,12 @@ class DataSet(abc.ABC):
             return cls.datasets[name]()
 
     def delete_data_directory(self):
-        """ Delete the datafiles of a dataset. """
+        """
+        Delete the datafiles of a dataset.
+
+        This will force the data to be re-copied from the source files and
+        download logic to be run.
+        """
         dataset = DataSet.load_dataset(self)
         shutil.rmtree(dataset.data_path)
 
@@ -411,28 +448,34 @@ class DataSet(abc.ABC):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
 
-    def create_md5_hash(self, path=_hash_filename, hidden=False) -> dict:
+    def create_sha256_hash(self, path=None, hidden=False) -> dict:
         """
-        Create an md5 hash of all dataset's files to ensure dataset integrity.
+        Create a sha256 hash of the dataset's data files.
 
-        Keys are paths (relative to dataset base path) and values are md5
-        hashes.
+        The output is stored in a simple json file. Keys are paths (relative
+        to dataset base path) and values are files hashes.
+
+        If you want to update/create the hash file in the dataset's source
+        this can be done by passing the dataset's source_path as the path
+        argument.
 
         Parameters
         ----------
         path
-            The path to which the hash data is saved. If None dont save.
+            The path to which the hash data is saved. If None use data_path.
         hidden
-            If True also include hidden files
+            If True also include hidden files.
         """
-        out = md5_directory(self.data_path, exclude="readme.txt", hidden=hidden)
+        kwargs = dict(exclude=self._hash_excludes, hidden=hidden)
+        out = hash_directory(self.data_path, **kwargs)
         # sort dict to mess less with git
         sort_dict = OrderedDict(sorted(out.items()))
-        if path is not None:
-            pass
-        pass
-        with (self.data_path / Path(path)).open("w") as fi:
-            json.dump(sort_dict, fi)
+        # get path and dump json
+        default_path = Path(self.data_path) / self._hash_filename
+        _path = path or default_path
+        hash_path = _path / self._hash_filename if _path.is_dir() else _path
+        with hash_path.open("w") as fi:
+            json.dump(sort_dict, fi, sort_keys=True, indent=2)
         return out
 
     def check_hashes(self, check_hash=False):
@@ -448,26 +491,25 @@ class DataSet(abc.ABC):
         -------
 
         """
-        # TODO figure this out (data seem to have changed on IRIS' end)
         # If there is not a pre-existing hash file return
         hash_path = Path(self.data_path / self._hash_filename)
         if not hash_path.exists():
             return
         # get old and new hash, and overlaps
         old_hash = json.load(hash_path.open())
-        current_hash = md5_directory(self.data_path, exclude=self._hash_excludes)
+        current_hash = hash_directory(self.data_path, exclude=self._hash_excludes)
         overlap = set(old_hash) & set(current_hash) - set(self._hash_excludes)
         # get any files with new hashes
         has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
         missing = (set(old_hash) - set(current_hash)) - set(self._hash_excludes)
         if has_changed and check_hash:
             msg = (
-                f"The md5 hash for dataset {self.name} did not match the "
+                f"The hash for dataset {self.name} did not match the "
                 f"expected values for the following files:\n{has_changed}"
             )
             raise FileHashChangedError(msg)
         if missing:
-            msg = f"The following files are missing: \n{missing}"
+            msg = f"Dataset {self.name} is missing files: \n{missing}"
             raise MissingDataFileError(msg)
 
     def check_version(self):
