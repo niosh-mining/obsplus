@@ -24,6 +24,18 @@ jobs:
 #          python-version: ${{ matrix.python-version }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+      - name: install packages
+      - bash: |
+          conda config --set always_yes yes --set changeps1 no
+          conda install pytest obspy pandas pytables flake8 flake8-black
+          conda activate testenv
+          pip install -r tests/requirements.txt
+          pip install -e .
+      - name: run test suite
+        bash: |
+          conda activate testenv
+          pytest --cov obsplus
+
 
 #jobs:
 #  build:
