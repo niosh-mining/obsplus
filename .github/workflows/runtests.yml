@@ -32,7 +32,7 @@ jobs:
           pip install -r tests/requirements.txt
           pip install -e .
       - name: run test suite
-        bash: |
+        run: |
           conda activate testenv
           pytest --cov obsplus
 
