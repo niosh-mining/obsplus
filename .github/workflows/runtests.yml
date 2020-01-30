@@ -9,9 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: install linting packages
-        runs: pip install -e .[dev]
+        run: pip install -e .[dev]
       - name: flake8
-        runs: flake8 .
+        run: flake8 .
 
   build:
     runs-on: ${{ matrix.os }}
