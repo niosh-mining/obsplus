@@ -10,10 +10,6 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         python-version: [3.6, 3.7]
 
-    env:
-      env_name: testenv
-      conda_args: --yes --quiet --name $(env_name)
-      conda_packages: pytest obspy pandas pytables flake8 flake8-black
   #  Skip any commits which don't want the CI to run
   if: "!contains(github.event.head_commit.message, 'no CI')"
   steps:
@@ -31,32 +27,29 @@ jobs:
 
     - bash: |
         conda config --set always_yes yes --set changeps1 no
-#        conda config --add channels conda-forge
-#        conda update -q conda
-#        conda create $(conda_args) python=$(python.version) $(conda_packages)
-        conda install $(conda_packages)
-        conda activate $(env_name)
+        conda install pytest obspy pandas pytables flake8 flake8-black
+        conda activate testenv
         pip install -r tests/requirements.txt
         pip install -e .
       name: Create Anaconda environment
 
     - bash: |
-        conda activate $(env_name)
+        conda activate testenv
         flake8
       name: flake8
 
     - bash: |
-        source activate $(env_name)
+        conda activate testenv
         pytest --cov obsplus
       name: run test suite
 
     - bash: |
-        source activate $(env_name)
+        conda activate testenv
         pytest obsplus --doctest-modules
       name: test docstring examples
 
     - bash: |
-        source activate $(env_name)
+        conda activate testenv
         pytest docs --nbval
       name: test documentation
 
