@@ -28,7 +28,6 @@ jobs:
         run: |
           conda config --set always_yes yes --set changeps1 no
           conda install pytest obspy pandas pytables flake8 flake8-black
-          conda activate testenv
           pip install -r tests/requirements.txt
           pip install -e .
       - name: run test suite
