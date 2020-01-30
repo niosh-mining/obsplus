@@ -17,7 +17,7 @@ jobs:
         with:
          update_conda: true
          python-version: ${{ matrix.python-version }}
-         conda-channels: anaconda, condaforge
+         conda-channels: anaconda, conda-forge
 #      - name: Set up Python
 #        uses: actions/setup-python@v1
 #        with:
