@@ -14,6 +14,7 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
 import obsplus.utils.misc
+from obsplus.constants import EVENT_DTYPES
 from obsplus import EventBank, copy_dataset
 from obsplus.utils.events import get_preferred
 from obsplus.utils.testing import instrument_methods
@@ -309,6 +310,16 @@ class TestBankBasics:
         df = ebank_no_index.update_index(paths=in_paths).read_index()
         assert len(df) == 3
         assert set(df["time"].dt.year) == {2020}
+
+    def test_read_index_column_order(self, ebank):
+        """The columns should be ordered according to EVENT_DTYPES."""
+        df = ebank.read_index()
+        overlapping_cols = set(df.columns) & set(EVENT_DTYPES)
+        disjoint_cols = set(df.columns) - set(EVENT_DTYPES)
+        expected_order_1 = [x for x in EVENT_DTYPES if x in overlapping_cols]
+        expected_order_2 = sorted(disjoint_cols)
+        expected_order = expected_order_1 + expected_order_2
+        assert [str(x) for x in df.columns] == list(expected_order)
 
 
 class TestEventIdInBank:

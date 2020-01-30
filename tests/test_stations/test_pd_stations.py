@@ -166,7 +166,7 @@ class TestReadDirectoryOfInventories:
         """ read the stations """
         return bingham_dataset.station_client.get_stations().copy()
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def inv_directory(self, inventory):
         """ create a nested directory of inventories """
         chans = inventory.get_contents()["channels"]

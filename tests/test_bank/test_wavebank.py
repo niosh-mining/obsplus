@@ -26,7 +26,7 @@ import obsplus.utils.dataset
 import obsplus.utils.misc
 import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
-from obsplus.constants import NSLC, EMPTYTD64
+from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.utils.misc import iter_files
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
@@ -277,6 +277,16 @@ class TestBankBasics:
         # update index, make sure everything is as expected
         df = bank.update_index(paths=in_paths).read_index()
         assert len(df) == 3
+
+    def test_read_index_column_order(self, default_wbank):
+        """The columns should be ordered according to WAVEFORM_DTYPES."""
+        df = default_wbank.read_index()
+        overlapping_cols = set(df.columns) & set(WAVEFORM_DTYPES)
+        disjoint_cols = set(df.columns) - set(WAVEFORM_DTYPES)
+        expected_order_1 = [x for x in WAVEFORM_DTYPES if x in overlapping_cols]
+        expected_order_2 = sorted(disjoint_cols)
+        expected_order = expected_order_1 + expected_order_2
+        assert [str(x) for x in df.columns] == list(expected_order)
 
 
 class TestEmptyBank:

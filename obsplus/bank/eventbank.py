@@ -309,7 +309,9 @@ class EventBank(_Bank):
         int_cols = INT_COLUMNS & set(df.columns)
         df.loc[:, int_cols] = df.loc[:, int_cols].fillna(-999)
         # get expected datatypes
-        dtype = {i: dtypes[i] for i in set(dtypes) & set(df.columns)}
+        assert set(INT_COLUMNS | STR_COLUMNS).issubset(set(dtypes))
+        intersection = set(dtypes) & set(df.columns)
+        dtype = {i: dtypes[i] for i in dtypes if i in intersection}
         # order columns, set types, reset index
         return df[list(dtype)].astype(dtype=dtype).reset_index(drop=True)
 
@@ -444,6 +446,10 @@ class EventBank(_Bank):
             writing the new events. Note: Only events added through this
             method call will get indexed. Default is True.
         {bar_parameter_description}
+
+        Notes
+        -----
+        If any of the events do not have an extractable reference time
         """
 
         def func(event):
