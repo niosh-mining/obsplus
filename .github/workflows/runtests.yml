@@ -4,11 +4,20 @@ on: [push]
 
 
 jobs:
+  lint_code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: install linting packages
+        runs: pip install -e .[dev]
+      - name: flake8
+        runs: flake8 .
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: [3.7]
     steps:
       - uses: actions/checkout@v1
@@ -18,10 +27,6 @@ jobs:
          update_conda: true
          python-version: ${{ matrix.python-version }}
          conda-channels: anaconda, conda-forge
-#      - name: Set up Python
-#        uses: actions/setup-python@v1
-#        with:
-#          python-version: ${{ matrix.python-version }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: install packages
@@ -32,6 +37,11 @@ jobs:
           pip install -e .
       - name: run test suite
         run: pytest --cov obsplus
+      - name: test docstrings
+        runs: pytest obsplus --doctest-modules
+      - name: test documentation
+        runs: pytest docs --nbval
+
 
 
 #jobs:
