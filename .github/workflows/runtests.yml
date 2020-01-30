@@ -11,7 +11,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         python-version: [3.6, 3.7]
   steps:
-    - uses: actions/checkout@v2  # checks out the current repo
+    - uses: actions/checkout@v2
     - name: Setup Conda
       uses: s-weigand/setup-conda@v1
       with:
