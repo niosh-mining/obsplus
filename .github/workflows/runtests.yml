@@ -1,4 +1,4 @@
-name: test code
+name: validate
 on: [push]
 
 
@@ -14,7 +14,10 @@ jobs:
         with:
           update_conda: true
           python-version: 3.7
-          conda-channels: anaconda, conda-forge
+          conda-channels: anaconda
+
+      - name: Install obspy
+        run: conda install obspy
 
       - name: install linting packages
         run: pip install -e .[dev]
