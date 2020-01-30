@@ -1,5 +1,4 @@
-name: tests
-
+name: test code
 on: [push]
 
 
@@ -54,54 +53,3 @@ jobs:
 
       - name: test documentation
         run: pytest docs --nbval
-
-
-
-#jobs:
-#  build:
-#    if: "!contains(github.event.head_commit.message, 'no CI')"
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, macOS-latest]
-#        python-version: [3.6, 3.7]
-#  steps:
-#    - uses: actions/checkout@v1
-#    - uses: actions/setup-python@v1
-#      with:
-#        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-#        architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-#    - run: python my_script.py
-#  steps:
-#    - uses: actions/checkout@v2
-#    - name: Setup Conda
-#      uses: s-weigand/setup-conda@v1
-#      with:
-#       update_conda: true
-#       python-version: ${{ matrix.python-version }}
-#       conda-channels: anaconda, condaforge
-#    - name: Python ${{ matrix.python-version }}, OS ${{ matrix.os }}
-#      bash: echo Python ${{ matrix.python-version }}, OS ${{ matrix.os }}
-#    - bash: |
-#        conda config --set always_yes yes --set changeps1 no
-#        conda install pytest obspy pandas pytables flake8 flake8-black
-#        conda activate testenv
-#        pip install -r tests/requirements.txt
-#        pip install -e .
-#      name: Create Anaconda environment
-#    - bash: |
-#        conda activate testenv
-#        flake8
-#      name: flake8
-#    - bash: |
-#        conda activate testenv
-#        pytest --cov obsplus
-#      name: run test suite
-#    - bash: |
-#        conda activate testenv
-#        pytest obsplus --doctest-modules
-#      name: test docstring examples
-#    - bash: |
-#        conda activate testenv
-#        pytest docs --nbval
-#      name: test documentation
