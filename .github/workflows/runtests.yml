@@ -27,8 +27,6 @@ jobs:
          update_conda: true
          python-version: ${{ matrix.python-version }}
          conda-channels: anaconda, conda-forge
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
       - name: install packages
         run: |
           conda config --set always_yes yes --set changeps1 no
@@ -38,9 +36,9 @@ jobs:
       - name: run test suite
         run: pytest --cov obsplus
       - name: test docstrings
-        runs: pytest obsplus --doctest-modules
+        run: pytest obsplus --doctest-modules
       - name: test documentation
-        runs: pytest docs --nbval
+        run: pytest docs --nbval
 
 
 
