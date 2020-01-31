@@ -2,7 +2,6 @@ pytest
 pytest-cov
 coveralls
 black
-nbval
 twine
 flake8
 flake8-black
