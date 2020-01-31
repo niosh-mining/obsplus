@@ -43,8 +43,7 @@ jobs:
         run: |
           conda config --set always_yes yes --set changeps1 no
           conda install pytest obspy pandas pytables flake8 flake8-black
-          pip install -r tests/requirements.txt
-          pip install -e .
+          pip install -e .[dev]pip ins
 
       - name: print package info
         run: |
@@ -57,5 +56,5 @@ jobs:
       - name: test docstrings
         run: pytest obsplus --doctest-modules
 
-      - name: test documentation
+      - name: test notebook docs
         run: pytest docs --nbval

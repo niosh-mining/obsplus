@@ -95,6 +95,33 @@ def apply_funcs_to_columns(
     return df
 
 
+def _time_cols_to_ints(df, columns=None, nat_value=SMALLDT64):
+    """
+    Converts all datetime columns to ints.
+
+    Previously NaT were convertible to ints, but now they raise a value error.
+    We need, therefore, to designate a time that will be used as NaT.
+    """
+    cols = columns or df.select_dtypes(include=["datetime64"]).columns
+    df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(int)
+    return df
+
+
+def _ints_to_time_columns(df, columns=None, nat_value=SMALLDT64):
+    """
+    Converts ints in columns (or all ints) to datetimes.
+
+    Needs a fill value for NaT.
+    """
+    cols = columns or df.select_dtypes(include=[int]).columns
+    df.loc[:, cols] = (
+        df.loc[:, cols]
+        .apply(pd.to_datetime, unit="ns", axis=1)
+        .replace(nat_value, np.datetime64("NaT"))
+    )
+    return df
+
+
 def cast_dtypes(
     df: pd.DataFrame,
     dtype: Optional[Mapping[str, Union[type, str]]] = None,

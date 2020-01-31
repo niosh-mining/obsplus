@@ -27,7 +27,12 @@ from obsplus.utils.bank import (
     _remove_base_path,
     _natify_paths,
 )
-from obsplus.utils.pd import cast_dtypes, order_columns
+from obsplus.utils.pd import (
+    cast_dtypes,
+    order_columns,
+    _time_cols_to_ints,
+    _ints_to_time_columns,
+)
 from obsplus.utils.events import _summarize_event, get_event_client
 from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
@@ -228,7 +233,9 @@ class EventBank(_Bank):
                     return self.read_index(_allow_update=False, **kwargs)
                 # else return empty index
                 df = pd.DataFrame(columns=list(EVENT_TYPES_OUTPUT))
-        df = self._prepare_dataframe(df, dtypes=EVENT_TYPES_OUTPUT)
+        df = _ints_to_time_columns(df, columns=INT_COLUMNS).pipe(
+            self._prepare_dataframe, dtypes=EVENT_TYPES_OUTPUT
+        )
         if len(circular_kwargs) >= 3:
             # Requires at least latitude, longitude and min or max radius
             circular_ids = _get_ids(df, circular_kwargs)
@@ -295,6 +302,7 @@ class EventBank(_Bank):
         df["updated"] = update_times
         df["path"] = _remove_base_path(pd.Series(paths))
         if len(df):
+            df = _time_cols_to_ints(df)
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)
             self._write_update(df_to_write, update_time)
         return events_remain
@@ -306,9 +314,6 @@ class EventBank(_Bank):
         # replace "None" with empty string for str columns
         str_cols = STR_COLUMNS & set(df.columns)
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [""])
-        # fill dummy int values
-        int_cols = INT_COLUMNS & set(df.columns)
-        df.loc[:, int_cols] = df.loc[:, int_cols].fillna(-999)
         # get expected datatypes
         assert set(INT_COLUMNS | STR_COLUMNS).issubset(set(dtypes))
         intersection = set(dtypes) & set(df.columns)
@@ -320,6 +325,8 @@ class EventBank(_Bank):
             .pipe(order_columns, required_columns=list(dtype), drop_columns=True)
             .reset_index(drop=True)
         )
+        # convert low ints back to NaT
+
         return out
 
     def _write_update(self, df: pd.DataFrame, update_time=None):

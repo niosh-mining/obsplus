@@ -20,7 +20,6 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     SMALLDT64,
     LARGEDT64,
-    MININT64,
 )
 from obsplus.utils.misc import READ_DICT, _get_path
 from obsplus.utils.mseed import summarize_mseed
@@ -286,8 +285,7 @@ def _make_wheres(queries):
     def _rename_keys(kwargs):
         """ re-word some keys to make automatic sql generation easier"""
         if "eventid" in kwargs:
-            kwargs["event_id"] = kwargs["eventid"]
-            kwargs.pop("eventid")
+            kwargs["event_id"] = kwargs.pop("eventid")
         if "event_id" in kwargs:
             kwargs["event_id"] = _str_of_params(kwargs["event_id"])
         if "event_description" in kwargs:
@@ -301,7 +299,7 @@ def _make_wheres(queries):
     def _handle_nat(kwargs):
         """ add a mintime that will exclude NaT values if endtime is used """
         if "maxtime" in kwargs and "mintime" not in kwargs:
-            kwargs["mintime"] = MININT64 + 1
+            kwargs["mintime"] = SMALLDT64.astype(int) + 1
         return kwargs
 
     def _build_query(kwargs):
