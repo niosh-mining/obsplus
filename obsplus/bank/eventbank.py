@@ -50,7 +50,7 @@ from obsplus.interfaces import ProgressBar, EventClient
 from obsplus.utils import iterate
 from obsplus.utils.misc import try_read_catalog, suppress_warnings
 from obsplus.utils.docs import compose_docstring
-from obsplus.utils.time import _dict_times_to_npdatetimes
+from obsplus.utils.time import _dict_times_to_npdatetimes, to_datetime64
 
 # --- define static types
 
@@ -299,7 +299,7 @@ class EventBank(_Bank):
                 break
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(events)
-        df["updated"] = update_times
+        df["updated"] = to_datetime64(update_times)
         df["path"] = _remove_base_path(pd.Series(paths, dtype=object))
         if len(df):
             df = _time_cols_to_ints(df)

@@ -321,6 +321,12 @@ class TestBankBasics:
         expected_order = expected_order_1 + expected_order_2
         assert [str(x) for x in df.columns] == list(expected_order)
 
+    def test_updated_event_times(self, ebank):
+        """Ensure updated event times belong to this century see #146"""
+        df = ebank.read_index()
+        sensible_start = np.datetime64("2000-01-01T01:00:00")
+        assert (df["updated"] > sensible_start).all()
+
 
 class TestEventIdInBank:
     """ Tests for determining if ids are in the bank. """
