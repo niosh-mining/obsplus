@@ -12,11 +12,14 @@ License_
 
 About_
 
+Code_of_Conduct_
+
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
 .. _Documentation: https://niosh-mining.github.io/obsplus/
 .. _Code: https://github.com/niosh-mining/obsplus
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
+.. _Code_of_Conduct: https://github.com/niosh-mining/.github/CODE_OF_CONDUCT.md
 
 .. |Build Status| image:: https://travis-ci.org/niosh-mining/obsplus.svg?branch=master
    :target: https://travis-ci.org/niosh-mining/obsplus
