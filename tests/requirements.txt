@@ -1,7 +1,9 @@
 pytest
+coverage<5.0
 pytest-cov
 coveralls
 black
+nbval
 twine
 flake8
 flake8-black
