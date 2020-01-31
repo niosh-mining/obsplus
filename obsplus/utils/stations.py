@@ -14,6 +14,7 @@ import obsplus
 import obsplus.utils.misc
 from obsplus.constants import station_clientable_type, SMALLDT64, LARGEDT64, NSLC
 from obsplus.interfaces import StationClient
+from obsplus.utils.time import to_utc
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
 
@@ -25,7 +26,7 @@ mapping_keys = {
     Network: {"code": "network"},
 }
 
-type_mappings = {"start_date": obspy.UTCDateTime, "end_date": obspy.UTCDateTime}
+type_mappings = {"start_date": to_utc, "end_date": to_utc}
 
 
 def df_to_inventory(df) -> obspy.Inventory:

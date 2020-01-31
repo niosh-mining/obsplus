@@ -414,11 +414,17 @@ class TestYieldEventWaveforms:
             duration = abs(t2.timestamp - t1.timestamp)
             assert abs(duration - self.time_after) < 2 * sr
 
-    def test_correct_stream(self, bingham_dataset, bingham_stream_dict):
+    def test_stream_length(self, bingham_stream_dict):
+        """All of the events should have waveform data."""
+        has_data = [bool(x) for x in bingham_stream_dict.values()]
+        assert all(has_data)
+
+    def test_event_streams(self, bingham_dataset, bingham_stream_dict):
         """ Ensure the correct streams are given for ids. """
         cat = bingham_dataset.event_client.get_events()
         evs = {str(ev.resource_id): ev for ev in cat}
         for eve_id, st in bingham_stream_dict.items():
+            assert len(st), f"no data for event:{eve_id}"
             ev = evs[eve_id]
             time2 = get_reference_time(ev).timestamp
             tmin = min([tr.stats.starttime.timestamp for tr in st])

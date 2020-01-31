@@ -749,7 +749,7 @@ class WaveBank(_Bank):
         starttime = starttime or min([x.stats.starttime for x in st])
         endtime = endtime or max([x.stats.endtime for x in st])
         # trim
-        st.trim(starttime=UTCDateTime(starttime), endtime=UTCDateTime(endtime))
+        st.trim(starttime=to_utc(starttime), endtime=to_utc(endtime))
         return merge_traces(st, inplace=True).sort()
 
     def get_service_version(self):

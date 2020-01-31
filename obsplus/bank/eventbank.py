@@ -300,7 +300,7 @@ class EventBank(_Bank):
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(events)
         df["updated"] = update_times
-        df["path"] = _remove_base_path(pd.Series(paths))
+        df["path"] = _remove_base_path(pd.Series(paths, dtype=object))
         if len(df):
             df = _time_cols_to_ints(df)
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)

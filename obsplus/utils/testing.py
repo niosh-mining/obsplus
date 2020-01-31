@@ -12,7 +12,7 @@ import obspy
 import pandas as pd
 
 from obsplus.constants import NSLC
-from obsplus.utils.time import make_time_chunks
+from obsplus.utils.time import make_time_chunks, to_utc
 
 
 @contextmanager
@@ -79,8 +79,8 @@ class ArchiveDirectory:
 
     def create_stream(self, starttime, endtime, seed_ids=None, sampling_rate=None):
         """ create a waveforms from random data """
-        t1 = obspy.UTCDateTime(starttime)
-        t2 = obspy.UTCDateTime(endtime)
+        t1 = to_utc(starttime)
+        t2 = to_utc(endtime)
         sr = sampling_rate or self.sampling_rate
         ar_len = int((t2.timestamp - t1.timestamp) * sr)
         st = obspy.Stream()

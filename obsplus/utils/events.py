@@ -34,7 +34,7 @@ from obsplus.interfaces import EventClient
 from obsplus.utils.bank import EVENT_EXT, _get_time_values
 from obsplus.utils.misc import yield_obj_parent_attr, _get_path
 from obsplus.utils.pd import get_seed_id_series
-from obsplus.utils.time import get_reference_time, _get_event_origin_time
+from obsplus.utils.time import get_reference_time, _get_event_origin_time, to_utc
 
 
 def duplicate_events(
@@ -227,15 +227,15 @@ def make_origins(
         if not event.origins:  # make new origin
             picks = event.picks_to_df()
             picks = picks.loc[
-                (~(picks.evaluation_status == "rejected"))
-                & (picks.phase_hint.isin(phase_hints))
+                (~(picks["evaluation_status"] == "rejected"))
+                & (picks["phase_hint"].isin(phase_hints))
             ]
             if not len(picks):
                 msg = f"{event} has no acceptable picks to create origin"
                 raise ValidationError(msg)
             # get first pick, determine time/station used
-            first_pick = picks.loc[picks.time == picks.time.min()].iloc[0]
-            seed_id = first_pick.seed_id
+            first_pick = picks.loc[picks["time"].idxmin()]
+            seed_id = first_pick["seed_id"]
             # find channel corresponding to pick
             df_chan = df[nslc_series == seed_id]
             if not len(df_chan):
@@ -255,9 +255,9 @@ def _create_first_pick_origin(first_pick, channel_ser, depth):
     )
     comment = ev.Comment(text=msg)
     odict = dict(
-        time=obspy.UTCDateTime(first_pick.time),
-        latitude=channel_ser.latitude,
-        longitude=channel_ser.longitude,
+        time=to_utc(first_pick["time"]),
+        latitude=channel_ser["latitude"],
+        longitude=channel_ser["longitude"],
         depth=depth,
         time_fixed=True,
         comments=[comment],

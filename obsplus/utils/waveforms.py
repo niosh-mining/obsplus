@@ -111,7 +111,7 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     if not len(df):
         return Stream()
     # get trim time, trim, emit warnings
-    t1, t2 = UTCDateTime(df.start.max()), UTCDateTime(df.end.min())
+    t1, t2 = to_utc(df.start.max()), to_utc(df.end.min())
     if t2 < t1:
         msg = f"The following waveforms has traces with no overlaps {stream}"
         raise ValueError(msg)
@@ -327,7 +327,7 @@ def stream2contiguous(stream: Stream) -> Stream:
         if t1 > t2 and len(starts) == len(ends) == 1:
             return  # if disjointed shutdown generator
         assert t1 < t2
-        stream_out = stream.slice(starttime=UTCDateTime(t1), endtime=UTCDateTime(t2))
+        stream_out = stream.slice(starttime=to_utc(t1), endtime=to_utc(t2))
         stream_out.merge(method=1)
         if len({tr.id for tr in stream_out}) == len(seed_ids):
             yield stream_out
@@ -359,8 +359,8 @@ def _get_stream_start_end(stream, gap_df):
     Return a list of the latest start time of initial chunk and earliest
     endtime of last time chunk.
     """
-    st1 = stream.slice(endtime=UTCDateTime(gap_df.t1.min()))
-    st2 = stream.slice(starttime=UTCDateTime(gap_df.t2.max()))
+    st1 = stream.slice(endtime=to_utc(gap_df.t1.min()))
+    st2 = stream.slice(starttime=to_utc(gap_df.t2.max()))
     t1 = max([tr.stats.starttime.timestamp for tr in st1])
     t2 = min([tr.stats.endtime.timestamp for tr in st2])
     assert t1 < t2
@@ -438,7 +438,7 @@ def archive_to_sds(
     index = bank.read_index()
     ts1 = index.starttime.min() if not starttime else starttime
     t1 = _nearest_day(ts1)
-    t2 = obspy.UTCDateTime(index.endtime.max() if not endtime else endtime)
+    t2 = to_utc(index.endtime.max() if not endtime else endtime)
     nslcs = get_seed_id_series(index).unique()
     # iterate over nslc and get data for selected channel
     for nslc in nslcs:
@@ -469,9 +469,9 @@ def _get_sds_filename(st, base_path, type_code, network, station, location, chan
 
 def _nearest_day(time):
     """ Round a time down to the nearest day. """
-    ts = obspy.UTCDateTime(time).timestamp
+    ts = to_utc(time).timestamp
     ts_day = 3600 * 24
-    return obspy.UTCDateTime(ts - (ts % ts_day))
+    return to_utc(ts - (ts % ts_day))
 
 
 @singledispatch

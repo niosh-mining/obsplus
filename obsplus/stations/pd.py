@@ -32,7 +32,8 @@ stations_to_df = DataFrameExtractor(
 @stations_to_df.extractor()
 def _extract_from_channels(channel):
     """ extract info from channels. """
-    return {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
+    out = {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
+    return out
 
 
 @stations_to_df.register(obspy.Inventory)
@@ -101,7 +102,6 @@ def _bank_to_df(bank):
     if isinstance(bank, obsplus.WaveBank):
         rename = {"starttime": "start_date", "endtime": "end_date"}
         return bank.get_availability_df().rename(columns=rename)
-
     else:
         raise TypeError(f"{bank} type not yet supported")
 

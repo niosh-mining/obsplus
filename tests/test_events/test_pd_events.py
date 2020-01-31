@@ -31,7 +31,7 @@ from obsplus.events.pd import (
 )
 from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.misc import register_func
-from obsplus.utils.time import to_datetime64
+from obsplus.utils.time import to_datetime64, to_utc
 
 common_extractor_cols = {
     "agency_id",
@@ -220,13 +220,13 @@ def mag_generator(mag_types):
 
 def floatify_dict(some_dict):
     """
-    Iterate a dict and convert all TimeStamps to floats. Then round all floats
-    to nearest 4 decimals.
+    Iterate a dict and convert all TimeStamps/datetime64 to floats.
+    Then round all floats to nearest 4 decimals.
     """
     out = {}
     for i, v in some_dict.items():
-        if isinstance(v, pd.Timestamp):
-            v = v.timestamp()
+        if isinstance(v, (pd.Timestamp, np.datetime64)):
+            v = to_utc(v).timestamp
         if isinstance(v, float):
             v = np.round(v, 4)
         out[i] = v
@@ -687,6 +687,7 @@ class TestReadArrivals:
 
     def test_values(self, ser_dict, arr_dict):
         """ make sure the values of the first arrival are as expected """
+        floatify_dict(ser_dict)
         assert floatify_dict(ser_dict) == floatify_dict(arr_dict)
 
     # empty catalog tests

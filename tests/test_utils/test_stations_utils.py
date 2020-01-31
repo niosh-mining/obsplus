@@ -36,7 +36,7 @@ class TestDfToInventory:
 
     @pytest.fixture
     def df_from_inv_from_df(self, inv_from_df):
-        """ Is this getting confusing yet?"""
+        """Is this getting confusing yet?"""
         return obsplus.stations_to_df(inv_from_df)
 
     @pytest.fixture
@@ -144,7 +144,8 @@ class TestDfToInventory:
     @pytest.mark.requires_network
     def test_response(self, df_with_response):
         """ Ensure the NRL is used to pull responses. """
-        inv = df_to_inventory(df_with_response)
+        with suppress_warnings():
+            inv = df_to_inventory(df_with_response)
         assert isinstance(inv, obspy.Inventory)
         for net in inv:
             for sta in net:
@@ -155,7 +156,8 @@ class TestDfToInventory:
     def test_response_one_missing(self, df_with_partial_responses):
         """ Ensure responses which can be got are fetched. """
         df = df_with_partial_responses
-        inv = df_to_inventory(df_with_partial_responses)
+        with suppress_warnings():
+            inv = df_to_inventory(df_with_partial_responses)
 
         missing = df["sensor_keys"].isnull() | df["datalogger_keys"].isnull()
         missing_chan_data = set(df[missing]["channel"])

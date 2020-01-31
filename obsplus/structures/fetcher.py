@@ -349,7 +349,8 @@ class Fetcher:
         assert (tb is not None) and (ta is not None)
         # get reference times
         event_ids = self.event_df.event_id.values
-        reftimes = {x: self.reference_funcs[reference](self, x) for x in event_ids}
+        ref_func = self.reference_funcs[reference]
+        reftimes = {x: ref_func(self, x) for x in event_ids}
         # if using a wavebank preload index over entire time-span for speedup
         if isinstance(self.waveform_client, WaveBank) and len(reftimes):
             mt = min([x.min() if hasattr(x, "min") else x for x in reftimes.values()])
@@ -596,7 +597,7 @@ def _get_origin_reference_times(fetcher: Fetcher, event_id):
     """Get the reference times for origins."""
     df = fetcher.event_df
     row = df[df.event_id == event_id].iloc[0]
-    return UTCDateTime(row.time)
+    return row["time"]
 
 
 @register_func(Fetcher.reference_funcs, key="p")

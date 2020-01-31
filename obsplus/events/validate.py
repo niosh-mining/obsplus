@@ -3,6 +3,7 @@ Functions for validating events according to the obsplus flavor.
 """
 from typing import Union, Optional, Collection
 
+import pandas as pd
 from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
 import obsplus
@@ -140,7 +141,8 @@ def check_pick_order(event: Event,):
         assert len(p_picks) <= 1 and len(s_picks) <= 1
         # first check that P is less than S, if not append to name of bad
         if len(p_picks) and len(s_picks):
-            if s_picks.iloc[0]["time"] < p_picks.iloc[0]["time"]:
+            stime, ptime = s_picks.iloc[0]["time"], p_picks.iloc[0]["time"]
+            if (stime < ptime) and not (pd.isnull(ptime) | pd.isnull(stime)):
                 sp.append(g.name)
         # next check all amplitude picks are after P
         if len(p_picks) and len(amp_picks):

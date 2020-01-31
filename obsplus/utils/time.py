@@ -63,7 +63,7 @@ def get_reference_time(
     if obj is None:
         return None
     try:
-        return obspy.UTCDateTime(obj)
+        return to_utc(obj)
     except TypeError:
         msg = f"get_reference_time does not support type {type(obj)}"
         raise TypeError(msg)
@@ -135,7 +135,7 @@ def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -
     """
     if obj is None:
         obj = on_none
-    return obspy.UTCDateTime(obj).timestamp
+    return to_utc(obj).timestamp
 
 
 @singledispatch
@@ -184,7 +184,7 @@ def to_datetime64(
     except (SystemError, OverflowError):
         new = LARGEDT64 if np.sign(utc._ns) > 0 else SMALLDT64
         msg = (
-            f"{utc} is too large to represent with a int64 with ns precision,"
+            f"time is too large to represent with a int64 with ns precision,"
             f" downgrading to {new}"
         )
         warnings.warn(msg)
