@@ -134,7 +134,7 @@ class TestBankBasics:
     def test_index(self, ta_bank_index):
         """ ensure the index exists """
         assert os.path.exists(ta_bank_index.index_path)
-        assert isinstance(ta_bank_index.last_updated, float)
+        assert isinstance(ta_bank_index.last_updated_timestamp, float)
 
     def test_create_index(self, ta_bank_no_index):
         """ make sure a fresh index can be created """
@@ -157,9 +157,9 @@ class TestBankBasics:
         Test that updating the index does not modify the last_updated
         time if no new files were added.
         """
-        last_updated1 = ta_bank_index.last_updated
+        last_updated1 = ta_bank_index.last_updated_timestamp
         ta_bank_index.update_index()
-        last_updated2 = ta_bank_index.last_updated
+        last_updated2 = ta_bank_index.last_updated_timestamp
         # updating should not get stamped unless files were added
         assert last_updated1 == last_updated2
 

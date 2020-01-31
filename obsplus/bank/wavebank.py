@@ -193,7 +193,7 @@ class WaveBank(_Bank):
     # ----------------------- index related stuff
 
     @property
-    def last_updated(self) -> Optional[float]:
+    def last_updated_timestamp(self) -> Optional[float]:
         """
         Return the last modified time stored in the index, else None.
         """

@@ -3,6 +3,7 @@ Tests for general banks.
 """
 from pathlib import Path
 
+import numpy as np
 import obspy
 import pytest
 
@@ -48,3 +49,8 @@ class TestBasic:
         """Tests for the repr method."""
         out = repr(default_ebank)
         assert "EventBank" in out
+
+    def test_last_updated(self, default_ebank):
+        """Last updated should be a datetime64"""
+        last_update = default_ebank.last_updated
+        assert isinstance(last_update, np.datetime64)

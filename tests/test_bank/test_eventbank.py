@@ -146,7 +146,7 @@ class TestBankBasics:
     def test_read_timestamp(self, bing_ebank):
         """ read the current timestamp (after index has been updated)"""
         bing_ebank.update_index()
-        ts = bing_ebank.last_updated
+        ts = bing_ebank.last_updated_timestamp
         assert isinstance(ts, float)
         assert ts > 0
 

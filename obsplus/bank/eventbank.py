@@ -179,7 +179,7 @@ class EventBank(_Bank):
         self._enforce_min_version()
 
     @property
-    def last_updated(self):
+    def last_updated_timestamp(self):
         """ Return the last modified time stored in the index, else 0.0 """
         with sql_connection(self.index_path) as con:
             try:
@@ -228,7 +228,7 @@ class EventBank(_Bank):
                 df = _read_table(self._index_node, con, **kwargs)
             except pd.io.sql.DatabaseError:
                 # if this database has never been updated, update now
-                if allow_update and self.last_updated < 1:
+                if allow_update and self.last_updated_timestamp < 1:
                     self.update_index()
                     return self.read_index(_allow_update=False, **kwargs)
                 # else return empty index

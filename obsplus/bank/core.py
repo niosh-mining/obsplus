@@ -8,6 +8,7 @@ from pathlib import Path
 from types import MappingProxyType as MapProxy
 from typing import Optional, TypeVar, Mapping, Iterable, Union
 
+import numpy as np
 import pandas as pd
 from pandas.io.sql import DatabaseError
 
@@ -17,6 +18,7 @@ from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils.bank import _IndexCache
 from obsplus.utils.misc import get_progressbar, iter_files, iterate
+from obsplus.utils.time import to_datetime64
 
 BankType = TypeVar("BankType", bound="_Bank")
 
@@ -63,12 +65,19 @@ class _Bank(ABC):
         """Update the index."""
 
     @abstractmethod
-    def last_updated(self) -> Optional[float]:
+    def last_updated_timestamp(self) -> Optional[float]:
         """
         Get the last modified time stored in the index.
 
         If Not available return None.
         """
+
+    @property
+    def last_updated(self) -> Optional[np.datetime64]:
+        """
+        Get the last time (UTC) that the bank was updated.
+        """
+        return to_datetime64(self.last_updated_timestamp)
 
     @abstractmethod
     def _read_metadata(self) -> pd.DataFrame:
@@ -122,7 +131,7 @@ class _Bank(ABC):
         """Return an iterator of potential unindexed files."""
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
-        last_updated = self.last_updated  # this needs db so only call once
+        last_updated = self.last_updated_timestamp  # this needs db so only call once
         if last_updated is not None:
             mtime = last_updated - 0.001
         # get paths to iterate
