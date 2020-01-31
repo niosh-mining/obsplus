@@ -3,6 +3,14 @@ on: [push]
 
 
 jobs:
+  download_test_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download data
+        run: |
+          git clone https://github.com/d-chambers/opsdata_test
+          mv opsdata_test ~/opsdata
+
   lint_code:
     runs-on: ubuntu-latest
 
@@ -23,6 +31,7 @@ jobs:
         run: flake8 .
 
   test_code:
+    needs: download_test_data
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
