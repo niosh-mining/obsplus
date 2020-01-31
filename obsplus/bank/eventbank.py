@@ -27,6 +27,7 @@ from obsplus.utils.bank import (
     _remove_base_path,
     _natify_paths,
 )
+from obsplus.utils.pd import cast_dtypes, order_columns
 from obsplus.utils.events import _summarize_event, get_event_client
 from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
@@ -313,7 +314,13 @@ class EventBank(_Bank):
         intersection = set(dtypes) & set(df.columns)
         dtype = {i: dtypes[i] for i in dtypes if i in intersection}
         # order columns, set types, reset index
-        return df[list(dtype)].astype(dtype=dtype).reset_index(drop=True)
+        out = (
+            df.loc[:, ~df.columns.duplicated()]
+            .pipe(cast_dtypes, dtype=dtype)  # drop dup. columns
+            .pipe(order_columns, required_columns=list(dtype), drop_columns=True)
+            .reset_index(drop=True)
+        )
+        return out
 
     def _write_update(self, df: pd.DataFrame, update_time=None):
         """ convert updates to dataframe, then append to index table """
