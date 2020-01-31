@@ -48,10 +48,6 @@ jobs:
          python-version: ${{ matrix.python-version }}
          conda-channels: anaconda, conda-forge
 
-      - name: remove numpy for windows build
-        if: matrix.os == 'windows-latest'
-        run: conda remove numpy
-
       - name: install packages
         run: |
           conda config --set always_yes yes --set changeps1 no
