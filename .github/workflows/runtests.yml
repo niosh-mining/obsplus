@@ -3,6 +3,9 @@ on: [push]
 
 
 jobs:
+  env:
+    conda-env: test_env
+
   download_test_data:
     runs-on: ubuntu-latest
     steps:
@@ -51,19 +54,28 @@ jobs:
       - name: install packages
         run: |
           conda config --set always_yes yes --set changeps1 no
+          conda create -n ${{ env.test_env }} python=%{{ matrix.python_version }}
+          conda activate ${{ env.test_env }}
           conda install numpy pytest obspy pandas pytables
           pip install -e .[dev]
 
       - name: print package info
         run: |
+          conda activate ${{ env.test_env }}
           conda info -a
           conda list
 
       - name: run test suite
-        run: pytest --cov obsplus
+        run: |
+          conda activate ${{ env.test_env }}
+          pytest --cov obsplus
 
       - name: test docstrings
-        run: pytest obsplus --doctest-modules
+        run: |
+          conda activate ${{ env.test_env }}
+          pytest obsplus --doctest-modules
 
       - name: test notebook docs
-        run: pytest docs --nbval
+        run: |
+          conda activate ${{ env.test_env }}
+          pytest docs --nbval
