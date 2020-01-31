@@ -23,6 +23,7 @@ obsplus master:
       is True. First mentioned in (#122), implemented in (#144).
     * Removed `conccurent_updates` and `inventory` argument from `WaveBank`.
       see (#147 and #152)
+    * The `updated` column in wavebank is now correct (see #146, #147).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
