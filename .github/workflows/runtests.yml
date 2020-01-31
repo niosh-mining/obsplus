@@ -55,7 +55,7 @@ jobs:
       - name: install packages
         run: |
           conda config --set always_yes yes --set changeps1 no
-          conda install pytest obspy pandas pytables flake8 flake8-black
+          conda install numpy pytest obspy pandas pytables
           pip install -e .[dev]
 
       - name: print package info
