@@ -53,7 +53,7 @@ jobs:
         with:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
-          activate-environment: test_client
+          activate-environment: test
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
 
