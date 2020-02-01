@@ -3,6 +3,14 @@ on: [push]
 
 
 jobs:
+  download_test_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download data
+        run: |
+          git clone https://github.com/d-chambers/opsdata_test
+          mv opsdata_test ~/opsdata
+
   lint_code:
     runs-on: ubuntu-latest
 
@@ -22,10 +30,11 @@ jobs:
 
   test_code:
     runs-on: ${{ matrix.os }}
+    needs: download_test_data
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-#        os: [ubuntu-latest, macos-latest, windows-latest]
+        #        os: [ubuntu-latest, macos-latest, windows-latest]
         python_version: [3.7]
 
     steps:
@@ -51,8 +60,6 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -e .[dev]
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
 
       - name: print package info
         shell: bash -l {0}
