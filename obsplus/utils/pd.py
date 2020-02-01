@@ -113,7 +113,8 @@ def _ints_to_time_columns(df, columns=None, nat_value=SMALLDT64):
 
     Needs a fill value for NaT.
     """
-    cols = columns or df.select_dtypes(include=[int]).columns
+    dtypes = [int, np.int64]
+    cols = columns or df.select_dtypes(include=dtypes).columns
     df.loc[:, cols] = (
         df.loc[:, cols]
         .apply(pd.to_datetime, unit="ns", axis=1)

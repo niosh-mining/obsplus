@@ -165,7 +165,13 @@ class TestReadDirectoryOfInventories:
     @pytest.fixture()
     def inventory(self, bingham_dataset):
         """ read the stations """
-        return copy.deepcopy(bingham_dataset.station_client.get_stations())
+        # get sub-inventory
+        client = bingham_dataset.station_client
+        stations = ["COY", "FFT", "RIV"]
+        inv1 = client.get_stations(station=stations[0])
+        for station in stations[1:]:
+            inv1 += client.get_stations(station=station)
+        return inv1
 
     @pytest.fixture()
     def inv_directory(self, inventory):

@@ -597,7 +597,7 @@ def _get_origin_reference_times(fetcher: Fetcher, event_id):
     """Get the reference times for origins."""
     df = fetcher.event_df
     row = df[df.event_id == event_id].iloc[0]
-    return row["time"]
+    return to_datetime64(row["time"])
 
 
 @register_func(Fetcher.reference_funcs, key="p")
@@ -621,7 +621,8 @@ def _get_phase_reference_time(fetcher: Fetcher, event_id, phase):
     df = fetcher.picks_df
     inv = fetcher.station_df
     assert df is not None and inv is not None
-    assert (df.phase_hint.str.upper() == pha).any(), f"no {phase} picks found"
-    dff = df[(df.event_id == event_id) & (df.phase_hint == pha)]
+    assert (df["phase_hint"].str.upper() == pha).any(), f"no {phase} picks found"
+    dff = df[(df["event_id"] == event_id) & (df["phase_hint"] == pha)]
     merge = pd.merge(inv, dff[["time", "station"]], on="station", how="left")
+    merge["time"] = to_datetime64(merge["time"])
     return merge.set_index("seed_id")["time"]

@@ -2,6 +2,7 @@
 tests for event wavebank
 """
 import os
+import time
 from contextlib import suppress
 from pathlib import Path
 
@@ -21,12 +22,23 @@ from obsplus.utils.testing import instrument_methods
 from obsplus.utils.misc import suppress_warnings
 
 
+def try_permission_sleep(callable, *args, _count=0, **kwargs):
+    """A super nasty hack to get around intermittent windows permission errors"""
+    try:
+        return callable(*args, **kwargs)
+    except PermissionError:
+        time.sleep(0.01)
+        if _count > 10:
+            raise
+    return try_permission_sleep(callable, *args, _count=_count + 1, **kwargs)
+
+
 # ----------- module fixtures
 
 
-def make_bank_from_catalog(path, catalog):
+def make_bank_from_catalog(path, catalog, update_index=True):
     """ make a bank from a path and a given catalog. """
-    return EventBank(path).put_events(catalog, update_index=True)
+    return EventBank(path).put_events(catalog, update_index=update_index)
 
 
 @pytest.fixture
@@ -103,7 +115,8 @@ class TestBankBasics:
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
-        ebank = make_bank_from_catalog(tmpdir, obspy.read_events())
+        cat = obspy.read_events()
+        ebank = make_bank_from_catalog(tmpdir, cat, update_index=False)
         # write index with negative version
         with suppress_warnings():
             ebank.update_index()
@@ -190,7 +203,7 @@ class TestBankBasics:
         ipath = Path(ebank.index_path)
         mtime1 = ipath.stat().st_mtime
         with pytest.warns(UserWarning) as w:
-            ebank.update_index()
+            try_permission_sleep(ebank.update_index)
         assert len(w)  # a warning should have been raised
         mtime2 = ipath.stat().st_mtime
         # ensure the index was deleted and rewritten
@@ -204,7 +217,7 @@ class TestBankBasics:
         # The index should not yet have been updated
         assert ebank._index_version == self.low_version_str
         with pytest.warns(UserWarning):
-            ebank2 = EventBank(ebank.bank_path)
+            ebank2 = try_permission_sleep(EventBank, ebank.bank_path)
         _ = ebank2.get_events(limit=1)
         # but after creating a new bank it should
         assert ebank._index_version == obsplus.__version__
@@ -233,16 +246,16 @@ class TestBankBasics:
         assert len(bank.read_index()) == 3
 
     def test_index_version(self, ebank):
-        """ ensure the index version returns the obsplus version. """
+        """Ensure the index version returns the obsplus version."""
         assert ebank._index_version == obsplus.__version__
 
     def test_update_index_returns_self(self, ebank):
-        """ ensure update index returns the instance for chaining. """
+        """Ensure update index returns the instance for chaining."""
         out = ebank.update_index()
         assert out is ebank
 
     def test_events_no_time(self, ebank_with_event_no_time):
-        """ Tests for events which have no event time. """
+        """Tests for events which have no event time. """
         bank = ebank_with_event_no_time
         # not starttime/endtime should return all row, one has NaT
         ind = bank.read_index()
