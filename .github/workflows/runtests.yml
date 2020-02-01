@@ -23,7 +23,6 @@ jobs:
         run: flake8 .
 
   test_code:
-    needs: download_test_data
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
