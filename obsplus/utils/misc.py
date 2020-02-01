@@ -9,7 +9,7 @@ import sys
 import warnings
 from functools import wraps, partial, singledispatch
 from os.path import join
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import (
     Generator,
     Tuple,
@@ -485,7 +485,8 @@ def hash_directory(
         if not hidden and sub_path.name.startswith("."):
             keep = False
         if keep:
-            out[str(sub_path.relative_to(path))] = hash_file(sub_path)
+            relative_path = sub_path.relative_to(path)
+            out[str(PurePosixPath(relative_path))] = hash_file(sub_path)
     return out
 
 
