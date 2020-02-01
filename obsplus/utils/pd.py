@@ -103,7 +103,7 @@ def _time_cols_to_ints(df, columns=None, nat_value=SMALLDT64):
     We need, therefore, to designate a time that will be used as NaT.
     """
     cols = columns or df.select_dtypes(include=["datetime64"]).columns
-    df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(int)
+    df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
     return df
 
 

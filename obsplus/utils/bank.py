@@ -12,6 +12,7 @@ from typing import Optional, Sequence
 
 import obspy
 import pandas as pd
+import numpy as np
 from tables.exceptions import ClosedNodeError
 
 from obsplus.constants import (
@@ -299,7 +300,7 @@ def _make_wheres(queries):
     def _handle_nat(kwargs):
         """ add a mintime that will exclude NaT values if endtime is used """
         if "maxtime" in kwargs and "mintime" not in kwargs:
-            kwargs["mintime"] = SMALLDT64.astype(int) + 1
+            kwargs["mintime"] = SMALLDT64.astype(np.int64) + 1
         return kwargs
 
     def _build_query(kwargs):
