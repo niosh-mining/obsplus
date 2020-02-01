@@ -274,6 +274,8 @@ class WaveBank(_Bank):
     def _prep_write_df(self, df):
         """ Prepare the dataframe to put it into the HDF5 store. """
         # ensure the bank path is not in the path column
+        if "path" not in df.columns:
+            print(df)
         df["path"] = _remove_base_path(df["path"], self.bank_path)
         dtype = WAVEFORM_DTYPES_INPUT
         df = (

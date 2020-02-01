@@ -1,7 +1,6 @@
 """
 Tests for gettting station dataframes from objects.
 """
-import copy
 import os
 import tempfile
 from pathlib import Path

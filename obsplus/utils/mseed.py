@@ -6,8 +6,6 @@ import os
 import numpy as np
 from obspy.io.mseed.core import DATATYPES, C, clibmseed
 
-from obsplus.utils.misc import suppress_warnings
-
 
 def _get_lil(mseed_object):
     """
@@ -72,8 +70,7 @@ def summarize_mseed(mseed_object):
     Note: we cannot simply use obspy.io.mseed.get_record_information because it
     returns info only about the first trace.
     """
-    with suppress_warnings():
-        lil = _get_lil(mseed_object)
+    lil = _get_lil(mseed_object)
     traces = []
     current_id = lil.contents
     while True:
