@@ -60,7 +60,7 @@ jobs:
       - name: install obsplus
         shell: bash -l {0}
         run: |
-          pip install -e .[dev]
+          pip install -e .[test]
 
       - name: print package info
         shell: bash -l {0}
@@ -71,7 +71,6 @@ jobs:
       - name: run test suite
         shell: bash -l {0}
         run: |
-          echo "::set-env name=OPSDATA_PATH::~/opsdata"
           pytest --cov obsplus
 
       - name: test docstrings
