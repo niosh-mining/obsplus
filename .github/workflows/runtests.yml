@@ -57,7 +57,7 @@ jobs:
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
 
-      - name: install packages
+      - name: install obsplus
         shell: bash -l {0}
         run: |
           pip install -e .[dev]
@@ -71,6 +71,7 @@ jobs:
       - name: run test suite
         shell: bash -l {0}
         run: |
+          echo "::set-env name=OPSDATA_PATH::~/opsdata"
           pytest --cov obsplus
 
       - name: test docstrings
