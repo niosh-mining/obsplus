@@ -3,7 +3,6 @@ on: [push]
 
 
 jobs:
-
   download_test_data:
     runs-on: ubuntu-latest
     steps:
@@ -45,9 +44,9 @@ jobs:
       - name: Setup conda
         uses: s-weigand/setup-conda@v1
         with:
-         update_conda: true
-         python-version: ${{ matrix.python-version }}
-         conda-channels: anaconda, conda-forge
+          update_conda: true
+          python-version: ${{ matrix.python-version }}
+          conda-channels: anaconda, conda-forge
 
       - name: install packages
         run: |
