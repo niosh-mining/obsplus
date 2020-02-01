@@ -67,8 +67,8 @@ jobs:
         run: |
           pip install -e .[test]
           git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ${{ HOME }}/opsdata
-          echo "::set-env name=OPSDATA_PATH::${{ HOME }}/opsdata"
+          mv opsdata_test $HOME/opsdata
+          echo "::set-env name=OPSDATA_PATH::$HOME/opsdata"
 
       - name: run test suite
         shell: bash -l {0}
