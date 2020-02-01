@@ -9,13 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update_conda: true
-          python-version: 3.7
-          conda-channels: anaconda
-
       - name: install linting packages
         run: pip install -r tests/requirements.txt
 
