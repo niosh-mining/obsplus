@@ -24,7 +24,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest,]
+#        os: [ubuntu-latest, macos-latest, windows-latest]
         python_version: [3.7]
 
     steps:
@@ -49,7 +50,7 @@ jobs:
       - name: install obsplus
         shell: bash -l {0}
         run: |
-          pip install -e .[test]
+          pip install -e .[dev]
           git clone https://github.com/d-chambers/opsdata_test
           mv opsdata_test ~/opsdata
 
@@ -62,7 +63,6 @@ jobs:
       - name: download test data
         shell: bash -l {0}
         run: |
-          pip install -e .[test]
           git clone https://github.com/d-chambers/opsdata_test
           mv opsdata_test ~/opsdata
 
