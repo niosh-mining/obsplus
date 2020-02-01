@@ -33,9 +33,8 @@ jobs:
     needs: download_test_data
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        #        os: [ubuntu-latest, macos-latest, windows-latest]
-        python_version: [3.7]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python_version: [3.7, 3.6]
 
     steps:
       - uses: actions/checkout@v1
