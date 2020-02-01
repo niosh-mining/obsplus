@@ -3,8 +3,6 @@ on: [push]
 
 
 jobs:
-  env:
-    conda-installs: numpy pytest obspy pandas pytables
 
   download_test_data:
     runs-on: ubuntu-latest
@@ -56,7 +54,7 @@ jobs:
           conda config --set always_yes yes --set changeps1 no
           conda create -n test_env python=${{ matrix.python_version }}
           conda activate test_env
-          conda install ${{ env.conda_installs }}
+          conda install numpy pytest obspy pandas pytables
           pip install -e .[dev]
 
       - name: print package info
