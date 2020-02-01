@@ -3,14 +3,6 @@ on: [push]
 
 
 jobs:
-  download_test_data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download data
-        run: |
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
-
   lint_code:
     runs-on: ubuntu-latest
 
@@ -61,12 +53,22 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -e .[test]
+          git clone https://github.com/d-chambers/opsdata_test
+          mv opsdata_test ${{ HOME }}/opsdata
 
       - name: print package info
         shell: bash -l {0}
         run: |
           conda info -a
           conda list
+
+      - name: download test data
+        shell: bash -l {0}
+        run: |
+          pip install -e .[test]
+          git clone https://github.com/d-chambers/opsdata_test
+          mv opsdata_test ${{ HOME }}/opsdata
+          echo "::set-env name=OPSDATA_PATH::${{ HOME }}/opsdata"
 
       - name: run test suite
         shell: bash -l {0}

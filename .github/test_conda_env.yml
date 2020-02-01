@@ -8,4 +8,5 @@ dependencies:
   - obspy
   - pytables
   - pandas
+  - pytest
 
