@@ -238,7 +238,7 @@ class TestBankBasics:
         # test that touching the index/meta data raises
         with pytest.raises(BankDoesNotExistError):
             bank.read_index()
-        bank.put_waveforms(obspy.read())
+        bank.put_waveforms(obspy.read(), update_index=True)
         assert len(bank.read_index()) == 3
 
     def test_update_index_returns_self(self, default_wbank):
@@ -741,8 +741,7 @@ class TestPutWaveForm:
         """ add the default obspy waveforms to the bank, return the bank """
         st = obspy.read()
         ta_bank.update_index()  # make sure index cache is set
-        ta_bank.put_waveforms(st)
-        ta_bank.update_index()
+        ta_bank.put_waveforms(st, update_index=True)
         return ta_bank
 
     @pytest.fixture(scope="class")
@@ -772,10 +771,11 @@ class TestPutWaveForm:
             dataset="crandall_test", destination=Path(tmpdir)
         )
         bank = WaveBank(ds.waveform_client)
-        bank.read_index()  # this sets cache
+        ind1 = bank.read_index()  # this sets cache
+        # ensure RJOB is not yet in the bank
+        assert "RJOB" not in set(ind1["station"].unique())
         st = obspy.read()
-        bank.put_waveforms(st)
-        bank.update_index()
+        bank.put_waveforms(st, update_index=True)
         df = bank.read_index(station="RJOB")
         assert len(df) == len(st)
         assert set(df.station) == {"RJOB"}
@@ -802,8 +802,8 @@ class TestPutMultipleTracesOneFile:
     @pytest.fixture(scope="class")
     def deposited_bank(self, bank: obsplus.WaveBank):
         """ deposit the waveforms in the bank, return the bank """
-        bank.put_waveforms(self.st_mod)
-        bank.put_waveforms(self.st)
+        bank.put_waveforms(self.st_mod, update_index=True)
+        bank.put_waveforms(self.st, update_index=True)
         return bank
 
     @pytest.fixture(scope="class")
@@ -1119,8 +1119,7 @@ class TestGetGaps:
         index = bank.read_index()
         # create a trace and push into bank
         tr = create_trace(index.sort_values("starttime").iloc[4])
-        bank.put_waveforms(tr)
-        bank.update_index()
+        bank.put_waveforms(tr, update_index=True)
         assert len(bank.read_index()) == len(index) + 1, "one trace added"
         return bank
 
