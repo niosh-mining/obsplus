@@ -435,7 +435,7 @@ class TestIterFiles:
         first_file = files[0]
         os.utime(first_file, (now + 10, now + 10))
         # get output make sure it only returned first file
-        out = list(iter_files(simple_dir, mtime=now))
+        out = list(iter_files(simple_dir, mtime=now + 5))
         assert len(out) == 1
         assert Path(out[0]) == first_file
 
