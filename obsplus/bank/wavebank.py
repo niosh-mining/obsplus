@@ -240,17 +240,19 @@ class WaveBank(_Bank):
         file_yielder = self._unindexed_iterator(paths=paths)
         iterable = self._measure_iterator(file_yielder, bar)
         updates = list(self._map(func, iterable))
+        update_list = list(chain.from_iterable(updates))
+        df = pd.DataFrame.from_dict(update_list)
         # push updates to index if any were found
-        if len(updates):
-            self._write_update(list(chain.from_iterable(updates)), update_time)
+        if not df.empty:
+            self._write_update(df, update_time)
             # clear cache out when new traces are added
             self.clear_cache()
         return self
 
-    def _write_update(self, updates, update_time):
+    def _write_update(self, update_df, update_time):
         """ convert updates to dataframe, then append to index table """
         # read in dataframe and prepare for input into hdf5 index
-        df = self._prep_write_df(pd.DataFrame.from_dict(updates))
+        df = self._prep_write_df(update_df)
         with pd.HDFStore(self.index_path) as store:
             node = self._index_node
             try:
