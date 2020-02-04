@@ -586,7 +586,7 @@ class WaveBank(_Bank):
         overlap: Optional[float] = None,
     ) -> Stream:
         """
-        Yield waveforms from the bank.
+        Yield time-series segments.
 
         Parameters
         ----------
@@ -695,21 +695,20 @@ class WaveBank(_Bank):
                 path_struct=self.path_structure,
                 name_struct=self.name_structure,
             )
-            path = os.path.join(str(self.bank_path), summary["path"])
+            path = self.bank_path / summary["path"]
             st_dic[path].append(tr)
         # iter all the unique paths and save
         for path, tr_list in st_dic.items():
-            # make the dir structure of it doesn't exist
-            if not os.path.exists(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
+            # make the parent directories if they dont exist
+            path.parent.mkdir(exist_ok=True, parents=True)
             stream = obspy.Stream(traces=tr_list)
             # load the waveforms if the file already exists
-            if os.path.exists(path):
-                st_existing = obspy.read(path)
+            if path.exists():
+                st_existing = obspy.read(str(path))
                 stream += st_existing
             # polish streams and write
             stream.merge(method=1)
-            stream.write(path, format="mseed")
+            stream.write(str(path), format="mseed")
             paths.append(path)
         # update the index as the contents have changed
         if st_dic and update_index:

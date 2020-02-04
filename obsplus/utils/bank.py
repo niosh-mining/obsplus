@@ -114,6 +114,7 @@ def _summarize_trace(
     path_struct
         directory structure to create
     name_struct
+        structure of the file name if name is not used.
     """
     assert hasattr(trace, "stats"), "only a trace object is accepted"
     out = {"seedid": trace.id, "ext": WAVEFORM_EXT}
