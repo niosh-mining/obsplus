@@ -171,7 +171,7 @@ class _IndexCache:
         con3 = self.cache.kwargs == self._kwargs_to_str(kwargs)
         cached_index = self.cache[con1 & con2 & con3]
         if not len(cached_index):  # query is not cached get it from hdf5 file
-            where = get_kernel_query(int(starttime), int(endtime), int(buffer))
+            where = _get_kernel_query(int(starttime), int(endtime), int(buffer))
             raw_index = self._get_index(where, **kwargs)
             # replace "None" with None
             ic = self.bank.index_str
@@ -242,7 +242,7 @@ def sql_connection(path, **kwargs):
     con.close()  # this is needed on windows but not linux, weird...
 
 
-def get_kernel_query(starttime: int, endtime: int, buffer: int):
+def _get_kernel_query(starttime: int, endtime: int, buffer: int):
     """
     Create a HDF5 kernel query based on start and end times.
 

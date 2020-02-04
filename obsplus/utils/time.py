@@ -18,6 +18,7 @@ from obsplus.constants import (
     TIME_COLUMNS,
     relative_time_types,
 )
+from obsplus.exceptions import TimeOverflowWarning
 from obsplus.utils.docs import compose_docstring
 
 rtype = relative_time_types
@@ -187,7 +188,7 @@ def to_datetime64(
             f"time is too large to represent with a int64 with ns precision,"
             f" downgrading to {new}"
         )
-        warnings.warn(msg)
+        warnings.warn(msg, category=TimeOverflowWarning)
         return new
 
 

@@ -507,10 +507,17 @@ def _get_path(info, path, name, path_struct, name_strcut):
 
 
 @contextlib.contextmanager
-def suppress_warnings():
-    """ Suppress all warnings. """
+def suppress_warnings(category=Warning):
+    """
+    Context manager for suppressing warnings.
+
+    Parameters
+    ----------
+    category
+        The types of warnings to suppress. Must be a subclass of Warning.
+    """
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter("ignore", category=category)
         yield
     return None
 

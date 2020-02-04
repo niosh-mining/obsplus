@@ -28,7 +28,7 @@ from obsplus.constants import (
     bulk_waveform_arg_type,
     LARGEDT64,
 )
-
+from obsplus.exceptions import TimeOverflowWarning
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import register_func, suppress_warnings
@@ -209,7 +209,7 @@ class Fetcher:
         try:
             # since its common for inventories to have far out enddates this can
             # raise a warning. These are safe to ignore.
-            with suppress_warnings():
+            with suppress_warnings(category=TimeOverflowWarning):
                 self.station_df = stations_to_df(stations)
         except TypeError:
             # if unable to get station info from stations waveform client

@@ -1,4 +1,7 @@
-"""A collection of Obsplus Exceptions."""
+"""A collection of ObsPlus Exceptions and Warnings."""
+
+
+# --- Exceptions
 
 
 class BankDoesNotExistError(FileNotFoundError):
@@ -27,3 +30,10 @@ class ValidationNameError(ValidationError, KeyError):
 
 class DataFrameContentError(ValueError):
     """Raised when something is unexpected in a dataframe's contents."""
+
+
+# --- Warnings
+
+
+class TimeOverflowWarning(UserWarning):
+    """Displayed when a large time value is cast into a 64bit ns time stamp."""

@@ -1,5 +1,7 @@
 """
-Useful description.
+Contains hacked bits from obspy's mseed module.
+
+Copyrights to ObsPy developers still apply.
 """
 import os
 
@@ -13,7 +15,7 @@ def _get_lil(mseed_object):
 
     Contains hacked bits from obspy's mseed module.
 
-    Copyrights to obspy developers still apply.
+    Copyrights to ObsPy developers still apply.
     """
     # Parse the headonly and reclen flags.
     unpack_data = 0

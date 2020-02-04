@@ -25,15 +25,14 @@ class SpatialCalculator:
     """
     Class for calculating spatial relationships between two entities.
 
+    The default values are appropriate for Earth.
+
     Parameters
     ----------
     radius
-        The radius of the planetary body in question, defaults to Earth's.
+        The radius of the planetary body in question.
     flattening
-        The flattening of the planetary body in question, defaults to Earth's.
-
-    Once intiated
-
+        The flattening coefficient of the planetary body in question.
     """
 
     expected_exceptions = (TypeError, ValueError, AttributeError)
@@ -147,6 +146,7 @@ class SpatialCalculator:
         entity_2: Union[event_type, inventory_type, pd.DataFrame, tuple],
     ):
         """
+        Calculate spatial relationship(s) between two entities.
 
         Parameters
         ----------
@@ -158,9 +158,7 @@ class SpatialCalculator:
         Returns
         -------
         A dataframe with rows for each combination of entities with columns:
-
         {columns}
-
         """
         # first convert each entity to dataframe with lat, lon, elevation as
         # columns and a meaningful id as the index.
