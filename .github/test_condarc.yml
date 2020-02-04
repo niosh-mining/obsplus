@@ -1,6 +1,4 @@
 channels:
   - conda-forge
-  - menpo
-  - obspy
   - defaults
 auto_activate_base: false

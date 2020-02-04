@@ -13,26 +13,28 @@ from distutils.dir_util import copy_tree
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
-from typing import Union, Optional, Tuple
+from typing import Union, Optional, Tuple, TypeVar
 from warnings import warn
 
-import obspy.clients.fdsn
 import pkg_resources
 from obspy.clients.fdsn import Client
 
 import obsplus
-from obsplus import WaveBank, EventBank, copy_dataset
+from obsplus import copy_dataset
 from obsplus.constants import DATA_TYPES
 from obsplus.exceptions import (
     FileHashChangedError,
     MissingDataFileError,
     DataVersionError,
 )
+from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.utils.dataset import _create_opsdata
 from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import hash_directory
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.waveforms import get_waveform_client
+
+DataSetType = TypeVar("DataSetType", bound="DataSet")
 
 
 class DataSet(abc.ABC):
@@ -148,7 +150,7 @@ class DataSet(abc.ABC):
         _create_opsdata(opsdata_path)
         return Path(opsdata_path)
 
-    def _run_downloads(self):
+    def _run_downloads(self) -> None:
         """ Iterate each kind of data and download if needed. """
         # Make sure the version of the dataset is okay
         version_ok = self.check_version()
@@ -190,7 +192,7 @@ class DataSet(abc.ABC):
         else:
             return client
 
-    def copy(self, deep=True):
+    def copy(self: DataSetType, deep=True) -> DataSetType:
         """
         Return a copy of the dataset.
 
@@ -207,7 +209,9 @@ class DataSet(abc.ABC):
         """
         return copy.deepcopy(self) if deep else copy.copy(self)
 
-    def copy_to(self, destination: Optional[Union[str, Path]] = None):
+    def copy_to(
+        self: DataSetType, destination: Optional[Union[str, Path]] = None
+    ) -> DataSetType:
         """
         Copy the dataset to a destination.
 
@@ -256,7 +260,7 @@ class DataSet(abc.ABC):
             fi.write(str(self.data_path))
 
     @classmethod
-    def load_dataset(cls, name: Union[str, "DataSet"]) -> "DataSet":
+    def load_dataset(cls: DataSetType, name: Union[str, "DataSet"]) -> DataSetType:
         """
         Get a loaded dataset.
 
@@ -396,21 +400,21 @@ class DataSet(abc.ABC):
     # --- checks for if each type of data is downloaded
 
     @property
-    def waveforms_need_downloading(self):
+    def waveforms_need_downloading(self) -> bool:
         """
         Returns True if waveform data need to be downloaded.
         """
         return not self.waveform_path.exists()
 
     @property
-    def events_need_downloading(self):
+    def events_need_downloading(self) -> bool:
         """
         Returns True if event data need to be downloaded.
         """
         return not self.event_path.exists()
 
     @property
-    def stations_need_downloading(self):
+    def stations_need_downloading(self) -> bool:
         """
         Returns True if station data need to be downloaded.
         """
@@ -418,19 +422,19 @@ class DataSet(abc.ABC):
 
     @property
     @lru_cache()
-    def waveform_client(self) -> Optional[WaveBank]:
+    def waveform_client(self) -> Optional[WaveformClient]:
         """ A cached property for a waveform client """
         return self._load("waveform", self.waveform_path)
 
     @property
     @lru_cache()
-    def event_client(self) -> Optional[EventBank]:
+    def event_client(self) -> Optional[EventClient]:
         """ A cached property for an event client """
         return self._load("event", self.event_path)
 
     @property
     @lru_cache()
-    def station_client(self) -> Optional[obspy.Inventory]:
+    def station_client(self) -> Optional[StationClient]:
         """ A cached property for a station client """
         return self._load("station", self.station_path)
 
@@ -487,9 +491,12 @@ class DataSet(abc.ABC):
         check_hash
             If True check the hash of the files.
 
-        Returns
-        -------
-
+        Raises
+        ------
+        FileHashChangedError
+            If one of the file hashes is not as expeted.
+        MissingDataFileError
+            If one the data files was not downloaded.
         """
         # If there is not a pre-existing hash file return
         hash_path = Path(self.data_path / self._hash_filename)
@@ -512,12 +519,13 @@ class DataSet(abc.ABC):
             msg = f"Dataset {self.name} is missing files: \n{missing}"
             raise MissingDataFileError(msg)
 
-    def check_version(self):
+    def check_version(self) -> bool:
         """
         Check the version of the dataset.
 
         Verifies the version string in the dataset class definition matches
-        the one saved on disk.
+        the one saved on disk. Returns True if all is well else raises a
+        DataVersionError.
 
         Parameters
         ----------
@@ -528,11 +536,6 @@ class DataSet(abc.ABC):
         ------
         DataVersionError
             If any version problems are discovered.
-
-        Returns
-        -------
-        version_ok : bool
-            True if the version matches what is expected.
         """
         redownload_msg = f"Delete the following directory {self.data_path}"
         try:
@@ -552,19 +555,20 @@ class DataSet(abc.ABC):
             warn(msg + redownload_msg)
         return True  # All is well. Continue.
 
-    def write_version(self):
+    def write_version(self, path: Optional[Union[Path, str]] = None):
         """ Write the version string to disk. """
-        version_path = self._version_path
+        version_path = path or self._version_path
         with version_path.open("w") as fi:
             fi.write(self.version)
 
-    def read_data_version(self):
+    def read_data_version(self, path: Optional[Union[Path, str]] = None) -> str:
         """
         Read the data version from disk.
 
-        Raise a DataVersionError if not found.
+        Return the version string of the form xx.yy.zz. Raise a
+        DataVersionError if not found.
         """
-        version_path = self._version_path
+        version_path = path or self._version_path
         if not version_path.exists():
             raise DataVersionError(f"{version_path} does not exist!")
         with version_path.open("r") as fi:
