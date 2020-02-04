@@ -109,6 +109,7 @@ class DataSet(abc.ABC):
     _load_events = True
     # cache for instantiated datasets
     _loaded_datasets = {}
+    _verbose = True
 
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
@@ -165,10 +166,10 @@ class DataSet(abc.ABC):
                     self.pre_download_hook()
                 downloaded = True
                 # download data, test termination criteria
-                print(f"downloading {what} data for {self.name} dataset ...")
+                self._log(f"downloading {what} data for {self.name} dataset ...")
                 getattr(self, "download_" + what + "s")()
                 assert not getattr(self, needs_str), f"Download {what} failed"
-                print(f"finished downloading {what} data for {self.name}")
+                self._log(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
         # some data were downloaded, call post download hook
         if downloaded:
@@ -451,6 +452,10 @@ class DataSet(abc.ABC):
     def _download_client(self, item):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
+
+    def _log(self, msg):
+        """Simple way to customize dataset logging."""
+        print(msg)
 
     def create_sha256_hash(self, path=None, hidden=False) -> dict:
         """

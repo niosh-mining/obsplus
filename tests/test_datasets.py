@@ -2,9 +2,9 @@
 Tests for the datasets
 """
 import os
-import string
 import random
 import shutil
+import string
 import tempfile
 from contextlib import suppress
 from pathlib import Path
@@ -22,7 +22,6 @@ from obsplus.exceptions import (
     DataVersionError,
 )
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
-from obsplus.utils.misc import no_std_out
 
 
 def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
@@ -33,10 +32,6 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
         version = cls_version
 
         source_path = Path(tempfile.mkdtemp())
-
-        def __init__(self, *args, **kwargs):
-            with no_std_out():
-                super().__init__(*args, **kwargs)
 
         def download_events(self) -> None:
             self.data_file = self.event_path / "dummy_file.txt"
@@ -57,6 +52,9 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
             os.remove(self.data_file)
             with open(self.data_file1, "w") as f:
                 f.write("efgh")
+
+        def _log(self, msg):
+            """Don't pring anything!"""
 
         @classmethod
         def cleanup(cls):

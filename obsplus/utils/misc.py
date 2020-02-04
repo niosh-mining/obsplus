@@ -5,7 +5,6 @@ import contextlib
 import fnmatch
 import hashlib
 import os
-import sys
 import warnings
 from functools import wraps, partial, singledispatch
 from os.path import join
@@ -34,7 +33,6 @@ from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 
 from obsplus.constants import NULL_SEED_CODES, NSLC
-
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
@@ -288,18 +286,6 @@ class DummyFile(object):
 
     def flush(self):
         """ do nothing """
-
-
-@contextlib.contextmanager
-def no_std_out():
-    """
-    Silence std out.
-    Taken from here: goo.gl/eVx6oj
-    """
-    save_stdout = sys.stdout
-    sys.stdout = DummyFile()
-    yield
-    sys.stdout = save_stdout
 
 
 def getattrs(obsject, col_set, default_value=np.nan):
