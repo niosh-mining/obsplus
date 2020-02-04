@@ -106,6 +106,26 @@ def _bank_to_df(bank):
         raise TypeError(f"{bank} type not yet supported")
 
 
+@stations_to_df.register(obspy.Stream)
+@stations_to_df.register(obspy.Trace)
+def _stream_to_station_df(st):
+    """Convert a stream/trace to station dataframe."""
+    st = [st] if isinstance(st, obspy.Trace) else st
+    attrs = list(NSLC) + ["starttime", "endtime"]
+    stats_summary = []
+    for tr in st:
+        stats_summary.append({at: getattr(tr.stats, at, None) for at in attrs})
+    df = pd.DataFrame(stats_summary)
+    # next groupby stations and get min/max for start_date and end_date
+    group = df.groupby(list(NSLC))
+    df = (
+        pd.concat([group["starttime"].min(), group["endtime"].max()], axis=1)
+        .reset_index()
+        .rename(columns={"starttime": "start_date", "endtime": "end_date"})
+    )
+    return stations_to_df(df)
+
+
 # monkey patch in to_df method on stations
 
 

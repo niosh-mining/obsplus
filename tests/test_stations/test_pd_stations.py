@@ -57,7 +57,8 @@ class TestInv2Df:
 
     def test_time_columns(self, invdf):
         """ ensure the times are np.datetime instances. """
-        pass
+        assert invdf["start_date"].dt  # if not dt this will raise
+        assert invdf["end_date"].dt
 
 
 class TestReadInventory:
@@ -317,3 +318,14 @@ class TestStationDfFromWaveBank:
         """ a df should be returned and not empty. """
         assert isinstance(wavebank_station_df, pd.DataFrame)
         assert len(wavebank_station_df)
+
+
+class TestStationDfFromStream:
+    """Ensure station data can be extracted from a stream."""
+
+    def test_stream_to_inv(self):
+        """A stream also contains station info."""
+        st = obspy.read()
+        df = obsplus.stations_to_df(st)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == len(st)
