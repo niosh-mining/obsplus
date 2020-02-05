@@ -1,7 +1,6 @@
 """
 A local database for waveform formats.
 """
-import os
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -664,7 +663,7 @@ class WaveBank(_Bank):
 
     def _read_index_by_seed(self, seed_id, starttime, endtime):
         """ read the index by seed_ids """
-        if not os.path.exists(self.index_path):
+        if self.index_path.exists():
             self.update_index()
         index = self._index_cache(starttime, endtime, buffer=self.buffer)
         seed = get_seed_id_series(index)
