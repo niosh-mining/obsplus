@@ -207,18 +207,6 @@ class TestMisc:
             fi.write("ho")
         return path
 
-    def test_no_std_out(self, capsys):
-        """ ensure print doesn't propagate to std out when suppressed. """
-        with obsplus.utils.misc.no_std_out():
-            print("whisper")
-        # nothing should have made it to stdout to get captured. The
-        # output shape seems to be dependent on pytest version (or something).
-        capout = capsys.readouterr()
-        if isinstance(capout, tuple):
-            assert [not x for x in capout]
-        else:
-            assert not capout.out
-
     def test_to_timestamp(self):
         """ ensure things are properly converted to timestamps. """
         ts1 = to_timestamp(10, None)
@@ -389,6 +377,7 @@ class TestIterFiles:
 
     @pytest.fixture(scope="class")
     def dir_with_hidden_dir(self, tmp_path_factory):
+        """Create a directory with a hidden directory inside."""
         path = Path(tmp_path_factory.mktemp("iterfiles_hidden"))
         struct = dict(self.file_paths)
         # add hidden directory with files in it.

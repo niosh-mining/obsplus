@@ -136,7 +136,6 @@ class DataSet(abc.ABC):
         """
         Get the location where datasets are stored.
 
-
         Returns
         -------
         A path to the opsdata directory.
@@ -351,7 +350,7 @@ class DataSet(abc.ABC):
 
     @property
     def _saved_data_path(self):
-        """ Load the saved data source path, else return None """
+        """Load the saved data source path, else return None."""
         expected_path = self._path_to_saved_path_file
         if expected_path.exists():
             loaded_path = Path(expected_path.open("r").read())

@@ -38,13 +38,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      #
-      #      - uses: s-weigand/setup-conda@v1
-      #        name: setup conda
-      #        with:
-      #          update_conda: true
-      #          python-version: ${{ matrix.python_version }}
-      #          conda-channels: anaconda, conda-forge
 
       - name: Setup conda
         uses: goanpeca/setup-miniconda@v1

@@ -95,11 +95,10 @@ def ta_index(ta_bank_index):
     return ta_bank_index.read_index()
 
 
-@pytest.fixture(scope="class")
-def empty_bank():
+@pytest.fixture
+def empty_bank(tmp_path):
     """ init a bank with an empty directory, return """
-    with tempfile.TemporaryDirectory() as td:
-        yield WaveBank(td)
+    return WaveBank(tmp_path)
 
 
 # ------------------------------ Tests
@@ -292,17 +291,34 @@ class TestBankBasics:
 class TestEmptyBank:
     """ tests for graceful handling of empty WaveBanks"""
 
-    @pytest.fixture(scope="class")
-    def empty_index(self, empty_bank):
+    @pytest.fixture()
+    def empty_read_index_bank(self, empty_bank):
         """ return the result of the empty read_index """
         return empty_bank.read_index()
 
+    @pytest.fixture()
+    def empty_index_bank(self, empty_bank):
+        """Write an unrelated table to index, return bank"""
+        if empty_bank.index_path.exists():
+            empty_bank.index_path.unlink()
+        df = pd.DataFrame([1, 3, 4])
+        with pd.HDFStore(empty_bank.index_path, "w") as store:
+            store.put(key="weird", value=df)
+        return empty_bank.update_index()
+
     # tests
-    def test_empty_index_returned(self, empty_index):
+    def test_empty_index_returned(self, empty_read_index_bank):
         """ ensure an empty index (df) was returned """
-        assert isinstance(empty_index, pd.DataFrame)
-        assert empty_index.empty
-        assert set(empty_index.columns).issuperset(WaveBank.index_columns)
+        assert isinstance(empty_read_index_bank, pd.DataFrame)
+        assert empty_read_index_bank.empty
+        assert set(empty_read_index_bank.columns).issuperset(WaveBank.index_columns)
+
+    def test_metatable_exists(self, empty_index_bank):
+        """Ensure the meta-table was added."""
+        bank = empty_index_bank
+        df = pd.read_hdf(bank.index_path, bank._meta_node)
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
 
 
 class TestGetIndex:

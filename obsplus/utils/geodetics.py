@@ -33,6 +33,27 @@ class SpatialCalculator:
         The radius of the planetary body in question.
     flattening
         The flattening coefficient of the planetary body in question.
+
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+    >>> from obsplus.utils import SpatialCalculator
+    >>> calc = SpatialCalculator()  # SpatialCalculator for Earth
+    >>> # Get the distance and azimuth between two points
+    >>> p1 = (45.55, -111.21, 1000)  # format is lat, lon, elevation (m asl)
+    >>> p2 = (40.22, -115, 10)
+    >>> df = calc(p1, p2)
+    >>> print(df)
+    distance_m ...
+
+    >>> # Get the distance between each event and each station
+    >>> events = obspy.read_events()
+    >>> station = obspy.read_inventory()
+    >>> df = calc(events, station)
+    >>> # index 1 is the event_id and index 2 is the seed id
+    >>> print(df)
+    distance_m ...
     """
 
     expected_exceptions = (TypeError, ValueError, AttributeError)
@@ -144,7 +165,7 @@ class SpatialCalculator:
         self,
         entity_1: Union[event_type, inventory_type, pd.DataFrame, tuple],
         entity_2: Union[event_type, inventory_type, pd.DataFrame, tuple],
-    ):
+    ) -> pd.DataFrame:
         """
         Calculate spatial relationship(s) between two entities.
 

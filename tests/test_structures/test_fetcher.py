@@ -2,10 +2,6 @@
 tests for the data fetcher capabilities
 """
 import copy
-import glob
-import os
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import obspy
@@ -18,7 +14,7 @@ from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
 from obsplus.utils.misc import suppress_warnings, register_func
 from obsplus.utils.testing import assert_streams_almost_equal
-from obsplus.utils.time import make_time_chunks, to_utc
+from obsplus.utils.time import to_utc
 
 WAVEFETCHERS = []
 
@@ -149,6 +145,23 @@ class TestGeneric:
         for df in [edf, sdf]:
             assert isinstance(df, pd.DataFrame)
             assert not df.empty
+
+    def test_set_stations_on_events(self, bingham_dataset, monkeypatch):
+        """Ensure station info can be obtained from events if needed."""
+        fetcher = bingham_dataset.get_fetcher()
+        monkeypatch.setattr(fetcher, "waveform_client", None)
+        monkeypatch.setattr(fetcher, "station_client", None)
+        fetcher.set_stations(None)
+        assert not fetcher.station_df.empty
+
+    def test_failed_stations_on_events(self, bingham_dataset, monkeypatch):
+        """Ensure station info can be obtained from events if needed."""
+        fetcher = bingham_dataset.get_fetcher()
+        monkeypatch.setattr(fetcher, "waveform_client", None)
+        monkeypatch.setattr(fetcher, "station_client", None)
+        monkeypatch.setattr(fetcher, "event_client", None)
+        fetcher.set_stations(None)
+        assert fetcher.station_df is None
 
 
 class TestGetWaveforms:
@@ -288,11 +301,13 @@ class TestYieldWaveforms:
     def ta_stream(self, subbing_fetcher_with_processor):
         """ return a list of streams yielded from ta_test fetcher """
         fet = subbing_fetcher_with_processor
-        return list(
-            fet.yield_waveforms(
-                self.starttime, self.endtime, self.duration, self.overlap
-            )
+        kwargs = dict(
+            starttime=self.starttime,
+            endtime=self.endtime,
+            duration=self.duration,
+            overlap=self.overlap,
         )
+        return list(fet.yield_waveforms(**kwargs))
 
     # tests
     def test_durations(self, ta_stream):
@@ -402,6 +417,13 @@ class TestYieldEventWaveforms:
                 st2 = st.get_waveforms(**kwargs)
                 assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
+    def test_s_phases(self, subbing_fetcher_with_processor):
+        """ make sure only stations that have s picks are returned """
+        func = subbing_fetcher_with_processor.yield_event_waveforms
+        out = dict(func(self.time_before, self.time_after, reference="S"))
+        for id, st in out.items():
+            assert isinstance(st, obspy.Stream)
+
     # zero starttime test
     def test_zero_starttime(self, stream_dict_zero_starttime):
         """ test that zero starttimes doesnt throw an error """
@@ -430,7 +452,7 @@ class TestYieldEventWaveforms:
             tmin = min([tr.stats.starttime.timestamp for tr in st])
             assert abs(tmin - time2) < 12
 
-    # wavefetch with no stations
+    # fetch with no stations
     def test_yield_event_waveforms_no_inv(self, wavefetch_no_inv):
         """
         WaveFetchers backed by WaveBanks should be able to pull
@@ -489,7 +511,8 @@ class TestStreamProcessor:
         t2 = obspy.UTCDateTime("2009-04-01T03-59-59")
         duration = 7200
         overlap = 60
-        return list(fetcher.yield_waveforms(t1, t2, duration, overlap))
+        kwargs = dict(starttime=t1, endtime=t2, duration=duration, overlap=overlap)
+        return list(fetcher.yield_waveforms(**kwargs))
 
     # tests
     def test_streams_only_z_components(self, stream_list):
@@ -635,47 +658,6 @@ class TestCallWaveFetcher:
             pytest.fail("should not raise")
 
 
-class TestYieldCallables:
-    """ tests for yielding callables that return streams """
-
-    duration = 3600
-    overlap = 10
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def callables(self, ta_fetcher, ta_time_range):
-        """Return callables."""
-        start, end = ta_time_range
-        it = ta_fetcher.yield_waveform_callable(start, end, self.duration, self.overlap)
-        return list(it)
-
-    @pytest.fixture(scope="class")
-    def streams(self, callables):
-        """Return a list of streams from callables."""
-        return [x() for x in callables]
-
-    @pytest.fixture(scope="class")
-    def time_tuple(self, ta_time_range):
-        """Return a tuple of ta times."""
-        t1, t2 = ta_time_range
-        tc = make_time_chunks(t1, t2, self.duration, self.overlap)
-        return list(tc)
-
-    # tests
-    def test_streams(self, streams):
-        """ ensure waveforms were yielded """
-        for stream in streams:
-            assert isinstance(stream, obspy.Stream)
-
-    def test_times(self, streams, time_tuple):
-        """ ensure the times in the yielded wavefroms are as expected"""
-        for st, (t1, t2) in zip(streams, time_tuple):
-            sr = st[0].stats.sampling_rate
-            tt1, tt2 = st[0].stats.starttime, st[0].stats.endtime
-            assert abs(t1 - tt1) < 2 * sr
-            assert abs(t2 - tt2) < 2 * sr
-
-
 class TestClientNoGetBulkWaveForms:
     """Test that clients without get bulk waveforms, ie earthworm, work"""
 
@@ -699,10 +681,12 @@ class TestClientNoGetBulkWaveForms:
 
     @pytest.fixture
     def yielded_streams(self, wavefetcher_no_bulk, ta_time_range):
-        """ yield streams from wavefetcher """
+        """Yield streams from fetcher."""
         t1, t2 = ta_time_range
+        duration, overlap = self.duration, self.overlap
         fun = wavefetcher_no_bulk.yield_waveforms
-        ite = fun(t1, t2, self.duration, self.overlap)
+        kwargs = dict(starttime=t1, endtime=t2, duration=duration, overlap=overlap)
+        ite = fun(**kwargs)
         return list(ite)
 
     # tests
@@ -745,13 +729,13 @@ class TestFilterInventoryByAvailability:
     def bulk_arg_later_time(self, altered_inv):
         """Return bulk args for latter time test."""
         fetcher = Fetcher(None, stations=altered_inv)
-        return fetcher.get_bulk_args(starttime=self.t1 + 10, endtime=self.t2)
+        return fetcher._get_bulk_args(starttime=self.t1 + 10, endtime=self.t2)
 
     @pytest.fixture
     def bulk_arg_none_end_date(self, inv_with_none):
         """ return the bulk args from an inv with None endate """
         fetcher = Fetcher(None, stations=inv_with_none)
-        return fetcher.get_bulk_args(starttime=self.t0, endtime=self.t1)
+        return fetcher._get_bulk_args(starttime=self.t0, endtime=self.t1)
 
     @pytest.fixture
     def fetcher(self, altered_inv, bing_fetcher):
@@ -783,148 +767,6 @@ class TestFilterInventoryByAvailability:
         st = fetcher(obspy.UTCDateTime("1970-01-01"), 10, 40)
         assert isinstance(st, obspy.Stream)
         assert not len(st)
-
-
-class TestDownloadEventWaveforms:
-    """ Misc tests for downloading event waveforms. """
-
-    path = "eventwaveforms"
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def temp_dir_path(self):
-        """ return a path to a temporary directory """
-        with tempfile.TemporaryDirectory() as tempdir:
-            out = os.path.join(tempdir, "temp")
-            yield out
-
-    @pytest.fixture(scope="class")
-    def fetcher(self, bing_fetcher):
-        """
-        Make a copy of the kem_fetcher and restrict scope of events to
-        when data are available.
-        """
-        fet = bing_fetcher.copy()
-        return fet
-
-    @pytest.fixture(scope="class")
-    def download_data(self, temp_dir_path, fetcher: Fetcher):
-        """
-        Download data from the kem fetcher into the tempdir, return
-        path to tempdir.
-        """
-        path = os.path.join(temp_dir_path, self.path)
-        kwargs = dict(time_before_origin=0, time_after_origin=10, path=path)
-        fetcher.download_event_waveforms(**kwargs)
-        return temp_dir_path
-
-    @pytest.fixture(scope="class")
-    def event_sbank(self, download_data):
-        """ return an sbank pointed at the temp_dir_path """
-        sb = WaveBank(download_data)
-        sb.update_index()
-        return sb
-
-    @pytest.fixture(scope="class")
-    def event_fetcher(self, event_sbank, fetcher):
-        """ init a fetcher using the old fetcher """
-        fet = fetcher.copy()
-        fet._download_client = event_sbank
-        return fet
-
-    @pytest.fixture(scope="class")
-    def mseeds(self, download_data):
-        """ return a list of all the files with the ext mseed """
-        return glob.glob(os.path.join(download_data, "**", "*mseed"), recursive=True)
-
-    @pytest.fixture(scope="class")
-    def stream_dict(self, event_fetcher):
-        """ return a dict of the events contained in the waveforms """
-        return dict(event_fetcher.yield_event_waveforms(0, 10))
-
-    # tests
-    def test_directory_exists(self, download_data):
-        """ ensure the directory was created """
-        assert os.path.exists(download_data)
-
-    def test_mseeds(self, mseeds):
-        """ ensure some files with mseed ext were created """
-        assert len(mseeds)
-
-    def test_data_were_downloaded(self, stream_dict):
-        """ ensure data from the events exists """
-        for eveid, stream in stream_dict.items():
-            assert isinstance(stream, obspy.Stream)
-            assert len(stream)
-
-
-class TestDownloadContinuousData:
-    """
-    Tests for downloading continuous data
-    """
-
-    duration = 3600
-    overlap = 60
-    path = "waveforms/{year}/{julday}/{network}/{station}"
-
-    @pytest.fixture(scope="class")
-    def download_data(self, tmp_path_factory, ta_fetcher, ta_time_range):
-        """
-        Download data from the kem fetcher into the tempdir, return
-        path to tempdir.
-        """
-        path = Path(tmp_path_factory.mktemp("cont_data")) / "waveforms"
-        t1, t2 = ta_time_range
-        params = dict(
-            starttime=t1,
-            endtime=t2,
-            duration=self.duration,
-            overlap=self.overlap,
-            path=path,
-        )
-        ta_fetcher.download_waveforms(**params)
-        return path
-
-    @pytest.fixture(scope="class")
-    def continuous_wavebank(self, download_data):
-        """ return a WaveBank pointed at the temp_dir_path """
-        return WaveBank(download_data).update_index()
-
-    @pytest.fixture(scope="class")
-    def continuous_fetcher(self, continuous_wavebank, ta_fetcher):
-        """ init a fetcher using the old fetcher """
-        fet = ta_fetcher.copy()
-        fet._download_client = continuous_wavebank
-        return fet
-
-    @pytest.fixture(scope="class")
-    def mseeds(self, download_data):
-        """ return a list of all the files with the ext mseed """
-        return glob.glob(os.path.join(download_data, "**", "*mseed"), recursive=True)
-
-    @pytest.fixture(scope="class")
-    def stream_list(self, continuous_fetcher: Fetcher, ta_time_range):
-        """ return a dict of the events contained in the waveforms """
-        t1, t2 = ta_time_range
-        input_dict = dict(
-            starttime=t1, endtime=t2, duration=self.duration, overlap=self.overlap
-        )
-        return list(continuous_fetcher.yield_waveforms(**input_dict))
-
-    # tests
-    def test_directory_exists(self, download_data):
-        """ ensure the directory was created """
-        assert os.path.exists(download_data)
-
-    def test_mseeds(self, mseeds):
-        """ ensure some files with mseed ext were created """
-        assert len(mseeds)
-
-    def test_data_were_downloaded(self, stream_list):
-        """ ensure data from the events exists """
-        for stream in stream_list:
-            assert isinstance(stream, obspy.Stream)
-            assert len(stream)
 
 
 class TestFetchersFromDatasets:

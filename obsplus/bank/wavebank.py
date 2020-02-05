@@ -4,6 +4,7 @@ A local database for waveform formats.
 import os
 import time
 from collections import defaultdict
+from contextlib import suppress
 from concurrent.futures import Executor
 from functools import partial, reduce
 from itertools import chain
@@ -325,10 +326,10 @@ class WaveBank(_Bank):
             if starttime > endtime:
                 msg = f"starttime cannot be greater than endtime"
                 raise ValueError(msg)
-        if not os.path.exists(self.index_path):
+        if not self.index_path.exists():
             self.update_index()
         # if no file was created (dealing with empty bank) return empty index
-        if not os.path.exists(self.index_path):
+        if not self.index_path.exists():
             return pd.DataFrame(columns=self.index_columns)
         # grab index from cache
         index = self._index_cache(starttime, endtime, buffer=self.buffer, **kwargs)
@@ -343,8 +344,13 @@ class WaveBank(_Bank):
         Read the metadata table.
         """
         try:
-            return pd.read_hdf(self.index_path, self._meta_node)
-        except (FileNotFoundError, ValueError, KeyError):
+            with pd.HDFStore(self.index_path, "r") as store:
+                out = store.get(self._meta_node)
+            store.close()
+            return out
+        except (FileNotFoundError, ValueError, KeyError, OSError):
+            with suppress(UnboundLocalError):
+                store.close()
             self._ensure_meta_table_exists()
             return pd.read_hdf(self.index_path, self._meta_node)
 
