@@ -164,6 +164,8 @@ class _IndexCache:
     def __call__(self, starttime, endtime, buffer, **kwargs):
         """ get start and end times, perform in kernel lookup """
         # get defaults if starttime or endtime is none
+        starttime = None if pd.isnull(starttime) else starttime
+        endtime = None if pd.isnull(endtime) else endtime
         starttime = to_datetime64(starttime or SMALLDT64)
         endtime = to_datetime64(endtime or LARGEDT64)
         # find out if the query falls within one cached times

@@ -142,7 +142,7 @@ def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -
 @singledispatch
 def to_datetime64(
     value: Optional[Union[utc_able_type, Sequence[utc_able_type]]], default=DEFAULT_TIME
-) -> Union[np.datetime64, np.ndarray]:
+) -> Union[np.datetime64, np.ndarray, pd.Series]:
     """
     Convert time value to a numpy datetime64, or array of such.
 
@@ -203,7 +203,7 @@ def _from_string(time_str: str, default=DEFAULT_TIME):
 @to_datetime64.register(pd.Series)
 def _series_to_datetime(value, default=DEFAULT_TIME):
     """ Convert a series to datetimes """
-    return value.apply(to_datetime64, default=default).values
+    return value.apply(to_datetime64, default=default)
 
 
 @to_datetime64.register(np.ndarray)
@@ -243,6 +243,8 @@ def to_utc(
     """
 
     def _dt64_to_utc(dt64):
+        if isinstance(dt64, pd.Timestamp):
+            dt64 = dt64.to_datetime64()
         ns = dt64.astype("datetime64[ns]").astype(np.int64)
         return obspy.UTCDateTime(ns=int(ns))
 
@@ -260,7 +262,7 @@ def to_utc(
 def to_timedelta64(
     value: Optional[Union[rtype, Sequence[rtype], np.ndarray, pd.Series]],
     default=np.timedelta64(0, "s"),
-) -> Union[np.timedelta64, np.ndarray]:
+) -> Union[np.timedelta64, np.ndarray, pd.Series]:
     """
     Convert a value to a timedelta[ns].
 
@@ -299,9 +301,9 @@ def _list_tuple_to_datetime(value, default=None):
 
 
 @to_timedelta64.register(pd.Series)
-def _series_to_timedelta(ser):
+def _series_to_timedelta(ser) -> pd.Series:
     """ Convert a series to a timedelta. """
-    return ser.apply(to_timedelta64).values
+    return ser.apply(to_timedelta64)
 
 
 @to_timedelta64.register(np.ndarray)

@@ -199,7 +199,6 @@ class Fetcher:
             self.waveform_client = get_waveform_client(waveforms)
         except TypeError:  # if the waveform client is already defined keep it
             self.waveform_client = getattr(self, "waveform_client", None)
-        self.waveform_df = None  # TODO figure out how to get waveform df?
 
     def set_events(self, events: fetcher_event_type):
         """

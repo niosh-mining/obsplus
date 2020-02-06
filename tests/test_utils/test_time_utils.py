@@ -74,10 +74,10 @@ class TestToNumpyDateTime:
         assert pd.Timestamp(out).year == 2262
 
     def test_series_to_datetimes(self):
-        """Series should be convertible to datetimes, but returns ndarray """
+        """Series should be convertible to datetimes, return series """
         ser = pd.Series([10, "2010-01-01"])
         out = to_datetime64(ser)
-        assert isinstance(out, np.ndarray)
+        assert isinstance(out, pd.Series)
 
     def test_nullish_values_returns_default(self):
         """ Nullish values should return default values. """
@@ -155,6 +155,13 @@ class TestTimeDelta:
         default = np.timedelta64(0, "s")
         out1 = to_timedelta64(None, default=default)
         assert out1 == default
+
+    def test_series(self):
+        """Series should return a series."""
+        input1 = [2, -1, 0.00001]
+        ser = pd.Series(input1)
+        out = to_timedelta64(ser)
+        assert isinstance(out, pd.Series)
 
 
 class TestToUTC:
