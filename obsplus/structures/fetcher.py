@@ -30,7 +30,7 @@ from obsplus.exceptions import TimeOverflowWarning
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import register_func, suppress_warnings
-from obsplus.utils.pd import filter_index
+from obsplus.utils.pd import filter_index, get_seed_id_series
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.time import get_reference_time
 from obsplus.utils.time import to_datetime64, to_timedelta64, make_time_chunks, to_utc
@@ -251,6 +251,9 @@ class Fetcher:
                     self.station_df = stations_to_df(self.event_client)
                 except TypeError:
                     self.station_df = None
+        # make sure seed_id is set
+        if self.station_df is not None:
+            self.station_df["seed_id"] = get_seed_id_series(self.station_df)
 
     # ------------------------ continuous data fetching methods
 
@@ -322,7 +325,7 @@ class Fetcher:
         raise_on_fail: bool = True,
     ) -> Tuple[str, Stream]:
         """
-        Yield event_id and streams for each event in the events.
+        Yield event_id and streams for each event.
 
         Parameters
         ----------
@@ -343,19 +346,31 @@ class Fetcher:
         raise_on_fail
             If True, re raise and exception if one is caught during waveform
             fetching, else continue to next event.
+
+        Notes
+        -----
+        Streams will not be yielded for any event for which a reference time
+        cannot be obtained. For example, if reference='S' only events with some
+        S picks will be yielded.
         """
+        if not reference.lower() in self.reference_funcs:
+            msg = (
+                f"reference of {reference} is not supported. Supported "
+                f"reference arguments are {list(self.reference_funcs)}"
+            )
+            raise ValueError(msg)
         assert reference.lower() in self.reference_funcs
         tb = to_timedelta64(time_before, default=self.time_before)
         ta = to_timedelta64(time_after, default=self.time_after)
         assert (tb is not None) and (ta is not None)
         # get reference times
-        event_ids = self.event_df.event_id.values
+        event_ids = self.event_df["event_id"].values
         ref_func = self.reference_funcs[reference.lower()]
-        reftimes = {x: ref_func(self, x) for x in event_ids}
+        reftime_df = ref_func(self)
+        reftimes = {eid: df for eid, df in reftime_df.groupby("event_id")}
         # if using a wavebank preload index over entire time-span for speedup
         if isinstance(self.waveform_client, WaveBank) and len(reftimes):
-            mt = min([x.min() if hasattr(x, "min") else x for x in reftimes.values()])
-            mx = max([x.max() if hasattr(x, "max") else x for x in reftimes.values()])
+            mt, mx = reftime_df["time"].min(), reftime_df["time"].max()
             index = self.waveform_client.read_index(starttime=mt, endtime=mx)
             get_bulk_wf = partial(self._get_bulk_wf, index=index)
         else:
@@ -363,11 +378,9 @@ class Fetcher:
         # iterate each event in the events and yield the waveform
         for event_id in event_ids:
             # make sure ser is either a single datetime or a series of datetimes
-            reftime = reftimes[event_id]
-            ti_ = to_datetime64(reftimes[event_id])
-            if isinstance(reftime, pd.Series):  # convert back to series
-                ti_ = pd.Series(ti_, index=reftime.index)
-            bulk_args = self._get_bulk_args(starttime=ti_ - tb, endtime=ti_ + ta)
+            reftime = to_datetime64(reftimes[event_id]["time"])
+            t1, t2 = reftime - tb, reftime + ta
+            bulk_args = self._get_bulk_args(starttime=t1, endtime=t2)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))
             except Exception:
@@ -492,9 +505,12 @@ class Fetcher:
         # replace None/Nan with larger number
         inv.loc[inv["end_date"].isnull(), "end_date"] = LARGEDT64
         inv["end_date"] = inv["end_date"].astype("datetime64[ns]")
+        # get start/end of the inventory
+        inv_start = inv["start_date"].min()
+        inv_end = inv["end_date"].max()
         # remove station/channels that dont have data for requested time
-        min_time = to_datetime64(starttime, default=inv["start_date"].min())
-        max_time = to_datetime64(endtime, default=inv["end_date"].max())
+        min_time = to_datetime64(starttime, default=inv_start).min()
+        max_time = to_datetime64(endtime, default=inv_end).max()
         con1, con2 = (inv["start_date"] > max_time), (inv["end_date"] < min_time)
         df = inv[~(con1 | con2)].set_index("seed_id")[list(NSLC)]
         if df.empty:  # return empty list if no data found
@@ -530,36 +546,55 @@ class Fetcher:
 
 
 @register_func(Fetcher.reference_funcs, key="origin")
-def _get_origin_reference_times(fetcher: Fetcher, event_id):
+def _get_origin_reference_times(fetcher: Fetcher) -> pd.Series:
     """Get the reference times for origins."""
-    df = fetcher.event_df
-    row = df[df.event_id == event_id].iloc[0]
-    return to_datetime64(row["time"])
+    event_df = fetcher.event_df[["time", "event_id"]].set_index("event_id")
+    inv_df = fetcher.station_df
+    # iterate each event and add rows for each channel in inventory
+    dfs = []
+    for eid, ser in event_df.iterrows():
+        inv = inv_df.copy()
+        inv["event_id"] = eid
+        inv["time"] = ser["time"]
+        dfs.append(inv)
+    # get output
+    out = (
+        pd.concat(dfs, ignore_index=True)
+        .reset_index()
+        .set_index("seed_id")[["event_id", "time"]]
+        .dropna(subset=["time"])
+    )
+    return out
 
 
 @register_func(Fetcher.reference_funcs, key="p")
-def _get_p_reference_times(fetcher: Fetcher, event_id):
+def _get_p_reference_times(fetcher: Fetcher) -> pd.Series:
     """Get the reference times for p arrivals."""
-    return _get_phase_reference_time(fetcher, event_id, "p")
+    return _get_phase_reference_time(fetcher, "p")
 
 
 @register_func(Fetcher.reference_funcs, key="s")
-def _get_s_reference_times(fetcher: Fetcher, event_id):
+def _get_s_reference_times(fetcher: Fetcher) -> pd.Series:
     """Get the reference times for s arrivals."""
-    return _get_phase_reference_time(fetcher, event_id, "s")
+    return _get_phase_reference_time(fetcher, "s")
 
 
-def _get_phase_reference_time(fetcher: Fetcher, event_id, phase):
+def _get_phase_reference_time(fetcher: Fetcher, phase):
     """
     Get reference times to specified phases, apply over all channels in a
     station.
     """
     pha = phase.upper()
-    df = fetcher.picks_df
-    inv = fetcher.station_df
-    assert df is not None and inv is not None
-    assert (df["phase_hint"].str.upper() == pha).any(), f"no {phase} picks found"
-    dff = df[(df["event_id"] == event_id) & (df["phase_hint"] == pha)]
-    merge = pd.merge(inv, dff[["time", "station"]], on="station", how="left")
+    # ensure the pick_df and inventory df exist
+    pick_df = fetcher.picks_df
+    inv_df = fetcher.station_df
+    assert pick_df is not None and inv_df is not None
+    # filter dataframes for phase of interest
+    assert (pick_df["phase_hint"].str.upper() == pha).any(), f"no {phase} picks found"
+    pick_df = pick_df[pick_df["phase_hint"] == pha]
+    # merge inventory and pick df together, ensure time is datetime64
+    columns = ["time", "station", "event_id"]
+    merge = pd.merge(inv_df, pick_df[columns], on="station", how="left")
     merge["time"] = to_datetime64(merge["time"])
-    return merge.set_index("seed_id")["time"]
+    assert merge["seed_id"].astype(bool).all()
+    return merge.set_index("seed_id")[["time", "event_id"]]
