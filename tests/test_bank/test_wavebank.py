@@ -204,7 +204,6 @@ class TestBankBasics:
         If the min version is not met the index should be deleted and re-created.
         A warning should be issued.
         """
-        # TODO start here
         bank = default_bank_low_version
         with pytest.warns(UserWarning):
             bank.update_index()
@@ -321,7 +320,7 @@ class TestEmptyBank:
         assert not df.empty
 
 
-class TestGetIndex:
+class TestReadIndex:
     """ tests for getting the index """
 
     # tests
@@ -391,6 +390,13 @@ class TestGetIndex:
         """
         df = ta_bank_index.read_index()
         assert "None" not in df.values
+
+    def test_read_index_nullish_values(self, default_wbank):
+        """Ensure Nullish Values return all streams"""
+        bank = default_wbank
+        df1 = bank.read_index(starttime=None, endtime=None)
+        df2 = bank.read_index(starttime=pd.NaT, endtime=np.NaN)
+        assert df1.equals(df2)
 
 
 class TestYieldStreams:

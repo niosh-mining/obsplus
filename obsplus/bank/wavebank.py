@@ -323,7 +323,7 @@ class WaveBank(_Bank):
         self.ensure_bank_path_exists()
         if starttime is not None and endtime is not None:
             if starttime > endtime:
-                msg = f"starttime cannot be greater than endtime"
+                msg = f"starttime cannot be greater than endtime."
                 raise ValueError(msg)
         if not self.index_path.exists():
             self.update_index()
