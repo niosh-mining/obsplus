@@ -112,7 +112,7 @@ class TestTimeDelta:
         """ Ensure an entire series can be converted to timedeltas."""
         ser = pd.Series([0, 2.22, 3, 5])
         out = to_timedelta64(ser)
-        assert all([isinstance(x, np.timedelta64) for x in out])
+        assert all([isinstance(x, (np.timedelta64, pd.Timedelta)) for x in out])
         assert isinstance(out, pd.Series)
 
     def test_array(self):
