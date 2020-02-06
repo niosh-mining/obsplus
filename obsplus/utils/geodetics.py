@@ -44,16 +44,12 @@ class SpatialCalculator:
     >>> p1 = (45.55, -111.21, 1000)  # format is lat, lon, elevation (m asl)
     >>> p2 = (40.22, -115, 10)
     >>> df = calc(p1, p2)
-    >>> print(df)
-    distance_m ...
 
     >>> # Get the distance between each event and each station
     >>> events = obspy.read_events()
     >>> station = obspy.read_inventory()
     >>> df = calc(events, station)
     >>> # index 1 is the event_id and index 2 is the seed id
-    >>> print(df)
-    distance_m ...
     """
 
     expected_exceptions = (TypeError, ValueError, AttributeError)

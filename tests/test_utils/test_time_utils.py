@@ -113,6 +113,7 @@ class TestTimeDelta:
         ser = pd.Series([0, 2.22, 3, 5])
         out = to_timedelta64(ser)
         assert all([isinstance(x, np.timedelta64) for x in out])
+        assert isinstance(out, pd.Series)
 
     def test_array(self):
         """ Test the return values from an array. """
@@ -155,13 +156,6 @@ class TestTimeDelta:
         default = np.timedelta64(0, "s")
         out1 = to_timedelta64(None, default=default)
         assert out1 == default
-
-    def test_series(self):
-        """Series should return a series."""
-        input1 = [2, -1, 0.00001]
-        ser = pd.Series(input1)
-        out = to_timedelta64(ser)
-        assert isinstance(out, pd.Series)
 
 
 class TestToUTC:
