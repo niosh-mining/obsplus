@@ -363,22 +363,20 @@ class Fetcher:
         ta = to_timedelta64(time_after, default=self.time_after)
         assert (tb is not None) and (ta is not None)
         # get reference times
-        event_ids = self.event_df["event_id"].values
         ref_func = self.reference_funcs[reference.lower()]
         reftime_df = ref_func(self)
-        reftimes = {eid: df for eid, df in reftime_df.groupby("event_id")}
         # if using a wavebank preload index over entire time-span for speedup
-        if isinstance(self.waveform_client, WaveBank) and len(reftimes):
+        if isinstance(self.waveform_client, WaveBank) and len(reftime_df):
             mt, mx = reftime_df["time"].min(), reftime_df["time"].max()
             index = self.waveform_client.read_index(starttime=mt, endtime=mx)
             get_bulk_wf = partial(self._get_bulk_wf, index=index)
         else:
             get_bulk_wf = self._get_bulk_wf
         # iterate each event in the events and yield the waveform
-        for event_id in event_ids:
+        for event_id, df in reftime_df.groupby("event_id"):
             # make sure ser is either a single datetime or a series of datetimes
-            reftime = to_datetime64(reftimes[event_id]["time"])
-            t1, t2 = reftime - tb, reftime + ta
+            time = to_datetime64(df["time"])
+            t1, t2 = time - tb, time + ta
             bulk_args = self._get_bulk_args(starttime=t1, endtime=t2)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))

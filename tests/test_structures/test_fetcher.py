@@ -375,7 +375,7 @@ class TestYieldEventWaveforms:
         return dict(bing_fetcher.yield_event_waveforms(0, self.time_after))
 
     @pytest.fixture(scope="class")
-    def wavefetch_no_inv(self, bingham_dataset):
+    def fetcher_no_inv(self, bingham_dataset):
         """ init wavefetcher with inv_df zeroed """
         kwargs = dict(
             waveforms=bingham_dataset.waveform_client,
@@ -417,9 +417,13 @@ class TestYieldEventWaveforms:
                 st2 = st.get_waveforms(**kwargs)
                 assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
-    def test_s_phases(self, subbing_fetcher_with_processor):
+    def test_s_phases(self, bingham_dataset):
         """ make sure only stations that have s picks are returned """
-        func = subbing_fetcher_with_processor.yield_event_waveforms
+        fetcher = bingham_dataset.get_fetcher()
+        picks = obsplus.picks_to_df(fetcher.event_client.get_events())
+        # There should be some s picks
+        assert (picks["phase_hint"].str.lower() == "s").any()
+        func = fetcher.yield_event_waveforms
         out = dict(func(self.time_before, self.time_after, reference="S"))
         for id, st in out.items():
             assert isinstance(st, obspy.Stream)
@@ -453,17 +457,17 @@ class TestYieldEventWaveforms:
             assert abs(tmin - time2) < 12
 
     # fetch with no stations
-    def test_yield_event_waveforms_no_inv(self, wavefetch_no_inv):
+    def test_yield_event_waveforms_no_inv(self, fetcher_no_inv):
         """
         WaveFetchers backed by WaveBanks should be able to pull
         station data from wavebank index df in most cases.
         """
         # ensure the inv_df is not None
-        inv_df = wavefetch_no_inv.station_df
+        inv_df = fetcher_no_inv.station_df
         assert inv_df is not None
         assert not inv_df.empty
         kwargs = dict(time_after=10, time_before=20, reference="p")
-        st_dict = dict(wavefetch_no_inv.yield_event_waveforms(**kwargs))
+        st_dict = dict(fetcher_no_inv.yield_event_waveforms(**kwargs))
         self.check_stream_dict(st_dict)
 
     def test_events_no_data(self, subbing_fetcher_with_processor):
@@ -479,6 +483,12 @@ class TestYieldEventWaveforms:
         for _, st in wave_list:
             assert isinstance(st, obspy.Stream)
             assert len(st) == 0
+
+    def test_raises_on_bad_reference_argument(self, bingham_dataset):
+        """Selecting a bad reference argument should raise."""
+        fetcher = bingham_dataset.get_fetcher()
+        with pytest.raises(ValueError):
+            list(fetcher.yield_event_waveforms(1, 2, reference="not supported"))
 
     def test_gather(self, event_list_origin, event_dict_p):
         """ Simply gather aggregated fixtures so they are marked as used. """
