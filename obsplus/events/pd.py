@@ -162,8 +162,6 @@ class _OriginQualityExtractor:
         self._get_origin_quality_info(origin, out)
         self._get_depth_uncertainty_info(origin, out)
         self._get_origin_uncertainty(origin, out)
-        # get phase and pick count
-        self._get_phase_and_pick_counts(origin, out)
         return out
 
 
