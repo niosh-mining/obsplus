@@ -8,7 +8,7 @@ def compose_docstring(**kwargs):
     """
     Decorator for composing docstrings.
 
-    Provided values found in curly brackets un wrapped functions docstring
+    Provided values found in curly brackets in wrapped functions docstring
     will be appropriately indented and included in wrapped function's
     __docs__.
     """

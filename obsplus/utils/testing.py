@@ -78,7 +78,7 @@ class ArchiveDirectory:
         self.gaps = gaps
 
     def create_stream(self, starttime, endtime, seed_ids=None, sampling_rate=None):
-        """ create a waveforms from random data """
+        """ create a Stream from random data """
         t1 = to_utc(starttime)
         t2 = to_utc(endtime)
         sr = sampling_rate or self.sampling_rate

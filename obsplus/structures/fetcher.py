@@ -61,7 +61,7 @@ def _temporary_override(func):
     """
 
     @functools.wraps(func)
-    def wraper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         inter = WAVEFETCHER_OVERRIDES.intersection(kwargs)
         if inter:
             self = self.copy()
@@ -71,7 +71,7 @@ def _temporary_override(func):
 
         return func(self, *args, **kwargs)
 
-    return wraper
+    return wrapper
 
 
 # ---------------------------------- Wavefetcher class
@@ -341,9 +341,9 @@ class Fetcher:
                 p - use the first p times as the start of the station traces
                 s - use the first s times as the start of the station traces
             If a station doesn't have p or s picks and "p" or "s" is used,
-            it's streams will not be returned.
+            its streams will not be returned.
         raise_on_fail
-            If True, re raise and exception if one is caught during waveform
+            If True, re raise an exception if one is caught during waveform
             fetching, else continue to next event.
 
         Notes

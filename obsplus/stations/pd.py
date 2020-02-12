@@ -79,7 +79,7 @@ def _str_inv_to_df(path):
 @stations_to_df.register(Catalog)
 def _event_to_inv_df(event):
     """
-    Pull waveform steam IDS out of an event and put it in a dataframe.
+    Pull WaveformStreamIDs out of an event and put it in a dataframe.
     """
     wids = {x.get_seed_string() for x in get_instances(event, WaveformStreamID)}
     df = pd.DataFrame(sorted(wids), columns=["seed_id"])

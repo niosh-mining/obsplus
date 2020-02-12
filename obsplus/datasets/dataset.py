@@ -62,7 +62,7 @@ class DataSet(abc.ABC):
     Notes
     -----
         Importantly, each dataset references *two* directories, the source_path
-        and data_path. The source_path contains all data included which the
+        and data_path. The source_path contains all data included within the
         dataset and should not be altered. The data_path has a copy of
         everything in the source_path, plus the files created during the
         downloading process.
