@@ -67,10 +67,6 @@ magnitudes_to_df = DataFrameExtractor(
     ev.Magnitude, MAGNITUDE_COLUMNS, column_funcs=standard_column_transforms
 )
 
-magnitudes_to_df = DataFrameExtractor(
-    ev.Magnitude, MAGNITUDE_COLUMNS, column_funcs=standard_column_transforms
-)
-
 
 class _OriginQualityExtractor:
     """

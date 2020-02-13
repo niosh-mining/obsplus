@@ -142,7 +142,7 @@ def cast_dtypes(
     ----------
     df
         Dataframe
-    dtype_codes
+    dtype
         A dict of columns and datatypes.
     inplace
         If true perform operation in place.
@@ -379,7 +379,7 @@ def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
 
 
 def get_waveforms_bulk_args(
-    df: pd.DataFrame, time_dtype="utcdatetime"
+    df: pd.DataFrame, time_dtype: str = "utcdatetime"
 ) -> bulk_waveform_arg_type:
     """
     Get the inputs to a get_waveforms_bulk from a dataframe.
@@ -389,6 +389,8 @@ def get_waveforms_bulk_args(
     df
         A dataframe with required columns:
             network, station, location, channel, starttime, endtime
+    time_dtype
+        Dtype to use for the starttime and endtime
 
     Returns
     -------

@@ -12,10 +12,10 @@ from obspy.core.inventory import Network, Channel, Station
 
 from obsplus.utils.misc import get_instances
 
-UNSOPPORTED = {"latitude", "longitude", "matchtimeseries", "minradius", "maxradius"}
+UNSUPPORTED = {"latitude", "longitude", "matchtimeseries", "minradius", "maxradius"}
 
 CLIENT_ARGS = set(inspect.signature(Client.get_stations).parameters)
-SUPPORTED_ARGS = CLIENT_ARGS - UNSOPPORTED
+SUPPORTED_ARGS = CLIENT_ARGS - UNSUPPORTED
 
 
 def match(name, patern):

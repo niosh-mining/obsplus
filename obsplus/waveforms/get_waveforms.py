@@ -35,6 +35,8 @@ def get_waveforms(
 
     Parameters
     ----------
+    stream
+        Input data
     network
         The network code
     station
@@ -67,12 +69,11 @@ def get_waveforms_bulk(st: Stream, bulk: bulk_waveform_arg_type, **kwargs) -> St
 
     Parameters
     ----------
+    st
+        Input data
     bulk
         A list of any number of lists containing the following:
         (network, station, location, channel, starttime, endtime).
-    index
-        A dataframe returned by read_index. Enables calling code to only
-        read the index from disk once for repetitive calls.
     """
     if not bulk:  # return emtpy waveforms if empty list or None
         return obspy.Stream()
