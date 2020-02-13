@@ -86,7 +86,7 @@ def trim_event_stream(
 def _trim_stream(df, stream, required_len, trim_tolerance):
     """
     Get the starttimes and endtimes for trimming, raise ValueError
-    if the waveforms is disjointed.
+    if the stream is disjointed.
     """
     # check trim tolerance
     if trim_tolerance is not None:

@@ -136,7 +136,7 @@ class TestTimeDelta:
         assert np.all(deltas == out)
 
     def test_identity_function_on_delta_series(self):
-        """ Delta array should simply return a delta array. """
+        """ Delta series should simply return a delta series. """
         deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
         ser = pd.Series(deltas)
         out = to_timedelta64(ser)

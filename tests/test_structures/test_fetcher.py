@@ -173,9 +173,9 @@ class TestGetWaveforms:
     # fixtures
     @pytest.fixture(scope="session")
     @register_func(generic_streams)
-    def kem_stream(self, bing_fetcher):
+    def bing_stream(self, bing_fetcher):
         """
-        Using the kem fetcher, return a data waveforms returned by get_waveforms.
+        Using the bing fetcher, return a data waveforms returned by get_waveforms.
         """
         starttime = bing_fetcher.event_client.get_events()[0].origins[0].time - 2
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
@@ -183,9 +183,9 @@ class TestGetWaveforms:
 
     @pytest.fixture(scope="session")
     @register_func(generic_streams)
-    def kem_stream_processed(self, subbing_fetcher_with_processor):
+    def bing_stream_processed(self, subbing_fetcher_with_processor):
         """
-        Using the kem fetcher, return a data waveforms returned by get_waveforms.
+        Using the bing fetcher, return a data waveforms returned by get_waveforms.
         """
         cat = subbing_fetcher_with_processor.event_client.get_events()
         starttime = cat[0].origins[0].time - 2
@@ -212,7 +212,7 @@ class TestGetWaveforms:
         return request.getfixturevalue(request.param)
 
     # general waveforms tests tests
-    def test_gather(self, kem_stream, kem_stream_processed, ta_stream):
+    def test_gather(self, bing_stream, bing_stream_processed, ta_stream):
         """ Simply gather aggregated fixtures so they are marked as used. """
 
     def test_streams_basics(self, stream):
@@ -233,12 +233,12 @@ class TestGetWaveforms:
             assert abs(diff) < 1.5 / tr.stats.sampling_rate
 
     # specific tests
-    def test_stream_processor_ran(self, kem_stream_processed):
+    def test_stream_processor_ran(self, bing_stream_processed):
         """
         Ensure the waveforms returned has been run through the
         custom processing function.
         """
-        for tr in kem_stream_processed:
+        for tr in bing_stream_processed:
             assert tr.stats["processor_ran"]
 
     def test_get_waveforms_no_params(self, bingham_dataset):
@@ -677,7 +677,7 @@ class TestClientNoGetBulkWaveForms:
     # fixtures
     @pytest.fixture
     def ta_bank_no_bulk(self, ta_dataset, monkeypatch):
-        """ remove the get_waveforms_bulk from Sbank class """
+        """ remove the get_waveforms_bulk from WaveBank class """
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
         monkeypatch.delattr(WaveBank, "get_waveforms_by_seed")
         # return a bank

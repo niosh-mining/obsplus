@@ -78,7 +78,7 @@ def apply_funcs_to_columns(
     df
         The input dataframe.
     funcs
-        A mapping of {column_name, function_to_apply}.
+        A mapping of {column_name: function_to_apply}.
     inplace
         If True, perform operation in place.
 

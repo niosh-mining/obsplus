@@ -59,10 +59,10 @@ class TestChainClientBasic:
         return client_chain.get_waveforms_bulk(bulk)
 
     # tests
-    def test_stream(self, kem_stream):
+    def test_stream(self, bing_stream):
         """ ensure the M17A waveforms is a waveforms and has a length """
-        assert len(kem_stream)
-        assert isinstance(kem_stream, obspy.Stream)
+        assert len(bing_stream)
+        assert isinstance(bing_stream, obspy.Stream)
 
     def test_backup_stream(self, backup_stream):
         """ ask for data only found in clients attr to make when it is not
