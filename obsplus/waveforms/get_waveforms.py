@@ -10,7 +10,7 @@ import obspy
 import pandas as pd
 from obspy import Stream, UTCDateTime as UTC
 
-from obsplus.constants import BIG_UTC, SMALL_UTC, NSLC, bulk_waveform_arg_type
+from obsplus.constants import SMALLDT64, LARGEDT64, NSLC, bulk_waveform_arg_type
 from obsplus.utils.pd import filter_index, _column_contains
 from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.time import to_datetime64
@@ -36,7 +36,7 @@ def get_waveforms(
     Parameters
     ----------
     stream
-        Input data
+        A stream object.
     network
         The network code
     station
@@ -49,30 +49,25 @@ def get_waveforms(
         Starttime for query
     endtime
         Endtime for query
-
-    Returns
-    -------
-    Stream
     """
-    stream = stream.copy()
-    time1, time2 = UTC(starttime or SMALL_UTC), UTC(endtime or BIG_UTC)
-    st = stream.select(
-        network=network, station=station, location=location, channel=channel
-    )
-    st.trim(starttime=time1, endtime=time2)
+    t1, t2 = to_utc(starttime or SMALLDT64), to_utc(endtime or LARGEDT64)
+    kwargs = {c: v for c, v in zip(NSLC, [network, station, location, channel])}
+    st = stream.select(**kwargs).slice(starttime=t1, endtime=t2).copy()
     return st
 
 
-def get_waveforms_bulk(st: Stream, bulk: bulk_waveform_arg_type, **kwargs) -> Stream:
+def get_waveforms_bulk(
+    stream: Stream, bulk: bulk_waveform_arg_type, **kwargs
+) -> Stream:
     """
     Get a large number of waveforms with a bulk request.
 
     Parameters
     ----------
-    st
-        Input data
+    stream
+        A stream object.
     bulk
-        A list of any number of lists containing the following:
+        A list of any number of tuples containing the following:
         (network, station, location, channel, starttime, endtime).
     """
     if not bulk:  # return emtpy waveforms if empty list or None
@@ -82,7 +77,7 @@ def get_waveforms_bulk(st: Stream, bulk: bulk_waveform_arg_type, **kwargs) -> St
         """ return waveforms from df of bulk parameters """
         match_chars = {"*", "?", "[", "]"}
         ar = np.ones(len(ind))  # indices of ind to use to load data
-        t1, t2 = time[0], time[1]
+        _t1, _t2 = time[0], time[1]
         df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
         # determine which columns use any matching or other select features
         uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
@@ -101,22 +96,22 @@ def get_waveforms_bulk(st: Stream, bulk: bulk_waveform_arg_type, **kwargs) -> St
             ar = np.logical_and(ar, nslc2.isin(nslc1))
         # get a list of used traces, combine and trim
         st = obspy.Stream([x for x, y in zip(st, ar) if y])
-        return st.slice(starttime=to_utc(t1), endtime=to_utc(t2))
+        return st.slice(starttime=to_utc(_t1), endtime=to_utc(_t2))
 
     # get a dataframe of stream contents
-    index = _stream_data_to_df(st)
+    index = _stream_data_to_df(stream)
     # get a dataframe of the bulk arguments, convert time to datetime64
     df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
     df["t1"] = df["utc1"].apply(to_datetime64)
     df["t2"] = df["utc2"].apply(to_datetime64)
     t1, t2 = df["t1"].min(), df["t2"].max()
     # filter index and streams to be as short as possible
-    needed = ~((index.starttime > t2) | (index.endtime < t1))
+    needed: pd.DataFrame = ~((index.starttime > t2) | (index.endtime < t1))
     ind = index[needed]
-    st = obspy.Stream([tr for tr, bo in zip(st, needed.values) if bo])
+    stream = obspy.Stream([tr for tr, bo in zip(stream, needed.values) if bo])
     # groupby.apply calls two times for each time set, avoid this.
     unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
-    streams = [_func(time, df=df, ind=ind, st=st) for time in unique_times]
+    streams = [_func(time, df=df, ind=ind, st=stream) for time in unique_times]
     return reduce(add, streams)
 
 

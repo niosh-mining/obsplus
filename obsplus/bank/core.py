@@ -49,7 +49,7 @@ class _Bank(ABC):
     _bar_update_interval = 50  # number of files before updating bar
     _min_files_for_bar = 100  # min number of files before using bar enabled
     _read_func: callable  # function for reading datatype
-    # required dypes for input to storage layer
+    # required dtypes for input to storage layer
     _dtypes_input: Mapping = MapProxy({})
     # required dtypes for output from bank
     _dtypes_output: Mapping = MapProxy({})
@@ -69,7 +69,7 @@ class _Bank(ABC):
         """
         Get the last modified time stored in the index.
 
-        If Not available return None.
+        If not available return None.
         """
 
     @property
@@ -255,7 +255,7 @@ class _Bank(ABC):
         Create an example bank which is safe to modify.
 
         Copies relevant files from a dataset to a specified path, or a
-        temporary directory if non is specified.
+        temporary directory if None is specified.
 
         Parameters
         ----------
