@@ -357,7 +357,9 @@ class EventBank(_Bank):
         self._metadata = meta
         self._index = None
 
-    def get_event_path(self, event: ev.Event, index=None) -> Path:
+    def get_event_path(
+        self, event: ev.Event, index: Optional[ProgressBar] = None
+    ) -> Path:
         """
         Get the path an event would be stored in a bank.
 
@@ -441,7 +443,7 @@ class EventBank(_Bank):
     def put_events(
         self,
         events: Union[ev.Event, ev.Catalog, EventClient],
-        update_index=True,
+        update_index: bool = True,
         bar: Optional[ProgressBar] = None,
     ) -> "EventBank":
         """

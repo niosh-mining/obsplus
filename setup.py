@@ -75,7 +75,9 @@ def get_package_data_files():
 def read_requirements(path):
     """ Read a requirements.txt file, return a list. """
     with Path(path).open("r") as fi:
-        return fi.readlines()
+        lines = fi.readlines()
+    # remove any line comments
+    return [x for x in lines if not x.startswith("#")]
 
 
 def load_file(path):
