@@ -5,7 +5,7 @@ import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Any
 
 import numpy as np
 import obspy
@@ -154,7 +154,7 @@ def _get_bulk(bulk):
 
 
 def stream_bulk_split(
-    st: Stream, bulk: List[waveform_request_type], fill_value=None
+    st: Stream, bulk: List[waveform_request_type], fill_value: Any = None
 ) -> List[Stream]:
     """
     Split a stream into a list of streams that meet requirements in bulk.
@@ -296,10 +296,7 @@ def _get_dtype(trace_list: List[trace_sequence]) -> np.dtype:
 
 def stream2contiguous(stream: Stream) -> Stream:
     """
-    Yield contiguous streams from disjointed streams.
-
-    This will essentially just trim out any times in the stream for which
-    all traces don't have data.
+    Yields trimmed streams for times which all traces have data.
 
     Parameters
     ----------

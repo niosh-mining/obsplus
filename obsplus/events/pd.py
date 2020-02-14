@@ -34,7 +34,7 @@ from obsplus.structures.dfextractor import (
 )
 from obsplus.utils.events import get_preferred
 from obsplus.utils.events import get_seed_id
-from obsplus.utils.misc import get_instances, read_file, getattrs
+from obsplus.utils.misc import get_instances_from_tree, read_file, getattrs
 from obsplus.utils.time import get_reference_time
 
 # -------------------- init extractors
@@ -223,7 +223,7 @@ def _get_eve_creation_info(event):
 @events_to_df.extractor()
 def _get_update_time(eve):
     """ return the most recent time anything was updated in event """
-    creations = get_instances(eve, ev.CreationInfo)
+    creations = get_instances_from_tree(eve, cls=ev.CreationInfo)
     timestamps = [getattr(x.creation_time, "timestamp", None) or 0 for x in creations]
     return {"updated": max(timestamps) if timestamps else np.NaN}
 

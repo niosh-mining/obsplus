@@ -3,6 +3,7 @@ Data fetcher class stuff
 """
 import copy
 import functools
+import warnings
 from collections import namedtuple
 from functools import partial
 from typing import Optional, Union, Callable, Tuple, Dict
@@ -337,11 +338,11 @@ class Fetcher:
         reference
             A str that indicates how the starttime of the trace should be
             determined. The following are supported:
-                origin - use the origin time of the event for each channel
-                p - use the first p times as the start of the station traces
-                s - use the first s times as the start of the station traces
-            If a station doesn't have p or s picks and "p" or "s" is used,
-            it's streams will not be returned.
+                origin - use the origin time of the event
+                p - use the first p time as the start for each station
+                s - use the first s times as the start for each station
+            If "p" or "s" is used only streams corresponding to stations with
+            the appropriate phase pick will be returned.
         raise_on_fail
             If True, re raise and exception if one is caught during waveform
             fetching, else continue to next event.
@@ -358,7 +359,6 @@ class Fetcher:
                 f"reference arguments are {list(self.reference_funcs)}"
             )
             raise ValueError(msg)
-        assert reference.lower() in self.reference_funcs
         tb = to_timedelta64(time_before, default=self.time_before)
         ta = to_timedelta64(time_after, default=self.time_after)
         assert (tb is not None) and (ta is not None)
@@ -383,6 +383,9 @@ class Fetcher:
             except Exception:
                 if raise_on_fail:
                     raise
+                else:
+                    msg = f"Fetcher failed to get waveforms for {event_id}."
+                    warnings.warn(msg)
 
     def get_event_waveforms(
         self,

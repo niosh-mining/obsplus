@@ -16,8 +16,8 @@ from types import MappingProxyType as MapProxy
 from typing import Union, Optional, Tuple, TypeVar
 from warnings import warn
 
-import pkg_resources
 from obspy.clients.fdsn import Client
+from pkg_resources import iter_entry_points
 
 import obsplus
 from obsplus import copy_dataset
@@ -30,7 +30,7 @@ from obsplus.exceptions import (
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.utils.dataset import _create_opsdata
 from obsplus.utils.events import get_event_client
-from obsplus.utils.misc import hash_directory
+from obsplus.utils.misc import hash_directory, iterate
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.waveforms import get_waveform_client
 
@@ -58,7 +58,6 @@ class DataSet(abc.ABC):
         the dataset's code (.py) file in a folder with the same name as the
         dataset.
 
-
     Notes
     -----
         Importantly, each dataset references *two* directories, the source_path
@@ -76,12 +75,12 @@ class DataSet(abc.ABC):
             4. The opsdata_path variable from obsplus.constants
 
         By default the data will be downloaded to the user's home directory
-        in a folder called "ops_data", but again, this is easily changed
+        in a folder called "opsdata", but again, this is easily changed
         by setting the OPSDATA_PATH environmental variable.
     """
 
     _entry_points = {}
-    datasets = {}
+    _datasets = {}
     data_loaded = False
     # variables for hashing datafiles and versioning
     _version_filename = "dataset_version.txt"
@@ -94,7 +93,6 @@ class DataSet(abc.ABC):
         _hash_filename,
         _saved_dataset_path_filename,
     )
-
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
         dict(
@@ -116,7 +114,7 @@ class DataSet(abc.ABC):
         assert isinstance(cls.name, str), "name must be a string"
         cls._validate_version_str(cls.version)
         # Register the subclass as a dataset.
-        DataSet.datasets[cls.name.lower()] = cls
+        DataSet._datasets[cls.name.lower()] = cls
 
     # --- logic for loading and caching data
 
@@ -278,8 +276,9 @@ class DataSet(abc.ABC):
         >>> # --- Load an example dataset for testing
         >>> import obsplus
         >>> ds = obsplus.load_dataset('default_test')
-        >>> # if you plan to make changes to the dataset be sure to copy it first
-        >>> ds = obsplus.copy_dataset('default_test')  # creates a tempdir for ds
+        >>> # If you plan to make changes to the dataset be sure to copy it first
+        >>> # The following will copy all files in the dataset to a tmpdir
+        >>> ds2 = obsplus.copy_dataset('default_test')
 
         >>> # --- Use dataset clients to load waveforms, stations, and events
         >>> cat = ds.event_client.get_events()
@@ -289,25 +288,20 @@ class DataSet(abc.ABC):
         >>> # --- get a fetcher for more "dataset aware" querying
         >>> fetcher = ds.get_fetcher()
         """
+        # Just copy and return if a dataset is passed.
         if isinstance(name, DataSet):
             return name.copy()
         name = name.lower()
-        if name not in cls.datasets:
+        cls._load_dataset_entry_point(name)
+        if name not in cls._datasets:
             # The dataset has not been discovered; try to load entry points
-            cls._load_dataset_entry_points(name)
-            if name in cls._entry_points:
-                # If a plugin was register but no longer exists it can raise.
-                with suppress(ModuleNotFoundError):
-                    cls._entry_points[name].load()
-                    assert name in cls.datasets, "dataset should now be loaded."
-                    return load_dataset(name)
-            msg = f"{name} is not in the known datasets {list(cls.datasets)}"
+            msg = f"{name} is not in the known datasets {list(cls._datasets)}"
             raise ValueError(msg)
         if name in cls._loaded_datasets:
             # The dataset has already been loaded, simply return a copy
             return cls._loaded_datasets[name].copy()
         else:  # The dataset has been discovered but not loaded; just loaded
-            return cls.datasets[name]()
+            return cls._datasets[name]()
 
     def delete_data_directory(self):
         """
@@ -320,12 +314,39 @@ class DataSet(abc.ABC):
         shutil.rmtree(dataset.data_path)
 
     @classmethod
-    def _load_dataset_entry_points(cls, name=None):
-        """ load and cache the dataset entry points. """
-        look_for_name = name is not None and name not in cls._entry_points
-        if not cls._entry_points or look_for_name:
-            for ep in pkg_resources.iter_entry_points("obsplus.datasets"):
-                cls._entry_points[ep.name] = ep
+    def _load_dataset_entry_point(cls, name=None, load=True):
+        """
+        Load and cache the dataset entry points.
+
+        Parameters
+        ----------
+        name
+            A string id of the dataset
+        load
+            If True, load the code associated with the entry point.
+        """
+
+        def _load_ep(ep):
+            """Load the entry point, ignore removed datasets."""
+            # If a plugin was register but no longer exists it can raise.
+            with suppress(ModuleNotFoundError):
+                ep.load()
+                assert name in cls._datasets, "dataset should be registered."
+
+        if name in cls._entry_points:  # entry point has been registered
+            if name in cls._datasets:  # and loaded, return
+                return
+            elif load:  # it has not been loaded, try loading it.
+                _load_ep(cls._entry_points[name])
+        # it has not been found, iterate entry points and update
+        eps = {x.name: x for x in iter_entry_points("obsplus.datasets")}
+        cls._entry_points.update(eps)
+        # stop if we don't need to load
+        if not load:
+            return
+        # now iterate through all names, or just selected name, and load
+        for name in set(iterate(name or eps)) & set(eps):
+            _load_ep(eps[name])
 
     # --- prescribed Paths for data
 

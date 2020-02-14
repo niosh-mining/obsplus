@@ -10,7 +10,7 @@ import obspy
 from obspy.clients.fdsn import Client
 from obspy.core.inventory import Network, Channel, Station
 
-from obsplus.utils.misc import get_instances
+from obsplus.utils.misc import get_instances_from_tree
 
 UNSOPPORTED = {"latitude", "longitude", "matchtimeseries", "minradius", "maxradius"}
 
@@ -94,7 +94,8 @@ def _keep_obj(obj, **kwargs) -> bool:
 
 
 def _filter(obj, cls, **kwargs):
-    return (x for x in get_instances(obj, cls) if _keep_obj(x, **kwargs))
+    out = (x for x in get_instances_from_tree(obj, cls=cls) if _keep_obj(x, **kwargs))
+    return out
 
 
 def _get_keep_ids(inv, **kwargs):

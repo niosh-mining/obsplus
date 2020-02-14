@@ -151,11 +151,11 @@ class _Bank(ABC):
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator
-        for num, path in enumerate(iterable):
+        for num, obj in enumerate(iterable):
             # update bar if count is in update interval
             if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)
-            yield path
+            yield obj
         # finish progress bar
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 

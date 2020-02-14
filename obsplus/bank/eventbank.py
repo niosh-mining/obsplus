@@ -465,7 +465,8 @@ class EventBank(_Bank):
 
         Notes
         -----
-        If any of the events do not have an extractable reference time
+        If any of the events do not have an extractable reference time a
+        ``ValueError`` will be raised.
         """
 
         def func(event):

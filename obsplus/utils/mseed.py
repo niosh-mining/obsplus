@@ -1,5 +1,5 @@
 """
-Contains hacked bits from obspy's mseed module.
+Slimmed down bits of obspy's mseed module.
 
 Copyrights to ObsPy developers still apply.
 """

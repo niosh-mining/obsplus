@@ -345,19 +345,19 @@ class TestEventIdInBank:
     """ Tests for determining if ids are in the bank. """
 
     def test_event_id_in_bank(self, ebank):
-        """ Tests for"""
+        """Ensure multiple IDs can be used to query the bank."""
         cat = obspy.read_events()
         ids = [str(x.resource_id) for x in cat]
         assert set(ebank.ids_in_bank(ids)) == set(ids)
 
     def test_ids_not_in_bank(self, ebank):
-        """ tests for ids that are not in the bank. """
+        """Tests for ids that are not in the bank."""
         bad_ids = ["hey", "this isnt", "in the bank!"]
         assert ebank.ids_in_bank(bad_ids) is not None
         assert not ebank.ids_in_bank(bad_ids)
 
     def test_mixed_ids(self, ebank):
-        """ tests for a mix of ids that are and arent in the bank. """
+        """Tests for a mix of ids that are and arent in the bank."""
         cat = obspy.read_events()
         first_id = str(cat[0].resource_id)
         ids = [first_id, "bad_id"]
@@ -577,7 +577,7 @@ class TestPutEvents:
         assert get_preferred(cat2[0], "origin").time == origin.time
 
     def test_from_path(self, tmpdir):
-        """ catalog_to_directory should work with a path to a events. """
+        """Put events should work with a path to a directory of events."""
         cat = obspy.read_events()
         event_path = Path(tmpdir) / "events.xml"
         bank1 = EventBank(event_path.parent / "catalog_dir1")
@@ -593,6 +593,16 @@ class TestPutEvents:
         bank2.put_events(str(event_path))
         assert Path(bank2.bank_path).exists()
         assert not bank2.read_index().empty
+
+    def test_put_event_no_reference_time(self, ebank):
+        """Test that putting an event with no reference time raises."""
+        # get an event with no reference time and no id
+        event = obspy.read_events()[0]
+        event.origins.clear()
+        event.preferred_origin_id = None
+        event.resource_id = ev.ResourceIdentifier()
+        with pytest.raises(ValueError):
+            ebank.put_events(event)
 
 
 class TestProgressBar:

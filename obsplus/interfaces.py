@@ -43,8 +43,8 @@ class EventClient(metaclass=_MethodChecker):
     """
     Abstract Base Class defining the event client interface.
 
-    Any object which has a `get_events` method implements the interface and is
-    either an instance or subclass of EventClient.
+    Any object which has a `get_events` method implements the interface
+    and is either an instance or subclass of EventClient.
 
     Examples
     --------
@@ -52,6 +52,9 @@ class EventClient(metaclass=_MethodChecker):
     >>> import obspy
     >>> # EventBank is a subclass of EventClient
     >>> assert issubclass(obsplus.EventBank, EventClient)
+    >>> assert issubclass(obspy.Catalog, EventClient)
+    >>> # a catalog is an instance of EventClient
+    >>> assert isinstance(obspy.read_events(), EventClient)
     >>> # A string has no `get_events` so it is not a subclass/instance
     >>> assert not issubclass(str, EventClient)
     >>> assert not isinstance('string', EventClient)
@@ -71,18 +74,21 @@ class WaveformClient(metaclass=_MethodChecker):
     """
     Abstract Base Class defining the waveform client interface.
 
-    Any object which has a `get_waveforms` method implements the interface and is
-    either an instance or subclass of WaveformClient.
+    Any object which has a `get_waveforms` method implements the interface
+    and is either an instance or subclass of WaveformClient.
 
     Examples
     --------
     >>> import obsplus
     >>> import obspy
-    >>> # WaveBank is a subclass of WaveformClient
+    >>> # WaveBank/Stream are subclasses of WaveformClient
     >>> assert issubclass(obsplus.WaveBank, WaveformClient)
+    >>> assert issubclass(obspy.Stream, WaveformClient)
     >>> # A string has no `get_waveforms` so it is not a subclass/instance
     >>> assert not issubclass(str, WaveformClient)
     >>> assert not isinstance('string', WaveformClient)
+    >>> # A stream is a subclass of WaveformClient
+    >>> assert isinstance(obspy.read(), WaveformClient)
     >>> # this works on any class with a get_waveforms method
     >>> class NewWaveformClientThing:
     ...     def get_waveforms(self, *args, **kwargs):

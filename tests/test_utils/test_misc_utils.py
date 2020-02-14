@@ -21,7 +21,6 @@ from obsplus.utils.misc import (
     deprecated_callable,
 )
 from obsplus.utils.pd import filter_index, filter_df
-from obsplus.utils.time import to_timestamp
 
 
 # ------------------------- module level fixtures
@@ -206,14 +205,6 @@ class TestMisc:
         with (path / "second_file.txt").open("w") as fi:
             fi.write("ho")
         return path
-
-    def test_to_timestamp(self):
-        """ ensure things are properly converted to timestamps. """
-        ts1 = to_timestamp(10, None)
-        ts2 = obspy.UTCDateTime(10).timestamp
-        assert ts1 == ts2
-        on_none = to_timestamp(None, 10)
-        assert on_none == ts1 == ts2
 
     def test_apply_or_skip(self, apply_test_dir):
         """ test applying a function to all files or skipping """

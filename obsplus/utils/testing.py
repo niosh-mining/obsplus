@@ -6,12 +6,13 @@ from collections import Counter
 from contextlib import contextmanager
 from os.path import join
 from pathlib import Path
+from typing import Optional, List, Union
 
 import numpy as np
 import obspy
 import pandas as pd
 
-from obsplus.constants import NSLC
+from obsplus.constants import NSLC, utc_able_type
 from obsplus.utils.time import make_time_chunks, to_utc
 
 
@@ -77,7 +78,13 @@ class ArchiveDirectory:
         self.seed_ids = seed_ids
         self.gaps = gaps
 
-    def create_stream(self, starttime, endtime, seed_ids=None, sampling_rate=None):
+    def create_stream(
+        self,
+        starttime: utc_able_type,
+        endtime: utc_able_type,
+        seed_ids: Optional[List[str]] = None,
+        sampling_rate: Optional[Union[float, int]] = None,
+    ) -> obspy.Stream:
         """ create a waveforms from random data """
         t1 = to_utc(starttime)
         t2 = to_utc(endtime)

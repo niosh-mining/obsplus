@@ -8,7 +8,7 @@ import re
 import sqlite3
 import time
 import warnings
-from typing import Optional, Sequence
+from typing import Optional, Sequence, List
 
 import obspy
 import pandas as pd
@@ -53,7 +53,7 @@ def _get_time_values(time1, time2=None):
     return out
 
 
-def summarize_generic_stream(path, format=None):
+def summarize_generic_stream(path, format=None) -> List[dict]:
     """
     Return summary information for a stream stored on disk.
 

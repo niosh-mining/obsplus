@@ -18,14 +18,14 @@ class TestAssertStreamsAlmostEqual:
         return obspy.read(), obspy.read()
 
     def test_unequal_len(self, streams):
-        """ Traces are not equal if the number of traces is not equal. """
+        """Traces are not equal if the number of traces is not equal."""
         st1, st2 = streams
         st2.traces = st2.traces[:-1]
         with pytest.raises(AssertionError):
             assert_streams_almost_equal(st1, st2)
 
     def test_processing_different(self, streams):
-        """ If processing of stats is different streams should be equal. """
+        """If processing of stats is different streams should be equal."""
         st1, st2 = streams
         st1.detrend("linear").detrend("linear")
         st2.detrend("linear")

@@ -95,7 +95,7 @@ def yield_obj_parent_attr(
         The object to recurse through attributes of lists, tuples, and other
         instances.
     cls
-        Only return instances of cls if not None, else return all instances.
+        Only return instances of cls if not None, dont filter on types.
     is_attr
         Only return objects stored as attr_name, if None return all.
     has_attr
@@ -105,7 +105,7 @@ def yield_obj_parent_attr(
 
     Examples
     --------
-    >>> # --- get all picks from a complicated catalog object
+    >>> # --- get all picks from a catalog object
     >>> import obsplus
     >>> import obspy.core.event as ev
     >>> cat = obsplus.load_dataset('bingham_test').event_client.get_events()
@@ -120,6 +120,14 @@ def yield_obj_parent_attr(
     >>> for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):
     ...     objects.append((str(rid), parent))
     >>> assert len(objects)
+
+    >>> # --- Create a dict of {resource_id: [(attr, parent), ...]}
+    >>> from collections import defaultdict
+    >>> rid_mapping = defaultdict(list)
+    >>> for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):
+    ...     rid_mapping[str(rid)].append((attr, parent))
+    >>> # count how many times each resource_id is referred to
+    >>> count = {i: len(v) for i, v in rid_mapping.values()}
     """
     ids: Set[int] = set()  # id cache to avoid circular references
 
@@ -160,9 +168,14 @@ def yield_obj_parent_attr(
     return func(obj)
 
 
-def get_instances(*args, **kwargs):
-    """Get all instances in an object tree."""
-    return [x[0] for x in yield_obj_parent_attr(*args, **kwargs)]
+def get_instances_from_tree(object, cls):
+    """
+    Get all instances in an object tree.
+
+    Simply uses :func:`~obsplus.utils.misc.yield_obj_parent_attr` under the
+    hood.
+    """
+    return [x for x, _, _ in yield_obj_parent_attr(object, cls=cls)]
 
 
 def try_read_catalog(catalog_path, **kwargs):
@@ -288,16 +301,28 @@ class DummyFile(object):
         """ do nothing """
 
 
-def getattrs(obsject, col_set, default_value=np.nan):
+def getattrs(obj: object, col_set: Collection, default_value: object = np.nan) -> dict:
     """
-    Parse an object for a list of attrs, return a dict of values or None
+    Parse an object for a collection of attributes, return a dict of values.
+
+    If obj does not have a requested attribute, or if its value is None, fill
+    with the default value.
+
+    Parameters
+    ----------
+    obj
+        Any object.
+    col_set
+        A sequence of attributes to extract from obj.
+    default_value
+        If not attribute is found fill with this value.
     """
     out = {}
-    if obsject is None:  # return empty if None
+    if obj is None:  # return empty dict if None
         return out
     for item in col_set:
         try:
-            val = getattr(obsject, item)
+            val = getattr(obj, item)
         except (ValueError, AttributeError):
             val = default_value
         if val is None:

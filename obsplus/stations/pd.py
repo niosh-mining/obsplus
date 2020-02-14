@@ -17,7 +17,7 @@ from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils.misc import get_instances, apply_to_files_or_skip
+from obsplus.utils.misc import get_instances_from_tree, apply_to_files_or_skip
 
 # attributes from channel to extract
 
@@ -81,8 +81,9 @@ def _event_to_inv_df(event):
     """
     Pull waveform steam IDS out of an event and put it in a dataframe.
     """
-    wids = {x.get_seed_string() for x in get_instances(event, WaveformStreamID)}
-    df = pd.DataFrame(sorted(wids), columns=["seed_id"])
+    wids = get_instances_from_tree(event, WaveformStreamID)
+    wid_str = {x.get_seed_string() for x in wids}
+    df = pd.DataFrame(sorted(wid_str), columns=["seed_id"])
     seed = df["seed_id"].str.split(".", expand=True)
     df["network"], df["station"] = seed[0], seed[1]
     df["location"], df["channel"] = seed[2], seed[3]

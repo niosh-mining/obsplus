@@ -1111,32 +1111,32 @@ class TestReadBingham:
 
     @pytest.fixture(scope="class", params=event_fixtures)
     def event_df(self, request):
-        """ collect all the supported inputs are parametrize"""
+        """Collect all the supported inputs and parametrize."""
         return events_to_df(request.getfixturevalue(request.param))
 
     @pytest.fixture(scope="class", params=picks_fixtures)
     def pick_df(self, request):
-        """ Collect everything in the pick dataframe. """
+        """Collect everything in the pick dataframe."""
         df = picks_to_df(request.getfixturevalue(request.param))
         return df
 
     # --- tests
 
     def test_event_df_len(self, event_df, catalog):
-        """ Ensure the length of the event_df and catalog are equal """
+        """Ensure the length of the event_df and catalog are equal."""
         assert len(event_df) == len(catalog)
 
     def test_event_column_order(self, event_df):
-        """ ensure the order of the columns is correct """
+        """Ensure the order of the columns is correct."""
         cols = list(event_df.columns)
         assert list(EVENT_COLUMNS) == cols[: len(EVENT_COLUMNS)]
 
     def test_pick_len(self, pick_df, picks_list):
-        """ ensure the correct number of items was returned """
+        """Ensure the correct number of items was returned."""
         assert len(pick_df) == len(picks_list)
 
     def test_pick_column_order(self, pick_df):
-        """ ensure the order of the columns is correct """
+        """Ensure the order of the columns is correct."""
         cols = list(pick_df.columns)
         assert list(PICK_COLUMNS) == cols[: len(PICK_COLUMNS)]
 
@@ -1149,7 +1149,7 @@ class TestReadBingham:
         assert null_count == 0 or null_count == len(pick_df)
 
     def test_seed_id(self, pick_df):
-        """ ensure valid seed_ids were created. """
+        """Ensure valid seed_ids were created."""
         # recreate seed_id and make sure columns are equal
         df = pick_df
         seed = get_seed_id_series(pick_df)

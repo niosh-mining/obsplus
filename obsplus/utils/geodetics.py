@@ -156,7 +156,10 @@ class SpatialCalculator:
         out2 = np.array(dist_degrees).reshape(-1, 1)
         return np.hstack([out1, out2, vert.reshape(-1, 1)])
 
-    @compose_docstring(columns=str(tuple(DISTANCE_COLUMN_DTYPES)))
+    @compose_docstring(
+        out_columns=str(tuple(DISTANCE_COLUMN_DTYPES)),
+        in_columns=str(tuple(DISTANCE_COLUMN_INPUT_DTYPES)),
+    )
     def __call__(
         self,
         entity_1: Union[event_type, inventory_type, pd.DataFrame, tuple],
@@ -172,10 +175,15 @@ class SpatialCalculator:
         entity_2
             A variety of obspy/obsplus types which have linked geographic info.
 
+        Notes
+        -----
+        If a dataframe is used for input it must have the following columns:
+        {in_columns}
+
         Returns
         -------
         A dataframe with rows for each combination of entities with columns:
-        {columns}
+        {out_columns}
         """
         # first convert each entity to dataframe with lat, lon, elevation as
         # columns and a meaningful id as the index.

@@ -107,7 +107,7 @@ def _parse_dict_class(cdict):
 
 
 def _get_resource_ids(cdict, keys):
-    """ find any resource_ids and instantiate """
+    """Find any resource_ids and instantiate."""
     resource_id_keys = (
         key for key in keys if (key.endswith("_id") or key.endswith("_uri"))
     )

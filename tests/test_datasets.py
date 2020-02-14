@@ -63,15 +63,15 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
             for path in [self.data_path, self.source_path]:
                 with suppress(FileNotFoundError):
                     shutil.rmtree(str(path))
-            DataSet.datasets.pop(self.__class__.name.lower(), None)
+            DataSet._datasets.pop(self.__class__.name.lower(), None)
 
     return DummyDataset
 
 
-@pytest.fixture(scope="session", params=list(DataSet.datasets))
+@pytest.fixture(scope="session", params=list(DataSet._datasets))
 def dataset(request):
     """ laod in the datasets """
-    return DataSet.datasets[request.param]
+    return DataSet._datasets[request.param]
 
 
 @pytest.mark.dataset

@@ -10,7 +10,7 @@ from obsplus.utils.time import make_time_chunks
 
 class TA(DataSet):
     """
-    A small dataset from the ta_test with low sampling rate channels.
+    A small dataset from the TA with low sampling rate channels.
 
     Contains about 10 days of data from two stations: M11A and M14A.
     """
@@ -43,7 +43,7 @@ class TA(DataSet):
 
     def build_archive(self, st, starttime=None, endtime=None):
         """
-        Build the archive (don't use mass downloader for a little variety).
+        Build the archive.
         """
         starttime = starttime or self.starttime
         endtime = endtime or self.endtime

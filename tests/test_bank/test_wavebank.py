@@ -685,26 +685,6 @@ class TestGetBulkWaveforms:
         assert isinstance(stt, obspy.Stream)
 
 
-class TestGetWaveformsBySeedId:
-    """ tests for getting waveforms using seed_ids """
-
-    t1, t2 = TestGetBulkWaveforms.t1, TestGetBulkWaveforms.t2
-    seed_ids = ["TA.M14A..VHE", "TA.M11A..VHE"]
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def query_2_seeds(self, ta_bank):
-        """ return the query using seed_ids """
-        return ta_bank.get_waveforms_by_seed(self.seed_ids, self.t1, self.t2)
-
-    # tests
-    def test_only_desired_channels(self, query_2_seeds):
-        """ ensure only 2 channels were returned """
-        assert len(query_2_seeds) == 2
-        seed_set = {x.id for x in query_2_seeds}
-        assert seed_set == set(self.seed_ids)
-
-
 class TestBankCache:
     """ test that the time cache avoids repetitive queries to the h5 index """
 

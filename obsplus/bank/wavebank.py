@@ -9,7 +9,7 @@ from functools import partial, reduce
 from itertools import chain
 from operator import add
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 import numpy as np
 import obspy
@@ -33,6 +33,7 @@ from obsplus.constants import (
     bank_subpaths_type,
     paths_description,
     bulk_waveform_arg_type,
+    utc_able_type,
 )
 from obsplus.utils.bank import (
     _summarize_trace,
@@ -531,6 +532,9 @@ class WaveBank(_Bank):
 
         # get a dataframe of the bulk arguments, convert time to float
         df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
+        # df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
+        # df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
+
         df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
         df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
         # read index that contains any times that might be used, or filter
@@ -552,8 +556,8 @@ class WaveBank(_Bank):
         station: Optional[str] = None,
         location: Optional[str] = None,
         channel: Optional[str] = None,
-        starttime: Optional[obspy.UTCDateTime] = None,
-        endtime: Optional[obspy.UTCDateTime] = None,
+        starttime: Optional[utc_able_type] = None,
+        endtime: Optional[utc_able_type] = None,
     ) -> Stream:
         """
         Get waveforms from the bank.
@@ -585,8 +589,8 @@ class WaveBank(_Bank):
         station: Optional[str] = None,
         location: Optional[str] = None,
         channel: Optional[str] = None,
-        starttime: Optional[obspy.UTCDateTime] = None,
-        endtime: Optional[obspy.UTCDateTime] = None,
+        starttime: Optional[utc_able_type] = None,
+        endtime: Optional[utc_able_type] = None,
         duration: float = 3600.0,
         overlap: Optional[float] = None,
     ) -> Stream:
@@ -602,7 +606,6 @@ class WaveBank(_Bank):
         overlap : float
             If duration is used, the amount of overlap in yielded streams,
             added to the end of the waveforms.
-
 
         Notes
         -----
@@ -635,39 +638,6 @@ class WaveBank(_Bank):
             if not len(ind):
                 continue
             yield self._index2stream(ind, t1, t2)
-
-    def get_waveforms_by_seed(
-        self,
-        seed_id: Union[List[str], str],
-        starttime: UTCDateTime,
-        endtime: UTCDateTime,
-    ) -> Stream:
-        """
-        Get waveforms based on a single seed_id or a list of seed_ids.
-
-        Seed ids have the following form: network.station.location.channel,
-        it does not yet support usage of wildcards.
-
-        Parameters
-        ----------
-        seed_id
-            A single seed id or sequence of ids
-        starttime
-            The beginning of time to pull
-        endtime
-            The end of the time to pull
-        """
-        seed_id = [seed_id] if isinstance(seed_id, str) else seed_id
-        index = self._read_index_by_seed(seed_id, starttime, endtime)
-        return self._index2stream(index, starttime, endtime)
-
-    def _read_index_by_seed(self, seed_id, starttime, endtime):
-        """ read the index by seed_ids """
-        if self.index_path.exists():
-            self.update_index()
-        index = self._index_cache(starttime, endtime, buffer=self.buffer)
-        seed = get_seed_id_series(index)
-        return index[seed.isin(seed_id)]
 
     # ----------------------- deposit waveforms methods
 
@@ -762,6 +732,3 @@ class WaveBank(_Bank):
     def get_service_version(self):
         """ Return the version of obsplus """
         return obsplus.__version__
-
-
-# --- auxiliary functions

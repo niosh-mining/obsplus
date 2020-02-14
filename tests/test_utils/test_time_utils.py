@@ -136,13 +136,12 @@ class TestTimeDelta:
         assert np.all(deltas == out)
 
     def test_identity_function_on_delta_series(self):
-        """ Delta array should simply return a delta array. """
+        """Delta series should simply return an equal delta series."""
         deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
         ser = pd.Series(deltas)
         out = to_timedelta64(ser)
-        ints1 = deltas.astype("timedelta64[ns]").astype(np.int64)
-        ints2 = out.astype("timedelta64[ns]").astype(np.int64)
-        assert np.all(ints1 == ints2)
+        assert ser.equals(out)
+        assert out is not ser
 
     def test_tuple_and_list(self):
         """ tests for tuples and lists. """

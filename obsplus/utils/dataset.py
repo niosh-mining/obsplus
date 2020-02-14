@@ -47,8 +47,7 @@ def copy_dataset(
     Parameters
     ----------
     dataset
-        The name of the dataset or a DataSet object. Supported str values are
-        in the obsplus.datasets.dataload.DATASETS dict.
+        The name of the dataset or a DataSet object.
     destination
         The destination to copy the dataset. It will be created if it
         doesnt exist. If None is provided use tmpfile to create a temporary

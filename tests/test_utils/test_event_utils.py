@@ -24,7 +24,7 @@ from obsplus.utils.events import (
     prune_events,
     get_event_client,
 )
-from obsplus.utils.misc import get_instances
+from obsplus.utils.misc import get_instances_from_tree
 
 CAT = obspy.read_events()
 
@@ -54,8 +54,8 @@ class TestDuplicateEvent:
     def test_unique_resource_ids(self, catalog, duplicated_catalog):
         """ ensure all resource ids are unique in duplicated event """
         ev1, ev2 = catalog, duplicated_catalog
-        rids1 = {x for x in get_instances(ev1, ResourceIdentifier)}
-        rids2 = {x for x in get_instances(ev2, ResourceIdentifier)}
+        rids1 = {x for x in get_instances_from_tree(ev1, cls=ResourceIdentifier)}
+        rids2 = {x for x in get_instances_from_tree(ev2, cls=ResourceIdentifier)}
         assert len(rids1) and len(rids2)  # ensure rids not empty
         commons = rids1 & rids2
         # all shared resource_ids should not refer to an object

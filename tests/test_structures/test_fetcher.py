@@ -472,8 +472,8 @@ class TestYieldEventWaveforms:
 
     def test_events_no_data(self, subbing_fetcher_with_processor):
         """
-        Create a fetcher with events it doesn't have data for.
-        It should empty strings.
+        Create a fetcher with events for which it doesn't have data.
+        It should yield empty streams.
         """
         fetcher = subbing_fetcher_with_processor
         events = obspy.read_events()
@@ -677,9 +677,8 @@ class TestClientNoGetBulkWaveForms:
     # fixtures
     @pytest.fixture
     def ta_bank_no_bulk(self, ta_dataset, monkeypatch):
-        """ remove the get_waveforms_bulk from Sbank class """
+        """ remove the get_waveforms_bulk from WaveBank class """
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
-        monkeypatch.delattr(WaveBank, "get_waveforms_by_seed")
         # return a bank
         yield WaveBank(ta_dataset.waveform_path)
 
@@ -782,7 +781,7 @@ class TestFilterInventoryByAvailability:
 class TestFetchersFromDatasets:
     """ Tests for the fetchers returned from the datasets. """
 
-    @pytest.fixture(scope="class", params=DataSet.datasets)
+    @pytest.fixture(scope="class", params=DataSet._datasets)
     def data_fetcher(self, request):
         """Return a datafetcher from all datasets."""
         return obsplus.load_dataset(request.param).get_fetcher()

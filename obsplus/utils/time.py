@@ -98,13 +98,13 @@ def _get_origin_time(origin):
 
 @get_reference_time.register(ev.Pick)
 def _get_first_pick(pick):
-    """ ensure the events is length one, return event """
+    """Get the reference time from a single pick."""
     return get_reference_time(pick.time)
 
 
 @get_reference_time.register(list)
 def _from_list(input_list):
-    """ ensure the events is length one, return event """
+    """Get reference time as minimum in a list."""
     outs = [get_reference_time(x) for x in input_list]
     return min([x for x in outs if x is not None])
 
@@ -126,17 +126,6 @@ def _get_stream_time(st):
 def _get_trace_time(tr):
     """ return starttime of trace. """
     return tr.stats.starttime
-
-
-def to_timestamp(obj: Optional[Union[str, float, obspy.UTCDateTime]], on_none) -> float:
-    """
-    Convert object to UTC object then get the time stamp.
-
-    If obj is None return on_none value
-    """
-    if obj is None:
-        obj = on_none
-    return to_utc(obj).timestamp
 
 
 @singledispatch
@@ -261,7 +250,7 @@ def to_utc(
 @singledispatch
 def to_timedelta64(
     value: Optional[Union[rtype, Sequence[rtype], np.ndarray, pd.Series]],
-    default=np.timedelta64(0, "s"),
+    default: Any = np.timedelta64(0, "s"),
 ) -> Union[np.timedelta64, np.ndarray, pd.Series]:
     """
     Convert a value to a timedelta[ns].
@@ -279,11 +268,13 @@ def to_timedelta64(
     Examples
     --------
     >>> import numpy as np
+    >>> # get array of timedelta64[ns] from various input types
     >>> inputs = [1, 2.3232, np.timedelta64(5, 'Y')]
     >>> out = to_timedelta64(inputs)
+    >>> assert isinstance(out, np.ndarray)
     """
     if pd.isnull(value):
-        return default
+        return np.timedelta64(default)
     if isinstance(value, np.timedelta64):
         return value
     if isinstance(value, pd.Timedelta):
@@ -294,7 +285,7 @@ def to_timedelta64(
 
 @to_timedelta64.register(tuple)
 @to_timedelta64.register(list)
-def _list_tuple_to_datetime(value, default=None):
+def _list_tuple_to_timedelta(value, default=None):
     """ Convert sequences to timedeltas. """
     out = [to_datetime64(x, default=default) for x in value]
     return np.array(out)
@@ -404,5 +395,5 @@ def make_time_chunks(
         t2 = utc1 + duration + overlap
         if t2 >= utc2 + overlap:
             t2 = utc2 + overlap
-        yield (utc1, t2)
+        yield utc1, t2
         utc1 += duration  # add duration
