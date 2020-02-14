@@ -22,6 +22,7 @@ from obsplus.utils.events import (
     duplicate_events,
     make_origins,
     prune_events,
+    strip_events,
     get_event_client,
 )
 from obsplus.utils.misc import get_instances_from_tree
@@ -159,6 +160,203 @@ class TestPruneEvents:
         origin_count_before = len(event.origins)
         out = obsplus.utils.events.prune_events(event)
         assert len(out[0].origins) < origin_count_before
+
+
+class TestStripEvents:
+    """ Tests for stripping off derivative and non-reviewed data """
+
+    # Fixtures
+    @pytest.fixture
+    def empty_cat(self):
+        """ Return an empty catalog """
+        return ev.Catalog()
+
+    @pytest.fixture
+    def cat_w_two_events(self, empty_cat):
+        """ Return a catalog with two empty events """
+        empty_cat.append(ev.Event())
+        empty_cat.append(ev.Event())
+        return empty_cat
+
+    @pytest.fixture
+    def cat_picks(self, cat_w_two_events):
+        """ Add some picks to the events, including rejected picks """
+        eve = cat_w_two_events[0]
+        wid = ev.WaveformStreamID(seed_string="UU.TMU.01.ENZ")
+        time = obspy.UTCDateTime()
+        eve.picks.append(
+            ev.Pick(
+                time=time, waveform_id=wid, phase_hint="P", evaluation_status="reviewed"
+            )
+        )
+        eve.picks.append(
+            ev.Pick(
+                time=time, waveform_id=wid, phase_hint="P", evaluation_status="rejected"
+            )
+        )
+        eve = cat_w_two_events[1]
+        eve.picks.append(
+            ev.Pick(
+                time=time,
+                waveform_id=wid,
+                phase_hint="P",
+                evaluation_status="preliminary",
+            )
+        )
+        eve.picks.append(
+            ev.Pick(
+                time=time,
+                waveform_id=wid,
+                phase_hint="P",
+                evaluation_status="confirmed",
+            )
+        )
+        eve.picks.append(
+            ev.Pick(
+                time=time, waveform_id=wid, phase_hint="P", evaluation_status="final"
+            )
+        )
+        return cat_w_two_events
+
+    @pytest.fixture
+    def event_amplitudes(self, cat_picks):
+        """ Return an event with some amplitudes """
+        eve = cat_picks[0]
+        eve.amplitudes.append(
+            ev.Amplitude(generic_amplitude=1, evaluation_status="reviewed")
+        )
+        eve.amplitudes.append(
+            ev.Amplitude(generic_amplitude=1, evaluation_status="rejected")
+        )
+        return eve
+
+    @pytest.fixture
+    def event_linked_amplitudes(self, event_amplitudes):
+        """ Link all of the amplitudes to a rejected pick """
+        for amp in event_amplitudes.amplitudes:
+            amp.pick_id = event_amplitudes.picks[1].resource_id
+        return event_amplitudes
+
+    @pytest.fixture
+    def event_description(self, event_amplitudes):
+        """ Add some event descriptions to the event """
+        event_amplitudes.event_descriptions.append(ev.EventDescription(text="Keep Me"))
+        event_amplitudes.event_descriptions.append(ev.EventDescription(text="Toss Me"))
+        return event_amplitudes
+
+    @pytest.fixture
+    def event_origins(self, event_description):
+        """ Add an origin to the event """
+        event_description.origins.append(
+            ev.Origin(time=obspy.UTCDateTime(), longitude=-111, latitude=37)
+        )
+        return event_description
+
+    @pytest.fixture
+    def event_focal_mech(self, event_origins):
+        """ Add a focal mechanism to the event """
+        event_origins.focal_mechanisms.append(ev.FocalMechanism())
+        return event_origins
+
+    @pytest.fixture
+    def event_station_mags(self, event_focal_mech):
+        """ Add a focal mechanism to the event """
+        event_focal_mech.station_magnitudes.append(ev.StationMagnitude())
+        return event_focal_mech
+
+    @pytest.fixture
+    def event_magnitudes(self, event_station_mags):
+        """ Add a focal mechanism to the event """
+        event_station_mags.magnitudes.append(ev.Magnitude())
+        return event_station_mags
+
+    # Tests
+    def test_empty(self, empty_cat):
+        """ Make sure an empty catalog can pass through """
+        strip_events(empty_cat)
+
+    def test_empty_events(self, cat_w_two_events):
+        """ Make sure empty events can pass through """
+        out = strip_events(cat_w_two_events)
+        assert len(out) == 2
+
+    def test_copy_made(self):
+        """ Prune events should make a copy, not modify the original. """
+        cat = obspy.read_events()
+        assert strip_events(cat) is not cat
+
+    def test_acceptable_eval_statuses(self, cat_picks):
+        """
+        Make sure only picks with acceptable evaluation statuses get through
+        (not rejected or preliminary)
+        """
+        out = strip_events(cat_picks)
+        assert len(out[0].picks) == 1
+        assert len(out[1].picks) == 3
+
+    def test_custom_acceptable_eval_statuses(self, cat_picks):
+        """
+        Make sure the user can specify the evaluation status of stuff to reject
+        """
+        out = strip_events(
+            cat_picks, reject_evaluation_status=["preliminary", "confirmed", "rejected"]
+        )
+        assert len(out[0].picks) == 1
+        assert len(out[1].picks) == 1
+
+    def test_only_reviewed_amplitudes(self, event_amplitudes):
+        """ Make sure only non-rejected amplitudes make it through """
+        out = strip_events(event_amplitudes)
+        assert len(out.amplitudes) == 1
+
+    def test_linked_amplitudes_picks(self, event_linked_amplitudes):
+        """
+        Make sure any amplitudes (rejected or otherwise) that are linked to a
+        rejected pick get tossed
+        """
+        out = strip_events(event_linked_amplitudes)
+        assert len(out.amplitudes) == 0
+
+    def test_only_first_event_description(self, event_description):
+        """ Make sure only the first event description survives """
+        text = event_description.event_descriptions[0].text
+        out = strip_events(event_description)
+        assert len(out.event_descriptions) == 1
+        assert out.event_descriptions[0].text == text
+
+    def test_no_origins(self, event_origins):
+        """
+        Make sure there are no origins attached to the event and that the
+        preferred origin doesn't refer to anything
+        """
+        out = strip_events(event_origins)
+        assert len(out.origins) == 0
+        assert out.preferred_origin() is None
+
+    def test_no_focal_mechanisms(self, event_focal_mech):
+        """
+        Make sure there are no focal mechanisms attached to the event and that
+        the preferred focal mechanism doesn't refer to anything
+        """
+        out = strip_events(event_focal_mech)
+        assert len(out.focal_mechanisms) == 0
+        assert out.preferred_focal_mechanism() is None
+
+    def test_no_station_magnitudes(self, event_station_mags):
+        """
+        Make sure there are no station magnitudes attached to the event
+        """
+        out = strip_events(event_station_mags)
+        assert len(out.station_magnitudes) == 0
+
+    def test_no_magnitudes(self, event_magnitudes):
+        """
+        Make sure there are no magnitudes attached to the event and that the
+        preferred magnitude doesn't refer to anything
+        """
+        out = strip_events(event_magnitudes)
+        assert len(out.magnitudes) == 0
+        assert out.preferred_magnitude() is None
 
 
 class TestBumpCreationVersion:

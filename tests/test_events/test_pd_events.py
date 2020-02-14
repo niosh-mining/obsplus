@@ -318,7 +318,21 @@ class TestCat2Df:
                 pick.evaluation_status = "rejected"
         return cat
 
-    # fixtures
+    @pytest.fixture
+    def events_with_origin_quality(self, bingham_dataset):
+        """ Return events with an overridden origin quality """
+        cat = bingham_dataset.event_client.get_events().copy()
+        oq = ev.OriginQuality(
+            associated_phase_count=42,
+            used_phase_count=10,
+            associated_station_count=21,
+            used_station_count=5,
+        )
+        for event in cat:
+            origin = event.preferred_origin()
+            origin.quality = oq
+        return cat
+
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
         """ call the catalog2df method, return result"""
@@ -358,7 +372,7 @@ class TestCat2Df:
 
     def test_event_id_in_columns(self, df):
         """
-        Sometime the event_id was changed to the index, make sure it is
+        Sometimes the event_id gets changed to the index, make sure it is
         still a column.
         """
         cols = df.columns
@@ -378,6 +392,15 @@ class TestCat2Df:
         """ ensure rejected picks are still counted in arrival numbering """
         df = events_to_df(events_rejected_picks)
         assert (df.p_phase_count != 0).all()
+
+    def test_origin_quality_wins(self, events_with_origin_quality):
+        """
+        Ensure the phase counts from the OriginQuality take priority over a
+        count of picks/arrivals
+        """
+        df = events_to_df(events_with_origin_quality)
+        assert df.associated_phase_count.iloc[0] == 42
+        assert df.used_phase_count.iloc[0] == 10
 
     def test_event_bank_to_df(self, default_ebank):
         """ Ensure event banks can be used to get dataframes. """
@@ -707,7 +730,7 @@ class TestReadArrivals:
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
 
     def test_from_file(self, event_file):
-        """ test for reading phase picks from files. """
+        """ test for reading arrivals from files. """
         df = arrivals_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -718,7 +741,7 @@ class TestReadArrivals:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
-        """Test for extacting info from a directory of events."""
+        """Test for extracting info from a directory of events."""
         df = arrivals_to_dataframe(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -829,7 +852,7 @@ class TestReadAmplitudes:
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
 
     def test_from_file(self, event_file):
-        """ test for reading phase picks from files. """
+        """ test for reading amplitudes from files. """
         df = amplitudes_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
 
@@ -932,7 +955,7 @@ class TestReadStationMagnitudes:
 
     # magnitude object tests
     def test_magnitude(self, dummy_mag):
-        """Test getting info form magnitudes."""
+        """Test getting info from magnitudes."""
         dummy_mag = dummy_mag.magnitudes[0]
         mag_df = station_magnitudes_to_dataframe(dummy_mag)
         assert len(mag_df) == len(dummy_mag.station_magnitude_contributions)
@@ -949,7 +972,7 @@ class TestReadStationMagnitudes:
         assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
 
     def test_from_file(self, event_file):
-        """ test for reading phase picks from files. """
+        """ test for reading station magnitudes from files. """
         df = station_magnitudes_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -1043,7 +1066,7 @@ class TestReadMagnitudes:
         assert len(df)
 
     def test_from_file(self, event_file):
-        """ test for reading phase picks from files. """
+        """ Test for reading magnitudes from files. """
         df = magnitudes_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -1061,7 +1084,7 @@ class TestReadMagnitudes:
 
 
 class TestReadBingham:
-    """ test for reading a variety of pick formats from the KEM_TESTCASE dataset """
+    """ Test for reading a variety of pick formats from the bingham_test dataset. """
 
     event_fixtures = []
     picks_fixtures = []

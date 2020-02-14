@@ -213,28 +213,28 @@ class TestReadTAInventory:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def ta_inventory(self, ta_dataset):
-        """ Return the bingham_test inventory """
+        """ Return the ta_test inventory """
         return ta_dataset.station_client.get_stations()
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def ta_inv_df(self, ta_inventory):
-        """ Return the Bingham inventory as a dataframe. """
+        """ Return the ta_test inventory as a dataframe. """
         return obsplus.stations_to_df(ta_inventory)
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def inventory_csv_path(self, ta_inv_df, tmp_path_factory):
-        """ Return a csv path to the bingham_test inventory. """
-        path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.csv"
+        """ Return a csv path to the ta_test inventory. """
+        path = Path(tmp_path_factory.mktemp("tempinvta")) / "inv.csv"
         ta_inv_df.to_csv(path, index=False)
         return path
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def inventory_xml_path(self, ta_inventory, tmp_path_factory):
-        """ Return a to the bingham_test inventory saved as an xml. """
-        path = Path(tmp_path_factory.mktemp("tempinvbing")) / "inv.xml"
+        """ Return a to the ta_test inventory saved as an xml. """
+        path = Path(tmp_path_factory.mktemp("tempinvta")) / "inv.xml"
         ta_inventory.write(str(path), "stationxml")
         return path
 

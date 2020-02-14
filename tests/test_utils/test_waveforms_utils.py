@@ -207,7 +207,7 @@ class TestStream2Contiguous:
     # fixtures
     @pytest.fixture(scope="class")
     def one_trace_gap_overlaps_stream(self):
-        """Return a waveforms a gap on one trace."""
+        """Return waveforms with a gap on one trace."""
         st = obspy.read()
         st1 = st.copy()
         st2 = st.copy()
@@ -240,7 +240,7 @@ class TestStream2Contiguous:
 
     def test_disjoint(self, disjointed_stream):
         """
-        Ensure nothing is returned if waveforms has not times were all
+        Ensure nothing is returned if waveforms have no times were all
         three channels have data.
         """
         out = stream2contiguous(disjointed_stream)

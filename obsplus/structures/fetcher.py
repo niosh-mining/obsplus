@@ -62,7 +62,7 @@ def _temporary_override(func):
     """
 
     @functools.wraps(func)
-    def wraper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         inter = WAVEFETCHER_OVERRIDES.intersection(kwargs)
         if inter:
             self = self.copy()
@@ -72,7 +72,7 @@ def _temporary_override(func):
 
         return func(self, *args, **kwargs)
 
-    return wraper
+    return wrapper
 
 
 # ---------------------------------- Wavefetcher class
@@ -344,7 +344,7 @@ class Fetcher:
             If "p" or "s" is used only streams corresponding to stations with
             the appropriate phase pick will be returned.
         raise_on_fail
-            If True, re raise and exception if one is caught during waveform
+            If True, re raise an exception if one is caught during waveform
             fetching, else continue to next event.
 
         Notes

@@ -221,7 +221,7 @@ class _StreamEqualTester:
     Simple class for testing if streams are (almost) equal.
 
     This class is not intended to be used directly, instead use
-    :func:`obsplus.waveforms.utils.assert_stream_almost_equal`.
+    :func:`obsplus.utils.testing.assert_streams_almost_equal`.
     """
 
     skeys = list(NSLC) + ["sampling_rate", "starttime", "endtime"]

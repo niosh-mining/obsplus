@@ -132,7 +132,7 @@ def check_pick_order(event: Event,):
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
 
-    def pick_order(g, sp, ap, event_id=event.resource_id.id):
+    def pick_order(g, sp, ap):
         # get sub dfs with phases of interest
         p_picks = g[g["phase_hint"].str.upper() == "P"]
         s_picks = g[g["phase_hint"].str.upper() == "S"]

@@ -23,7 +23,7 @@ class TestBasic:
     """Basic tests all banks should pass."""
 
     def test_paths(self, some_bank):
-        """ Each bank should have bank paths an index paths. """
+        """ Each bank should have bank paths and index paths. """
         bank_path = some_bank.bank_path
         index_path = some_bank.index_path
         assert isinstance(bank_path, Path)

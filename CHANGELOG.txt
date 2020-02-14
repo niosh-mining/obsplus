@@ -21,7 +21,7 @@ obsplus master:
       created or updated (see #144).
     * Updated put_x methods to only index newly added files when update_index
       is True. First mentioned in (#122), implemented in (#144).
-    * Removed `conccurent_updates` and `inventory` argument from `WaveBank`.
+    * Removed `concurrent_updates` and `inventory` argument from `WaveBank`.
       see (#147 and #152)
     * The `updated` column in wavebank is now correct (see #146, #147).
   - obsplus.interfaces
@@ -90,7 +90,7 @@ obsplus 0.0.2:
     * Added a version numbering scheme to DataSet to enforce that the version of
       a downloaded dataset matches what is required by the DataSet (#100).
     * Changed where the datasets are stored. By default they will be stored in
-      a directory called obspdata in the users home, but this can be changed
+      a directory called opsdata in the users home, but this can be changed
       using an environmental variable (#100).
     * Removed Dataset.Path attribute and added Dataset.download_path and
       dataset.source_path since the two are now different (#100).

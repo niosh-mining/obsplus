@@ -141,7 +141,7 @@ def to_datetime64(
     Parameters
     ----------
     value
-        Any Value that can be interpreted as a time. If a sequence is passed
+        Any value that can be interpreted as a time. If a sequence is passed
         an ndarray of type "datetime64[ns]" is returned.
     default
         A value for missing data. pandas.NaT is used by default.

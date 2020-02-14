@@ -107,7 +107,7 @@ class TestCastDtypes:
         assert all([isinstance(x, obspy.UTCDateTime) for x in out["time"]])
 
     def test_empty_with_columns(self):
-        """ An empty dataframe should still have the datatypes castll. """
+        """ An empty dataframe should still have the datatypes cast. """
         # get columns and dtypes
         columns = ["time", "space"]
         dtypes = {"time": "ops_datetime", "space": float}
