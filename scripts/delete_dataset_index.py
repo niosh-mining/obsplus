@@ -10,7 +10,7 @@ SOURCE_PATHS = [f"{x}_path" for x in ["event", "station", "waveform"]]
 
 if __name__ == "__main__":
     # first load the dataset entry points
-    obsplus.DataSet._load_dataset_entry_points()
+    obsplus.DataSet._load_dataset_entry_point()
     for name in obsplus.DataSet._entry_points:
         try:
             ds = obsplus.load_dataset(name)

@@ -1,22 +1,28 @@
 """
 tests for get stations
 """
+from pathlib import Path
+
 import obspy
 import pytest
 
 import obsplus
 import pandas as pd
+import obsplus.utils.pd
 from obsplus.constants import NSLC
-
-from obsplus.stations.utils import df_to_inventory
+from obsplus.utils.stations import df_to_inventory
+from obsplus.utils.stations import get_station_client
 
 
 @pytest.fixture
 def inventory():
+    """Return the default inventory."""
     return obspy.read_inventory()
 
 
 class TestGetStation:
+    """Test for getting stations from inventory."""
+
     @pytest.fixture
     def inv_issue_115(self):
         """ Get an inventory for testing issue 115. """
@@ -93,7 +99,7 @@ class TestGetStation:
     def test_get_stations_one_channel(self, inventory):
         """ test get stations when all kwarg are used. """
         sta_df = obsplus.stations_to_df(inventory)
-        nslc = obsplus.utils.get_seed_id_series(sta_df).iloc[0]
+        nslc = obsplus.utils.pd.get_seed_id_series(sta_df).iloc[0]
         # make kwargs
         kwargs = {x: y for x, y in zip(NSLC, nslc.split("."))}
         # get sub inv
@@ -114,3 +120,10 @@ class TestGetStation:
         out = inv_issue_115.get_stations(channel="HHZ")
         assert len(out) == 1, "there should now be one network"
         assert len(out[0]) == 1, "and one station"
+
+    def test_read_inventory_from_file(self, tmpdir):
+        """ Should be able to read file into inventory. """
+        path = Path(tmpdir) / "inv"
+        inv = obspy.read_inventory()
+        inv.write(str(path), "stationxml")
+        assert inv == get_station_client(str(path))

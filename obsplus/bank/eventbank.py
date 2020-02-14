@@ -3,15 +3,14 @@ Class for interacting with events on a filesystem.
 """
 import inspect
 import time
-import warnings
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
-from os.path import exists
-from os.path import getmtime, abspath
+from os.path import exists, getmtime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Sequence, Set
 
+import numpy as np
 import obspy
 import obspy.core.event as ev
 import pandas as pd
@@ -19,14 +18,22 @@ import pandas as pd
 import obsplus
 import obsplus.events.pd
 from obsplus.bank.core import _Bank
-from obsplus.bank.utils import (
+from obsplus.utils.bank import (
     _IndexCache,
-    _summarize_event,
     sql_connection,
     _read_table,
     _get_tables,
     _drop_rows,
+    _remove_base_path,
+    _natify_paths,
 )
+from obsplus.utils.pd import (
+    cast_dtypes,
+    order_columns,
+    _time_cols_to_ints,
+    _ints_to_time_columns,
+)
+from obsplus.utils.events import _summarize_event, get_event_client
 from obsplus.constants import (
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
@@ -39,8 +46,11 @@ from obsplus.constants import (
 )
 from obsplus.events.get_events import _sanitize_circular_search, _get_ids
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.interfaces import ProgressBar
-from obsplus.utils import compose_docstring, try_read_catalog, dict_times_to_npdatetimes
+from obsplus.interfaces import ProgressBar, EventClient
+from obsplus.utils import iterate
+from obsplus.utils.misc import try_read_catalog, suppress_warnings
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.time import _dict_times_to_npdatetimes, to_datetime64
 
 # --- define static types
 
@@ -54,21 +64,13 @@ STR_COLUMNS = {
 }
 INT_COLUMNS = {i for i, v in EVENT_TYPES_OUTPUT.items() if v is int}
 
-# unsupported query options
-
-UNSUPPORTED_QUERY_OPTIONS = set()
-
-
-# int_cols = {key for key, val in column_types.items() if val is int}
-
 
 class EventBank(_Bank):
     """
     A class to interact with a directory of event files.
 
-    Event bank reads through a directory structure of event files,
-    collects info from each one, then creates and index to allow the files
-    to be efficiently queried.
+    EventBank recursively reads each event file in a directory and creates
+    an index to allow the files to be efficiently queried.
 
     Implements a superset of the :class:`~obsplus.interfaces.EventClient`
     interface.
@@ -79,14 +81,16 @@ class EventBank(_Bank):
         The path to the directory containing event files. If it does not
         exist an empty directory will be created.
     path_structure
-        Define the directory structure used by the event bank. Characters are
-        separated by /, regardless of operating system. The following
+        Defines the directory structure used by the event bank. Characters
+        are separated by /, regardless of operating system. The following
         words can be used in curly braces as data specific variables:
-            year, month, day, julday, hour, minute, second, event_id,
-            event_id_short
+
+        year, month, day, julday, hour, minute, second, event_id,
+        event_id_short
+
         If no structure is provided it will be read from the index, if no
-        index exists the default is {year}/{month}/{day}
-    name_structure : str
+        index exists the default is {year}/{month}/{day}.
+    name_structure
         The same as path structure but for the file name. Supports the same
         variables and a slash cannot be used in a file name on most operating
         systems. The default extension (.xml) will be added.
@@ -102,9 +106,40 @@ class EventBank(_Bank):
         the database multiple times for queries involving the same start and
         end times.
     executor
-        An executor with the same interface as concurrent.futures.Executor,
-        the map method of the executor will be used for reading files and
-        updating indices.
+        An executor with the same interface as
+        :py:class:`concurrent.futures.Executor, the map method of the executor
+        will be used for reading files and updating indices.
+
+    Attributes
+    ----------
+    name_structure
+
+    Examples
+    --------
+    >>> # --- Create an `EventBank` from a path to a directory with quakeml files.
+    >>> import obsplus
+    >>> event_path = obsplus.copy_dataset('default_test').event_path
+    >>> # init an EventBank and index the event files.
+    >>> ebank = obsplus.EventBank(event_path).update_index()
+
+    >>> # --- Retrieve catalog objects from the bank.
+    >>> cat = ebank.get_events(minmagnitude=4.3, minlatitude=40.12)
+    >>> print(cat)
+    1 Event(s) in Catalog:...
+
+    >>> # --- Put event files bank into the bank.
+    >>> # get an event from another dataset, keep track of its id
+    >>> ds = obsplus.load_dataset('bingham_test')
+    >>> new_events = ds.event_client.get_events(limit=1)
+    >>> new_event_id = str(new_events[0].resource_id)
+    >>> # put the event into the EventBank
+    >>> _ = ebank.put_events(new_events)
+    >>> print(ebank.get_events(eventid=new_event_id))
+    1 Event(s) in Catalog:...
+
+    >>> # --- Read the index used by EventBank as a DataFrame.
+    >>> df = ebank.read_index()
+    >>> assert len(df) == 4, 'there should now be 4 events in the bank.'
     """
 
     namespace = "/events"
@@ -128,7 +163,7 @@ class EventBank(_Bank):
         if isinstance(base_path, EventBank):
             self.__dict__.update(base_path.__dict__)
             return
-        self.bank_path = abspath(base_path)
+        self.bank_path = Path(base_path).absolute()
         self._index = None
         self.format = format
         self.ext = ext
@@ -144,7 +179,7 @@ class EventBank(_Bank):
         self._enforce_min_version()
 
     @property
-    def last_updated(self):
+    def last_updated_timestamp(self):
         """ Return the last modified time stored in the index, else 0.0 """
         with sql_connection(self.index_path) as con:
             try:
@@ -180,12 +215,8 @@ class EventBank(_Bank):
         {get_events_params}
         """
         self.ensure_bank_path_exists()
-        if set(kwargs) & UNSUPPORTED_QUERY_OPTIONS:
-            unsupported_options = set(kwargs) & UNSUPPORTED_QUERY_OPTIONS
-            msg = f"Query parameters {unsupported_options} are not supported"
-            raise ValueError(msg)
         # Make sure all times are numpy datetime64
-        kwargs = dict_times_to_npdatetimes(kwargs)
+        kwargs = _dict_times_to_npdatetimes(kwargs)
         # a simple switch to prevent infinite recursion
         allow_update = kwargs.pop("_allow_update", True)
         # Circular search requires work to be done on the dataframe - we need
@@ -197,12 +228,14 @@ class EventBank(_Bank):
                 df = _read_table(self._index_node, con, **kwargs)
             except pd.io.sql.DatabaseError:
                 # if this database has never been updated, update now
-                if allow_update and self.last_updated < 1:
+                if allow_update and self.last_updated_timestamp < 1:
                     self.update_index()
                     return self.read_index(_allow_update=False, **kwargs)
                 # else return empty index
                 df = pd.DataFrame(columns=list(EVENT_TYPES_OUTPUT))
-        df = self._prepare_dataframe(df, dtypes=EVENT_TYPES_OUTPUT)
+        df = _ints_to_time_columns(df, columns=INT_COLUMNS).pipe(
+            self._prepare_dataframe, dtypes=EVENT_TYPES_OUTPUT
+        )
         if len(circular_kwargs) >= 3:
             # Requires at least latitude, longitude and min or max radius
             circular_ids = _get_ids(df, circular_kwargs)
@@ -226,19 +259,21 @@ class EventBank(_Bank):
         {bar_parameter_description}
         {paths_description}
         """
+        bank_path = str(self.bank_path)
 
         def func(path):
             """ Function to yield events, update_time and paths. """
             cat = try_read_catalog(path, format=self.format)
             update_time = getmtime(path)
-            path = path.replace(self.bank_path, "")
+            path = path.replace(bank_path, "")
             return cat, update_time, path
 
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
-        update_file_feeder = self._measured_unindexed_iterator(bar, paths)
+        file_yielder = self._unindexed_iterator(paths=paths)
+        update_file_feeder = self._measure_iterator(file_yielder, bar)
         # create iterator, loop over it in chunks until it is exhausted
         iterator = self._map(func, update_file_feeder)
         events_remain = True
@@ -264,9 +299,10 @@ class EventBank(_Bank):
                 break
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(events)
-        df["updated"] = update_times
-        df["path"] = paths
+        df["updated"] = to_datetime64(update_times)
+        df["path"] = _remove_base_path(pd.Series(paths, dtype=object))
         if len(df):
+            df = _time_cols_to_ints(df)
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)
             self._write_update(df_to_write, update_time)
         return events_remain
@@ -278,13 +314,20 @@ class EventBank(_Bank):
         # replace "None" with empty string for str columns
         str_cols = STR_COLUMNS & set(df.columns)
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [""])
-        # fill dummy int values
-        int_cols = INT_COLUMNS & set(df.columns)
-        df.loc[:, int_cols] = df.loc[:, int_cols].fillna(-999)
         # get expected datatypes
-        dtype = {i: dtypes[i] for i in set(dtypes) & set(df.columns)}
+        assert set(INT_COLUMNS | STR_COLUMNS).issubset(set(dtypes))
+        intersection = set(dtypes) & set(df.columns)
+        dtype = {i: dtypes[i] for i in dtypes if i in intersection}
         # order columns, set types, reset index
-        return df[list(dtype)].astype(dtype=dtype).reset_index(drop=True)
+        out = (
+            df.loc[:, ~df.columns.duplicated()]
+            .pipe(cast_dtypes, dtype=dtype)  # drop dup. columns
+            .pipe(order_columns, required_columns=list(dtype), drop_columns=True)
+            .reset_index(drop=True)
+        )
+        # convert low ints back to NaT
+
+        return out
 
     def _write_update(self, df: pd.DataFrame, update_time=None):
         """ convert updates to dataframe, then append to index table """
@@ -307,13 +350,43 @@ class EventBank(_Bank):
                 meta = self._make_meta_table()
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
-            with warnings.catch_warnings():  # ignore pandas collection warning
+            with suppress_warnings():  # ignore pandas collection warning
                 timestamp = update_time or time.time()
-                warnings.simplefilter("ignore")
                 dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
                 dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
+
+    def get_event_path(
+        self, event: ev.Event, index: Optional[ProgressBar] = None
+    ) -> Path:
+        """
+        Get the path an event would be stored in a bank.
+
+        Parameters
+        ----------
+        event
+            An obspy Event.
+        index
+            If Not None, a dataframe of the current index.
+
+        Returns
+        -------
+
+        """
+        bank_path = str(self.bank_path)
+        df = self.read_index().set_index("event_id") if index is None else index
+        rid = str(event.resource_id)
+        if rid in df.index:  # event needs to be updated
+            path = df.loc[rid, "path"]
+            save_path = bank_path + path
+            assert exists(save_path)
+        else:  # event file does not yet exist
+            path = _summarize_event(
+                event, path_struct=self.path_structure, name_struct=self.name_structure
+            )["path"]
+            save_path = (Path(self.bank_path) / path).absolute()
+        return Path(save_path)
 
     # --- meta table
 
@@ -322,7 +395,8 @@ class EventBank(_Bank):
         self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
-            return pd.read_sql(sql, con)
+            out = pd.read_sql(sql, con)
+        return out
 
     # --- read events stuff
 
@@ -335,7 +409,8 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        paths = self.bank_path + self.read_index(columns="path", **kwargs).path
+        files_paths = self.read_index(**kwargs)["path"]
+        paths = str(self.bank_path) + _natify_paths(files_paths)
         read_func = partial(try_read_catalog, format=self.format)
         map_kwargs = dict(chunksize=len(paths) // self._max_workers)
         try:
@@ -344,45 +419,74 @@ class EventBank(_Bank):
         except TypeError:  # empty events
             return obspy.Catalog()
 
-    def put_events(self, catalog: Union[ev.Event, ev.Catalog], update_index=True):
+    def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
-        Put an event into the database.
+        Determine if one or more event_ids are used by the bank.
+
+        This function is faster than reading the entire index into memory to
+        perform a similar check.
+
+        Parameters
+        ----------
+        event_id
+            A single event id or sequence of event ids.
+
+        Returns
+        -------
+            A set of event_ids which are also found in the bank.
+        """
+        eids = self.read_index(columns="event_id").values
+        unique = set(np.unique(eids))
+        return unique & {str(x) for x in iterate(event_id)}
+
+    @compose_docstring(bar_parameter_description=bar_parameter_description)
+    def put_events(
+        self,
+        events: Union[ev.Event, ev.Catalog, EventClient],
+        update_index: bool = True,
+        bar: Optional[ProgressBar] = None,
+    ) -> "EventBank":
+        """
+        Put events into the EventBank.
 
         If the event_id already exists the old event will be overwritten on
         disk.
 
         Parameters
         ----------
-        catalog
-            A Catalog or Event object to put into the database.
+        events
+            An objects which contains event data (e.g. Catalog, Event,
+            EventBank, etc.)
         update_index
             Flag to indicate whether or not to update the event index after
-            writing the new events. Default is True.
+            writing the new events. Note: Only events added through this
+            method call will get indexed. Default is True.
+        {bar_parameter_description}
+
+        Notes
+        -----
+        If any of the events do not have an extractable reference time a
+        ``ValueError`` will be raised.
         """
+
+        def func(event):
+            """ get an event's path, save, return path. """
+            path = self.get_event_path(event, index=df)
+            path.parent.mkdir(exist_ok=True, parents=True)
+            event.write(str(path), format=self.format)
+            return path
+
         self.ensure_bank_path_exists(create=True)
-        events = [catalog] if isinstance(catalog, ev.Event) else catalog
-        # get dataframe of current event info, if they exists
+        # get catalog from any event client
+        events = get_event_client(events).get_events()
+        # get index only with needed resource_ids
         event_ids = [str(x.resource_id) for x in events]
         df = self.read_index(event_id=event_ids).set_index("event_id")
-        paths = []
-        for event in events:
-            rid = str(event.resource_id)
-            if rid in df.index:  # event needs to be updated
-                path = df.loc[rid, "path"]
-                save_path = self.bank_path + path
-                assert exists(save_path)
-                event.write(save_path, self.format)
-            else:  # event file does not yet exist
-                path = _summarize_event(
-                    event,
-                    path_struct=self.path_structure,
-                    name_struct=self.name_structure,
-                )["path"]
-                ppath = (Path(self.bank_path) / path).absolute()
-                ppath.parent.mkdir(parents=True, exist_ok=True)
-                event.write(str(ppath), self.format)
-            paths.append(path)  # append path to paths
+        # create an iterator and apply over potential pool
+        event_feeder = self._measure_iterator(events, bar)
+        paths = list(self._map(func, event_feeder))
         if update_index:  # parse newly saved files and update index
             self.update_index(paths=paths)
+        return self
 
     get_event_summary = read_index

@@ -3,7 +3,7 @@ Tests for gettting station dataframes from objects.
 """
 import os
 import tempfile
-from os.path import join, exists
+from pathlib import Path
 
 import numpy as np
 import obspy
@@ -12,10 +12,15 @@ import pytest
 
 import obsplus
 from obsplus import stations_to_df
-from obsplus.constants import STATION_COLUMNS
-from obsplus.utils import is_time
+from obsplus.constants import STATION_COLUMNS, pd_time_types
+from obsplus.utils.misc import register_func, suppress_warnings
 
 STA_COLUMNS = {"latitude", "longitude", "elevation", "start_date", "end_date"}
+
+
+def is_time(obj):
+    """Return True if an object is a time type."""
+    return isinstance(obj, pd_time_types) or pd.isnull(obj)
 
 
 class TestInv2Df:
@@ -52,23 +57,27 @@ class TestInv2Df:
 
     def test_time_columns(self, invdf):
         """ ensure the times are np.datetime instances. """
-        pass
+        assert invdf["start_date"].dt  # if not dt this will raise
+        assert invdf["end_date"].dt
 
 
 class TestReadInventory:
     """ ensure inventories can be read in """
 
-    fixtures = ["df_from_inv", "df_from_inv_df"]
+    fixtures = []
 
     # fixtures
     @pytest.fixture(scope="class")
+    @register_func(fixtures)
     def df_from_inv(self):
         """ read events from a events object """
         inv = obspy.read_inventory()
         return stations_to_df(inv)
 
     @pytest.fixture(scope="class")
+    @register_func(fixtures)
     def df_from_inv_df(self):
+        """Return a df from an inventory dataframe."""
         event_dict = {
             "start_date": obspy.UTCDateTime(),
             "end_date": None,
@@ -92,7 +101,7 @@ class TestReadInventory:
     @pytest.fixture
     def numeric_csv(self, tmpdir):
         """ write a csv with numeric net/sta/loc codes, return path """
-        f1 = tmpdir.mkdir("data").join("stations.csv")
+        f1 = Path(tmpdir.mkdir("data")) / "stations.csv"
         t1 = obspy.UTCDateTime("2012-01-01").timestamp
         t2 = t1 + 3600
         data = [
@@ -123,13 +132,18 @@ class TestReadInventory:
         assert len(read_inventory_output)
 
     def test_read_inv_with_numeric_codes(self, numeric_csv):
-        """ ensure numeric network, station, location, codes are interpreted
-        as strs """
+        """
+        Ensure numeric network, station, location, codes are interpreted
+        as strs
+        """
         df = stations_to_df(str(numeric_csv))
         for col in ["network", "station", "location", "channel"]:
             ser = df[col]
             for val in ser.values:
                 assert isinstance(val, str)
+
+    def test_gather(self, df_from_inv, df_from_inv_df):
+        """ Simply gather aggregated fixtures so they are marked as used. """
 
 
 class TestReadDirectoryOfInventories:
@@ -140,20 +154,26 @@ class TestReadDirectoryOfInventories:
     # help functions
     def nest_directly(self, nested_times, path):
         """ make a directory nested n times """
-        nd_name = join(path, self.nest_name)
-        if not exists(nd_name) and nested_times:
+        nd_name = Path(path) / self.nest_name
+        if not Path(nd_name).exists() and nested_times:
             os.makedirs(nd_name)
         elif not nested_times:  # recursion limit reached
             return path
         return self.nest_directly(nested_times - 1, nd_name)
 
     # fixtures
-    @pytest.fixture(scope="class")
-    def inventory(self, kemmerer_dataset):
+    @pytest.fixture()
+    def inventory(self, bingham_dataset):
         """ read the stations """
-        return kemmerer_dataset.station_client.get_stations()
+        # get sub-inventory
+        client = bingham_dataset.station_client
+        stations = ["COY", "FFT", "RIV"]
+        inv1 = client.get_stations(station=stations[0])
+        for station in stations[1:]:
+            inv1 += client.get_stations(station=station)
+        return inv1
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def inv_directory(self, inventory):
         """ create a nested directory of inventories """
         chans = inventory.get_contents()["channels"]
@@ -163,44 +183,72 @@ class TestReadDirectoryOfInventories:
                 network, station, location, channel = seed_id.split(".")
                 inv = inventory.select(channel=channel, station=station)
                 file_name = seed_id + ".xml"
-                write_path = join(self.nest_directly(num, tempdir), file_name)
-                inv.write(write_path, "stationxml")
+                nest_dir = self.nest_directly(num, tempdir)
+                write_path = Path(nest_dir) / file_name
+                inv.write(str(write_path), "stationxml")
             yield tempdir
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def read_inventory(self, inv_directory):
-        return stations_to_df(inv_directory)
+        """Convert the inventory directory to a dataframe."""
+        with suppress_warnings():
+            return stations_to_df(inv_directory)
 
     # tests
-    def test_something(self, read_inventory, inventory):
-        inv_df = stations_to_df(inventory)
+    def test_read_inventory_directories(self, read_inventory, inventory):
+        """Tests for reading a directory of inventories."""
+        with suppress_warnings():
+            inv_df = stations_to_df(inventory)
         assert (read_inventory.columns == inv_df.columns).all()
         assert not read_inventory.empty
         assert len(inv_df) == len(read_inventory)
         assert set(inv_df["seed_id"]) == set(read_inventory["seed_id"])
 
 
-class TestReadKemInventory:
-    """ read the kemmerer inventories (csv and xml) and run tests """
+class TestReadTAInventory:
+    """ read the ta_test inventories (csv and xml) and run tests """
 
-    kem_ds = obsplus.load_dataset("kemmerer")
-    csv_path = kem_ds.source_path / "inventory.csv"
-    sml_path = kem_ds.source_path / "inventory.xml"
-    sml = obspy.read_inventory(str(sml_path))
-    df = pd.read_csv(csv_path)
-    supported_inputs = ["sml_path", "sml", "csv_path", "df"]
+    fixtures = []
 
-    # fixtures
-    @pytest.fixture(scope="class", params=supported_inputs)
+    @pytest.fixture(scope="class")
+    @register_func(fixtures)
+    def ta_inventory(self, ta_dataset):
+        """ Return the ta_test inventory """
+        return ta_dataset.station_client.get_stations()
+
+    @pytest.fixture(scope="class")
+    @register_func(fixtures)
+    def ta_inv_df(self, ta_inventory):
+        """ Return the ta_test inventory as a dataframe. """
+        return obsplus.stations_to_df(ta_inventory)
+
+    @pytest.fixture(scope="class")
+    @register_func(fixtures)
+    def inventory_csv_path(self, ta_inv_df, tmp_path_factory):
+        """ Return a csv path to the ta_test inventory. """
+        path = Path(tmp_path_factory.mktemp("tempinvta")) / "inv.csv"
+        ta_inv_df.to_csv(path, index=False)
+        return path
+
+    @pytest.fixture(scope="class")
+    @register_func(fixtures)
+    def inventory_xml_path(self, ta_inventory, tmp_path_factory):
+        """ Return a to the ta_test inventory saved as an xml. """
+        path = Path(tmp_path_factory.mktemp("tempinvta")) / "inv.xml"
+        ta_inventory.write(str(path), "stationxml")
+        return path
+
+    @pytest.fixture(scope="class", params=fixtures)
     def inv_df(self, request):
         """ collect all the supported inputs are parametrize"""
-        name = request.param
-        return stations_to_df(getattr(self, name))
+        value = request.getfixturevalue(request.param)
+        return stations_to_df(value)
 
     # tests
-    def test_size(self, inv_df):
+    def test_size(self, inv_df, ta_inventory):
         """ ensure the correct number of items is in df """
-        assert len(inv_df) == len(self.df)
+        channel_count = len(ta_inventory.get_contents()["channels"])
+        assert len(inv_df) == channel_count
 
     def test_column_order(self, inv_df):
         """ ensure the order of the columns is correct """
@@ -246,14 +294,14 @@ class TestStationDfFromCatalog:
 
     # tests
     def test_basic_inventories(self, station_cache_inventory):
+        """Test for all basic inventories."""
         df = stations_to_df(station_cache_inventory)
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
 
-    def test_kem_catalog(self):
+    def test_kem_catalog(self, bingham_dataset):
         """ test converting the kemmerer catalog to an inv dataframe. """
-        ds = obsplus.load_dataset("kemmerer")
-        df = stations_to_df(ds.event_client.get_events())
+        df = stations_to_df(bingham_dataset.event_client.get_events())
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
 
@@ -270,3 +318,14 @@ class TestStationDfFromWaveBank:
         """ a df should be returned and not empty. """
         assert isinstance(wavebank_station_df, pd.DataFrame)
         assert len(wavebank_station_df)
+
+
+class TestStationDfFromStream:
+    """Ensure station data can be extracted from a stream."""
+
+    def test_stream_to_inv(self):
+        """A stream also contains station info."""
+        st = obspy.read()
+        df = obsplus.stations_to_df(st)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == len(st)

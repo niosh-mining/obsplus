@@ -21,6 +21,9 @@ obsplus master:
       created or updated (see #144).
     * Updated put_x methods to only index newly added files when update_index
       is True. First mentioned in (#122), implemented in (#144).
+    * Removed `concurrent_updates` and `inventory` argument from `WaveBank`.
+      see (#147 and #152)
+    * The `updated` column in wavebank is now correct (see #146, #147).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
@@ -32,7 +35,11 @@ obsplus master:
       misinterpreted by pandas (see #130 and #132).
   - obsplus.utils
     * Deprecate get_nslc_series in favor of get_seed_id_series (#120).
-    * get_distance_df now allows dataframes as inputs (#154).
+    * Refactored all geodetics functions into one utility class (#147).
+    * Moved all utility functions into one utility modules (#147).
+    * Removed catalog_to_directory in favor of simply using put_events of
+      EventBank (#147).
+    * Moved all utils into a new utils module (see #147).
   - obsplus.validate
     * Added the obsplus.validate module which contains a simple framework for
       defining and running validators on python objects. Replaced the old
@@ -49,9 +56,17 @@ obsplus master:
     * Added assert_streams_almost_equal method (see #128).
     * The function obsplus.waveforms.stream_split_bulk now has more flexible
       inputs (see #128).
+   - obsplus.datasets
+    * Removed large kemmerer dataset as it could cause CI to fail (see #147).
+    * Added suffix "_test" to all other datasets to indicate they are just for
+      testing and not for research (see #147).
+    * Switched from MD5 hashing to SHA256 as the latter is more secure and the
+      computational differences were negligible (see #147).
   - general
     * All obsplus objects now use pandas datetimes and/or numpy datetime64 for
       representing dates and times (see #88 and #131).
+    * Got test suite to pass locally on windows10 (see #147 and #149).
+    * Added some basic docstring testing to flake8 (see #147).
 
 obsplus 0.0.2:
   - obsplus.bank
@@ -75,7 +90,7 @@ obsplus 0.0.2:
     * Added a version numbering scheme to DataSet to enforce that the version of
       a downloaded dataset matches what is required by the DataSet (#100).
     * Changed where the datasets are stored. By default they will be stored in
-      a directory called obspdata in the users home, but this can be changed
+      a directory called opsdata in the users home, but this can be changed
       using an environmental variable (#100).
     * Removed Dataset.Path attribute and added Dataset.download_path and
       dataset.source_path since the two are now different (#100).

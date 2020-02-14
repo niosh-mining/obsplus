@@ -9,16 +9,16 @@ from typing import Optional
 from obspy.core.event import Catalog, Origin, Event
 
 from obsplus import validate_catalog
-from obsplus.events.utils import bump_creation_version
+from obsplus.utils.events import bump_creation_version
 
 
 def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
     """
-    Merge two events together, giving preference to the second.
+    Merge picks and amplitudes of two events together.
 
-    This function attempts to merge two events together that may have
-    different resource_ids in some attributes (like picks, arrivals, etc).
-    Events are modified in place.
+    This function attempts to merge pciks and amplitudes of two events
+    together that may have different resource_ids in some attributes. The
+    second event is imposed on the first which is modified in place.
 
     Parameters
     ----------
@@ -59,8 +59,10 @@ def _generate_pick_phase_maps(eve1, eve2):
 
 
 def _merge_picks(eve1, eve2, delete_old=False):
-    """ Merges a list of objects that have waveform ids (arrivals, picks,
-     amplitudes) """
+    """
+    Merge a list of objects that have waveform ids (arrivals, picks,
+    amplitudes)
+    """
     maps = _generate_pick_phase_maps(eve1, eve2)
     # new attributes that should overwrite old ones
     attrs_no_update = {"resource_id", "force_resource_id"}
@@ -84,13 +86,11 @@ def _merge_picks(eve1, eve2, delete_old=False):
 
 
 def _merge_amplitudes(eve1, eve2, delete_old=False):
-    """ merge the amplitudes together """
+    """Merge the amplitudes together."""
     attrs_no_update = {"pick_id", "resource_id", "force_resource_id"}
     maps = _generate_pick_phase_maps(eve1, eve2)
 
     pid1_a1 = {x.pick_id.id: x for x in eve1.amplitudes}
-    # maps['pid1_a2'] = {maps['id2_p1'][x.pick_id.id].id for x in eve2.amplitudes
-    #                    if  else x.pick_id.id}
     pid1_a2 = {}  # map all amplitude 2 back to pick ids on first event
     for amp in eve2.amplitudes:
         aid = amp.pick_id
@@ -112,14 +112,6 @@ def _merge_amplitudes(eve1, eve2, delete_old=False):
     # delete old
     if delete_old:
         eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
-
-
-def _ensure_arrival_have_picks(new_event, new_origin):
-    """ ensure the arrivals all have picks """
-    pick_dict = {x.resource_id.id: x for x in new_event.picks}
-    for arrival in new_origin.arrivals:
-        pid = arrival.pick_id.id
-        assert pid in pick_dict
 
 
 def attach_new_origin(

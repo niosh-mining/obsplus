@@ -1,14 +1,14 @@
-"""
-Bank ABC
-"""
+"""Base class for ObsPlus' in-process databases (aka banks)."""
 import os
+import shutil
+import tempfile
 import warnings
 from abc import ABC, abstractmethod
-from os.path import join
 from pathlib import Path
-from typing import Optional, TypeVar, Mapping
 from types import MappingProxyType as MapProxy
+from typing import Optional, TypeVar, Mapping, Iterable, Union
 
+import numpy as np
 import pandas as pd
 from pandas.io.sql import DatabaseError
 
@@ -16,16 +16,18 @@ import obsplus
 from obsplus.constants import CPU_COUNT, bank_subpaths_type
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
-from obsplus.bank.utils import _IndexCache
-from obsplus.utils import iter_files, get_progressbar, iterate
+from obsplus.utils.bank import _IndexCache
+from obsplus.utils.misc import get_progressbar, iter_files, iterate
+from obsplus.utils.time import to_datetime64
 
 BankType = TypeVar("BankType", bound="_Bank")
 
 
 class _Bank(ABC):
     """
-    The abstract base class for ObsPlus' banks. Used to access local
-    archives in a client-like fashion.
+    The abstract base class for ObsPlus' banks.
+
+    Used to access local archives in a client-like fashion.
     """
 
     # hdf5 compression defaults
@@ -33,7 +35,7 @@ class _Bank(ABC):
     _complevel = 9
     # attributes subclasses need to define
     ext = ""
-    bank_path = ""
+    bank_path: Path = ""
     namespace = ""
     index_name = ".index.h5"  # name of index file
     executor = None  # an executor for using parallelism
@@ -47,7 +49,7 @@ class _Bank(ABC):
     _bar_update_interval = 50  # number of files before updating bar
     _min_files_for_bar = 100  # min number of files before using bar enabled
     _read_func: callable  # function for reading datatype
-    # required dypes for input to storage layer
+    # required dtypes for input to storage layer
     _dtypes_input: Mapping = MapProxy({})
     # required dtypes for output from bank
     _dtypes_output: Mapping = MapProxy({})
@@ -56,62 +58,60 @@ class _Bank(ABC):
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
-        """ read the index filtering on various params """
+        """Read the index filtering on various params."""
 
     @abstractmethod
     def update_index(self: BankType) -> BankType:
-        """ update the index """
+        """Update the index."""
 
     @abstractmethod
-    def last_updated(self) -> Optional[float]:
-        """ get the last modified time stored in the index. If
-        Not available return None
+    def last_updated_timestamp(self) -> Optional[float]:
         """
+        Get the last modified time stored in the index.
+
+        If not available return None.
+        """
+
+    @property
+    def last_updated(self) -> Optional[np.datetime64]:
+        """
+        Get the last time (UTC) that the bank was updated.
+        """
+        return to_datetime64(self.last_updated_timestamp)
 
     @abstractmethod
     def _read_metadata(self) -> pd.DataFrame:
-        """ Return a dictionary of metadata. """
+        """Return a dictionary of metadata."""
 
     # --- path/node related objects
 
     @property
     def index_path(self):
-        """
-        The expected path to the index file.
-        """
-        return join(self.bank_path, self.index_name)
+        """Return the expected path to the index file."""
+        return Path(self.bank_path) / self.index_name
 
     @property
     def _index_node(self):
-        """
-        The node, or table, the index information is stored in the database.
-        """
+        """Return the node/table where the index information is stored."""
         return "/".join([self.namespace, "index"])
 
     @property
     def _index_version(self) -> str:
-        """
-        Get the version of obsplus used to create the index.
-        """
+        """Get the version of obsplus used to create the index."""
         return self._read_metadata()["obsplus_version"].iloc[0]
 
     @property
     def _time_node(self):
-        """
-        The node, or table, the update time information is stored in the database.
-        """
+        """The node/table where the update time information is stored."""
         return "/".join([self.namespace, "last_updated"])
 
     @property
     def _meta_node(self):
-        """
-        The node, or table, the update metadata is stored in the database.
-        """
+        """The node/table where the update metadata is stored."""
         return "/".join([self.namespace, "metadata"])
 
     def _enforce_min_version(self):
-        """
-        Check version of obsplus used to create index and delete index if the
+        """Check version of obsplus used to create index and delete index if the
         minimum version requirement is not met.
         """
         try:
@@ -127,51 +127,35 @@ class _Bank(ABC):
                 warnings.warn(msg)
                 os.remove(self.index_path)
 
-    def _unindexed_iterator(self, sub_paths: Optional[bank_subpaths_type] = None):
-        """ return an iterator of potential unindexed files """
+    def _unindexed_iterator(self, paths: Optional[bank_subpaths_type] = None):
+        """Return an iterator of potential unindexed files."""
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
-        last_updated = self.last_updated  # this needs db so only call once
+        last_updated = self.last_updated_timestamp  # this needs db so only call once
         if last_updated is not None:
             mtime = last_updated - 0.001
         # get paths to iterate
         bank_path = self.bank_path
-        if sub_paths is None:
+        if paths is None:
             paths = self.bank_path
         else:
-            # TODO move this to bank utils
             paths = [
                 f"{self.bank_path}/{x}" if str(bank_path) not in str(x) else str(x)
-                for x in iterate(sub_paths)
+                for x in iterate(paths)
             ]
         # return file iterator
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
-    def _measured_unindexed_iterator(
-        self,
-        bar: Optional[ProgressBar] = None,
-        sub_paths: Optional[bank_subpaths_type] = None,
-    ):
-        """
-        A generator to yield un-indexed files and update progress bar.
-
-        Parameters
-        ----------
-        bar
-            Any object with an update method.
-
-        Returns
-        -------
-
-        """
+    def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
+        """A generator to yield un-indexed files and update progress bar."""
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator
-        for num, path in enumerate(self._unindexed_iterator(sub_paths)):
+        for num, obj in enumerate(iterable):
             # update bar if count is in update interval
             if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)
-            yield path
+            yield obj
         # finish progress bar
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 
@@ -260,3 +244,43 @@ class _Bank(ABC):
             return self.executor.map(func, args, chunksize=chunksize)
         else:
             return (func(x) for x in args)
+
+    @classmethod
+    def load_example_bank(
+        cls: BankType,
+        dataset: str = "default_test",
+        path: Optional[Union[str, Path]] = None,
+    ) -> BankType:
+        """
+        Create an example bank which is safe to modify.
+
+        Copies relevant files from a dataset to a specified path, or a
+        temporary directory if None is specified.
+
+        Parameters
+        ----------
+        dataset
+            The name of the dataset.
+        path
+            The path to which the dataset files will be copied. If None
+            just create a temporary directory.
+        """
+        # determine which directory in the dataset this bank needs
+        data_types = {
+            obsplus.EventBank: "event_path",
+            obsplus.StationBank: "station_path",
+            obsplus.WaveBank: "waveform_path",
+        }
+        ds = obsplus.load_dataset(dataset)
+        destination = Path(tempfile.mkdtemp() if path is None else path) / "temp"
+        assert cls in data_types, f"{cls} Bank type not supported."
+        path_to_copy = getattr(ds, data_types[cls])
+        shutil.copytree(path_to_copy, destination)
+        return cls(destination)
+
+    def __repr__(self):
+        """Return the class name with bank path."""
+        name = type(self).__name__
+        return f"{name}(base_path={self.bank_path})"
+
+    __str__ = __repr__

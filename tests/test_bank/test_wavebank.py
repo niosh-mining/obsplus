@@ -21,28 +21,27 @@ import pytest
 from obspy import UTCDateTime as UTC
 
 import obsplus
-import obsplus.bank.utils
-import obsplus.bank.wavebank as sbank
-import obsplus.datasets.utils
+import obsplus.utils.bank
+import obsplus.utils.dataset
+import obsplus.utils.misc
+import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
-from obsplus.constants import NSLC, EMPTYTD64
+from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.utils import (
-    iter_files,
-    get_reference_time,
-    to_datetime64,
-    to_timedelta64,
-    to_utc,
-)
-
+from obsplus.utils.misc import iter_files
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obsplus.utils.bank import _natify_paths
+from obsplus import get_reference_time
 
 # ----------------------------------- Helper functions
-from obsplus.testing import ArchiveDirectory
+from obsplus.utils.testing import ArchiveDirectory
 
 
 def count_calls(instance, bound_method, counter_attr):
-    """ given an instance, count how many times bound_method is called and
-    store the result on instance in an attr named counter_attr """
+    """
+    Given an instance, count how many times bound_method is called and
+    store the result on instance in an attr named counter_attr.
+    """
     # set counter
     setattr(instance, counter_attr, 0)
 
@@ -69,10 +68,9 @@ def strip_processing(st: obspy.Stream) -> obspy.Stream:
 
 @pytest.fixture(scope="class")
 def ta_bank(tmp_ta_dir):
-    """ init a bank on the test TA dataset """
-    inventory_path = os.path.join(tmp_ta_dir, "inventory.xml")
+    """ init a bank on the test ta_test dataset """
     bank_path = os.path.join(tmp_ta_dir, "waveforms")
-    return sbank.WaveBank(bank_path, inventory=inventory_path)
+    return WaveBank(bank_path)
 
 
 @pytest.fixture(scope="function")
@@ -98,23 +96,9 @@ def ta_index(ta_bank_index):
 
 
 @pytest.fixture
-def default_wbank(tmpdir):
-    """ create a  directory out of the traces in default waveforms, init bank """
-    base = Path(tmpdir)
-    st = obspy.read()
-    for num, tr in enumerate(st):
-        name = base / f"{(num)}.mseed"
-        tr.write(str(name), "mseed")
-    bank = WaveBank(base)
-    bank.update_index()
-    return bank
-
-
-@pytest.fixture(scope="class")
-def empty_bank():
+def empty_bank(tmp_path):
     """ init a bank with an empty directory, return """
-    with tempfile.TemporaryDirectory() as td:
-        yield WaveBank(td)
+    return WaveBank(tmp_path)
 
 
 # ------------------------------ Tests
@@ -126,14 +110,6 @@ class TestBankBasics:
     low_version_str = "0.0.-1"
 
     # fixtures
-    @pytest.fixture(scope="function")
-    def ta_bank_no_index(self, ta_bank):
-        """ return the ta bank, but first delete the index if it exists """
-        index_path = os.path.join(ta_bank.bank_path, ".index.h5")
-        if os.path.exists(index_path):
-            os.remove(index_path)
-        return sbank.WaveBank(ta_bank.bank_path)
-
     @pytest.fixture
     def default_bank_low_version(self, default_wbank, monkeypatch):
         """ return the default bank with a negative version number. """
@@ -151,13 +127,13 @@ class TestBankBasics:
 
     # tests
     def test_type(self, ta_bank):
-        """ make sure TA bank is a bank """
-        assert isinstance(ta_bank, sbank.WaveBank)
+        """ make sure ta_test bank is a bank """
+        assert isinstance(ta_bank, WaveBank)
 
     def test_index(self, ta_bank_index):
         """ ensure the index exists """
         assert os.path.exists(ta_bank_index.index_path)
-        assert isinstance(ta_bank_index.last_updated, float)
+        assert isinstance(ta_bank_index.last_updated_timestamp, float)
 
     def test_create_index(self, ta_bank_no_index):
         """ make sure a fresh index can be created """
@@ -168,18 +144,21 @@ class TestBankBasics:
         assert os.path.exists(index_path)
         # make sure all file paths are in the index
         index = ta_bank_no_index.read_index()
-        file_paths = set(ta_bank_no_index.bank_path + index.path)
-        for file_path in iter_files(bank_path, ext="mseed"):
+        index_paths = _natify_paths(index["path"])
+        file_paths = set(str(ta_bank_no_index.bank_path) + index_paths)
+        for file_path in iter_files(str(bank_path), ext="mseed"):
             # go up two levels to match path reference
             file_path = os.path.abspath(file_path)
             assert file_path in file_paths
 
     def test_update_index_bumps_only_for_new_files(self, ta_bank_index):
-        """ test that updating the index does not modify the last_updated
-         time if no new files were added """
-        last_updated1 = ta_bank_index.last_updated
+        """
+        Test that updating the index does not modify the last_updated
+        time if no new files were added.
+        """
+        last_updated1 = ta_bank_index.last_updated_timestamp
         ta_bank_index.update_index()
-        last_updated2 = ta_bank_index.last_updated
+        last_updated2 = ta_bank_index.last_updated_timestamp
         # updating should not get stamped unless files were added
         assert last_updated1 == last_updated2
 
@@ -225,7 +204,6 @@ class TestBankBasics:
         If the min version is not met the index should be deleted and re-created.
         A warning should be issued.
         """
-        # TODO start here
         bank = default_bank_low_version
         with pytest.warns(UserWarning):
             bank.update_index()
@@ -258,7 +236,7 @@ class TestBankBasics:
         # test that touching the index/meta data raises
         with pytest.raises(BankDoesNotExistError):
             bank.read_index()
-        bank.put_waveforms(obspy.read())
+        bank.put_waveforms(obspy.read(), update_index=True)
         assert len(bank.read_index()) == 3
 
     def test_update_index_returns_self(self, default_wbank):
@@ -298,24 +276,51 @@ class TestBankBasics:
         df = bank.update_index(paths=in_paths).read_index()
         assert len(df) == 3
 
+    def test_read_index_column_order(self, default_wbank):
+        """The columns should be ordered according to WAVEFORM_DTYPES."""
+        df = default_wbank.read_index()
+        overlapping_cols = set(df.columns) & set(WAVEFORM_DTYPES)
+        disjoint_cols = set(df.columns) - set(WAVEFORM_DTYPES)
+        expected_order_1 = [x for x in WAVEFORM_DTYPES if x in overlapping_cols]
+        expected_order_2 = sorted(disjoint_cols)
+        expected_order = expected_order_1 + expected_order_2
+        assert [str(x) for x in df.columns] == list(expected_order)
+
 
 class TestEmptyBank:
-    """ tests for graceful handling of empty sbanks"""
+    """ tests for graceful handling of empty WaveBanks"""
 
-    @pytest.fixture(scope="class")
-    def empty_index(self, empty_bank):
+    @pytest.fixture()
+    def empty_read_index_bank(self, empty_bank):
         """ return the result of the empty read_index """
         return empty_bank.read_index()
 
+    @pytest.fixture()
+    def empty_index_bank(self, empty_bank):
+        """Write an unrelated table to index, return bank"""
+        if empty_bank.index_path.exists():
+            empty_bank.index_path.unlink()
+        df = pd.DataFrame([1, 3, 4])
+        with pd.HDFStore(empty_bank.index_path, "w") as store:
+            store.put(key="weird", value=df)
+        return empty_bank.update_index()
+
     # tests
-    def test_empty_index_returned(self, empty_index):
+    def test_empty_index_returned(self, empty_read_index_bank):
         """ ensure an empty index (df) was returned """
-        assert isinstance(empty_index, pd.DataFrame)
-        assert empty_index.empty
-        assert set(empty_index.columns).issuperset(WaveBank.index_columns)
+        assert isinstance(empty_read_index_bank, pd.DataFrame)
+        assert empty_read_index_bank.empty
+        assert set(empty_read_index_bank.columns).issuperset(WaveBank.index_columns)
+
+    def test_metatable_exists(self, empty_index_bank):
+        """Ensure the meta-table was added."""
+        bank = empty_index_bank
+        df = pd.read_hdf(bank.index_path, bank._meta_node)
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
 
 
-class TestGetIndex:
+class TestReadIndex:
     """ tests for getting the index """
 
     # tests
@@ -366,9 +371,11 @@ class TestGetIndex:
         assert not index.empty
 
     def test_crandall_query(self, crandall_dataset):
-        """ tests that querying the crandall dataset's event_waveforms.
+        """
+        Tests that querying the crandall_test dataset's event_waveforms.
         There was one event that didn't correctly get the waveforms
-        on read index. """
+        on read index.
+        """
         bank = crandall_dataset.waveform_client
         utc1 = obspy.UTCDateTime(2007, 8, 6, 10, 47, 25, 600_000)
         utc2 = obspy.UTCDateTime(2007, 8, 6, 10, 47, 25, 600_000)
@@ -383,6 +390,13 @@ class TestGetIndex:
         """
         df = ta_bank_index.read_index()
         assert "None" not in df.values
+
+    def test_read_index_nullish_values(self, default_wbank):
+        """Ensure Nullish Values return all streams"""
+        bank = default_wbank
+        df1 = bank.read_index(starttime=None, endtime=None)
+        df2 = bank.read_index(starttime=pd.NaT, endtime=np.NaN)
+        assert df1.equals(df2)
 
 
 class TestYieldStreams:
@@ -407,13 +421,10 @@ class TestYieldStreams:
 
     @pytest.fixture(scope="function")
     def yield2(self, ta_bank_index):
-        """ the second yield set of parameters, duration and overlap
-         are used """
+        """
+        The second yield set of parameters, duration and overlap are used.
+        """
         return ta_bank_index.yield_waveforms(**self.query2)
-
-    @pytest.fixture
-    def yield_file_by_time(self):
-        """ Read all files that have data for a sequence of times, yield """
 
     # tests
     def test_type(self, yield1):
@@ -427,8 +438,10 @@ class TestYieldStreams:
         assert count  # ensure some files were found
 
     def test_yield_with_durations(self, yield2, ta_index):
-        """ when durations is used each waveforms should have all the
-        channels"""
+        """
+        When durations is used each waveforms should have all the
+        channels.
+        """
         expected_stations = set(ta_index.station)
         t1 = self.query2["starttime"]
         dur = self.query2["duration"]
@@ -455,7 +468,6 @@ class TestGetWaveforms:
         "station": "*",
         "network": "*",
         "channel": "VHE",
-        "attach_response": True,
     }
 
     query2 = {
@@ -477,8 +489,7 @@ class TestGetWaveforms:
     @pytest.fixture(scope="class")
     def stream1(self, ta_bank):
         """ return the waveforms using query1 as params """
-        with pytest.warns(UserWarning) as _:
-            out = ta_bank.get_waveforms(**self.query1)
+        out = ta_bank.get_waveforms(**self.query1)
         return out
 
     @pytest.fixture(scope="class")
@@ -488,7 +499,7 @@ class TestGetWaveforms:
 
     @pytest.fixture(scope="class")
     def stream3(self, bingham_dataset):
-        """ return a waveforms from query params 3 on bingham dataset """
+        """ return a waveforms from query params 3 on bingham_test dataset """
         bank = bingham_dataset.waveform_client
         return bank.get_waveforms(**self.query3)
 
@@ -539,16 +550,11 @@ class TestGetWaveforms:
         assert abs(starttime - self.query1["starttime"]) <= 1.0
         assert abs(endtime - self.query1["endtime"]) <= 1.0
 
-    def test_attach_response(self, stream1):
-        """ make sure the responses were attached """
-        Response = obspy.core.inventory.response.Response
-        for tr in stream1:
-            assert hasattr(tr.stats, "response")
-            assert isinstance(tr.stats.response, Response)
-
     def test_bracket_matches(self, stream2):
-        """ make sure the bracket style filters work (eg VH[NE] for both
-        VHN and VHE"""
+        """
+        Make sure the bracket style filters work (eg VH[NE] for both
+        VHN and VHE.
+        """
         channels = {tr.stats.channel for tr in stream2}
         assert channels == {"VHN", "VHE"}
 
@@ -679,30 +685,6 @@ class TestGetBulkWaveforms:
         assert isinstance(stt, obspy.Stream)
 
 
-class TestGetWaveformsBySeedId:
-    """ tests for getting waveforms using seed_ids """
-
-    t1, t2 = TestGetBulkWaveforms.t1, TestGetBulkWaveforms.t2
-    seed_ids = ["TA.M14A..VHE", "TA.M11A..VHE"]
-
-    # fixtures
-    @pytest.fixture(scope="class")
-    def query_2_seeds(self, ta_bank):
-        """ return the query using seed_ids """
-        return ta_bank.get_waveforms_by_seed(self.seed_ids, self.t1, self.t2)
-
-    @pytest.fixture(scope="class")
-    def query_1_seed(self, ta_bank):
-        """ query using only one seed_id"""
-
-    # tests
-    def test_only_desired_channels(self, query_2_seeds):
-        """ ensure only 2 channels were returned """
-        assert len(query_2_seeds) == 2
-        seed_set = {x.id for x in query_2_seeds}
-        assert seed_set == set(self.seed_ids)
-
-
 class TestBankCache:
     """ test that the time cache avoids repetitive queries to the h5 index """
 
@@ -720,7 +702,7 @@ class TestBankCache:
 
     @pytest.fixture(scope="class")
     def query_twice_mp_ta(self, mp_ta_bank):
-        """ query the instrumented TA bank twice """
+        """ query the instrumented ta_test bank twice """
         _ = mp_ta_bank.read_index(**self.query_1)
         _ = mp_ta_bank.read_index(**self.query_1)
         return mp_ta_bank
@@ -732,8 +714,10 @@ class TestBankCache:
 
 
 class TestBankCacheWithKwargs:
-    """ kwargs should get hashed as well, so the same times with different
-    kwargs should be cached """
+    """
+    kwargs should get hashed as well, so the same times with different
+    kwargs should be cached.
+    """
 
     @pytest.fixture
     def got_gaps_bank(self, ta_bank):
@@ -742,8 +726,10 @@ class TestBankCacheWithKwargs:
         return ta_bank
 
     def test_get_gaps_doesnt_overwrite_cache(self, got_gaps_bank):
-        """ ensure that calling get gaps doesn't result in read_index
-        not returning the path column """
+        """
+        Ensure that calling get gaps doesn't result in read_index
+        not returning the path column.
+        """
         inds = got_gaps_bank.read_index()
         assert "path" in inds.columns
 
@@ -757,8 +743,7 @@ class TestPutWaveForm:
         """ add the default obspy waveforms to the bank, return the bank """
         st = obspy.read()
         ta_bank.update_index()  # make sure index cache is set
-        ta_bank.put_waveforms(st)
-        ta_bank.update_index()
+        ta_bank.put_waveforms(st, update_index=True)
         return ta_bank
 
     @pytest.fixture(scope="class")
@@ -780,16 +765,19 @@ class TestPutWaveForm:
             assert np.all(tr1.data == tr2.data)
 
     def test_put_waveforms_to_crandall_copy(self, tmpdir):
-        """ ran into issue in docs where putting data into the crandall
-        copy didn't work. """
-        ds = obsplus.datasets.utils.copy_dataset(
-            dataset="crandall", destination=Path(tmpdir)
+        """
+        Ran into issue in docs where putting data into the crandall_test
+        copy didn't work.
+        """
+        ds = obsplus.utils.dataset.copy_dataset(
+            dataset="crandall_test", destination=Path(tmpdir)
         )
         bank = WaveBank(ds.waveform_client)
-        bank.read_index()  # this sets cache
+        ind1 = bank.read_index()  # this sets cache
+        # ensure RJOB is not yet in the bank
+        assert "RJOB" not in set(ind1["station"].unique())
         st = obspy.read()
-        bank.put_waveforms(st)
-        bank.update_index()
+        bank.put_waveforms(st, update_index=True)
         df = bank.read_index(station="RJOB")
         assert len(df) == len(st)
         assert set(df.station) == {"RJOB"}
@@ -816,8 +804,8 @@ class TestPutMultipleTracesOneFile:
     @pytest.fixture(scope="class")
     def deposited_bank(self, bank: obsplus.WaveBank):
         """ deposit the waveforms in the bank, return the bank """
-        bank.put_waveforms(self.st_mod)
-        bank.put_waveforms(self.st)
+        bank.put_waveforms(self.st_mod, update_index=True)
+        bank.put_waveforms(self.st, update_index=True)
         return bank
 
     @pytest.fixture(scope="class")
@@ -829,6 +817,7 @@ class TestPutMultipleTracesOneFile:
 
     @pytest.fixture(scope="class")
     def banked_stream(self, mseed_files):
+        """Return a stream of all the bank contents."""
         st = obspy.Stream()
         for ftr in mseed_files:
             st += obspy.read(ftr)
@@ -845,8 +834,10 @@ class TestPutMultipleTracesOneFile:
         assert number_of_files == 1
 
     def test_all_streams(self, banked_stream):
-        """ ensure all the channels in the waveforms where written to
-        the bank """
+        """
+        Ensure all the channels in the waveforms where written to
+        the bank.
+        """
         banked_seed_ids = {tr.id for tr in banked_stream}
         assert banked_seed_ids == self.expected_seeds
 
@@ -865,7 +856,7 @@ class TestBadWaveforms:
         # remove old index if it exists
         if os.path.exists(ta_bank.index_path):
             os.remove(ta_bank.index_path)
-        return sbank.WaveBank(path)
+        return WaveBank(path)
 
     @pytest.fixture
     def ta_bank_empty_files(self, ta_bank, tmpdir):
@@ -882,7 +873,7 @@ class TestBadWaveforms:
         index_path = new_path / (Path(ta_bank.index_path).name)
         if index_path.exists():
             os.remove(index_path)
-        bank = sbank.WaveBank(old_path)
+        bank = WaveBank(old_path)
         bank.update_index()
         return bank
 
@@ -929,12 +920,12 @@ class TestFilesWithMultipleChannels:
         # update index first so we only count event reads
         bank.update_index()
 
-        old_func = obsplus.utils.READ_DICT["mseed"]
+        old_func = obsplus.utils.misc.READ_DICT["mseed"]
         new_func = count_decorator(old_func)
-        obsplus.utils.READ_DICT["mseed"] = new_func
+        obsplus.utils.misc.READ_DICT["mseed"] = new_func
         yield
         self.counter = 0
-        obsplus.utils.READ_DICT["mseed"] = old_func
+        obsplus.utils.misc.READ_DICT["mseed"] = old_func
 
     @pytest.fixture(scope="class")
     def multichannel_bank(self):
@@ -1012,6 +1003,7 @@ class TestGetAvailability:
         assert df.iloc[0].channel == "VHZ"
 
     def test_availability(self, avail):
+        """Test output shape of availability."""
         for av in avail:
             assert len(av) == 6
             # first four values should be strings
@@ -1064,7 +1056,7 @@ class TestGetGaps:
 
     @pytest.fixture(scope="class")
     def gappy_bank(self, gappy_dir):
-        """ init a sbank on the gappy data """
+        """ init a WaveBank on the gappy data """
         bank = WaveBank(gappy_dir)
         # make sure index is updated after gaps are introduced
         if os.path.exists(bank.index_path):
@@ -1129,8 +1121,7 @@ class TestGetGaps:
         index = bank.read_index()
         # create a trace and push into bank
         tr = create_trace(index.sort_values("starttime").iloc[4])
-        bank.put_waveforms(tr)
-        bank.update_index()
+        bank.put_waveforms(tr, update_index=True)
         assert len(bank.read_index()) == len(index) + 1, "one trace added"
         return bank
 
@@ -1162,19 +1153,21 @@ class TestGetGaps:
         st = obspy.read()
         assert not df.empty, "uptime df is empty"
         assert len(df) == len(st)
-        assert {tr.id for tr in st} == set(obsplus.utils.get_seed_id_series(df))
+        assert {tr.id for tr in st} == set(obsplus.utils.pd.get_seed_id_series(df))
         assert (df["gap_duration"] == EMPTYTD64).all()
 
     def test_empty_directory(self, empty_bank):
-        """ ensure an empty bank get_gaps returns and empty df with expected
-        columns """
+        """
+        Ensure an empty bank get_gaps returns and empty df with expected
+        columns.
+        """
         gaps = empty_bank.get_gaps_df()
         assert not len(gaps)
         assert set(WaveBank._gap_columns).issubset(set(gaps.columns))
 
-    def test_kemmerer_uptime(self, kem_fetcher):
-        """ ensure the kemmerer bank returns an uptime df"""
-        bank = kem_fetcher.waveform_client
+    def test_ta_uptime(self, ta_dataset):
+        """ ensure the ta bank returns an uptime df"""
+        bank = ta_dataset.waveform_client
         df = bank.get_uptime_df()
         diff = abs(df["uptime"] - df["duration"])
         tolerance = np.timedelta64(1, "s")
@@ -1189,14 +1182,14 @@ class TestGetGaps:
         index = wbank.read_index()
         uptime = wbank.get_uptime_df()
         # make sure the same seed ids are in the index as uptime df
-        seeds_from_index = set(obsplus.utils.get_seed_id_series(index))
-        seeds_from_uptime = set(obsplus.utils.get_seed_id_series(uptime))
+        seeds_from_index = set(obsplus.utils.pd.get_seed_id_series(index))
+        seeds_from_uptime = set(obsplus.utils.pd.get_seed_id_series(uptime))
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 
-    def test_no_gaps_on_continuous_dataset(self, kemmerer_dataset):
-        """ test no gaps on kemmerer dataset. """
-        ds = obsplus.load_dataset("kemmerer")
+    def test_no_gaps_on_continuous_dataset(self, ta_dataset):
+        """ test no gaps on ta dataset. """
+        ds = ta_dataset
         wbank = ds.waveform_client
         gap_df = wbank.get_gaps_df()
         assert len(gap_df) == 0
@@ -1217,7 +1210,7 @@ class TestBadInputs:
     def test_bad_inventory(self, tmp_ta_dir):
         """ ensure giving a bad stations str raises """
         with pytest.raises(Exception):
-            sbank.WaveBank(tmp_ta_dir, inventory="some none existent file")
+            WaveBank(tmp_ta_dir, inventory="some none existent file")
 
 
 class TestConcurrentReads:
@@ -1274,8 +1267,10 @@ class TestConcurrentUpdateIndex:
 
     @pytest.fixture
     def thread_read(self, concurrent_bank, thread_executor):
-        """ run a bunch of update index operations in different threads,
-        return list of results """
+        """
+        Run a bunch of update index operations in different threads,
+        return list of results.
+        """
         out = []
         concurrent_bank.update_index()
         func = functools.partial(self.func, wbank=concurrent_bank)
@@ -1291,8 +1286,10 @@ class TestConcurrentUpdateIndex:
 
     @pytest.fixture
     def process_read(self, concurrent_bank, process_pool):
-        """ run a bunch of update index operations in different processes,
-        return list of results """
+        """
+        Run a bunch of update index operations in different processes,
+        return list of results.
+        """
         concurrent_bank.update_index()
         out = []
         func = functools.partial(self.func, wbank=concurrent_bank)
@@ -1347,10 +1344,10 @@ class TestSelectDoesntReturnSuperset:
     @pytest.fixture(scope="class")
     def bank(self, df_index, ta_archive):
         """ return a bank with monkeypatched index """
-        sbank = WaveBank(ta_archive)
-        sbank.update_index = lambda: None
-        sbank._index_cache = lambda *args, **kwargs: df_index
-        return sbank
+        wbank = WaveBank(ta_archive)
+        wbank.update_index = lambda: None
+        wbank._index_cache = lambda *args, **kwargs: df_index
+        return wbank
 
     # test
     def test_only_one_station_returned(self, bank):
@@ -1363,8 +1360,10 @@ class TestSelectDoesntReturnSuperset:
 
 
 class TestFilesWithDifferentFormats:
-    """ Files saved to index with different formats (other than specified)
-    should still be readable. """
+    """
+    Files saved to index with different formats (other than specified)
+    should still be readable.
+    """
 
     start = UTC("2017-09-18")
     end = UTC("2017-09-19")
@@ -1374,8 +1373,10 @@ class TestFilesWithDifferentFormats:
 
     # fixtures
     @pytest.fixture(scope="class")
-    def het_bank(self, class_tmp_dir):
-        """ create a directory that has multiple file types in it. """
+    def het_bank_path(self, class_tmp_dir):
+        """
+        create a directory that has waveforms saved to many file formats in it.
+        """
         new_dir = join(class_tmp_dir, "temp1")
         ardir = ArchiveDirectory(
             new_dir, self.start, self.end, self.sampling_rate, seed_ids=self.seed_ids
@@ -1388,9 +1389,10 @@ class TestFilesWithDifferentFormats:
             st.write(path + ".mseed", format)
         return obsplus.WaveBank(ardir.path)
 
-    def test_all_files_read_warning_issued(self, het_bank):
+    def test_all_files_read_warning_issued(self, het_bank_path):
         """ ensure all the files are read in and a warning issued. """
         with pytest.warns(UserWarning) as w:
-            df = het_bank.read_index()
+            bank = obsplus.WaveBank(het_bank_path).update_index()
+        df = bank.read_index()
         assert len(w)
         assert set(self.format_key).issubset(df.station.unique())

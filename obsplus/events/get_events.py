@@ -3,7 +3,6 @@ Module for adding a get_events method to obspy events.
 """
 
 import inspect
-
 from typing import Tuple, Union
 
 import numpy as np
@@ -13,11 +12,13 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import kilometers2degrees
 
 import obsplus
+import obsplus.utils.geodetics
+import obsplus.utils.misc
 from obsplus.constants import get_events_parameters
-from obsplus.utils import compose_docstring, dict_times_to_npdatetimes
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.time import _dict_times_to_npdatetimes
 
 CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
-
 NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
 
 UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
@@ -29,7 +30,7 @@ def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:
     """
     Check for clashes between circular-search and box-search kwargs.
 
-    returns
+    Returns
     -------
     Two separate dictionaries of the circular kwargs and everything else.
     """
@@ -89,13 +90,13 @@ def _get_ids(df, kwargs) -> set:
         kwargs.update(_get_bounding_box(circular_kwargs))
         df = get_event_summary(df, **kwargs)
         filt = np.ones(len(df)).astype(bool)
-        # Trim based on circular kwargs
-        radius = obsplus.utils.calculate_distance(
-            latitude=circular_kwargs["latitude"],
-            longitude=circular_kwargs["longitude"],
-            df=df,
-            degrees=circular_kwargs.get("degrees", True),
-        )
+        # Trim based on circular kwargs, first get distance dataframe.
+        input = (circular_kwargs["latitude"], circular_kwargs["longitude"], 0)
+        dist_calc = obsplus.utils.geodetics.SpatialCalculator()
+        dist_df = dist_calc(input, df)
+        # then get radius and filter if needed
+        degrees = circular_kwargs.get("distance_degrees", True)
+        radius = dist_df["distance_degrees" if degrees else "distance_m"].values
         if "minradius" in circular_kwargs:
             filt &= radius > circular_kwargs["minradius"]
         if "maxradius" in circular_kwargs:
@@ -139,7 +140,7 @@ def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
         msg = f"{bad_params} are not supported get_events parameters"
         raise TypeError(msg)
     # Ensure all times are numpy datetimes
-    kwargs = dict_times_to_npdatetimes(kwargs)
+    kwargs = _dict_times_to_npdatetimes(kwargs)
     event_ids = _get_ids(obsplus.events_to_df(cat), kwargs)
     events = [eve for eve in cat if str(eve.resource_id) in event_ids]
     return obspy.Catalog(events=events)

@@ -8,7 +8,7 @@ from typing import Union
 import obspy
 from obspy.core.event import ResourceIdentifier, QuantityError
 
-from obsplus.events.utils import obj_to_dict, make_class_map
+from obsplus.utils.events import obj_to_dict, make_class_map
 from obsplus.constants import JSON_KEYS_TO_POP
 
 JSON_SERIALIZER_VERSION = "0.0.0"  # increment when serialization changes
@@ -61,9 +61,6 @@ def json_to_cat(cjson: Union[str, dict]) -> obspy.Catalog:
     ----------
     cjson
         A str or dict produced by cat_to_dict or cat_to_json.
-    Returns
-    -------
-    obspy.Catalog instance
     """
     # load json to dict
     if isinstance(cjson, str):
@@ -110,7 +107,7 @@ def _parse_dict_class(cdict):
 
 
 def _get_resource_ids(cdict, keys):
-    """ find any resource_ids and instantiate """
+    """Find any resource_ids and instantiate."""
     resource_id_keys = (
         key for key in keys if (key.endswith("_id") or key.endswith("_uri"))
     )

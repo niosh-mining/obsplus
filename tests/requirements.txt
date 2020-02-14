@@ -1,4 +1,6 @@
 pytest
+# coveralls current requires coverage < 5.0
+coverage < 5.0
 pytest-cov
 coveralls
 black
@@ -7,3 +9,4 @@ twine
 flake8
 flake8-black
 flake8-breakpoint
+flake8-docstrings

@@ -9,7 +9,8 @@ from obspy.core.event import ResourceIdentifier, WaveformStreamID, TimeWindow
 import obsplus
 import obsplus.events.validate
 from obsplus import validate_catalog
-from obsplus.utils import yield_obj_parent_attr
+from obsplus.utils.misc import yield_obj_parent_attr
+
 
 # ----------------- module level fixtures
 
@@ -27,9 +28,11 @@ def cat1(event_cache):
 
 
 class TestValidateCatalog:
-    """ ensure check events properly puts each event into a good state for
+    """
+    Ensure check events properly puts each event into a good state for
     processing (IE all resource_id are attached, preferreds are set, there
-    are no resource_ids referring to non-existent events, etc."""
+    are no resource_ids referring to non-existent events, etc.
+    """
 
     # helper functions
     def preferred_ids_are_set(self, cat):
@@ -46,11 +49,12 @@ class TestValidateCatalog:
                 assert eve.preferred_focal_mechanism() is not None
 
     # fixtures
-
     @pytest.fixture()
     def cat1_multiple_resource_ids(self, cat1):
-        """ copy the origins on the event so there are duplicate resource ids
-        within one events """
+        """
+        Copy the origins on the event so there are duplicate resource ids
+        within one events.
+        """
         cat = cat1.copy()
         cat[0].origins = cat1[0].origins + cat[0].origins
         return cat
@@ -67,8 +71,9 @@ class TestValidateCatalog:
 
     @pytest.fixture()
     def cat1_preferred_cache_empty(self, cat1):
-        """ Set each of the preferreds to the first in the list.
-        Then monkey patch the resource_id_weak_dict.
+        """
+        Set each of the preferreds to the first in the list. Then monkey
+        patch the resource_id_weak_dict.
         """
         # copy events
         cat = cat1.copy()
@@ -106,6 +111,7 @@ class TestValidateCatalog:
 
     @pytest.fixture()
     def cat1_bad_arrival_pick_id(self, cat1):
+        """Create a catalog with a bad arrival (no id)"""
         cat = cat1.copy()
         rid = ResourceIdentifier()
         cat[0].origins[0].arrivals[0].pick_id = rid
@@ -113,6 +119,7 @@ class TestValidateCatalog:
 
     @pytest.fixture()
     def cat1_none_arrival_pick_id(self, cat1):
+        """Return a catalog with arrival with no pick_id."""
         cat = cat1.copy()
         cat[0].origins[0].arrivals[0].pick_id = None
         return cat
@@ -175,8 +182,10 @@ class TestValidateCatalog:
             validate_catalog(cat1_bad_arrival_pick_id)
 
     def test_duplicate_objects_raise(self, cat1_multiple_resource_ids):
-        """ make sure an assertion error is raised on cat2 as it's resource
-        ids are not unique """
+        """
+        Make sure an assertion error is raised on cat2 as it's resource
+        ids are not unique.
+        """
         with pytest.raises(AssertionError):
             validate_catalog(cat1_multiple_resource_ids)
 

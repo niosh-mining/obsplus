@@ -1,9 +1,7 @@
 numpy >= 1.13.0
-pandas >= 0.23.3
+pandas >= 0.24.0
 obspy >= 1.1.0
 progressbar2
-xarray >= 0.10.9
-cloudpickle
 scipy
 tables
 black

@@ -1,6 +1,4 @@
-"""
-Constants used throughout obsplus
-"""
+"""Constants used throughout obsplus."""
 from collections import OrderedDict
 from os import cpu_count
 from pathlib import Path
@@ -8,9 +6,7 @@ from types import MappingProxyType as MapProxy
 from typing import (
     Callable,
     Union,
-    Optional,
     Mapping,
-    Any,
     List,
     Tuple,
     TypeVar,
@@ -18,12 +14,12 @@ from typing import (
     Iterable,
 )
 
+
 import numpy as np
 import obspy
 import pandas as pd
-import xarray as xr
-from obspy import Stream, Trace, UTCDateTime, Inventory, Catalog
-from obspy.core.event import Event
+from obspy import Stream, Trace, UTCDateTime, Inventory
+from obspy.core.event import Event, Catalog
 from obspy.core.util import AttribDict
 
 from obsplus.interfaces import EventClient, WaveformClient
@@ -47,11 +43,9 @@ PREFERRED = {
 }
 
 # ----- Extractor constants
-# types that indicate time
-time_types = (pd.Timestamp, np.datetime64)
 
 # Mapping numpy time types to their internal representation
-_DATETIME_TYPE_MAP = {"datetime64[ns]": int, "timedelta64[ns]": int}
+_DATETIME_TYPE_MAP = {"datetime64[ns]": np.int64, "timedelta64[ns]": np.int64}
 
 # columns required for station data
 STATION_DTYPES = OrderedDict(
@@ -111,7 +105,6 @@ EVENT_DTYPES = OrderedDict(
     s_pick_count=float,
     standard_error=float,
     used_phase_count=float,
-    stations=str,
     station_count=float,
     vertical_uncertainty=float,
     updated="datetime64[ns]",
@@ -121,7 +114,8 @@ EVENT_DTYPES = OrderedDict(
     version=str,
 )
 
-EVENT_COLUMNS = tuple(EVENT_DTYPES)
+# required columns for event dataframe
+EVENT_COLUMNS = list(EVENT_DTYPES)
 
 # Event types which are returned from EventBank
 EVENT_TYPES_OUTPUT = dict(EVENT_DTYPES)
@@ -129,7 +123,7 @@ EVENT_TYPES_OUTPUT.pop("stations", None)
 EVENT_TYPES_OUTPUT["path"] = str
 
 # input types for EventBank
-INPUT_MAP = {"datetime64[ns]": int}
+INPUT_MAP = {"datetime64[ns]": np.int64}
 EVENT_TYPES_INPUT = {i: INPUT_MAP.get(v, v) for i, v in EVENT_TYPES_OUTPUT.items()}
 
 # columns required for picks
@@ -153,7 +147,7 @@ PICK_DTYPES = OrderedDict(
     event_id=str,
     network=str,
     station=str,
-    location=str,
+    location="location_code",
     channel=str,
     uncertainty=float,
     lower_uncertainty=float,
@@ -163,13 +157,22 @@ PICK_DTYPES = OrderedDict(
 
 PICK_COLUMNS = tuple(PICK_DTYPES)
 
-# columns for distance dataframe
-
-DISTANCE_DTYPES = OrderedDict(
-    distance=float, horizontal_distance=float, depth_distance=float, azimuth=float
+# columns for distance dataframe (output)
+DISTANCE_COLUMN_DTYPES = OrderedDict(
+    distance_m=float,
+    azimuth=float,
+    back_azimuth=float,
+    distance_degrees=float,
+    vertical_distance_m=float,
 )
 
-DISTANCE_COLUMNS = tuple(DISTANCE_DTYPES)
+# Columns for dataframe inputs
+DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
+    latitude=float, longitude=float, elevation=float
+)
+
+# DISTANCE_COLUMNS = tuple(DISTANCE_COLUMN_DTYPES)
+# DISTANCE_INPUT_COLUMNS = tuple(DISTANCE_COLUMN_INPUT_DTYPES)
 
 # columns required for amplitudes
 AMPLITUDE_DTYPES = OrderedDict(
@@ -262,7 +265,7 @@ MAGNITUDE_DTYPES = OrderedDict(
     magnitude_type=str,
     origin_id=str,
     method_id=str,
-    station_count=int,
+    station_count=float,
     azimuthal_gap=float,
     evaluation_mode=str,
     evaluation_status=str,
@@ -366,6 +369,9 @@ MAXINT64 = np.iinfo(np.int64).max
 SMALLDT64 = np.datetime64(MININT64 + 5_000_000_000, "ns")
 LARGEDT64 = np.datetime64(MAXINT64 - 5_000_000_000, "ns")
 
+# The default time value indicating missing values
+DEFAULT_TIME = pd.NaT
+
 # an empty time delta to rep. no time distance at all
 EMPTYTD64 = np.timedelta64(0, "s")
 
@@ -377,11 +383,17 @@ CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
 
 # ------------------- type aliases (aliai?)
 
+# Path types
+path_types = Union[str, Path]
+
+# number types
+number_type = Union[float, int, np.float, np.int, np.complex]
+
 # The waveforms processor type
 stream_proc_type = Callable[[Stream], Stream]
 
 # The obspy types for waveform data
-wave_type = Union[Stream, Trace, xr.DataArray]
+wave_type = Union[Stream, Trace]
 
 # Type can can be turned into a UTCDateTime
 utc_able_type = Union[str, UTCDateTime, float, np.datetime64, pd.Timestamp]
@@ -394,7 +406,7 @@ wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
 waveform_clientable_type = Union[WaveformClient, str, Path, Trace, Stream]
 
 # types accepted by DataFetcher for event info
-event_type = Union[Catalog, pd.DataFrame]
+event_type = Union[Catalog, pd.DataFrame, Event]
 
 # types from which and event client can be created
 event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
@@ -411,9 +423,6 @@ catalog_component = AttribDict
 # types accepted by DataFetcher for stations info
 inventory_type = Union[Inventory, pd.DataFrame]
 
-# stations or events
-inventory_or_event = Union[Inventory, pd.DataFrame, Catalog, Event]
-
 # types that can be a station client
 station_clientable_type = Union[str, Path, Inventory]
 
@@ -421,25 +430,13 @@ station_clientable_type = Union[str, Path, Inventory]
 fetch_type = Union[wfcli_type, str]
 
 # time type (anything that can be fed to UTCDateTime)
-utc_time_type = Union[UTCDateTime, str, float, np.datetime64]
-
-# types for specifying starttimes
-starttime_type = Optional[Union[UTCDateTime, Mapping[Any, UTCDateTime]]]
-
-# types for specifying duration
-duration_type = Optional[Union[float, Mapping[Any, float]]]
+utc_time_type = Union[UTCDateTime, str, float, np.datetime64, pd.Timestamp]
 
 # types that can be used to indicate when an event waveform should start
 event_time_type = Union[UTCDateTime, Catalog, Event, float]
 
 # availability output type (return from obspy earthworm client availability)
 availability_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
-
-# xarray types
-xr_type = Union[xr.DataArray, xr.Dataset]
-
-# basic types
-basic_types = Optional[Union[int, float, str, bool]]
 
 # series to series or ndarray func
 series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
@@ -448,10 +445,30 @@ series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
 column_function_map_type = Mapping[str, series_func_type]
 
 # subpaths type
-bank_subpaths_type = Union[str, Iterable[str]]
+bank_subpaths_type = Union[path_types, Iterable[path_types]]
+
+# types for bulk waveform requests
+bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
+
+# types which can be used to slice a numpy array
+slice_types = Union[int, slice, List[int], Tuple[int, ...]]
+
+# types that indicate time
+pd_time_types = (pd.Timestamp, np.datetime64)
+
+# types used to represent an absolute point in time.
+absolute_time_types = Union[UTCDateTime, pd.Timestamp, np.datetime64]
+
+# types used to represent relative time
+relative_time_types = Union[np.timedelta64, int, float]
+
+# combine the two
+time_types = Union[absolute_time_types, relative_time_types]
+
+# time types accepted by trim
+trim_time_types = Union[time_types, np.ndarray]
 
 # -------------------------- events validation constants
-
 
 # null quantities for nslc codes
 NULL_SEED_CODES = (None, "--", "None", "nan", "null", np.nan)
@@ -461,6 +478,9 @@ ORIGIN_FLOATS = {"latitude", "longitude", "depth"}
 
 # attributes that constitute errors
 QUANTITY_ERRORS = {"depth_errors", "latitude_errors", "longitude_errors", "time_errors"}
+
+# columns needed for bulk waveform request
+BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime"])
 
 # resource_ids that are linked to other resource ids
 LINKED_RESOURCE_IDS = {
@@ -536,6 +556,19 @@ NUMPY_FLOAT_TYPES = {
 # str for types of data
 
 DATA_TYPES = ("waveform", "station", "event")
+
+# dtypes for the stats columns in waveframe
+
+WAVEFRAME_STATS_DTYPES = {
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "starttime": "ops_datetime",
+    "endtime": "ops_datetime",
+    "delta": "ops_timedelta",
+    "sampling_rate": float,
+}
 
 # ------------------------ wavefetcher/bank stuff
 
@@ -678,4 +711,16 @@ sub_paths
     to them in predictable locations. However, if other files are added
     outside of these locations they may not get indexed as the banks timestamp
     indicating the last time of indexing will still get updated.
+"""
+
+# description for waveframe's starttime/endtime parameters
+starttime_endtime_params = """
+starttime
+    Either a single value, or an array of values, indicating the
+    start time of the new trace. Can also be ``np.timedelta64``
+    object to reference a start time relative to current starttimes.
+endtime
+    Either a single value, or an array of values, indicating the
+    end time of the new trace. Can also be ``np.timedelta64``
+    object to reference an end time relative to current endtime.
 """

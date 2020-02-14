@@ -2,9 +2,7 @@
 Setup script for obsplus
 """
 import glob
-import os
-import shutil
-import stat
+import importlib.util as iutil
 import sys
 from collections import defaultdict
 from os.path import join, exists, isdir
@@ -15,7 +13,6 @@ except ImportError:
     pass
 
 from setuptools import setup
-from setuptools.command.develop import develop
 
 # define python versions
 
@@ -29,20 +26,26 @@ if sys.version_info < python_version:
 
 # get path references
 here = Path(__file__).absolute().parent
-version_file = here / "obsplus" / "version.py"
-
-# --- get version
-with version_file.open() as fi:
-    content = fi.read().split("=")[-1].strip()
-    __version__ = content.replace('"', "").replace("'", "")
-
-
-# --- get readme
-with open("README.rst") as readme_file:
-    readme = readme_file.read()
+version_path = here / "obsplus" / "version.py"
+readme_path = here / "README.rst"
+# get requirement paths
+package_req_path = here / "requirements.txt"
+test_req_path = here / "tests" / "requirements.txt"
+doc_req_path = here / "docs" / "requirements.txt"
 
 
-# --- get sub-packages
+# --- utils
+
+
+def get_version(path, name="obsplus.version"):
+    """ Load a python module with and return its __version__ attribute. """
+    spec = iutil.spec_from_file_location(name, path)
+    version = iutil.module_from_spec(spec)
+    spec.loader.exec_module(version)
+    assert hasattr(version, "__version__"), "no __version__ defined in file."
+    return version.__version__
+
+
 def find_packages(base_dir="."):
     """ setuptools.find_packages wasn't working so I rolled this """
     out = []
@@ -69,50 +72,35 @@ def get_package_data_files():
     return list(out.items())
 
 
-# --- requirements paths
-
-
 def read_requirements(path):
     """ Read a requirements.txt file, return a list. """
     with Path(path).open("r") as fi:
-        return fi.readlines()
+        lines = fi.readlines()
+    # remove any line comments
+    return [x for x in lines if not x.startswith("#")]
 
 
-package_req_path = here / "requirements.txt"
-test_req_path = here / "tests" / "requirements.txt"
-doc_req_path = here / "docs" / "requirements.txt"
+def load_file(path):
+    """ Load a file into memory. """
+    with Path(path).open() as w:
+        contents = w.read()
+    return contents
 
 
-class SetupDev(develop):
-    """
-    Install the obsplus git hook when development mode is run.
-    These hooks run the black formatter on the code base and clear
-    notebook outputs.
-    """
+# --- get sub-packages
 
-    def run(self, *args, **kwargs):
-        super().run(*args, **kwargs)
-        # get path to get repo, do nothing if it doesnt exist
-        gitpath = Path(".git")
-        if not gitpath.exists():
-            return
-        # copy hooks
-        hook_script = Path("scripts") / "pre-commit.py"
-        assert hook_script.exists()
-        # copy to git directory
-        out_path = gitpath / "hooks" / "pre-commit"
-        shutil.copy(hook_script, out_path)
-        # make sure script is executable
-        st = os.stat(str(out_path))
-        os.chmod(out_path, st.st_mode | stat.S_IEXEC)
 
+requires = read_requirements(package_req_path)
+tests_require = read_requirements(test_req_path)
+docs_require = read_requirements(doc_req_path)
+dev_requires = tests_require + docs_require
 
 ENTRY_POINTS = {
     "obsplus.datasets": [
-        "bingham = obsplus.datasets.bingham",
-        "crandall = obsplus.datasets.crandall",
-        "kemmerer = obsplus.datasets.kemmerer",
-        "ta = obsplus.datasets.ta",
+        "bingham_test = obsplus.datasets.bingham_test",
+        "crandall_test = obsplus.datasets.crandall_test",
+        "ta_test = obsplus.datasets.ta_test",
+        "default_test = obsplus.datasets.default_test",
     ]
 }
 
@@ -120,9 +108,9 @@ df = get_package_data_files()
 
 setup(
     name="obsplus",
-    version=__version__,
+    version=get_version(version_path),
     description="Some add-ons to obspy",
-    long_description=readme,
+    long_description=load_file(readme_path),
     author="Derrick Chambers",
     author_email="djachambeador@gmail.com",
     url="https://github.com/niosh-mining/obsplus",
@@ -146,7 +134,6 @@ setup(
     install_requires=read_requirements(package_req_path),
     tests_require=read_requirements(test_req_path),
     setup_requires=["pytest-runner>=2.0"],
-    extras_require={"docs": read_requirements(doc_req_path)},
-    cmdclass={"develop": SetupDev},
+    extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
 )

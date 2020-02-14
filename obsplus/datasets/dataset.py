@@ -1,65 +1,90 @@
 """
-Module for loading, (and downloading) data sets
+Module for loading, (and downloading) data sets.
 """
 import abc
 import copy
 import inspect
-import os
 import json
+import os
 import shutil
-from contextlib import suppress
 from collections import OrderedDict
+from contextlib import suppress
 from distutils.dir_util import copy_tree
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
-from typing import Union, Optional, Tuple
+from typing import Union, Optional, Tuple, TypeVar
 from warnings import warn
 
-import obspy.clients.fdsn
-import pkg_resources
 from obspy.clients.fdsn import Client
+from pkg_resources import iter_entry_points
 
 import obsplus
-from obsplus import WaveBank, EventBank, copy_dataset
+from obsplus import copy_dataset
 from obsplus.constants import DATA_TYPES
-from obsplus.datasets.utils import _create_opsdata
-from obsplus.events.utils import get_event_client
 from obsplus.exceptions import (
     FileHashChangedError,
     MissingDataFileError,
     DataVersionError,
 )
-from obsplus.stations.utils import get_station_client
-from obsplus.utils import md5_directory
-from obsplus.waveforms.utils import get_waveform_client
+from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.utils.dataset import _create_opsdata
+from obsplus.utils.events import get_event_client
+from obsplus.utils.misc import hash_directory, iterate
+from obsplus.utils.stations import get_station_client
+from obsplus.utils.waveforms import get_waveform_client
+
+DataSetType = TypeVar("DataSetType", bound="DataSet")
 
 
 class DataSet(abc.ABC):
     """
-    Class for downloading and serving datasets.
+    Abstract Base Class for downloading and serving datasets.
 
-    By default the data will be downloaded to obsplus' datasets module
-    but this can be changed using the base_path argument. All data will
-    be saved in base_path / name.
+    This is not intended to be used directly, but rather through subclassing.
 
     Parameters
     ----------
     base_path
-        The path to which the dataset will be saved as base_path / name.
+        The path to which the dataset will be saved.
 
     Attributes
     ----------
+    data_path
+        The path containing the data. By default it is base_path / name.
     source_path
-        The path to the directory containing the source of DataSet code.
+        The path which contains the original files included in the dataset
+        before download. By default this is found in the same directory as
+        the dataset's code (.py) file in a folder with the same name as the
+        dataset.
+
+    Notes
+    -----
+        Importantly, each dataset references *two* directories, the source_path
+        and data_path. The source_path contains all data included within the
+        dataset and should not be altered. The data_path has a copy of
+        everything in the source_path, plus the files created during the
+        downloading process.
+
+        The base_path (the parent of data_path) is resolved for each
+        dataset using the following priorities:
+
+            1. The `base_path` provided to `Dataset`'s __init__ method.
+            2. .data_path.txt file stored in the data source
+            3. An environmental name OPSDATA_PATH
+            4. The opsdata_path variable from obsplus.constants
+
+        By default the data will be downloaded to the user's home directory
+        in a folder called "opsdata", but again, this is easily changed
+        by setting the OPSDATA_PATH environmental variable.
     """
 
     _entry_points = {}
-    datasets = {}
+    _datasets = {}
     data_loaded = False
     # variables for hashing datafiles and versioning
-    _version_filename = ".dataset_version.txt"
-    _hash_filename = ".dataset_md5_hash.json"
+    _version_filename = "dataset_version.txt"
+    _hash_filename = "dataset_hash.json"
     # the name of the file that saves where the data file were downloaded
     _saved_dataset_path_filename = ".dataset_data_path.txt"
     _hash_excludes = (
@@ -68,7 +93,6 @@ class DataSet(abc.ABC):
         _hash_filename,
         _saved_dataset_path_filename,
     )
-
     # generic functions for loading data (WaveBank, event, stations)
     _load_funcs = MapProxy(
         dict(
@@ -83,13 +107,14 @@ class DataSet(abc.ABC):
     _load_events = True
     # cache for instantiated datasets
     _loaded_datasets = {}
+    _verbose = True
 
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
         assert isinstance(cls.name, str), "name must be a string"
         cls._validate_version_str(cls.version)
         # Register the subclass as a dataset.
-        DataSet.datasets[cls.name.lower()] = cls
+        DataSet._datasets[cls.name.lower()] = cls
 
     # --- logic for loading and caching data
 
@@ -109,13 +134,6 @@ class DataSet(abc.ABC):
         """
         Get the location where datasets are stored.
 
-        Uses the following priorities:
-
-        1. Provided Path via opsdata_path
-        2. .data_path.txt file stored in the data source
-        3. An environmental name OPSDATA_PATH
-        4. The opsdata_path variable from obsplus.constants
-
         Returns
         -------
         A path to the opsdata directory.
@@ -130,7 +148,7 @@ class DataSet(abc.ABC):
         _create_opsdata(opsdata_path)
         return Path(opsdata_path)
 
-    def _run_downloads(self):
+    def _run_downloads(self) -> None:
         """ Iterate each kind of data and download if needed. """
         # Make sure the version of the dataset is okay
         version_ok = self.check_version()
@@ -145,10 +163,10 @@ class DataSet(abc.ABC):
                     self.pre_download_hook()
                 downloaded = True
                 # download data, test termination criteria
-                print(f"downloading {what} data for {self.name} dataset ...")
+                self._log(f"downloading {what} data for {self.name} dataset ...")
                 getattr(self, "download_" + what + "s")()
                 assert not getattr(self, needs_str), f"Download {what} failed"
-                print(f"finished downloading {what} data for {self.name}")
+                self._log(f"finished downloading {what} data for {self.name}")
                 self._write_readme()  # make sure readme has been written
         # some data were downloaded, call post download hook
         if downloaded:
@@ -172,15 +190,30 @@ class DataSet(abc.ABC):
         else:
             return client
 
-    def copy(self, deep=True):
+    def copy(self: DataSetType, deep=True) -> DataSetType:
         """
         Return a copy of the dataset.
+
+        Parameters
+        ----------
+        deep
+            If True deep copy the objects attached to the dataset.
+
+        Notes
+        -----
+        This only copies data in memory, not on disk. If you plan to make
+        any changes to the dataset's on disk resources please use
+        :method:`~obsplus.Dataset.copy_to`.
         """
         return copy.deepcopy(self) if deep else copy.copy(self)
 
-    def copy_to(self, destination: Optional[Union[str, Path]] = None):
+    def copy_to(
+        self: DataSetType, destination: Optional[Union[str, Path]] = None
+    ) -> DataSetType:
         """
         Copy the dataset to a destination.
+
+        If the destination already exists simply do nothing.
 
         Parameters
         ----------
@@ -225,7 +258,7 @@ class DataSet(abc.ABC):
             fi.write(str(self.data_path))
 
     @classmethod
-    def load_dataset(cls, name: Union[str, "DataSet"]) -> "DataSet":
+    def load_dataset(cls: DataSetType, name: Union[str, "DataSet"]) -> DataSetType:
         """
         Get a loaded dataset.
 
@@ -237,38 +270,83 @@ class DataSet(abc.ABC):
         name
             The name of the dataset to load or a DataSet object. If a DataSet
             object is passed a copy of it will be returned.
+
+        Examples
+        --------
+        >>> # --- Load an example dataset for testing
+        >>> import obsplus
+        >>> ds = obsplus.load_dataset('default_test')
+        >>> # If you plan to make changes to the dataset be sure to copy it first
+        >>> # The following will copy all files in the dataset to a tmpdir
+        >>> ds2 = obsplus.copy_dataset('default_test')
+
+        >>> # --- Use dataset clients to load waveforms, stations, and events
+        >>> cat = ds.event_client.get_events()
+        >>> st = ds.waveform_client.get_waveforms()
+        >>> inv = ds.station_client.get_stations()
+
+        >>> # --- get a fetcher for more "dataset aware" querying
+        >>> fetcher = ds.get_fetcher()
         """
+        # Just copy and return if a dataset is passed.
         if isinstance(name, DataSet):
             return name.copy()
         name = name.lower()
-        if name not in cls.datasets:
+        cls._load_dataset_entry_point(name)
+        if name not in cls._datasets:
             # The dataset has not been discovered; try to load entry points
-            cls._load_dataset_entry_points(name)
-            if name in cls._entry_points:
-                # If a plugin was register but no longer exists it can raise.
-                with suppress(ModuleNotFoundError):
-                    cls._entry_points[name].load()
-                    return load_dataset(name)
-            msg = f"{name} is not in the known datasets {list(cls.datasets)}"
+            msg = f"{name} is not in the known datasets {list(cls._datasets)}"
             raise ValueError(msg)
         if name in cls._loaded_datasets:
             # The dataset has already been loaded, simply return a copy
             return cls._loaded_datasets[name].copy()
         else:  # The dataset has been discovered but not loaded; just loaded
-            return cls.datasets[name]()
+            return cls._datasets[name]()
 
     def delete_data_directory(self):
-        """ Delete the datafiles of a dataset. """
+        """
+        Delete the datafiles of a dataset.
+
+        This will force the data to be re-copied from the source files and
+        download logic to be run.
+        """
         dataset = DataSet.load_dataset(self)
         shutil.rmtree(dataset.data_path)
 
     @classmethod
-    def _load_dataset_entry_points(cls, name=None):
-        """ load and cache the dataset entry points. """
-        look_for_name = name is not None and name not in cls._entry_points
-        if not cls._entry_points or look_for_name:
-            for ep in pkg_resources.iter_entry_points("obsplus.datasets"):
-                cls._entry_points[ep.name] = ep
+    def _load_dataset_entry_point(cls, name=None, load=True):
+        """
+        Load and cache the dataset entry points.
+
+        Parameters
+        ----------
+        name
+            A string id of the dataset
+        load
+            If True, load the code associated with the entry point.
+        """
+
+        def _load_ep(ep):
+            """Load the entry point, ignore removed datasets."""
+            # If a plugin was register but no longer exists it can raise.
+            with suppress(ModuleNotFoundError):
+                ep.load()
+                assert name in cls._datasets, "dataset should be registered."
+
+        if name in cls._entry_points:  # entry point has been registered
+            if name in cls._datasets:  # and loaded, return
+                return
+            elif load:  # it has not been loaded, try loading it.
+                _load_ep(cls._entry_points[name])
+        # it has not been found, iterate entry points and update
+        eps = {x.name: x for x in iter_entry_points("obsplus.datasets")}
+        cls._entry_points.update(eps)
+        # stop if we don't need to load
+        if not load:
+            return
+        # now iterate through all names, or just selected name, and load
+        for name in set(iterate(name or eps)) & set(eps):
+            _load_ep(eps[name])
 
     # --- prescribed Paths for data
 
@@ -293,7 +371,7 @@ class DataSet(abc.ABC):
 
     @property
     def _saved_data_path(self):
-        """ Load the saved data source path, else return None """
+        """Load the saved data source path, else return None."""
         expected_path = self._path_to_saved_path_file
         if expected_path.exists():
             loaded_path = Path(expected_path.open("r").read())
@@ -327,34 +405,37 @@ class DataSet(abc.ABC):
 
     @property
     def waveform_path(self) -> Path:
+        """Return the path to the waveforms."""
         return self.data_path / "waveforms"
 
     @property
     def event_path(self) -> Path:
+        """Return the path to the events."""
         return self.data_path / "events"
 
     @property
     def station_path(self) -> Path:
+        """Return the path to the stations."""
         return self.data_path / "stations"
 
     # --- checks for if each type of data is downloaded
 
     @property
-    def waveforms_need_downloading(self):
+    def waveforms_need_downloading(self) -> bool:
         """
         Returns True if waveform data need to be downloaded.
         """
         return not self.waveform_path.exists()
 
     @property
-    def events_need_downloading(self):
+    def events_need_downloading(self) -> bool:
         """
         Returns True if event data need to be downloaded.
         """
         return not self.event_path.exists()
 
     @property
-    def stations_need_downloading(self):
+    def stations_need_downloading(self) -> bool:
         """
         Returns True if station data need to be downloaded.
         """
@@ -362,19 +443,19 @@ class DataSet(abc.ABC):
 
     @property
     @lru_cache()
-    def waveform_client(self) -> Optional[WaveBank]:
+    def waveform_client(self) -> Optional[WaveformClient]:
         """ A cached property for a waveform client """
         return self._load("waveform", self.waveform_path)
 
     @property
     @lru_cache()
-    def event_client(self) -> Optional[EventBank]:
+    def event_client(self) -> Optional[EventClient]:
         """ A cached property for an event client """
         return self._load("event", self.event_path)
 
     @property
     @lru_cache()
-    def station_client(self) -> Optional[obspy.Inventory]:
+    def station_client(self) -> Optional[StationClient]:
         """ A cached property for a station client """
         return self._load("station", self.station_path)
 
@@ -392,26 +473,38 @@ class DataSet(abc.ABC):
         """ just allow this to be overwritten """
         self.__dict__["client"] = item
 
-    def create_md5_hash(self, path=_hash_filename, hidden=False) -> dict:
-        """
-        Create an md5 hash of all dataset's files to ensure dataset integrity.
+    def _log(self, msg):
+        """Simple way to customize dataset logging."""
+        print(msg)
 
-        Keys are paths (relative to dataset base path) and values are md5
-        hashes.
+    def create_sha256_hash(self, path=None, hidden=False) -> dict:
+        """
+        Create a sha256 hash of the dataset's data files.
+
+        The output is stored in a simple json file. Keys are paths (relative
+        to dataset base path) and values are files hashes.
+
+        If you want to update/create the hash file in the dataset's source
+        this can be done by passing the dataset's source_path as the path
+        argument.
 
         Parameters
         ----------
         path
-            The path to which the hash data is saved. If None dont save.
+            The path to which the hash data is saved. If None use data_path.
         hidden
-            If True also include hidden files
+            If True also include hidden files.
         """
-        out = md5_directory(self.data_path, exclude="readme.txt", hidden=hidden)
-        if path is not None:
-            # sort dict to mess less with git
-            sort_dict = OrderedDict(sorted(out.items()))
-            with (self.data_path / Path(path)).open("w") as fi:
-                json.dump(sort_dict, fi)
+        kwargs = dict(exclude=self._hash_excludes, hidden=hidden)
+        out = hash_directory(self.data_path, **kwargs)
+        # sort dict to mess less with git
+        sort_dict = OrderedDict(sorted(out.items()))
+        # get path and dump json
+        default_path = Path(self.data_path) / self._hash_filename
+        _path = path or default_path
+        hash_path = _path / self._hash_filename if _path.is_dir() else _path
+        with hash_path.open("w") as fi:
+            json.dump(sort_dict, fi, sort_keys=True, indent=2)
         return out
 
     def check_hashes(self, check_hash=False):
@@ -423,38 +516,41 @@ class DataSet(abc.ABC):
         check_hash
             If True check the hash of the files.
 
-        Returns
-        -------
-
+        Raises
+        ------
+        FileHashChangedError
+            If one of the file hashes is not as expeted.
+        MissingDataFileError
+            If one the data files was not downloaded.
         """
-        # TODO figure this out (data seem to have changed on IRIS' end)
         # If there is not a pre-existing hash file return
         hash_path = Path(self.data_path / self._hash_filename)
         if not hash_path.exists():
             return
         # get old and new hash, and overlaps
         old_hash = json.load(hash_path.open())
-        current_hash = md5_directory(self.data_path, exclude=self._hash_excludes)
+        current_hash = hash_directory(self.data_path, exclude=self._hash_excludes)
         overlap = set(old_hash) & set(current_hash) - set(self._hash_excludes)
         # get any files with new hashes
         has_changed = {x for x in overlap if old_hash[x] != current_hash[x]}
         missing = (set(old_hash) - set(current_hash)) - set(self._hash_excludes)
         if has_changed and check_hash:
             msg = (
-                f"The md5 hash for dataset {self.name} did not match the "
+                f"The hash for dataset {self.name} did not match the "
                 f"expected values for the following files:\n{has_changed}"
             )
             raise FileHashChangedError(msg)
         if missing:
-            msg = f"The following files are missing: \n{missing}"
+            msg = f"Dataset {self.name} is missing files: \n{missing}"
             raise MissingDataFileError(msg)
 
-    def check_version(self):
+    def check_version(self) -> bool:
         """
         Check the version of the dataset.
 
         Verifies the version string in the dataset class definition matches
-        the one saved on disk.
+        the one saved on disk. Returns True if all is well else raises a
+        DataVersionError.
 
         Parameters
         ----------
@@ -465,11 +561,6 @@ class DataSet(abc.ABC):
         ------
         DataVersionError
             If any version problems are discovered.
-
-        Returns
-        -------
-        version_ok : bool
-            True if the version matches what is expected.
         """
         redownload_msg = f"Delete the following directory {self.data_path}"
         try:
@@ -489,19 +580,20 @@ class DataSet(abc.ABC):
             warn(msg + redownload_msg)
         return True  # All is well. Continue.
 
-    def write_version(self):
+    def write_version(self, path: Optional[Union[Path, str]] = None):
         """ Write the version string to disk. """
-        version_path = self._version_path
+        version_path = path or self._version_path
         with version_path.open("w") as fi:
             fi.write(self.version)
 
-    def read_data_version(self):
+    def read_data_version(self, path: Optional[Union[Path, str]] = None) -> str:
         """
         Read the data version from disk.
 
-        Raise a DataVersionError if not found.
+        Return the version string of the form xx.yy.zz. Raise a
+        DataVersionError if not found.
         """
-        version_path = self._version_path
+        version_path = path or self._version_path
         if not version_path.exists():
             raise DataVersionError(f"{version_path} does not exist!")
         with version_path.open("r") as fi:
@@ -517,8 +609,8 @@ class DataSet(abc.ABC):
         If the version string is not valid raise DataVersionError.
         """
         is_str = isinstance(version_str, str)
-        has_3 = len(version_str.split(".")) == 3
-        if not (is_str and has_3):
+        # If version_str is not a str or doesnt have a len of 3
+        if not (is_str and len(version_str.split(".")) == 3):
             msg = f"version must be a string of the form x.y.z, not {version_str}"
             raise DataVersionError(msg)
 
@@ -569,10 +661,10 @@ class DataSet(abc.ABC):
         """
 
     def pre_download_hook(self):
-        """ Code to run before any downloads. """
+        """Code to run before any downloads."""
 
     def post_download_hook(self):
-        """ code to run after any downloads. """
+        """Code to run after any downloads."""
 
     def __str__(self):
         return f"Dataset: {self.name}"

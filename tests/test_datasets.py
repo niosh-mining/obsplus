@@ -2,16 +2,18 @@
 Tests for the datasets
 """
 import os
+import random
 import shutil
+import string
 import tempfile
-from collections import defaultdict
+from contextlib import suppress
 from pathlib import Path
 
 import obspy
 import pytest
 
 import obsplus
-import obsplus.datasets.utils
+import obsplus.utils.dataset
 from obsplus.constants import DATA_TYPES
 from obsplus.datasets.dataset import DataSet
 from obsplus.exceptions import (
@@ -51,19 +53,30 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
             with open(self.data_file1, "w") as f:
                 f.write("efgh")
 
+        def _log(self, msg):
+            """Don't pring anything!"""
+
+        @classmethod
+        def cleanup(cls):
+            """ Remove dataset source files, data files, and unregister."""
+            self = cls()
+            for path in [self.data_path, self.source_path]:
+                with suppress(FileNotFoundError):
+                    shutil.rmtree(str(path))
+            DataSet._datasets.pop(self.__class__.name.lower(), None)
+
     return DummyDataset
 
 
-@pytest.fixture(scope="session", params=list(DataSet.datasets))
+@pytest.fixture(scope="session", params=list(DataSet._datasets))
 def dataset(request):
     """ laod in the datasets """
-    return DataSet.datasets[request.param]
+    return DataSet._datasets[request.param]
 
 
 @pytest.mark.dataset
 class TestDatasets:
-    """ generic tests for all loaded datasets. These require downloaded a few
-     mb of data. """
+    """Generic tests for all loaded datasets."""
 
     client_types = {
         "event": EventClient,
@@ -73,8 +86,10 @@ class TestDatasets:
 
     @pytest.fixture(scope="class")
     def new_dataset(self, dataset, tmpdir_factory) -> DataSet:
-        """ init a copy of each dataset and set its base directory to a temp
-        directory to force download. """
+        """
+        Init a copy of each dataset and set its base directory to a temp
+        directory to force download.
+        """
         td = Path(tmpdir_factory.mktemp("datasets"))
         ds = dataset(base_path=td)
         return ds
@@ -83,31 +98,6 @@ class TestDatasets:
     def datafetcher(self, new_dataset):
         """ call the dataset (forces download) and return fetcher. """
         return new_dataset.get_fetcher()
-
-    @pytest.fixture(scope="class")
-    def downloaded_dataset(self, new_dataset, datafetcher):
-        """
-        Data should be downloaded and loaded into memory.
-        Monkey patch all methods that load data with pytest fails.
-        """
-        ds = new_dataset
-        old_load_funcs = ds._load_funcs
-        old_download_funcs = {}
-
-        def _fail(*args, **kwargs):
-            pytest.fail("this should not get called!")
-
-        for name in DATA_TYPES:
-            func_name = "download_" + name + "s"
-            old_download_funcs[name] = getattr(ds, func_name)
-            setattr(ds, func_name, _fail)
-        ds._load_funcs = defaultdict(lambda: _fail)
-        yield ds
-        # reset monkey patching
-        ds._load_funcs = old_load_funcs
-        for name in DATA_TYPES:
-            func_name = "download_" + name + "s"
-            setattr(ds, func_name, old_download_funcs[name])
 
     def test_clients(self, datafetcher):
         """ Each dataset should have waveform, event, and station clients """
@@ -153,18 +143,27 @@ class TestDatasets:
 class TestBasic:
     """ Basic misc. tests for dataset. """
 
-    def test_all_files_copied(self, kemmerer_dataset):
-        """ When the download logic fires all files in the source
-        should be copied. """
+    def test_all_files_copied(self, tmp_path):
+        """
+        When the download logic fires all files in the source
+        should be copied.
+        """
+        ds = obsplus.copy_dataset("default_test", tmp_path)
         # iterate top level files and assert each was copied
-        for tlf in kemmerer_dataset.data_files:
-            expected = kemmerer_dataset.data_path / tlf.name
+        for tlf in ds.data_files:
+            expected = ds.data_path / tlf.name
             assert expected.exists()
 
-    def test_get_fetcher(self, kemmerer_dataset):
+    def test_get_fetcher(self, ta_dataset):
         """ ensure a datafetcher can be created. """
-        fetcher = kemmerer_dataset.get_fetcher()
+        fetcher = ta_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
+
+    def test_can_copy_twice(self, ta_dataset, tmp_path):
+        """ copying a dataset to the same location twice should work. """
+        ta_dataset.copy_to(tmp_path)
+        ta_dataset.copy_to(tmp_path)
+        assert Path(tmp_path).exists()
 
 
 class TestDatasetDownloadMemory:
@@ -174,46 +173,72 @@ class TestDatasetDownloadMemory:
     """
 
     expected_default_data_path = Path().home() / "opsdata"
+    cls_name = "download_class_test"
 
-    def test_datasets_remember_download(self, tmp_path):
+    def read_saved_file_path(self, ds):
+        """Read the contents of the saved datapath file."""
+        path = ds._path_to_saved_path_file
+        with path.open() as fi:
+            contents = fi.read().rstrip()
+        return contents
+
+    @pytest.fixture
+    def dummy_dataset_class(self):
+        """Return a dummy dataset for testing, cleanup after it."""
+        randstr = "".join(random.sample(string.ascii_uppercase, 12))
+        name = "TESTDATASET" + randstr
+        DS = make_dummy_dataset(name)
+        yield DS
+        DS.cleanup()
+
+    def test_datasets_remember_download(self, dummy_dataset_class, tmp_path):
         """
         Datasets should remember where they have downloaded data.
 
-        This enables users to store data in places other than the default.
+        This enables users to store data in places other than the default, on
+        a per-dataset basis.
         """
         # simply download a new dataset with a specified path. Init new
-        NewData = make_dummy_dataset(cls_name="downloadtest")
-        newdata1 = NewData(base_path=tmp_path)
+        newdata1 = dummy_dataset_class(base_path=tmp_path)
         # the data source should share the same data_path
-        newdata2 = NewData()
+        newdata2 = dummy_dataset_class()
         assert newdata1.data_path == newdata2.data_path
 
-    def test_default_used_when_old_deleted(self, tmp_path):
+    def test_default_used_when_old_deleted(self, tmp_path, dummy_dataset_class):
         """ Ensure the default is used if the saved datapath is deleted. """
-        NewData = make_dummy_dataset(cls_name="delete_old_test")
-        newdata1 = NewData(base_path=tmp_path)
-        newdata2 = NewData()
+        newdata1 = dummy_dataset_class(base_path=tmp_path)
+        newdata2 = dummy_dataset_class()
         # these should be the same data path
         assert newdata2.data_path == newdata1.data_path
         # until the data path gets deleted
         newdata1.delete_data_directory()
         # then it should default back to normal directory
-        dataset3 = NewData()
+        dataset3 = dummy_dataset_class()
         assert dataset3.data_path != newdata1.data_path
         assert self.expected_default_data_path == dataset3.data_path.parent
         dataset3.delete_data_directory()
 
-    # def test_default_
+    def test_copying_doesnt_change_file(self, tmp_path, dummy_dataset_class):
+        """Making a copy of the dataset shouldn't change the stored path."""
+        ds = dummy_dataset_class(base_path=tmp_path)
+        path1 = self.read_saved_file_path(ds)
+        ds2 = ds.copy()
+        path2 = self.read_saved_file_path(ds2)
+        ds3 = ds.copy_to(tmp_path)
+        path3 = self.read_saved_file_path(ds3)
+        assert path1 == path2 == path3
 
 
 class TestCopyDataset:
     """ tests for copying datasets. """
 
     def test_no_new_data_downloaded(self, monkeypatch):
-        """ no data should be downloaded when copying a dataset that
-        has already been downloaded. """
+        """
+        No data should be downloaded when copying a dataset that
+        has already been downloaded.
+        """
         # this ensures dataset is loaded
-        ds = obsplus.load_dataset("bingham")
+        ds = obsplus.load_dataset("bingham_test")
         cls = ds.__class__
 
         def fail(*args, **kwargs):
@@ -225,13 +250,13 @@ class TestCopyDataset:
             monkeypatch.setattr(cls, attr, fail)
 
         # if this proceeds without downloading data the test passes
-        new_ds = obsplus.datasets.utils.copy_dataset("bingham")
+        new_ds = obsplus.utils.dataset.copy_dataset("bingham_test")
         assert isinstance(new_ds, DataSet)
 
     def test_copy_dataset_with_dataset(self):
         """ ensure a dataset can be the first argument to copy_dataset """
-        ds = obsplus.load_dataset("bingham")
-        out = obsplus.datasets.utils.copy_dataset(ds)
+        ds = obsplus.load_dataset("bingham_test")
+        out = obsplus.utils.dataset.copy_dataset(ds)
         assert isinstance(out, DataSet)
         assert out.name == ds.name
         assert out.data_path != ds.data_path
@@ -243,21 +268,23 @@ class TestCopyDataset:
 
     def test_str_and_repr(self):
         """ ensure str is returned from str and repr """
-        ds = obsplus.load_dataset("bingham")
+        ds = obsplus.load_dataset("bingham_test")
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
 
 
-class TestMD5Hash:
-    """ Ensure a MD5 hash can be created of directory contents. """
+class TestFileHashing:
+    """Ensure a hash can be created for each file in a directory."""
 
     @pytest.fixture
     def copied_crandall(self, tmpdir_factory):
-        """ Copy the crandall ds to a new directory, create fresh hash
-        and return. """
+        """
+        Copy the crandall_test ds to a new directory, create fresh hash
+        and return.
+        """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
-        ds = obsplus.load_dataset("crandall").copy_to(newdir)
-        ds.create_md5_hash()
+        ds = obsplus.load_dataset("crandall_test").copy_to(newdir)
+        ds.create_sha256_hash()
         return ds
 
     @pytest.fixture
@@ -305,6 +332,7 @@ class TestVersioning:
 
     # Helper Functions
     def check_dataset(self, ds, redownloaded=True):
+        """Perform sanity-checks on a dataset."""
         if redownloaded:
             assert ds.data_file.exists()
             with open(ds.data_file1) as f:
@@ -317,22 +345,27 @@ class TestVersioning:
     # Fixtures
     @pytest.fixture(scope="class")
     def dataset(self):
-        """ Create a stupidly simple dataset """
-
-        return make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
+        """Create a stupidly simple dataset."""
+        ds_cls = make_dummy_dataset(cls_name="dummy", cls_version="1.0.0")
+        yield ds_cls
+        ds_cls.cleanup()
 
     @pytest.fixture
     def dummy_dataset(self, tmpdir_factory, dataset):
-        """ Instantiate our simple dataset for the first data download """
+        """
+        Instantiate our simple dataset for the first data download.
+        """
         newdir = Path(tmpdir_factory.mktemp("new_ds"))
         ds = dataset(base_path=newdir)
-        ds.create_md5_hash()
+        ds.create_sha256_hash()
         return ds
 
     @pytest.fixture  # These should be able to be combined somehow, I would think...
     def proper_version(self, dummy_dataset):
-        """ Make sure there is a version file with the correct version number from
-        what is attached to the DataSet """
+        """
+        Make sure there is a version file with the correct version number from
+        what is attached to the DataSet.
+        """
         version = "1.0.0"
         with dummy_dataset._version_path.open("w") as fi:
             fi.write(version)
@@ -353,6 +386,7 @@ class TestVersioning:
 
     @pytest.fixture
     def high_version(self, dummy_dataset):
+        """Return a dummy dataset with a large version."""
         version = "2.0.0"
         with open(dummy_dataset._version_path, "w") as fi:
             fi.write(version)
@@ -361,6 +395,7 @@ class TestVersioning:
 
     @pytest.fixture
     def no_version(self, dummy_dataset):
+        """Return a dummy dataset with no version info."""
         path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
@@ -369,6 +404,7 @@ class TestVersioning:
 
     @pytest.fixture
     def re_download(self, dummy_dataset):
+        """Re-download the dummy dataset and return."""
         path = dummy_dataset._version_path
         if path.exists():
             os.remove(path)
@@ -382,6 +418,7 @@ class TestVersioning:
 
     @pytest.fixture
     def corrupt_version(self, dummy_dataset):
+        """Return a dummy dataset with a corrupt version."""
         with open(dummy_dataset._version_path, "w") as fi:
             fi.write("abcd")
         dummy_dataset.adjust_data()
@@ -389,8 +426,10 @@ class TestVersioning:
 
     # Tests <- It's probably possible to combine some of these, somehow...
     def test_version_matches(self, proper_version, dataset):
-        """ Try re-loading the dataset and verify that it is possible with a
-        matching version number """
+        """
+        Try re-loading the dataset and verify that it is possible with a
+        matching version number.
+        """
         dataset(base_path=proper_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(proper_version, redownloaded=False)
@@ -437,8 +476,10 @@ class TestVersioning:
         assert expected in str(e.value.args[0])
 
     def test_doesnt_delete_extra_files(self, no_version, dataset):
-        """ Make sure an extra file that was added doesn't get harmed by the
-        re-download process """
+        """
+        Make sure an extra file that was added doesn't get harmed by the
+        re-download process.
+        """
         path = no_version.station_path / "test.txt"
         with open(path, "w") as f:
             f.write("ijkl")

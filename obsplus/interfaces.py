@@ -11,16 +11,6 @@ import obspy
 import pandas as pd
 
 
-def add_func_name(my_set: set):
-    """ add the name of a function to a set """
-
-    def _wrap(func):
-        my_set.add(func.__name__)
-        return func
-
-    return _wrap
-
-
 class _MethodChecker(type):
     """ class for checking if methods exist """
 
@@ -50,7 +40,30 @@ class _MethodChecker(type):
 
 
 class EventClient(metaclass=_MethodChecker):
-    """ The event client interface """
+    """
+    Abstract Base Class defining the event client interface.
+
+    Any object which has a `get_events` method implements the interface
+    and is either an instance or subclass of EventClient.
+
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+    >>> # EventBank is a subclass of EventClient
+    >>> assert issubclass(obsplus.EventBank, EventClient)
+    >>> assert issubclass(obspy.Catalog, EventClient)
+    >>> # a catalog is an instance of EventClient
+    >>> assert isinstance(obspy.read_events(), EventClient)
+    >>> # A string has no `get_events` so it is not a subclass/instance
+    >>> assert not issubclass(str, EventClient)
+    >>> assert not isinstance('string', EventClient)
+    >>> # this works on any class with a get_events method
+    >>> class NewEventClientThing:
+    ...     def get_events(self, *args, **kwargs):
+    ...         pass
+    >>> assert issubclass(NewEventClientThing, EventClient)
+    """
 
     @abstractmethod
     def get_events(self, *args, **kwargs) -> obspy.Catalog:
@@ -58,7 +71,30 @@ class EventClient(metaclass=_MethodChecker):
 
 
 class WaveformClient(metaclass=_MethodChecker):
-    """ The waveform client interface. """
+    """
+    Abstract Base Class defining the waveform client interface.
+
+    Any object which has a `get_waveforms` method implements the interface
+    and is either an instance or subclass of WaveformClient.
+
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+    >>> # WaveBank/Stream are subclasses of WaveformClient
+    >>> assert issubclass(obsplus.WaveBank, WaveformClient)
+    >>> assert issubclass(obspy.Stream, WaveformClient)
+    >>> # A string has no `get_waveforms` so it is not a subclass/instance
+    >>> assert not issubclass(str, WaveformClient)
+    >>> assert not isinstance('string', WaveformClient)
+    >>> # A stream is a subclass of WaveformClient
+    >>> assert isinstance(obspy.read(), WaveformClient)
+    >>> # this works on any class with a get_waveforms method
+    >>> class NewWaveformClientThing:
+    ...     def get_waveforms(self, *args, **kwargs):
+    ...         pass
+    >>> assert issubclass(NewWaveformClientThing, WaveformClient)
+    """
 
     @abstractmethod
     def get_waveforms(
@@ -68,7 +104,28 @@ class WaveformClient(metaclass=_MethodChecker):
 
 
 class StationClient(metaclass=_MethodChecker):
-    """ The station client interface """
+    """
+    Abstract Base Class defining the station client interface.
+
+    Any object which has a `get_stations` method implements the interface and is
+    either an instance or subclass of StationClient.
+
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+    >>> # Inventory is a subclass of StationClient
+    >>> assert issubclass(obspy.Inventory, StationClient)
+    >>> assert isinstance(obspy.read_inventory(), StationClient)
+    >>> # A string has no `get_stations` so it is not a subclass/instance
+    >>> assert not issubclass(str, StationClient)
+    >>> assert not isinstance('string', StationClient)
+    >>> # this works on any class with a get_waveforms method
+    >>> class NewStationClientThing:
+    ...     def get_stations(self, *args, **kwargs):
+    ...         pass
+    >>> assert issubclass(NewStationClientThing, StationClient)
+    """
 
     @abstractmethod
     def get_stations(self, *args, **kwargs) -> obspy.Inventory:

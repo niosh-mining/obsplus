@@ -5,12 +5,10 @@ import copy
 import glob
 import os
 import shutil
-import tempfile
 import typing
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 from os.path import basename
-from os.path import join, dirname, abspath, exists
+from os.path import join, dirname, abspath
 from pathlib import Path
 
 import numpy as np
@@ -18,10 +16,11 @@ import obspy
 import pytest
 from obspy.core.event.base import ResourceIdentifier
 
-import obsplus.datasets.utils
-import obsplus.events.utils
+import obsplus.utils.dataset
+import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
-from obsplus.testing import instrument_methods
+from obsplus.utils.testing import instrument_methods
+from obsplus.utils.misc import suppress_warnings
 
 # ------------------------- define constants
 
@@ -38,8 +37,6 @@ SETUP_PATH = join(TEST_PATH, "setup_code")
 CATALOG_DIRECTORY = join(TEST_DATA_PATH, "test_catalogs")
 # Directory containing test inventories
 INVENTORY_DIRECTORY = join(TEST_DATA_PATH, "test_inventories")
-# Directory containing test data for grids
-GRID_DIRECTORY = join(TEST_DATA_PATH, "test_grid_inputs")
 # get a list of cat_name file paths
 catalogs = glob.glob(join(CATALOG_DIRECTORY, "*xml"))
 # get a list of stations file paths
@@ -50,14 +47,13 @@ eve_id_cache = {}
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
 
-# Monkey patch the resource_id to avoid emmitting millions of warnings
+# Monkey patch the resource_id to avoid emitting millions of warnings
 # TODO Remove this when obspy 1.2 is released
 old_func = ResourceIdentifier._get_similar_referred_object
 
 
 def _func(*args, **kwargs):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    with suppress_warnings():
         return old_func(*args, **kwargs)
 
 
@@ -109,15 +105,11 @@ def collect_catalogs():
     target a specific cat_name
     """
 
-    def _get_origin_time(cat):
-        ori = obsplus.get_preferred(cat, "origin")
-        return ori.time
-
     out = {}
     for cat_path in catalogs:
         cat = obspy.read_events(cat_path)
         # sort events by origin time
-        cat.events.sort(key=_get_origin_time)
+        cat.events.sort(key=obsplus.get_reference_time)
         out[os.path.basename(cat_path).split(".")[0]] = cat
         # add to cache and assert cat_name resource id is unique
         cat_id = cat.resource_id.id
@@ -125,9 +117,9 @@ def collect_catalogs():
         eve_id_cache[cat_id] = len(cat)
 
     # get catalog from datasets
-    out["kemmerer"] = obsplus.load_dataset("kemmerer").event_client.get_events()
-    out["bingham"] = obsplus.load_dataset("bingham").event_client.get_events()
-    out["crandall"] = obsplus.load_dataset("crandall").event_client.get_events()
+    for name in ("bingham_test", "crandall_test"):
+        ds = obsplus.load_dataset(name)
+        out[name] = ds.event_client.get_events()
     return out
 
 
@@ -179,6 +171,7 @@ class StreamTester:
         """
         Return True if two streams are almost equal.
         Will only look at default params for stats objects.
+
         Parameters
         ----------
         st1
@@ -253,32 +246,26 @@ def instrumented_thread_executor(thread_executor):
 
 @pytest.fixture(scope="session")
 def ta_dataset():
-    """ Load the small TA test case into a dataset """
-    return load_and_update_dataset("TA")
+    """ Load the small ta_test test case into a dataset """
+    return load_and_update_dataset("ta_test")
 
 
 @pytest.fixture(scope="session")
-def kemmerer_dataset():
-    """ Load the kemmerer test case """
-    return load_and_update_dataset("kemmerer")
+def ta_wavebank(ta_dataset):
+    """ Return a wavebank from ta_test dataset. """
+    return ta_dataset.waveform_client
 
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
-    """ load the bingham dataset """
-    ds = load_and_update_dataset("bingham")
+    """ load the bingham_test dataset """
+    ds = load_and_update_dataset("bingham_test")
     return ds
-
-
-@pytest.fixture(scope="session")
-def bingham_inventory(bingham_dataset):
-    """ load the bingham tests case """
-    return bingham_dataset.station_client
 
 
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
-    """ load the bingham tests case """
+    """ load the bingham_test tests case """
     cat = bingham_dataset.event_client.get_events()
     assert len(cat), "catalog is empty"
     return cat
@@ -286,7 +273,7 @@ def bingham_catalog(bingham_dataset):
 
 @pytest.fixture()
 def bingham_stream(bingham_dataset):
-    """ load the bingham tests case """
+    """ load the bingham_test tests case """
     return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
@@ -299,125 +286,57 @@ def bingham_stream_dict(bingham_dataset):
 
 @pytest.fixture(scope="session")
 def crandall_dataset():
-    """ load the crandall canyon dataset. """
-    return load_and_update_dataset("crandall")
-
-
-@pytest.fixture(scope="session")
-def crandall_fetcher(crandall_dataset):
-    """ Return a Fetcher from the crandall dataset. """
-    return crandall_dataset.get_fetcher()
-
-
-@pytest.fixture(scope="session")
-def crandall_data_array(crandall_fetcher):
-    """ return a data array (with attached picks) of crandall dataset. """
-    cat = crandall_fetcher.event_client.get_events()
-    st_dict = crandall_fetcher.get_event_waveforms(10, 50)
-    dar = obsplus.obspy_to_array_dict(st_dict)[40]
-    dar.ops.attach_events(cat)
-    return dar
+    """Load the crandall_test canyon dataset."""
+    return load_and_update_dataset("crandall_test")
 
 
 @pytest.fixture(scope="session")
 def crandall_bank(crandall_dataset):
+    """Return a WaveBank of Crandall Canyon dataset."""
     return obsplus.WaveBank(crandall_dataset.waveform_client)
-
-
-# ------------------------- session fixtures
-
-
-@pytest.fixture(scope="session")
-def stream_tester():
-    """ return the StreamTester. """
-    return StreamTester
-
-
-@pytest.yield_fixture(scope="module")
-def temp_dir():
-    """ create a temporary archive directory """
-    td = tempfile.mkdtemp()
-    yield td
-    if exists(td):
-        shutil.rmtree(td)
 
 
 @pytest.fixture(scope="session", params=cat_dict.values())
 def test_catalog(request):
     """
-    return a list of test events (as catalogs) from
-    quakeml saved on disk
+    Return a list of test events (as catalogs) from quakeml saved on disk.
     """
     cat = request.param
     return cat
 
 
-@pytest.fixture(scope="session")
-def catalog_dic():
-    """ a dictionary of catalogs based on name of cat_name file """
-    return cat_dict
-
-
 @pytest.fixture(scope="session", params=inventories)
 def test_inventory(request):
-    """ return a list of test inventories from
-    stationxml files saved on disk """
+    """
+    Return a list of test inventories from stationxml files saved on disk.
+    """
     inv = obspy.read_inventory(request.param)
     return inv
 
 
 @pytest.fixture(scope="session")
-def cd_2_test_directory():
-    """ cd to test directory, then cd back """
-    back = os.getcwd()
-    there = dirname(__file__)
-    os.chdir(there)
-    yield  # there and back again
-    os.chdir(back)
-
-
-@pytest.fixture(scope="session")
 def ta_archive(ta_dataset):
-    """ make sure the TA archive, generated with the setup_test_archive
-    script, has been downloaded, else download it """
+    """
+    Make sure the ta_test archive, generated with the setup_test_archive
+    script, has been downloaded, else download it.
+    """
     return Path(obsplus.WaveBank(ta_dataset.waveform_client).index_path).parent
-
-
-@pytest.fixture(scope="session")
-def kem_archive(kemmerer_dataset):
-    """ download the kemmerer data (will take a few minutes but only
-     done once) """
-    return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
-
-
-@pytest.fixture(scope="session")
-def kem_fetcher():
-    """ return a wavefetcher of the kemmerer dataset, download if needed """
-    return obsplus.load_dataset("kemmerer").get_fetcher()
 
 
 @pytest.fixture(scope="class")
 def class_tmp_dir(tmpdir_factory):
-    """ create a temporary directory on the class scope """
+    """Create a temporary directory on the class scope."""
     return tmpdir_factory.mktemp("base")
 
 
 @pytest.fixture(scope="class")
-def tmp_ta_dir(class_tmp_dir):
-    """ Make a temp copy of the TA bank """
-    bank = obsplus.load_dataset("TA").waveform_client
+def tmp_ta_dir(class_tmp_dir, ta_dataset):
+    """Make a temp copy of the ta_test bank."""
+    bank = ta_dataset.waveform_client
     path = dirname(dirname(bank.index_path))
     out = os.path.join(class_tmp_dir, "temp")
     shutil.copytree(path, out)
     yield out
-
-
-@pytest.fixture(scope="session")
-def bingham_bank_path(tmpdir_factory):
-    """ Create  bank structure using Bingham dataset """
-    tmpdir = tmpdir_factory.mktemp("data")
-    obsplus.datasets.utils.copy_dataset("bingham", tmpdir)
-    return str(tmpdir)
 
 
 @pytest.fixture(scope="class", params=waveform_cache_obj.keys)
@@ -479,28 +398,96 @@ def qml_to_merge_basic():
     return out[0]
 
 
-@pytest.fixture(scope="session")
-def station_cache():
-    """ Return the station cache. """
-    return station_cache_obj
-
-
 @pytest.fixture(scope="session", params=station_cache_obj.keys)
 def station_cache_inventory(request):
     """ Return the test inventories. """
     return station_cache_obj[request.param]
 
 
-@pytest.fixture(scope="session")
-def grid_path():
-    """ Return the path to the grid inputs """
-    return GRID_DIRECTORY
+@pytest.fixture(scope="class")
+def basic_stream_with_gap(waveform_cache):
+    """
+    Return a waveforms with a 2 second gap in center, return combined
+    waveforms with gaps, first chunk, second chunk.
+    """
+    st = waveform_cache["default"]
+    st1 = st.copy()
+    st2 = st.copy()
+    t1 = st[0].stats.starttime
+    t2 = st[0].stats.endtime
+    average = obspy.UTCDateTime((t1.timestamp + t2.timestamp) / 2.0)
+    a1 = average - 1
+    a2 = average + 1
+    # split and recombine
+    st1.trim(starttime=t1, endtime=a1)
+    st2.trim(starttime=a2, endtime=t2)
+    out = st1.copy() + st2.copy()
+    out.sort()
+    assert len(out) == 6
+    gaps = out.get_gaps()
+    for gap in gaps:
+        assert gap[4] < gap[5]
+    return out, st1, st2
+
+
+@pytest.fixture(scope="class")
+def disjointed_stream():
+    """ return a waveforms that has parts with no overlaps """
+    st = obspy.read()
+    st[0].stats.starttime += 3600
+    return st
+
+
+@pytest.fixture
+def fragmented_stream():
+    """ create a waveforms that has been fragemented """
+    st = obspy.read()
+    # make streams with new stations that are disjointed
+    st2 = st.copy()
+    for tr in st2:
+        tr.stats.station = "BOB"
+        tr.data = tr.data[0:100]
+    st3 = st.copy()
+    for tr in st3:
+        tr.stats.station = "BOB"
+        tr.stats.starttime += 25
+        tr.data = tr.data[2500:]
+    return st + st2 + st3
+
+
+@pytest.fixture(scope="class")
+def default_wbank(tmp_path_factory):
+    """ create a  directory out of the traces in default waveforms, init bank """
+    base = Path(tmp_path_factory.mktemp("default_wbank"))
+    st = obspy.read()
+    for num, tr in enumerate(st):
+        name = base / f"{(num)}.mseed"
+        tr.write(str(name), "mseed")
+    bank = obsplus.WaveBank(base)
+    bank.update_index()
+    return bank
+
+
+@pytest.fixture(scope="class")
+def simple_event_dir(tmp_path_factory):
+    """Create an event directory from the default catalog."""
+    path = tmp_path_factory.mktemp("_event_client_getting")
+    ebank = obsplus.EventBank(path)
+    ebank.put_events(obspy.read_events())
+    return str(path)
+
+
+@pytest.fixture(scope="class")
+def default_ebank(simple_event_dir):
+    """Return the default eventbank."""
+    return obsplus.EventBank(simple_event_dir)
 
 
 # -------------- configure test runner
 
 
 def pytest_addoption(parser):
+    """Add obsplus' pytest command options."""
     parser.addoption(
         "--datasets",
         action="store_true",
@@ -518,6 +505,7 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    """Configure obsplus' pytest command line options."""
     marks = {}
     if not config.getoption("--datasets"):
         msg = "needs --dataset option to run"

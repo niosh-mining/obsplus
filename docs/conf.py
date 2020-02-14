@@ -37,8 +37,8 @@ sys.path.insert(0, project_root)
 import obsplus
 
 # load the datasets used by docs here so notebooks don't have to
-obsplus.load_dataset("crandall")
-obsplus.load_dataset("TA")
+obsplus.load_dataset("crandall_test")
+obsplus.load_dataset("ta_test")
 
 # -- General configuration ---------------------------------------------
 
@@ -61,6 +61,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "numpydoc",
     "nbsphinx",
+    "sphinx_automodapi.automodapi",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -68,6 +69,9 @@ templates_path = ["_templates"]
 
 # The suffix of source filenames.
 source_suffix = ".rst"
+
+# Needed to avoid showing numpy documentation twice.
+numpydoc_show_class_members = False
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -163,7 +167,7 @@ html_logo = "images/obsplus_panda.png"
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
-html_static_path = ["_static"]
+html_static_path = []
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -293,17 +297,3 @@ texinfo_documents = [
 autodoc_default_flags = ["members"]
 autosummary_generate = True
 nbsphinx_timeout = 600
-
-#
-# def setup(app):
-#     """ Run the setup script """
-#     doc_path = Path(__file__).absolute().parent
-#     # --- make api documentation
-#     api_path = doc_path / "api"
-#     if api_path.exists():
-#         shutil.rmtree(api_path)
-#     # --- run auto api-doc
-#     run(f" sphinx-apidoc ../obsplus -o api", cwd=doc_path, shell=True)
-#     # download datasets
-#     obsplus.load_dataset("crandall")
-#     obsplus.load_dataset("TA")

@@ -17,7 +17,7 @@ from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils import apply_to_files_or_skip, get_instances
+from obsplus.utils.misc import get_instances_from_tree, apply_to_files_or_skip
 
 # attributes from channel to extract
 
@@ -32,7 +32,8 @@ stations_to_df = DataFrameExtractor(
 @stations_to_df.extractor()
 def _extract_from_channels(channel):
     """ extract info from channels. """
-    return {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
+    out = {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
+    return out
 
 
 @stations_to_df.register(obspy.Inventory)
@@ -77,10 +78,12 @@ def _str_inv_to_df(path):
 @stations_to_df.register(Event)
 @stations_to_df.register(Catalog)
 def _event_to_inv_df(event):
-    """ Pull all waveform steam IDS out of an event and put it in a
-    dataframe """
-    wids = {x.get_seed_string() for x in get_instances(event, WaveformStreamID)}
-    df = pd.DataFrame(sorted(wids), columns=["seed_id"])
+    """
+    Pull WaveformStreamIDs out of an event and put it in a dataframe.
+    """
+    wids = get_instances_from_tree(event, WaveformStreamID)
+    wid_str = {x.get_seed_string() for x in wids}
+    df = pd.DataFrame(sorted(wid_str), columns=["seed_id"])
     seed = df["seed_id"].str.split(".", expand=True)
     df["network"], df["station"] = seed[0], seed[1]
     df["location"], df["channel"] = seed[2], seed[3]
@@ -100,15 +103,35 @@ def _bank_to_df(bank):
     if isinstance(bank, obsplus.WaveBank):
         rename = {"starttime": "start_date", "endtime": "end_date"}
         return bank.get_availability_df().rename(columns=rename)
-
     else:
         raise TypeError(f"{bank} type not yet supported")
+
+
+@stations_to_df.register(obspy.Stream)
+@stations_to_df.register(obspy.Trace)
+def _stream_to_station_df(st):
+    """Convert a stream/trace to station dataframe."""
+    st = [st] if isinstance(st, obspy.Trace) else st
+    attrs = list(NSLC) + ["starttime", "endtime"]
+    stats_summary = []
+    for tr in st:
+        stats_summary.append({at: getattr(tr.stats, at, None) for at in attrs})
+    df = pd.DataFrame(stats_summary)
+    # next groupby stations and get min/max for start_date and end_date
+    group = df.groupby(list(NSLC))
+    df = (
+        pd.concat([group["starttime"].min(), group["endtime"].max()], axis=1)
+        .reset_index()
+        .rename(columns={"starttime": "start_date", "endtime": "end_date"})
+    )
+    return stations_to_df(df)
 
 
 # monkey patch in to_df method on stations
 
 
 def inventory_to_dataframe(inventory_like):
+    """Convert an inventory to a dataframe."""
     return stations_to_df(inventory_like)
 
 

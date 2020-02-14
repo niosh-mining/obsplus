@@ -3,12 +3,13 @@ Functions for validating events according to the obsplus flavor.
 """
 from typing import Union, Optional, Collection
 
+import pandas as pd
 from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
 import obsplus
 from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
-from obsplus.utils import yield_obj_parent_attr, replace_null_nlsc_codes, iterate
-from obsplus.validate import validator, validate
+from obsplus.utils.misc import yield_obj_parent_attr, iterate, replace_null_nlsc_codes
+from obsplus.utils.validate import validator, validate
 
 CATALOG_VALIDATORS = []
 
@@ -131,7 +132,7 @@ def check_pick_order(event: Event,):
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
 
-    def pick_order(g, sp, ap, event_id=event.resource_id.id):
+    def pick_order(g, sp, ap):
         # get sub dfs with phases of interest
         p_picks = g[g["phase_hint"].str.upper() == "P"]
         s_picks = g[g["phase_hint"].str.upper() == "S"]
@@ -140,7 +141,8 @@ def check_pick_order(event: Event,):
         assert len(p_picks) <= 1 and len(s_picks) <= 1
         # first check that P is less than S, if not append to name of bad
         if len(p_picks) and len(s_picks):
-            if s_picks.iloc[0]["time"] < p_picks.iloc[0]["time"]:
+            stime, ptime = s_picks.iloc[0]["time"], p_picks.iloc[0]["time"]
+            if (stime < ptime) and not (pd.isnull(ptime) | pd.isnull(stime)):
                 sp.append(g.name)
         # next check all amplitude picks are after P
         if len(p_picks) and len(amp_picks):

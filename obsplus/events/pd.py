@@ -1,8 +1,6 @@
 """
 Module for generating a pandas dataframe from an obspy events.
 """
-
-from os.path import isdir
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -12,7 +10,7 @@ import obspy.core.event as ev
 import pandas as pd
 
 import obsplus
-from obsplus import get_preferred
+import obsplus.utils.time
 from obsplus.constants import (
     EVENT_COLUMNS,
     EVENT_DTYPES,
@@ -29,13 +27,15 @@ from obsplus.constants import (
     NSLC,
     MAGNITUDE_COLUMN_TYPES,
 )
-from obsplus.events.utils import get_reference_time, get_seed_id
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils import read_file, apply_to_files_or_skip, get_instances, getattrs
+from obsplus.utils.events import get_preferred
+from obsplus.utils.events import get_seed_id
+from obsplus.utils.misc import get_instances_from_tree, read_file, getattrs
+from obsplus.utils.time import get_reference_time
 
 # -------------------- init extractors
 events_to_df = DataFrameExtractor(
@@ -53,11 +53,9 @@ arrivals_to_df = DataFrameExtractor(
     ev.Arrival, ARRIVAL_COLUMNS, column_funcs=standard_column_transforms
 )
 
-
 amplitudes_to_df = DataFrameExtractor(
     ev.Amplitude, AMPLITUDE_COLUMNS, column_funcs=standard_column_transforms
 )
-
 
 station_magnitudes_to_df = DataFrameExtractor(
     ev.StationMagnitude,
@@ -125,7 +123,7 @@ class _OriginQualityExtractor:
         uncert_attrs = (("horizontal_uncertainty", np.NaN),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
         for (attr, default) in uncert_attrs:
-            out[attr] = getattr(uncert, attr) or default
+            out[attr] = getattr(uncert, attr, default) or default
 
     def _get_depth_uncertainty_info(self, origin, out):
         """ Get info from depth info. """
@@ -159,6 +157,7 @@ class _OriginQualityExtractor:
         # now extract information
         self._get_origin_quality_info(origin, out)
         self._get_depth_uncertainty_info(origin, out)
+        self._get_origin_uncertainty(origin, out)
         return out
 
 
@@ -172,6 +171,15 @@ def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = 
                 continue
         out = mag.mag
     return out
+
+
+def _path_or_event_bank(path):
+    """
+    Return either a path (str) to a function, or an EventBank if path is a directory.
+    """
+    if Path(path).is_dir():
+        return obsplus.EventBank(path).update_index()
+    return str(path)
 
 
 @events_to_df.extractor
@@ -209,7 +217,7 @@ def _get_eve_creation_info(event):
 @events_to_df.extractor()
 def _get_update_time(eve):
     """ return the most recent time anything was updated in event """
-    creations = get_instances(eve, ev.CreationInfo)
+    creations = get_instances_from_tree(eve, cls=ev.CreationInfo)
     timestamps = [getattr(x.creation_time, "timestamp", None) or 0 for x in creations]
     return {"updated": max(timestamps) if timestamps else np.NaN}
 
@@ -227,19 +235,9 @@ def _get_origin_basic(eve):
 @events_to_df.extractor
 def _get_time(event):
     try:
-        return {"time": obsplus.get_reference_time(event)}
+        return {"time": obsplus.utils.time.get_reference_time(event)}
     except ValueError:  # no valid starttime
         return {"time": np.nan}
-
-
-def _get_used_stations(origin: ev.Origin, pid):
-    """ get the stations used in the origin, return str """
-    arrivals = origin.arrivals
-    picks = [pid.get(arr.pick_id.id) for arr in arrivals]
-    assert all(picks)
-    pset = {p.waveform_id.station_code for p in picks}
-    sl = sorted(list(pset))
-    return {"stations": ", ".join(sl), "station_count": len(sl)}
 
 
 @events_to_df.extractor
@@ -250,9 +248,10 @@ def _get_origin_quality(eve: ev.Event):
 
 @events_to_df.extractor
 def _get_magnitude_info(eve: ev.Event):
-    """ extract magnitude information. Get base magnitude, as well as various
-     other magnitude types (where applicable). """
-
+    """
+    Extract magnitude information. Get base magnitude, as well as various
+    other magnitude types (where applicable).
+    """
     out = {}
     magnitude = get_preferred(eve, "magnitude", init_empty=True)
     out["magnitude"] = magnitude.mag
@@ -268,13 +267,9 @@ def _get_magnitude_info(eve: ev.Event):
 @events_to_df.register(str)
 @events_to_df.register(Path)
 def _str_catalog_to_df(path):
-    # if applied to directory, recurse
-    path = str(path)  # convert possible path object to str
-    if isdir(path):
-        df = pd.concat(list(apply_to_files_or_skip(_str_catalog_to_df, path)))
-        df.reset_index(drop=True, inplace=True)
-        return df
-    # else try to read single file
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return events_to_df(path)
     funcs = (obspy.read_events, pd.read_csv)
     return events_to_df(read_file(path, funcs=funcs))
 
@@ -295,6 +290,9 @@ def _bank_to_catalog(bank):
 @picks_to_df.register(str)
 @picks_to_df.register(Path)
 def _file_to_picks_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return picks_to_df(path)
     return _file_to_df(path, picks_to_df)
 
 
@@ -324,6 +322,9 @@ def _pick_extractor(pick):
 @arrivals_to_df.register(str)
 @arrivals_to_df.register(Path)
 def _file_to_arrivals_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return arrivals_to_df(path)
     return _file_to_df(path, arrivals_to_df)
 
 
@@ -376,7 +377,10 @@ def _arrivals_extractor(arr):
 @amplitudes_to_df.register(str)
 @amplitudes_to_df.register(Path)
 def _file_to_amplitudes_df(path):
-    return _file_to_df(path, amplitudes_to_df)
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return amplitudes_to_df(path)
+    return _file_to_df(path, picks_to_df)
 
 
 @amplitudes_to_df.register(ev.Event)
@@ -410,6 +414,9 @@ def _amplitudes_extractor(amp):
 @station_magnitudes_to_df.register(str)
 @station_magnitudes_to_df.register(Path)
 def _file_to_station_magnitudes_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return station_magnitudes_to_df(path)
     return _file_to_df(path, station_magnitudes_to_df)
 
 
@@ -448,6 +455,9 @@ def _station_magnitudes_extractor(sm):
 @magnitudes_to_df.register(str)
 @magnitudes_to_df.register(Path)
 def _file_to_magnitudes_df(path):
+    path = _path_or_event_bank(path)
+    if isinstance(path, obsplus.EventBank):
+        return magnitudes_to_df(path)
     return _file_to_df(path, magnitudes_to_df)
 
 

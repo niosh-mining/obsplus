@@ -3,13 +3,14 @@ Data fetcher class stuff
 """
 import copy
 import functools
+import warnings
 from collections import namedtuple
 from functools import partial
 from typing import Optional, Union, Callable, Tuple, Dict
 
 import obspy
 import pandas as pd
-from obspy import Stream, UTCDateTime
+from obspy import Stream
 
 import obsplus
 from obsplus import events_to_df, stations_to_df, picks_to_df
@@ -22,24 +23,19 @@ from obsplus.constants import (
     NSLC,
     WAVEFETCHER_OVERRIDES,
     event_time_type,
-    EVENT_WAVEFORM_PATH_STRUCTURE,
-    WAVEFORM_STRUCTURE,
     get_waveforms_parameters,
+    bulk_waveform_arg_type,
     LARGEDT64,
 )
-from obsplus.events.utils import get_event_client
-from obsplus.stations.utils import get_station_client
-from obsplus.utils import (
-    make_time_chunks,
-    register_func,
-    get_reference_time,
-    filter_index,
-    compose_docstring,
-    to_datetime64,
-    to_timedelta64,
-    to_utc,
-)
-from obsplus.waveforms.utils import get_waveform_client
+from obsplus.exceptions import TimeOverflowWarning
+from obsplus.utils.docs import compose_docstring
+from obsplus.utils.events import get_event_client
+from obsplus.utils.misc import register_func, suppress_warnings
+from obsplus.utils.pd import filter_index, get_seed_id_series
+from obsplus.utils.stations import get_station_client
+from obsplus.utils.time import get_reference_time
+from obsplus.utils.time import to_datetime64, to_timedelta64, make_time_chunks, to_utc
+from obsplus.utils.waveforms import get_waveform_client
 
 EventStream = namedtuple("EventStream", "event_id stream")
 
@@ -48,8 +44,10 @@ EventStream = namedtuple("EventStream", "event_id stream")
 
 
 def _enable_swaps(cls):
-    """ enable swapping out events, stations, and picks info on any
-    function that gets waveforms """
+    """
+    Enable swapping out events, stations, and picks info on any
+    function that gets waveforms.
+    """
     for name, value in cls.__dict__.items():
         if "waveform" in name or name == "__call__":
             setattr(cls, name, _temporary_override(value))
@@ -57,11 +55,14 @@ def _enable_swaps(cls):
 
 
 def _temporary_override(func):
-    """ decorator to enable temporary override of various parameters
-    (eg events, stations, picks, etc.)"""
+    """
+    Decorator to enable temporary override of various parameters.
+
+    This is commonly used for events, stations, picks, etc.
+    """
 
     @functools.wraps(func)
-    def wraper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         inter = WAVEFETCHER_OVERRIDES.intersection(kwargs)
         if inter:
             self = self.copy()
@@ -71,7 +72,7 @@ def _temporary_override(func):
 
         return func(self, *args, **kwargs)
 
-    return wraper
+    return wrapper
 
 
 # ---------------------------------- Wavefetcher class
@@ -86,8 +87,8 @@ class Fetcher:
     """
     A class for serving up data from various sources.
 
-    Integrates station, event, and waveform client for requests that
-    are aware of the complete dataset.
+    Integrates station, event, and waveform clients to enable dataset-aware
+    querying.
 
     Parameters
     ----------
@@ -115,9 +116,48 @@ class Fetcher:
         The default time after a supplied time to fetch.
     event_query
         A dict of arguments used to filter events.
-    """
 
-    # -------------------------------- class init
+    Examples
+    --------
+    >>> import obsplus
+    >>> import obspy
+
+    >>> #--- Init a Fetcher
+    >>> # from a dataset
+    >>> ds = obsplus.load_dataset('bingham_test')
+    >>> ds_fetcher = ds.get_fetcher()
+    >>> assert isinstance(ds_fetcher, obsplus.Fetcher)
+    >>> # from separate clients (includes Stream, Inventory, Catalog)
+    >>> waveforms = ds.waveform_client
+    >>> events = ds.event_client
+    >>> stations = ds.station_client
+    >>> kwargs = dict(events=events, waveforms=waveforms, stations=stations)
+    >>> fetcher = obsplus.Fetcher(**kwargs)
+    >>> assert isinstance(fetcher, obsplus.Fetcher)
+
+    >>> # --- get contiguous (not event) waveform data
+    >>> # simple get_waveform calls are passed to the waveforms client
+    >>> fetcher = obsplus.load_dataset('ta_test').get_fetcher()
+    >>> t1 = obspy.UTCDateTime('2007-02-15')
+    >>> t2 = t1 + 60
+    >>> station = 'M14A'
+    >>> st = fetcher.get_waveforms(starttime=t1, endtime=t2, station=station)
+    >>> print(st)
+    3 Trace(s) ...
+    >>> # iterate over a range of times
+    >>> t1 = obspy.UTCDateTime('2007-02-16')
+    >>> t2 = t1 + (3600 * 24)
+    >>> for st in fetcher.yield_waveforms(starttime=t1, endtime=t2):
+    ...     assert len(st)
+
+    >>> # --- get event waveforms
+    >>> fetcher = obsplus.load_dataset('bingham_test').get_fetcher()
+    >>> # iterate each event yielding streams 30 seconds after origin
+    >>> kwargs = dict(time_before=0, time_after=30, reference='origin')
+    >>> for event_id, st in fetcher.yield_event_waveforms(**kwargs):
+    ...     assert isinstance(event_id, str)
+    ...     assert isinstance(st, obspy.Stream)
+    """
 
     def __init__(
         self,
@@ -160,7 +200,6 @@ class Fetcher:
             self.waveform_client = get_waveform_client(waveforms)
         except TypeError:  # if the waveform client is already defined keep it
             self.waveform_client = getattr(self, "waveform_client", None)
-        self.waveform_df = None  # TODO figure out how to get waveform df?
 
     def set_events(self, events: fetcher_event_type):
         """
@@ -193,15 +232,17 @@ class Fetcher:
             Data representing stations, from which a client or dataframe
             can be inferred.
         """
-        # a dict for filling missing values in station df
         try:
             self.station_client = get_station_client(stations)
         except TypeError:
             self.station_client = getattr(self, "station_client", None)
         try:
-            self.station_df = stations_to_df(stations)
+            # since its common for inventories to have far out enddates this
+            # can raise a warning. These are safe to ignore.
+            with suppress_warnings(category=TimeOverflowWarning):
+                self.station_df = stations_to_df(stations)
         except TypeError:
-            # if unable to get station info from stations waveform client
+            # if unable to get station info from stations use waveform client
             try:
                 self.station_df = stations_to_df(self.waveform_client)
             except TypeError:
@@ -210,6 +251,9 @@ class Fetcher:
                     self.station_df = stations_to_df(self.event_client)
                 except TypeError:
                     self.station_df = None
+        # make sure seed_id is set
+        if self.station_df is not None:
+            self.station_df["seed_id"] = get_seed_id_series(self.station_df)
 
     # ------------------------ continuous data fetching methods
 
@@ -219,80 +263,55 @@ class Fetcher:
         Get waveforms for all channels in stations.
 
         {get_waveform_parameters}
-
-        Returns
-        -------
-        obspy.Stream
         """
         # get a list of tuples for get_waveforms_bulk call
-        nslcs = self._get_bulk_arg(*args, **kwargs)
+        nslcs = self._get_bulk_args(*args, **kwargs)
         return self._get_bulk_wf(nslcs)
 
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def yield_waveforms(
         self,
-        starttime: UTCDateTime,
-        endtime: UTCDateTime,
-        duration: float,
-        overlap: float,
+        network: Optional[str] = None,
+        station: Optional[str] = None,
+        location: Optional[str] = None,
+        channel: Optional[str] = None,
+        starttime: Optional[obspy.UTCDateTime] = None,
+        endtime: Optional[obspy.UTCDateTime] = None,
+        duration: float = 3600.0,
+        overlap: Optional[float] = None,
     ) -> Stream:
         """
-        Yield streams from starttime to endtime of a specified duration.
+        Yield time-series segments from the waveform client.
 
         Parameters
         ----------
-        starttime
-            The starting time of the streams
-        endtime
-            The stopping time of the streams
-        duration
-            The duration of each waveforms between starttime and endtime
-        overlap
-            The overlap between streams added to the end of the waveforms
+        {get_waveforms_params}
+        duration : float
+            The duration of the streams to yield. All channels selected
+            channels will be included in the waveforms.
+        overlap : float
+            If duration is used, the amount of overlap in yielded streams,
+            added to the end of the waveforms.
 
-        Yields
-        -------
-        Stream
+        Notes
+        -----
+        All string parameters can use posix style matching with * and ? chars.
+
+        Total duration of yielded streams = duration + overlap.
+
+        If no starttime or endtime is provided the min/max indicated by the
+        stations will be used.
         """
+        # Note: although WaveBank has a yield waveforms method, we want
+        # fetcher to work with any client so we don't use its implementation.
+        starttime = to_utc(starttime or self.station_df["start_date"].min())
+        endtime = to_utc(endtime or self.station_df["end_date"].max())
         time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
         for t1, t2 in time_chunks:
-            yield self.get_waveforms(starttime=t1, endtime=t2)
-
-    def yield_waveform_callable(
-        self,
-        starttime: UTCDateTime,
-        endtime: UTCDateTime,
-        duration: float,
-        overlap: float,
-    ) -> Callable[..., Stream]:
-        """
-        Yield callables that take no arguments and return a waveforms.
-
-        This function is useful if you are distributing work to remote
-        processes and want to avoid serializing the waveforms.
-
-        Parameters
-        ----------
-        starttime
-            The starting time of the streams
-        endtime
-            The stopping time of the streams
-        duration
-            The duration of each waveforms between starttime and endtime
-        overlap
-            The overlap between streams added to the end of the waveforms
-
-        Yields
-        -------
-        Callable[..., Stream]
-        """
-
-        time_chunks = make_time_chunks(starttime, endtime, duration, overlap)
-        for t1, t2 in time_chunks:
-
-            def _func(starttime=t1, endtime=t2):
-                return self.get_waveforms(starttime=starttime, endtime=endtime)
-
-            yield _func
+            kwargs = dict(
+                network=network, station=station, location=location, channel=channel
+            )
+            yield self.get_waveforms(starttime=t1, endtime=t2, **kwargs)
 
     # ------------------------ event waveforms fetching methods
 
@@ -306,7 +325,7 @@ class Fetcher:
         raise_on_fail: bool = True,
     ) -> Tuple[str, Stream]:
         """
-        Yield event_id and streams for each event in the events.
+        Yield event_id and streams for each event.
 
         Parameters
         ----------
@@ -319,44 +338,54 @@ class Fetcher:
         reference
             A str that indicates how the starttime of the trace should be
             determined. The following are supported:
-                origin - use the origin time of the event for each channel
-                p - use the first p times as the start of the station traces
-                s - use the first s times as the start of the station traces
-            If a station doesn't have p or s picks and "p" or "s" is used,
-            it's streams will not be returned.
+                origin - use the origin time of the event
+                p - use the first p time as the start for each station
+                s - use the first s times as the start for each station
+            If "p" or "s" is used only streams corresponding to stations with
+            the appropriate phase pick will be returned.
         raise_on_fail
-            If True, re raise and exception if one is caught during waveform
+            If True, re raise an exception if one is caught during waveform
             fetching, else continue to next event.
 
-        Yields
-        ------
-        obspy.Stream
+        Notes
+        -----
+        Streams will not be yielded for any event for which a reference time
+        cannot be obtained. For example, if reference='S' only events with some
+        S picks will be yielded.
         """
-        assert reference.lower() in self.reference_funcs
+        if not reference.lower() in self.reference_funcs:
+            msg = (
+                f"reference of {reference} is not supported. Supported "
+                f"reference arguments are {list(self.reference_funcs)}"
+            )
+            raise ValueError(msg)
         tb = to_timedelta64(time_before, default=self.time_before)
         ta = to_timedelta64(time_after, default=self.time_after)
         assert (tb is not None) and (ta is not None)
         # get reference times
-        event_ids = self.event_df.event_id.values
-        reftimes = {x: self.reference_funcs[reference](self, x) for x in event_ids}
+        ref_func = self.reference_funcs[reference.lower()]
+        reftime_df = ref_func(self)
         # if using a wavebank preload index over entire time-span for speedup
-        if isinstance(self.waveform_client, WaveBank):
-            mt = min([x.min() if hasattr(x, "min") else x for x in reftimes.values()])
-            mx = max([x.max() if hasattr(x, "max") else x for x in reftimes.values()])
+        if isinstance(self.waveform_client, WaveBank) and len(reftime_df):
+            mt, mx = reftime_df["time"].min(), reftime_df["time"].max()
             index = self.waveform_client.read_index(starttime=mt, endtime=mx)
             get_bulk_wf = partial(self._get_bulk_wf, index=index)
         else:
             get_bulk_wf = self._get_bulk_wf
         # iterate each event in the events and yield the waveform
-        for event_id in event_ids:
+        for event_id, df in reftime_df.groupby("event_id"):
             # make sure ser is either a single datetime or a series of datetimes
-            ti_ = to_datetime64(reftimes[event_id])
-            bulk_args = self._get_bulk_arg(starttime=ti_ - tb, endtime=ti_ + ta)
+            time = to_datetime64(df["time"])
+            t1, t2 = time - tb, time + ta
+            bulk_args = self._get_bulk_args(starttime=t1, endtime=t2)
             try:
                 yield EventStream(event_id, get_bulk_wf(bulk_args))
             except Exception:
                 if raise_on_fail:
                     raise
+                else:
+                    msg = f"Fetcher failed to get waveforms for {event_id}."
+                    warnings.warn(msg)
 
     def get_event_waveforms(
         self,
@@ -436,7 +465,8 @@ class Fetcher:
 
     # ------------------------------- misc
 
-    def copy(self):
+    def copy(self) -> "Fetcher":
+        """Return a deep copy of the fetcher."""
         return copy.deepcopy(self)
 
     def _get_bulk_wf(self, *args, **kwargs):
@@ -444,99 +474,56 @@ class Fetcher:
         get the wave forms using the client, apply processor if it is defined
         """
         out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
-        if out is None:
-            out = self.waveform_client.get_waveforms_bulk(*args, **kwargs)
-
         if callable(self.stream_processor):
             return self.stream_processor(out) or out
         else:
             return out
 
-    def _get_bulk_arg(self, starttime=None, endtime=None, **kwargs) -> list:
-        """ get the argument passed to get_waveforms_bulk, see
-        obspy.fdsn.client for more info """
+    def _get_bulk_args(
+        self, starttime=None, endtime=None, **kwargs
+    ) -> bulk_waveform_arg_type:
+        """
+        Get the bulk waveform arguments based on given start/end times.
+
+        This method also takes into account data availability as contained
+        in the stations data.
+
+        Parameters
+        ----------
+        starttime
+            Start times for query.
+        endtime
+            End times for query.
+
+        Returns
+        -------
+        List of tuples of the form:
+            [(network, station, location, channel, starttime, endtime)]
+        """
         station_df = self.station_df.copy()
         inv = station_df[filter_index(station_df, **kwargs)]
         # replace None/Nan with larger number
         inv.loc[inv["end_date"].isnull(), "end_date"] = LARGEDT64
         inv["end_date"] = inv["end_date"].astype("datetime64[ns]")
+        # get start/end of the inventory
+        inv_start = inv["start_date"].min()
+        inv_end = inv["end_date"].max()
         # remove station/channels that dont have data for requested time
-        starttime = to_datetime64(starttime, default=inv["start_date"].min())
-        endtime = to_datetime64(endtime, default=inv["end_date"].max())
-        con1, con2 = (inv["start_date"] > endtime), (inv["end_date"] < starttime)
-
-        inv = inv[~(con1 | con2)]
-        df = inv[list(NSLC)]
+        min_time = to_datetime64(starttime, default=inv_start).min()
+        max_time = to_datetime64(endtime, default=inv_end).max()
+        con1, con2 = (inv["start_date"] > max_time), (inv["end_date"] < min_time)
+        df = inv[~(con1 | con2)].set_index("seed_id")[list(NSLC)]
         if df.empty:  # return empty list if no data found
             return []
-        df.loc[:, "starttime"] = starttime
-        df.loc[:, "endtime"] = endtime
+        df["starttime"] = starttime
+        df["endtime"] = endtime
         # remove any rows that don't have defined start/end times
-        out = df[(~df["starttime"].isnull()) & (~df["endtime"].isnull())]
+        out = df[~(df["starttime"].isnull() | df["endtime"].isnull())]
         # ensure we have UTCDateTime objects
-        out["starttime"] = [to_utc(x) for x in df["starttime"]]
-        out["endtime"] = [to_utc(x) for x in df["endtime"]]
+        out["starttime"] = [to_utc(x) for x in out["starttime"]]
+        out["endtime"] = [to_utc(x) for x in out["endtime"]]
         # convert to list of tuples and return
         return [tuple(x) for x in out.to_records(index=False)]
-
-    def download_waveforms(
-        self,
-        starttime: UTCDateTime,
-        endtime: UTCDateTime,
-        duration: float,
-        overlap: float = 0,
-        path: str = WAVEFORM_STRUCTURE,
-    ) -> None:
-        """
-        Download contiguous waveform data and save in directory.
-
-        Parameters
-        ----------
-        starttime
-            The start time of the data  to download
-        endtime
-            The end time of the data to download
-        duration
-            The duration of each chunk of data in seconds
-        overlap
-            The overlap, added to the end of each waveforms, for the data
-        path
-            A string that specifies the directory structure. See the
-            path_structure argument of :class: `~obsplus.Sbank` for more info
-        """
-        bank = WaveBank(path)
-        # iter events and save to disk
-        t1, t2 = starttime, endtime
-        for stream in self.yield_waveforms(t1, t2, duration, overlap):
-            bank.put_waveforms(stream)
-
-    def download_event_waveforms(
-        self,
-        time_before_origin: float,
-        time_after_origin: float,
-        path: str = EVENT_WAVEFORM_PATH_STRUCTURE,
-    ) -> None:
-        """
-        Download waveforms corresponding to events in waveforms from client.
-
-        Parameters
-        ----------
-        time_before_origin
-            The number of seconds before the reported origin to include in the
-            event waveforms
-        time_after_origin
-            The number of seconds after the reported origin to include in the
-            event waveforms
-        path
-            A string that specifies the directory structure. See the
-            path_structure argument of :class: `~obsplus.Sbank` for more info.
-        """
-        # setup banks and fetcher
-        bank = WaveBank(path)
-        # iter events and save to disk
-        t1, t2 = time_before_origin, time_after_origin
-        for event_id, stream in self.yield_event_waveforms(t1, t2):
-            bank.put_waveforms(stream, name=event_id)
 
     @property
     def picks_df(self):
@@ -559,33 +546,55 @@ class Fetcher:
 
 
 @register_func(Fetcher.reference_funcs, key="origin")
-def _get_origin_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
-    df = fetcher.event_df
-    row = df[df.event_id == event_id].iloc[0]
-    return UTCDateTime(row.time)
+def _get_origin_reference_times(fetcher: Fetcher) -> pd.Series:
+    """Get the reference times for origins."""
+    event_df = fetcher.event_df[["time", "event_id"]].set_index("event_id")
+    inv_df = fetcher.station_df
+    # iterate each event and add rows for each channel in inventory
+    dfs = []
+    for eid, ser in event_df.iterrows():
+        inv = inv_df.copy()
+        inv["event_id"] = eid
+        inv["time"] = ser["time"]
+        dfs.append(inv)
+    # get output
+    out = (
+        pd.concat(dfs, ignore_index=True)
+        .reset_index()
+        .set_index("seed_id")[["event_id", "time"]]
+        .dropna(subset=["time"])
+    )
+    return out
 
 
 @register_func(Fetcher.reference_funcs, key="p")
-def _get_p_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
-    return _get_phase_reference_time(fetcher, event_id, "p")
+def _get_p_reference_times(fetcher: Fetcher) -> pd.Series:
+    """Get the reference times for p arrivals."""
+    return _get_phase_reference_time(fetcher, "p")
 
 
 @register_func(Fetcher.reference_funcs, key="s")
-def _get_s_reference_times(fetcher: Fetcher, event_id):
-    """ get the reference times for """
-    return _get_phase_reference_time(fetcher, event_id, "s")
+def _get_s_reference_times(fetcher: Fetcher) -> pd.Series:
+    """Get the reference times for s arrivals."""
+    return _get_phase_reference_time(fetcher, "s")
 
 
-def _get_phase_reference_time(fetcher: Fetcher, event_id, phase):
-    """ get reference times to specified phases, apply over all channels in a
-    station """
+def _get_phase_reference_time(fetcher: Fetcher, phase):
+    """
+    Get reference times to specified phases, apply over all channels in a
+    station.
+    """
     pha = phase.upper()
-    df = fetcher.picks_df
-    inv = fetcher.station_df
-    assert df is not None and inv is not None
-    assert (df.phase_hint.str.upper() == pha).any(), f"no {phase} picks found"
-    dff = df[(df.event_id == event_id) & (df.phase_hint == pha)]
-    merge = pd.merge(inv, dff[["time", "station"]], on="station", how="left")
-    return merge["time"]
+    # ensure the pick_df and inventory df exist
+    pick_df = fetcher.picks_df
+    inv_df = fetcher.station_df
+    assert pick_df is not None and inv_df is not None
+    # filter dataframes for phase of interest
+    assert (pick_df["phase_hint"].str.upper() == pha).any(), f"no {phase} picks found"
+    pick_df = pick_df[pick_df["phase_hint"] == pha]
+    # merge inventory and pick df together, ensure time is datetime64
+    columns = ["time", "station", "event_id"]
+    merge = pd.merge(inv_df, pick_df[columns], on="station", how="left")
+    merge["time"] = to_datetime64(merge["time"])
+    assert merge["seed_id"].astype(bool).all()
+    return merge.set_index("seed_id")[["time", "event_id"]]
