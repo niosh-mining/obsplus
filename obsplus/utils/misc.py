@@ -127,7 +127,7 @@ def yield_obj_parent_attr(
     >>> for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):
     ...     rid_mapping[str(rid)].append((attr, parent))
     >>> # count how many times each resource_id is referred to
-    >>> count = {i: len(v) for i, v in rid_mapping.values()}
+    >>> count = {i: len(v) for i, v in rid_mapping.items()}
     """
     ids: Set[int] = set()  # id cache to avoid circular references
 
