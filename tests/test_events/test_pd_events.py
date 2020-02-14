@@ -318,7 +318,21 @@ class TestCat2Df:
                 pick.evaluation_status = "rejected"
         return cat
 
-    # fixtures
+    @pytest.fixture
+    def events_with_origin_quality(self, bingham_dataset):
+        """ Return events with an overridden origin quality """
+        cat = bingham_dataset.event_client.get_events().copy()
+        oq = ev.OriginQuality(
+            associated_phase_count=42,
+            used_phase_count=10,
+            associated_station_count=21,
+            used_station_count=5,
+        )
+        for event in cat:
+            origin = event.preferred_origin()
+            origin.quality = oq
+        return cat
+
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
         """ call the catalog2df method, return result"""
@@ -378,6 +392,15 @@ class TestCat2Df:
         """ ensure rejected picks are still counted in arrival numbering """
         df = events_to_df(events_rejected_picks)
         assert (df.p_phase_count != 0).all()
+
+    def test_origin_quality_wins(self, events_with_origin_quality):
+        """
+        Ensure the phase counts from the OriginQuality take priority over a
+        count of picks/arrivals
+        """
+        df = events_to_df(events_with_origin_quality)
+        assert df.associated_phase_count.iloc[0] == 42
+        assert df.used_phase_count.iloc[0] == 10
 
     def test_event_bank_to_df(self, default_ebank):
         """ Ensure event banks can be used to get dataframes. """

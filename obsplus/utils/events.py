@@ -152,6 +152,73 @@ def prune_events(events: catalog_or_event) -> Catalog:
     return Catalog(out)
 
 
+@singledispatch
+def strip_events(
+    events: catalog_or_event, reject_evaluation_status: Iterable = "rejected"
+) -> catalog_or_event:
+    """
+    Removes all derivative data and rejected objects from an event or catalog
+
+    This is a nuclear option for when processing goes horribly wrong. It will
+    only keep picks and amplitudes that are not rejected in addition to the
+    first event description for the event.
+
+    Parameters
+    ----------
+    events
+        The events to strip
+    reject_evaluation_status
+        Reject picks and amplitudes that have this as an evaluation status
+        (accepts either a single value or a list)
+
+    Returns
+    -------
+    The stripped events
+    """
+    # Make sure this returns a new catalog
+    out = Catalog()
+    for eve in events:
+        out.append(strip_events(eve, reject_evaluation_status=reject_evaluation_status))
+    return out
+
+
+@strip_events.register(Event)
+def _strip_event(eve, reject_evaluation_status="rejected") -> Event:
+    """Strip down a single event"""
+    # Make sure this returns a copy of the events
+    eve = eve.copy()
+    # Remove derivative data
+    for att in ["origins", "magnitudes", "station_magnitudes", "focal_mechanisms"]:
+        setattr(eve, att, [])
+    # Unset preferred anything
+    for att in ["origin", "magnitude", "focal_mechanism"]:
+        setattr(eve, f"preferred_{att}_id", None)
+    # Filter the picks
+    if isinstance(reject_evaluation_status, str):
+        reject_evaluation_status = [reject_evaluation_status]
+    eve.picks = [
+        p for p in eve.picks if p.evaluation_status not in reject_evaluation_status
+    ]
+    # Filter the amplitudes
+    amps = []
+    for amp in eve.amplitudes:
+        # Reject if the evaluation status is in the reject list
+        if amp.evaluation_status in reject_evaluation_status:
+            continue
+        if amp.pick_id:
+            pick = amp.pick_id.get_referred_object()
+            # Reject if the evaluation status of the pick tied to the amplitude is in
+            # the reject list
+            if pick and pick.evaluation_status in reject_evaluation_status:
+                continue
+        amps.append(amp)
+    eve.amplitudes = amps
+    # Filter the event descriptions
+    if len(eve.event_descriptions):
+        eve.event_descriptions = [eve.event_descriptions[0]]
+    return eve
+
+
 def bump_creation_version(obj):
     """
     Bump the version in an object's CreationInfo and add creation time.
