@@ -75,10 +75,10 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     needs: test_code
+    steps:
+      - uses: actions/checkout@v1
 
-    - uses: actions/checkout@v1
-
-    - name: coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
