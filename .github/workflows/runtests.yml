@@ -3,14 +3,6 @@ on: [push]
 
 
 jobs:
-  download_test_data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download data
-        run: |
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
-
   lint_code:
     runs-on: ubuntu-latest
 
@@ -68,7 +60,7 @@ jobs:
       - name: run test suite
         shell: bash -l {0}
         run: |
-          pytest --cov obsplus -s
+          pytest -s --cov obsplus --cov-append --cov-report term-missing
 
       - name: test docstrings
         shell: bash -l {0}
@@ -79,3 +71,14 @@ jobs:
         shell: bash -l {0}
         run: |
           pytest docs --nbval
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: test_code
+
+    - uses: actions/checkout@v1
+
+    - name: coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
