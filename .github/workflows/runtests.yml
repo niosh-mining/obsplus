@@ -1,10 +1,6 @@
 name: validate
 on: [push]
 
-env:
-  PYVERSION: 3.7
-  OS: ubuntu-latest
-
 jobs:
   # Simply applies flake8 to the codebase
   lint_code:
@@ -84,7 +80,7 @@ jobs:
       # upload coverage
       - name: upload coverage
         uses: codecov/codecov-action@v1
-        if: ${{ matrix.python-version }} == ${{ PYVERSION} && ${{ matrix.os }} == ${{ OS }}
+        if: ${{ matrix.python-version }} == 3.7 && ${{ matrix.os }} == ubuntu-latest
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
