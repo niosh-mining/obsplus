@@ -56,3 +56,8 @@ from .waveforms.get_waveforms import get_waveforms
 from obsplus.utils.waveforms import get_waveform_client
 from obsplus.utils.events import get_event_client
 from obsplus.utils.stations import get_station_client
+
+from ._version import get_versions
+
+__version__ = get_versions()["version"]
+del get_versions

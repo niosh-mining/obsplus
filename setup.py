@@ -4,6 +4,7 @@ Setup script for obsplus
 import glob
 import importlib.util as iutil
 import sys
+import versioneer
 from collections import defaultdict
 from os.path import join, exists, isdir
 
@@ -37,13 +38,13 @@ doc_req_path = here / "docs" / "requirements.txt"
 # --- utils
 
 
-def get_version(path, name="obsplus.version"):
-    """ Load a python module with and return its __version__ attribute. """
-    spec = iutil.spec_from_file_location(name, path)
-    version = iutil.module_from_spec(spec)
-    spec.loader.exec_module(version)
-    assert hasattr(version, "__version__"), "no __version__ defined in file."
-    return version.__version__
+# def get_version(path, name="obsplus.version"):
+#     """ Load a python module with and return its __version__ attribute. """
+#     spec = iutil.spec_from_file_location(name, path)
+#     version = iutil.module_from_spec(spec)
+#     spec.loader.exec_module(version)
+#     assert hasattr(version, "__version__"), "no __version__ defined in file."
+#     return version.__version__
 
 
 def find_packages(base_dir="."):
@@ -108,7 +109,7 @@ df = get_package_data_files()
 
 setup(
     name="obsplus",
-    version=get_version(version_path),
+    version=versioneer.get_version(),
     description="Some add-ons to obspy",
     long_description=load_file(readme_path),
     author="Derrick Chambers",
@@ -136,4 +137,5 @@ setup(
     setup_requires=["pytest-runner>=2.0"],
     extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
+    cmdclass=versioneer.get_cmdclass(),
 )
