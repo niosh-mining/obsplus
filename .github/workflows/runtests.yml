@@ -75,12 +75,12 @@ jobs:
 
       - name: upload coverage
         uses: codecov/codecov-action@v1
-        if: ${{ matrix.python_version }} == 3.7 && ${{ matrix.os }} == ubuntu-latest
+        if: ${{ matrix.python-version }} == 3.7 && ${{ matrix.os }} == ubuntu-latest
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
           yml: ./codecov.yml
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
