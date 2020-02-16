@@ -1,6 +1,7 @@
 name: calculate coverage
-on: "schedule (0, 12, *, *, 1)"
-
+on:
+  schedule:
+    - cron: '0, 12, *, *, 1'
 
 jobs:
   calcualte_coverage:

@@ -27,8 +27,8 @@ Code_of_Conduct_
 .. |Build Status| image:: https://travis-ci.org/niosh-mining/obsplus.svg?branch=master
    :target: https://travis-ci.org/niosh-mining/obsplus
 
-.. |Coverage| image:: https://coveralls.io/repos/github/niosh-mining/obsplus/badge.svg?branch=master
-   :target: https://coveralls.io/github/niosh-mining/obsplus?branch=master
+.. |Coverage| image:: https://codecov.io/gh/niosh-mining/obsplus/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/niosh-mining/obsplus
 
 .. |Supported Versions| image:: https://img.shields.io/pypi/pyversions/obsplus.svg
    :target: https://pypi.python.org/pypi/obsplus
