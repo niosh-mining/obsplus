@@ -1,8 +1,12 @@
 name: validate
 on: [push]
 
+env:
+  PYVERSION: 3.7
+  OS: ubuntu-latest
 
 jobs:
+  # Simply applies flake8 to the codebase
   lint_code:
     runs-on: ubuntu-latest
 
@@ -20,6 +24,7 @@ jobs:
       - name: flake8
         run: flake8 .
 
+  # Runs the tests on combinations of the supported python/os matrix.
   test_code:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -58,24 +63,28 @@ jobs:
             mv opsdata_test ~/opsdata
           fi
 
+      # Runs test suite and calculates coverage
       - name: run test suite
         shell: bash -l {0}
         run: |
           pytest -s --cov obsplus --cov-append --cov-report=xml
 
+      # Runs examples in docstrings
       - name: test docstrings
         shell: bash -l {0}
         run: |
           pytest obsplus --doctest-modules
 
+      # Runs the documentation notebooks
       - name: test notebook docs
         shell: bash -l {0}
         run: |
           pytest docs --nbval
 
+      # upload coverage
       - name: upload coverage
         uses: codecov/codecov-action@v1
-        if: ${{ matrix.python-version }} == 3.7 && ${{ matrix.os }} == ubuntu-latest
+        if: ${{ matrix.python-version }} == ${{ PYVERSION} && ${{ matrix.os }} == ${{ OS }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
