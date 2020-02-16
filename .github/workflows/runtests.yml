@@ -53,8 +53,10 @@ jobs:
       - name: download test data
         shell: bash -l {0}
         run: |
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
+          if [ ! -d ~/opsdata ]; then
+            git clone https://github.com/d-chambers/opsdata_test
+            mv opsdata_test ~/opsdata
+          fi
 
       - name: run test suite
         shell: bash -l {0}
@@ -71,13 +73,4 @@ jobs:
         run: |
           pytest docs --nbval
 
-  coverage:
-    runs-on: ubuntu-latest
-    needs: test_code
-    steps:
-      - uses: actions/checkout@v1
-
-      - name: coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: upload coverage
