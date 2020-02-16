@@ -1,5 +1,5 @@
 name: calculate coverage
-on: "schedule (0, 12, *, *, 1)
+on: "schedule (0, 12, *, *, 1)"
 
 
 jobs:
