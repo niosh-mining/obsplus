@@ -27,7 +27,6 @@ if sys.version_info < python_version:
 
 # get path references
 here = Path(__file__).absolute().parent
-version_path = here / "obsplus" / "version.py"
 readme_path = here / "README.rst"
 # get requirement paths
 package_req_path = here / "requirements.txt"
@@ -36,15 +35,6 @@ doc_req_path = here / "docs" / "requirements.txt"
 
 
 # --- utils
-
-
-# def get_version(path, name="obsplus.version"):
-#     """ Load a python module with and return its __version__ attribute. """
-#     spec = iutil.spec_from_file_location(name, path)
-#     version = iutil.module_from_spec(spec)
-#     spec.loader.exec_module(version)
-#     assert hasattr(version, "__version__"), "no __version__ defined in file."
-#     return version.__version__
 
 
 def find_packages(base_dir="."):
