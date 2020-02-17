@@ -8,8 +8,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run, PIPE
 
-from clean_docs import main as clean_docs
-from make_docs import main as make_docs
+from clean_docs import clean_docs
+from make_docs import make_docs
 
 import obsplus
 
@@ -23,6 +23,31 @@ def change_directory(new_path):
     os.chdir(new_path)
     yield
     os.chdir(here)
+
+
+def make_gh_pages_repo():
+    """Make the github pages repo."""
+
+
+def stage_docs(build_path=None, gh_pages_path=None) -> str:
+    """
+    Stage ObsPlus' docs in copy of repo checking out branch GH-pages.
+
+    Parameters
+    ----------
+    build_path
+        Path to built HTML directory. If None call create
+    gh_pages_path
+        Path to this repo checked out in GH-pages. If not provided simply
+        create a new directory called "ops_docs" on the same level as the
+        obsplus directory.
+
+    Returns
+    -------
+        Path to staged GH-pages directory.
+    """
+    # base = Path(__file__).parent.parent
+    # build_path = build_path or make_docs()
 
 
 if __name__ == "__main__":
