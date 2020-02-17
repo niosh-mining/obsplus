@@ -40,7 +40,7 @@ def get_config():
     cfg = VersioneerConfig()
     cfg.VCS = "git"
     cfg.style = "pep440"
-    cfg.tag_prefix = "None"
+    cfg.tag_prefix = ""
     cfg.parentdir_prefix = "obsplus-"
     cfg.versionfile_source = "obsplus/_version.py"
     cfg.verbose = False
