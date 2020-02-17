@@ -114,7 +114,7 @@ class TestBankBasics:
     def ebank_low_version(self, tmpdir, monkeypatch):
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version so that a low version is saved to disk
-        monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
+        monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         cat = obspy.read_events()
         ebank = make_bank_from_catalog(tmpdir, cat, update_index=False)
         # write index with negative version
@@ -122,7 +122,7 @@ class TestBankBasics:
             ebank.update_index()
         monkeypatch.undo()
         assert ebank._index_version == self.low_version_str
-        assert obsplus.__version__ != self.low_version_str
+        assert obsplus.__last_version__ != self.low_version_str
         return ebank
 
     @pytest.fixture(scope="class")
@@ -184,7 +184,7 @@ class TestBankBasics:
         # from a previous version.
         os.remove(bing_ebank.index_path)
         bing_ebank.update_index()
-        assert bing_ebank.get_service_version() == obsplus.__version__
+        assert bing_ebank.get_service_version() == obsplus.__last_version__
 
     def test_get_events_unindexed_bank(self, ebank_no_index, cat_with_descs):
         """ Calling get_waveforms on an empty bank should update index. """
@@ -220,8 +220,8 @@ class TestBankBasics:
             ebank2 = try_permission_sleep(EventBank, ebank.bank_path)
         _ = ebank2.get_events(limit=1)
         # but after creating a new bank it should
-        assert ebank._index_version == obsplus.__version__
-        assert ebank2._index_version == obsplus.__version__
+        assert ebank._index_version == obsplus.__last_version__
+        assert ebank2._index_version == obsplus.__last_version__
 
     def test_limit_keyword(self, ebank):
         """ Test that the limit keyword limits results (see #19) """
@@ -247,7 +247,7 @@ class TestBankBasics:
 
     def test_index_version(self, ebank):
         """Ensure the index version returns the obsplus version."""
-        assert ebank._index_version == obsplus.__version__
+        assert ebank._index_version == obsplus.__last_version__
 
     def test_update_index_returns_self(self, ebank):
         """Ensure update index returns the instance for chaining."""

@@ -730,5 +730,5 @@ class WaveBank(_Bank):
         return merge_traces(st, inplace=True).sort()
 
     def get_service_version(self):
-        """ Return the version of obsplus """
-        return obsplus.__version__
+        """ Return the last version of obsplus """
+        return obsplus.__last_version__

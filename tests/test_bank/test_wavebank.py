@@ -114,14 +114,14 @@ class TestBankBasics:
     def default_bank_low_version(self, default_wbank, monkeypatch):
         """ return the default bank with a negative version number. """
         # monkey patch obsplus version
-        monkeypatch.setattr(obsplus, "__version__", self.low_version_str)
+        monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         # write index with negative version
         os.remove(default_wbank.index_path)
         default_wbank.update_index()
         assert default_wbank._index_version == self.low_version_str
         # restore correct version
         monkeypatch.undo()
-        assert obsplus.__version__ != self.low_version_str
+        assert obsplus.__last_version__ != self.low_version_str
         assert Path(default_wbank.bank_path).exists()
         return default_wbank
 
@@ -207,7 +207,7 @@ class TestBankBasics:
         bank = default_bank_low_version
         with pytest.warns(UserWarning):
             bank.update_index()
-        assert bank._index_version == obsplus.__version__
+        assert bank._index_version == obsplus.__last_version__
         assert Path(bank.index_path).exists()
 
     def test_min_version_new_bank_recreates_index(self, default_bank_low_version):
@@ -223,7 +223,7 @@ class TestBankBasics:
         assert not Path(bank2.index_path).exists()
         bank2.get_waveforms()
         assert bank2._index_version != self.low_version_str
-        assert bank2._index_version == obsplus.__version__
+        assert bank2._index_version == obsplus.__last_version__
         assert Path(bank2.index_path).exists()
 
     def test_empty_bank_raises(self, tmpdir):

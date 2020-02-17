@@ -57,5 +57,8 @@ from obsplus.utils.stations import get_station_client
 # Get version versioneer
 from ._version import get_versions
 
-__version__ = get_versions()["version"]
+version_dict = get_versions()
+__version__ = version_dict["version"]
+__last_version__ = __version__.split("+")[0].replace("v", "")
+
 del get_versions

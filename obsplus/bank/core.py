@@ -164,7 +164,7 @@ class _Bank(ABC):
         meta = dict(
             path_structure=self.path_structure,
             name_structure=self.name_structure,
-            obsplus_version=obsplus.__version__,
+            obsplus_version=obsplus.__last_version__,
         )
         return pd.DataFrame(meta, index=[0])
 
