@@ -164,7 +164,6 @@ def stage_docs(build_path=None, pages_path=None, remove_dirty=False) -> str:
         shutil.rmtree(new_path)
     shutil.copytree(expected_html, new_path)
     # build new doc index
-    breakpoint()
     _build_index(pages_path, remove_dirty)
     # commit
     _commit_new_docs(pages_path)
