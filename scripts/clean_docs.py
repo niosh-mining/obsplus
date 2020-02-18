@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
+import typer
+
 
 def clean_docs():
     """Clean all the docs"""
@@ -29,4 +31,4 @@ def clean_docs():
 
 
 if __name__ == "__main__":
-    clean_docs()
+    typer.run(clean_docs)

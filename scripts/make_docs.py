@@ -4,7 +4,9 @@ Script to re-make the html docs and publish to gh-pages.
 from pathlib import Path
 from subprocess import run
 
-from clean_docs import main as clean_docs
+import typer
+
+from clean_docs import clean_docs
 
 # Path to top-level sphinx
 DOC_PATH = Path(__file__).absolute().parent.parent / "docs"
@@ -50,4 +52,4 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
 
 
 if __name__ == "__main__":
-    make_docs()
+    typer.run(make_docs)
