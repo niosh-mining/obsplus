@@ -133,7 +133,7 @@ def _commit_new_docs(pages_path):
     run(f'git commit -m "{version} docs"', shell=True, check=True, cwd=pages_path)
 
 
-def stage_docs(build_path=None, pages_path=None, remove_dirty=False) -> str:
+def stage_docs(build_path=None, pages_path=None, remove_dirty: bool = False) -> str:
     """
     Stage ObsPlus' docs in copy of repo checking out branch GH-pages.
 
