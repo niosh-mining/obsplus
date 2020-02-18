@@ -26,6 +26,7 @@ jobs:
           pip install -e .[dev]
 
       - name: build docs
+        shell: bash -l {0}
         run: |
           python scripts/stage_docs.py --remove-dirty
 

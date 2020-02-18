@@ -154,7 +154,7 @@ def stage_docs(build_path=None, pages_path=None, remove_dirty=False) -> str:
     """
     # get paths
     base = Path(__file__).absolute().parent.parent
-    build_path = Path(build_path or make_docs())
+    build_path = Path(build_path) or Path(make_docs()).parent
     pages_path = Path(pages_path or base.parent / "obsplus_documentation")
     _make_gh_pages_repo(base, pages_path)
     # copy build html directory
@@ -164,6 +164,7 @@ def stage_docs(build_path=None, pages_path=None, remove_dirty=False) -> str:
         shutil.rmtree(new_path)
     shutil.copytree(expected_html, new_path)
     # build new doc index
+    breakpoint()
     _build_index(pages_path, remove_dirty)
     # commit
     _commit_new_docs(pages_path)
