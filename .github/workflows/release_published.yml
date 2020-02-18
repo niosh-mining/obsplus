@@ -37,7 +37,8 @@ jobs:
           force: true
 
   publish_package:
-    runs_on: ubuntu_latest
+    runs-on: ubuntu_latest
+
     steps:
       - uses: actions/checkout@v1
 
