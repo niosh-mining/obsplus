@@ -27,7 +27,7 @@ jobs:
 
       - name: build docs
         run: |
-          python scripts stage_docs
+          python scripts/stage_docs.py
 
       - name: push
         uses: ad-m/github-push-action@master
