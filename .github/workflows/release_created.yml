@@ -27,7 +27,7 @@ jobs:
 
       - name: build docs
         run: |
-          python scripts stage_docs --delete-dirty
+          python scripts stage_docs
 
       - name: push
         uses: ad-m/github-push-action@master

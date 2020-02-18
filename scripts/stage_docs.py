@@ -4,7 +4,6 @@ be done once for each release.
 """
 import os
 import shutil
-import tempfile
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from subprocess import run, PIPE
@@ -12,7 +11,6 @@ from subprocess import run, PIPE
 import jinja2
 import typer
 
-from clean_docs import clean_docs
 from make_docs import make_docs
 
 import obsplus
