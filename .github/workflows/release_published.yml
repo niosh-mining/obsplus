@@ -25,6 +25,12 @@ jobs:
         run: |
           pip install -e .[dev]
 
+      - name: git config
+        shell: bash -l {0}
+        run: |
+          git config --global user.email "donotemailme@example.com"
+          git config --global user.name "GithubActions"
+
       - name: build docs
         shell: bash -l {0}
         run: |

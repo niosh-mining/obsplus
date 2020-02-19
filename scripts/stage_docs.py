@@ -130,7 +130,7 @@ def _commit_new_docs(pages_path):
     run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
     # make a commit
     run("git add -A", shell=True, check=True, cwd=pages_path)
-    cmd = f'git commit --author="obsplus_bot <>" -m "{version} docs"'
+    cmd = f'git commit -m "{version} docs"'
     run(cmd, shell=True, check=True, cwd=pages_path)
 
 
