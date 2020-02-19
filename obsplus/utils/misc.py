@@ -557,3 +557,31 @@ def register_func(list_or_dict: Union[list, dict], key: Optional[str] = None):
         return func
 
     return wrapper
+
+
+def validate_version_str(version_str: str):
+    """
+    Check the version string is of the form x.y.z.
+
+    If the version string is not valid raise a ValueError.
+    """
+    is_str = isinstance(version_str, str)
+    # If version_str is not a str or doesnt have a len of 3
+    if not (is_str and len(version_str.split(".")) == 3):
+        msg = f"version must be a string of the form x.y.z, not {version_str}"
+        raise ValueError(msg)
+
+
+def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
+    """
+    Convert a semantic version string to a tuple.
+
+    Parameters
+    ----------
+    version_str
+        A version of the form "x.y.z". Google semantic versioning for more
+        details.
+    """
+    validate_version_str(version_str)
+    split = version_str.split(".")
+    return int(split[0]), int(split[1]), int(split[2])

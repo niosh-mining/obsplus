@@ -30,7 +30,12 @@ from obsplus.exceptions import (
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 from obsplus.utils.dataset import _create_opsdata
 from obsplus.utils.events import get_event_client
-from obsplus.utils.misc import hash_directory, iterate
+from obsplus.utils.misc import (
+    hash_directory,
+    iterate,
+    get_version_tuple,
+    validate_version_str,
+)
 from obsplus.utils.stations import get_station_client
 from obsplus.utils.waveforms import get_waveform_client
 
@@ -112,7 +117,7 @@ class DataSet(abc.ABC):
     def __init_subclass__(cls, **kwargs):
         """ Register subclasses of datasets. """
         assert isinstance(cls.name, str), "name must be a string"
-        cls._validate_version_str(cls.version)
+        validate_version_str(cls.version)
         # Register the subclass as a dataset.
         DataSet._datasets[cls.name.lower()] = cls
 
@@ -565,16 +570,16 @@ class DataSet(abc.ABC):
         redownload_msg = f"Delete the following directory {self.data_path}"
         try:
             version = self.read_data_version()
-        except DataVersionError:  # The data version cannot be read from disk
+        except (DataVersionError, ValueError):  # failed to read version
             need_dl = (getattr(self, f"{x}s_need_downloading") for x in DATA_TYPES)
             if not any(need_dl):  # Something is a little weird
                 warn("Version file is missing. Attempting to re-download the dataset.")
             return False
         # Check the version number
-        if version < self.version:
+        if get_version_tuple(version) < get_version_tuple(self.version):
             msg = f"Dataset version is out of date: {version} < {self.version}. "
             raise DataVersionError(msg + redownload_msg)
-        elif version > self.version:
+        elif get_version_tuple(version) > get_version_tuple(self.version):
             msg = f"Dataset version mismatch: {version} > {self.version}."
             msg = msg + " It may be necessary to reload the dataset."
             warn(msg + redownload_msg)
@@ -590,29 +595,16 @@ class DataSet(abc.ABC):
         """
         Read the data version from disk.
 
-        Return the version string of the form xx.yy.zz. Raise a
-        DataVersionError if not found.
+        Return a 3 length tuple from the semantic version string (of the
+        form xx.yy.zz). Raise a DataVersionError if not found.
         """
         version_path = path or self._version_path
         if not version_path.exists():
             raise DataVersionError(f"{version_path} does not exist!")
         with version_path.open("r") as fi:
             version_str = fi.read()
-        self._validate_version_str(version_str)
+        validate_version_str(version_str)
         return version_str
-
-    @staticmethod
-    def _validate_version_str(version_str):
-        """
-        Check the version string is of the form x.y.z.
-
-        If the version string is not valid raise DataVersionError.
-        """
-        is_str = isinstance(version_str, str)
-        # If version_str is not a str or doesnt have a len of 3
-        if not (is_str and len(version_str.split(".")) == 3):
-            msg = f"version must be a string of the form x.y.z, not {version_str}"
-            raise DataVersionError(msg)
 
     # --- Abstract properties subclasses should implement
     @property
@@ -628,6 +620,15 @@ class DataSet(abc.ABC):
         """
         Dataset version. Should be a str of the form x.y.z
         """
+
+    @property
+    def version_tuple(self) -> Tuple[int, int, int]:
+        """
+        Return a tuple of the version string.
+        """
+        version_str = self._validate_version_str(self.version)
+        vsplit = version_str.split(".")
+        return int(vsplit[0]), int(vsplit[1]), int(vsplit[2])
 
     # --- Abstract methods subclasses should implement
 

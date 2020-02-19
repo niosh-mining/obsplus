@@ -188,8 +188,9 @@ class WaveBank(_Bank):
         self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
-        # enforce min version upon init
+        # enforce min version or warn on newer version
         self._enforce_min_version()
+        self._warn_on_newer_version()
 
     # ----------------------- index related stuff
 

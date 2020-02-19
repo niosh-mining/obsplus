@@ -36,11 +36,6 @@ def try_permission_sleep(callable, *args, _count=0, **kwargs):
 # ----------- module fixtures
 
 
-def make_bank_from_catalog(path, catalog, update_index=True):
-    """ make a bank from a path and a given catalog. """
-    return EventBank(path).put_events(catalog, update_index=update_index)
-
-
 @pytest.fixture
 def cat_with_descs():
     """ Create a catalog with some simple descriptions added. """
@@ -57,7 +52,7 @@ def ebank(tmpdir, cat_with_descs):
     """ Create a bank from the default catalog. """
     cat = cat_with_descs
     path = Path(tmpdir) / "events"
-    return make_bank_from_catalog(path, cat)
+    return EventBank(path).put_events(cat, update_index=True)
 
 
 @pytest.fixture
@@ -116,7 +111,7 @@ class TestBankBasics:
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         cat = obspy.read_events()
-        ebank = make_bank_from_catalog(tmpdir, cat, update_index=False)
+        ebank = EventBank(tmpdir).put_events(cat, update_index=False)
         # write index with negative version
         with suppress_warnings():
             ebank.update_index()

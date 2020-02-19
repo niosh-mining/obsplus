@@ -8,7 +8,7 @@ import obspy
 import pytest
 
 import obsplus
-
+from obsplus.utils.misc import suppress_warnings
 
 bank_params = ["default_ebank", "default_wbank"]
 
@@ -54,3 +54,33 @@ class TestBasic:
         """Last updated should be a datetime64"""
         last_update = default_ebank.last_updated
         assert isinstance(last_update, np.datetime64)
+
+
+class TestVersions:
+    """Tests related to versioning."""
+
+    high_version_str: str = "1000.0.0"
+
+    @pytest.fixture
+    def ebank_high_version(self, tmpdir, monkeypatch):
+        """ return the default bank with a negative version number. """
+        # monkey patch obsplus version so that a low version is saved to disk
+        monkeypatch.setattr(obsplus, "__last_version__", self.high_version_str)
+        cat = obspy.read_events()
+        ebank = obsplus.EventBank(tmpdir).put_events(cat, update_index=False)
+        # write index
+        with suppress_warnings():
+            ebank.update_index()
+        monkeypatch.undo()
+        assert ebank._index_version == self.high_version_str
+        assert obsplus.__last_version__ != self.high_version_str
+        return ebank
+
+    def test_future_version(self, ebank_high_version):
+        """Ensure reading a bank with a future version issues warning."""
+        path = ebank_high_version.bank_path
+        with pytest.warns(UserWarning) as w:
+            obsplus.EventBank(path)
+        assert len(w) == 1
+        message = w.list[0].message.args[0]
+        assert "a newer version of ObsPlus" in message
