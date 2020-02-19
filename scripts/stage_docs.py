@@ -130,7 +130,8 @@ def _commit_new_docs(pages_path):
     run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
     # make a commit
     run("git add -A", shell=True, check=True, cwd=pages_path)
-    run(f'git commit -m "{version} docs"', shell=True, check=True, cwd=pages_path)
+    cmd = f'git commit --author="obsplus_bot <>" -m "{version} docs"'
+    run(cmd, shell=True, check=True, cwd=pages_path)
 
 
 def stage_docs(build_path=None, pages_path=None, remove_dirty: bool = False) -> str:
