@@ -1,15 +1,12 @@
 name: calculate coverage
 on:
-  schedule:
-    - cron: '0, 12, *, *, 1'
+  push:
+    branches:
+      - master
 
 jobs:
-  calcualte_coverage:
+  calc_coverage:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python_version: [3.7]
 
     steps:
       - uses: actions/checkout@v1
@@ -18,7 +15,7 @@ jobs:
         uses: goanpeca/setup-miniconda@v1
         with:
           miniconda-version: 'latest'
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.7
           activate-environment: test
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml

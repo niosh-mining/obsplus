@@ -2,7 +2,6 @@
 Setup script for obsplus
 """
 import glob
-import importlib.util as iutil
 import sys
 import versioneer
 from collections import defaultdict
@@ -16,7 +15,6 @@ except ImportError:
 from setuptools import setup
 
 # define python versions
-
 python_version = (3, 6)  # tuple of major, minor version requirement
 python_version_str = str(python_version[0]) + "." + str(python_version[1])
 
@@ -48,7 +46,7 @@ def find_packages(base_dir="."):
 
 
 def get_package_data_files():
-    """ Gets data """
+    """Return a list of datafiles to include in builds."""
     data = Path("obsplus") / "datasets"
     out = defaultdict(list)
     # get list of datasets
@@ -60,6 +58,8 @@ def get_package_data_files():
             if ifile.is_dir():
                 continue
             out[str(ifile.parent)].append(str(ifile))
+    # add license so it gets included in builds file
+    out["."] = ["LICENSE"]
     return list(out.items())
 
 
