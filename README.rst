@@ -8,6 +8,8 @@ Documentation_
 
 Code_
 
+Change_Log_
+
 License_
 
 About_
@@ -18,6 +20,7 @@ Code_of_Conduct_
 .. _ObsPy: https://github.com/obspy/obspy
 .. _Documentation: https://niosh-mining.github.io/obsplus/versions/latest/index.html
 .. _Code: https://github.com/niosh-mining/obsplus
+.. _Change_Log: https://github.com/niosh-mining/obsplus/CHANGELOG.txt
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
 .. _Code_of_Conduct: https://github.com/niosh-mining/.github/CODE_OF_CONDUCT.md
 
