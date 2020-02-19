@@ -43,7 +43,7 @@ jobs:
         uses: goanpeca/setup-miniconda@v1
         with:
           miniconda-version: 'latest'
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python_version }}
           activate-environment: test
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml

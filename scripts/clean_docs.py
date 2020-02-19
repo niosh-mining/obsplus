@@ -5,8 +5,10 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
+import typer
 
-def main():
+
+def clean_docs():
     """Clean all the docs"""
     doc_path = Path(__file__).absolute().parent.parent / "docs"
     # first delete all checkpoints
@@ -29,4 +31,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(clean_docs)
