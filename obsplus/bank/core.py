@@ -17,7 +17,7 @@ from obsplus.constants import CPU_COUNT, bank_subpaths_type
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils.bank import _IndexCache
-from obsplus.utils.misc import get_progressbar, iter_files, iterate
+from obsplus.utils.misc import get_progressbar, iter_files, iterate, get_version_tuple
 from obsplus.utils.time import to_datetime64
 
 BankType = TypeVar("BankType", bound="_Bank")
@@ -110,22 +110,49 @@ class _Bank(ABC):
         """The node/table where the update metadata is stored."""
         return "/".join([self.namespace, "metadata"])
 
-    def _enforce_min_version(self):
-        """Check version of obsplus used to create index and delete index if the
-        minimum version requirement is not met.
-        """
+    @property
+    def _version_or_none(self) -> Optional[str]:
+        """Return the version string or None if it doesn't yet exist."""
         try:
             version = self._index_version
         except (FileNotFoundError, DatabaseError):
             return
-        else:
-            if self._min_version > version:
+        return version
+
+    def _enforce_min_version(self):
+        """
+        Check version of obsplus used to create index and delete index if the
+        minimum version requirement is not met.
+        """
+        version = self._version_or_none
+        if version is not None:
+            min_version_tuple = get_version_tuple(self._min_version)
+            version_tuple = get_version_tuple(version)
+            if min_version_tuple > version_tuple:
                 msg = (
-                    f"the indexing schema has changed since {self._min_version} "
-                    f"the index will be recreated"
+                    f"The indexing schema has changed since {self._min_version} "
+                    f"the index will be recreated."
                 )
                 warnings.warn(msg)
                 os.remove(self.index_path)
+
+    def _warn_on_newer_version(self):
+        """
+        Issue a warning if the bank was created by a newer version of obsplus.
+
+        If this is the case, there is no guarantee it will work.
+        """
+        version = self._version_or_none
+        if version is not None:
+            obsplus_version = get_version_tuple(obsplus.__last_version__)
+            bank_version = get_version_tuple(version)
+            if bank_version > obsplus_version:
+                msg = (
+                    f"The bank was created with a newer version of ObsPlus ("
+                    f"{version}), you are running ({obsplus.__last_version__}),"
+                    f"You may encounter problems, consider updating ObsPlus."
+                )
+                warnings.warn(msg)
 
     def _unindexed_iterator(self, paths: Optional[bank_subpaths_type] = None):
         """Return an iterator of potential unindexed files."""
@@ -164,7 +191,7 @@ class _Bank(ABC):
         meta = dict(
             path_structure=self.path_structure,
             name_structure=self.name_structure,
-            obsplus_version=obsplus.__version__,
+            obsplus_version=obsplus.__last_version__,
         )
         return pd.DataFrame(meta, index=[0])
 

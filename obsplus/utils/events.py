@@ -318,7 +318,7 @@ def _create_first_pick_origin(first_pick, channel_ser, depth):
     """ Create an origin based on first pick and a channel series. """
     msg = (
         "origin fixed to location and time of earliest pick by "
-        f"obsplus version {obsplus.__version__}"
+        f"obsplus version {obsplus.__last_version__}"
     )
     comment = ev.Comment(text=msg)
     odict = dict(

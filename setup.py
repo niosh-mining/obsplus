@@ -2,8 +2,8 @@
 Setup script for obsplus
 """
 import glob
-import importlib.util as iutil
 import sys
+import versioneer
 from collections import defaultdict
 from os.path import join, exists, isdir
 
@@ -15,7 +15,6 @@ except ImportError:
 from setuptools import setup
 
 # define python versions
-
 python_version = (3, 6)  # tuple of major, minor version requirement
 python_version_str = str(python_version[0]) + "." + str(python_version[1])
 
@@ -26,7 +25,6 @@ if sys.version_info < python_version:
 
 # get path references
 here = Path(__file__).absolute().parent
-version_path = here / "obsplus" / "version.py"
 readme_path = here / "README.rst"
 # get requirement paths
 package_req_path = here / "requirements.txt"
@@ -35,15 +33,6 @@ doc_req_path = here / "docs" / "requirements.txt"
 
 
 # --- utils
-
-
-def get_version(path, name="obsplus.version"):
-    """ Load a python module with and return its __version__ attribute. """
-    spec = iutil.spec_from_file_location(name, path)
-    version = iutil.module_from_spec(spec)
-    spec.loader.exec_module(version)
-    assert hasattr(version, "__version__"), "no __version__ defined in file."
-    return version.__version__
 
 
 def find_packages(base_dir="."):
@@ -57,7 +46,7 @@ def find_packages(base_dir="."):
 
 
 def get_package_data_files():
-    """ Gets data """
+    """Return a list of datafiles to include in builds."""
     data = Path("obsplus") / "datasets"
     out = defaultdict(list)
     # get list of datasets
@@ -69,6 +58,8 @@ def get_package_data_files():
             if ifile.is_dir():
                 continue
             out[str(ifile.parent)].append(str(ifile))
+    # add license so it gets included in builds file
+    out["."] = ["LICENSE"]
     return list(out.items())
 
 
@@ -108,7 +99,7 @@ df = get_package_data_files()
 
 setup(
     name="obsplus",
-    version=get_version(version_path),
+    version=versioneer.get_version(),
     description="Some add-ons to obspy",
     long_description=load_file(readme_path),
     author="Derrick Chambers",
@@ -136,4 +127,5 @@ setup(
     setup_requires=["pytest-runner>=2.0"],
     extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
+    cmdclass=versioneer.get_cmdclass(),
 )

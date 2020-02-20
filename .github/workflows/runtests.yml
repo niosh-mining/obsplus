@@ -1,16 +1,8 @@
 name: validate
 on: [push]
 
-
 jobs:
-  download_test_data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download data
-        run: |
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
-
+  # Simply applies flake8 to the codebase
   lint_code:
     runs-on: ubuntu-latest
 
@@ -28,9 +20,9 @@ jobs:
       - name: flake8
         run: flake8 .
 
+  # Runs the tests on combinations of the supported python/os matrix.
   test_code:
     runs-on: ${{ matrix.os }}
-    needs: download_test_data
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -62,20 +54,38 @@ jobs:
       - name: download test data
         shell: bash -l {0}
         run: |
-          git clone https://github.com/d-chambers/opsdata_test
-          mv opsdata_test ~/opsdata
+          if [ ! -d ~/opsdata ]; then
+            git clone https://github.com/d-chambers/opsdata_test
+            mv opsdata_test ~/opsdata
+          fi
 
+      # Runs test suite and calculates coverage
       - name: run test suite
         shell: bash -l {0}
         run: |
-          pytest --cov obsplus -s
+          pytest -s --cov obsplus --cov-append --cov-report=xml
 
+      # Runs examples in docstrings
       - name: test docstrings
         shell: bash -l {0}
         run: |
           pytest obsplus --doctest-modules
 
+      # Runs the documentation notebooks
       - name: test notebook docs
         shell: bash -l {0}
         run: |
           pytest docs --nbval
+
+      # upload coverage
+      - name: upload coverage
+        uses: codecov/codecov-action@v1
+        if: ${{ matrix.python-version }} == 3.7 && ${{ matrix.os }} == ubuntu-latest
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          yml: ./codecov.yml
+          fail_ci_if_error: false
+

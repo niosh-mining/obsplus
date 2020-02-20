@@ -7,9 +7,6 @@ ObsPlus: A Pandas-Centric ObsPy Expansion Pack
 # turn off chained assignment warnings (consider not doing this)
 import pandas as pd
 
-# package version
-from obsplus.version import __version__
-
 pd.options.mode.chained_assignment = None
 
 # json conversions
@@ -56,3 +53,12 @@ from .waveforms.get_waveforms import get_waveforms
 from obsplus.utils.waveforms import get_waveform_client
 from obsplus.utils.events import get_event_client
 from obsplus.utils.stations import get_station_client
+
+# Get version versioneer
+from ._version import get_versions
+
+version_dict = get_versions()
+__version__ = version_dict["version"]
+__last_version__ = __version__.split("+")[0].replace("v", "")
+
+del get_versions

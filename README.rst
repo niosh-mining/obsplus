@@ -2,7 +2,7 @@
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Build Status| |Coverage| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
+|Coverage| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
 
 Documentation_
 
@@ -24,11 +24,8 @@ Code_of_Conduct_
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
 .. _Code_of_Conduct: https://github.com/niosh-mining/.github/CODE_OF_CONDUCT.md
 
-.. |Build Status| image:: https://travis-ci.org/niosh-mining/obsplus.svg?branch=master
-   :target: https://travis-ci.org/niosh-mining/obsplus
-
-.. |Coverage| image:: https://coveralls.io/repos/github/niosh-mining/obsplus/badge.svg?branch=master
-   :target: https://coveralls.io/github/niosh-mining/obsplus?branch=master
+.. |Coverage| image:: https://codecov.io/gh/niosh-mining/obsplus/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/niosh-mining/obsplus
 
 .. |Supported Versions| image:: https://img.shields.io/pypi/pyversions/obsplus.svg
    :target: https://pypi.python.org/pypi/obsplus
