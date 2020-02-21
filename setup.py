@@ -58,13 +58,16 @@ def get_package_data_files():
             if ifile.is_dir():
                 continue
             out[str(ifile.parent)].append(str(ifile))
-    # add license so it gets included in builds file
-    out["."] = ["LICENSE"]
+    # add license/requirements so they get included in builds file
+    out["."] = ["LICENSE", "requirements.txt"]
     return list(out.items())
 
 
-def read_requirements(path):
+def read_requirements(path, skip_if_missing=False):
     """ Read a requirements.txt file, return a list. """
+    path = Path(path)
+    if not path.exists() and skip_if_missing:
+        return []
     with Path(path).open("r") as fi:
         lines = fi.readlines()
     # remove any line comments
@@ -82,8 +85,8 @@ def load_file(path):
 
 
 requires = read_requirements(package_req_path)
-tests_require = read_requirements(test_req_path)
-docs_require = read_requirements(doc_req_path)
+tests_require = read_requirements(test_req_path, skip_if_missing=True)
+docs_require = read_requirements(doc_req_path, skip_if_missing=True)
 dev_requires = tests_require + docs_require
 
 ENTRY_POINTS = {
@@ -123,7 +126,7 @@ setup(
     ],
     test_suite="tests",
     install_requires=read_requirements(package_req_path),
-    tests_require=read_requirements(test_req_path),
+    tests_require=tests_require,
     setup_requires=["pytest-runner>=2.0"],
     extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
