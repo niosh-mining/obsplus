@@ -9,4 +9,4 @@ dependencies:
   - pytables
   - pandas
   - pytest
-
+  - pandoc
