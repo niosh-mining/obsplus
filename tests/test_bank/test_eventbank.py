@@ -687,24 +687,39 @@ class TestConcurrency:
     """ Tests for using an executor for concurrency. """
 
     @pytest.fixture
-    def ebank_executor(self, ebank, instrumented_thread_executor, monkeypatch):
+    def ebank_thread_exec(self, ebank, instrumented_executor, monkeypatch):
         """ Attach the instrument threadpool executor to ebank. """
-        monkeypatch.setattr(ebank, "executor", instrumented_thread_executor)
+        monkeypatch.setattr(ebank, "executor", instrumented_executor)
         return ebank
 
-    def test_executor_get_events(self, ebank_executor):
+    @pytest.fixture
+    def new_catalog(self):
+        """Change the resource ids of events in the default catalog, return."""
+        cat = obspy.read_events()
+        for event in cat:
+            event.resource_id = ev.ResourceIdentifier()
+        return cat
+
+    def test_executor_get_events(self, ebank_thread_exec):
         """ Ensure the threadpool map function is used for reading events. """
         # get events, ensure map is used
-        _ = ebank_executor.get_events()
-        counter = getattr(ebank_executor.executor, "_counter", {})
+        _ = ebank_thread_exec.get_events()
+        counter = getattr(ebank_thread_exec.executor, "_counter", {})
         assert counter.get("map", 0) == 1
 
-    def test_executor_index_events(self, ebank_executor):
+    def test_executor_index_events(self, ebank_thread_exec):
         """ Ensure threadpool map is used for updating the index. """
         try:
-            os.remove(ebank_executor.index_path)
+            os.remove(ebank_thread_exec.index_path)
         except FileNotFoundError:
             pass
-        ebank_executor.update_index()
-        counter = getattr(ebank_executor.executor, "_counter", {})
+        ebank_thread_exec.update_index()
+        counter = getattr(ebank_thread_exec.executor, "_counter", {})
         assert counter.get("map", 0) == 1
+
+    def test_put_events(self, ebank_thread_exec, new_catalog):
+        """Ensure putting events doesn't raise and increments event count."""
+        count_before = len(ebank_thread_exec.read_index())
+        ebank_thread_exec.put_events(new_catalog)
+        count_after = len(ebank_thread_exec.read_index())
+        assert count_after == count_before + len(new_catalog)

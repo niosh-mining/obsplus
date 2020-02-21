@@ -262,28 +262,31 @@ class EventBank(_Bank):
         """
         bank_path = str(self.bank_path)
 
-        def func(path):
-            """ Function to yield events, update_time and paths. """
-            cat = try_read_catalog(path, format=self.format)
-            update_time = getmtime(path)
-            path = path.replace(bank_path, "")
-            return cat, update_time, path
-
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
-        update_file_feeder = self._measure_iterator(file_yielder, bar)
+        update_file_feeder = self._measure_iterator(
+            file_yielder, bar, include_args=(bank_path,)
+        )
         # create iterator, loop over it in chunks until it is exhausted
-        iterator = self._map(func, update_file_feeder)
+        iterator = self._map(self._get_cat_update_time_path, update_file_feeder)
         events_remain = True
         while events_remain:
             events_remain = self._index_from_iterable(iterator, update_time)
         return self
 
+    def _get_cat_update_time_path(self, path_bank_path_tuple):
+        """ Function to yield events, update_time and paths. """
+        path, bank_path = path_bank_path_tuple
+        cat = try_read_catalog(path, format=self.format)
+        update_time = getmtime(path)
+        path = path.replace(bank_path, "")
+        return cat, update_time, path
+
     def _index_from_iterable(self, iterable, update_time):
-        """ Iterate over an event iterable and dump to database. """
+        """Iterate over an event iterable and dump to database."""
         events, update_times, paths = [], [], []
         max_mem = self._max_events_in_memory  # this avoids the MRO each loop
         events_remain = False
@@ -370,10 +373,6 @@ class EventBank(_Bank):
             An obspy Event.
         index
             If Not None, a dataframe of the current index.
-
-        Returns
-        -------
-
         """
         bank_path = str(self.bank_path)
         df = self.read_index().set_index("event_id") if index is None else index
@@ -413,7 +412,9 @@ class EventBank(_Bank):
         files_paths = self.read_index(**kwargs)["path"]
         paths = str(self.bank_path) + _natify_paths(files_paths)
         read_func = partial(try_read_catalog, format=self.format)
-        map_kwargs = dict(chunksize=len(paths) // self._max_workers)
+        # Divide work evenly between workers, with a min chunksize of 1.
+        chunksize = len(paths) // self._max_workers or 1
+        map_kwargs = dict(chunksize=chunksize)
         try:
             mapped_values = self._map(read_func, paths.values, **map_kwargs)
             return reduce(add, mapped_values)
@@ -469,14 +470,6 @@ class EventBank(_Bank):
         If any of the events do not have an extractable reference time a
         ``ValueError`` will be raised.
         """
-
-        def func(event):
-            """ get an event's path, save, return path. """
-            path = self.get_event_path(event, index=df)
-            path.parent.mkdir(exist_ok=True, parents=True)
-            event.write(str(path), format=self.format)
-            return path
-
         self.ensure_bank_path_exists(create=True)
         # get catalog from any event client
         events = get_event_client(events).get_events()
@@ -484,10 +477,20 @@ class EventBank(_Bank):
         event_ids = [str(x.resource_id) for x in events]
         df = self.read_index(event_id=event_ids).set_index("event_id")
         # create an iterator and apply over potential pool
-        event_feeder = self._measure_iterator(events, bar)
-        paths = list(self._map(func, event_feeder))
+        event_feeder = self._measure_iterator(events, bar, include_args=(df,))
+        paths = list(self._map(self._put_event, event_feeder))
         if update_index:  # parse newly saved files and update index
             self.update_index(paths=paths)
         return self
+
+    def _put_event(self, events_df_tuple):
+        """
+        Get a single event's path, save to db, return path.
+        """
+        event, index = events_df_tuple
+        path = self.get_event_path(event, index=index)
+        path.parent.mkdir(exist_ok=True, parents=True)
+        event.write(str(path), format=self.format)
+        return path
 
     get_event_summary = read_index
