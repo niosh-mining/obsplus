@@ -262,7 +262,7 @@ class _Bank(ABC):
             return getattr(executor, "_max_workers", CPU_COUNT)
         return 1
 
-    def _map(self, func, args, chunksize=None):
+    def _map(self, func, args, chunksize=1):
         """
         Map the args to function, using executor if defined else perform
         in serial.
