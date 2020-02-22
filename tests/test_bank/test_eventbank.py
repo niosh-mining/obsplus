@@ -91,11 +91,6 @@ def ebank_with_bad_files(tmpdir):
     st.write(str(stream_path / "not_an_event.xml"), "mseed")
     bank = EventBank(stream_path)
     # should issue warning
-
-    # bank.index_path.unlink()
-    # breakpoint()
-    # bank.update_index()
-
     with pytest.warns(UserWarning):
         bank.update_index()
     return bank

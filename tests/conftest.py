@@ -224,8 +224,8 @@ def thread_executor():
 
 @pytest.fixture(scope="class")
 def process_executor():
-    """ return a thread pool """
-    # in order to avoid sapping too many resources, just use
+    """ return a process pool """
+    # in order to avoid sapping too many resources, just use 1/2 CPU count
     with ProcessPoolExecutor((CPU_COUNT // 2)) as executor:
         yield executor
 
