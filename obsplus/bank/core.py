@@ -173,9 +173,7 @@ class _Bank(ABC):
         # return file iterator
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
-    def _measure_iterator(
-        self, iterable: Iterable, bar: Optional[ProgressBar] = None, include_args=None
-    ):
+    def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
         """
         A generator to yield un-indexed files and update progress bar.
 
@@ -185,10 +183,6 @@ class _Bank(ABC):
             Any iterable to yield.
         bar
             Any object which has a 'update' method.
-        include_args
-            A tuple of objects which should also be yielded with each
-            value of iterable.
-            This is a bit of a hack to avoid issues mentioned in #158.
         """
         # get progress bar
         bar = self.get_progress_bar(bar)
@@ -197,10 +191,7 @@ class _Bank(ABC):
             # update bar if count is in update interval
             if bar is not None and num % self._bar_update_interval == 0:
                 bar.update(num)
-            if include_args is not None:
-                yield (obj, *include_args)
-            else:
-                yield obj
+            yield obj
         # finish progress bar
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 

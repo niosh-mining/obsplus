@@ -267,20 +267,23 @@ class EventBank(_Bank):
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
-        update_file_feeder = self._measure_iterator(
-            file_yielder, bar, include_args=(bank_path,)
+        update_file_feeder = self._measure_iterator(file_yielder, bar)
+        new_func = partial(
+            self._get_cat_update_time_path, bank_path=bank_path, format=self.format
         )
         # create iterator, loop over it in chunks until it is exhausted
-        iterator = self._map(self._get_cat_update_time_path, update_file_feeder)
+        iterator = self._map(new_func, update_file_feeder)
         events_remain = True
         while events_remain:
             events_remain = self._index_from_iterable(iterator, update_time)
         return self
 
-    def _get_cat_update_time_path(self, path_bank_path_tuple):
+    @staticmethod
+    def _get_cat_update_time_path(path, bank_path, format):
         """ Function to yield events, update_time and paths. """
-        path, bank_path = path_bank_path_tuple
-        cat = try_read_catalog(path, format=self.format)
+        # NOTE: This function must be static to avoid pickling the attached
+        # executor. (see #158).
+        cat = try_read_catalog(path, format=format)
         update_time = getmtime(path)
         path = path.replace(bank_path, "")
         return cat, update_time, path
@@ -360,33 +363,6 @@ class EventBank(_Bank):
                 dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
-
-    def get_event_path(
-        self, event: ev.Event, index: Optional[ProgressBar] = None
-    ) -> Path:
-        """
-        Get the path an event would be stored in a bank.
-
-        Parameters
-        ----------
-        event
-            An obspy Event.
-        index
-            If Not None, a dataframe of the current index.
-        """
-        bank_path = str(self.bank_path)
-        df = self.read_index().set_index("event_id") if index is None else index
-        rid = str(event.resource_id)
-        if rid in df.index:  # event needs to be updated
-            path = df.loc[rid, "path"]
-            save_path = bank_path + path
-            assert exists(save_path)
-        else:  # event file does not yet exist
-            path = _summarize_event(
-                event, path_struct=self.path_structure, name_struct=self.name_structure
-            )["path"]
-            save_path = (Path(self.bank_path) / path).absolute()
-        return Path(save_path)
 
     # --- meta table
 
@@ -477,20 +453,42 @@ class EventBank(_Bank):
         event_ids = [str(x.resource_id) for x in events]
         df = self.read_index(event_id=event_ids).set_index("event_id")
         # create an iterator and apply over potential pool
-        event_feeder = self._measure_iterator(events, bar, include_args=(df,))
-        paths = list(self._map(self._put_event, event_feeder))
+        event_feeder = self._measure_iterator(events, bar)
+        new_func = partial(
+            self._put_event,
+            index=df,
+            bank_path=self.bank_path,
+            path_structure=self.path_structure,
+            name_structure=self.name_structure,
+            format=self.format,
+        )
+        paths = list(self._map(new_func, event_feeder))
         if update_index:  # parse newly saved files and update index
             self.update_index(paths=paths)
         return self
 
-    def _put_event(self, events_df_tuple):
+    @staticmethod
+    def _put_event(event, index, bank_path, path_structure, name_structure, format):
         """
         Get a single event's path, save to db, return path.
         """
-        event, index = events_df_tuple
-        path = self.get_event_path(event, index=index)
+        # NOTE: This function must be static to avoid pickling the attached
+        # executor (see #158)
+        bank_path = str(bank_path)
+        df = index
+        rid = str(event.resource_id)
+        if rid in df.index:  # event needs to be updated
+            path = df.loc[rid, "path"]
+            save_path = bank_path + path
+            assert exists(save_path)
+        else:  # event file does not yet exist
+            path = _summarize_event(
+                event, path_struct=path_structure, name_struct=name_structure
+            )["path"]
+            save_path = (Path(bank_path) / path).absolute()
+        path = Path(save_path)
         path.parent.mkdir(exist_ok=True, parents=True)
-        event.write(str(path), format=self.format)
+        event.write(str(path), format=format)
         return path
 
     get_event_summary = read_index
