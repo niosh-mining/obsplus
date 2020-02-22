@@ -1219,9 +1219,9 @@ class TestConcurrentReads:
     """
 
     @pytest.fixture
-    def wbank_executor(self, ta_bank, monkeypatch, instrumented_thread_executor):
+    def wbank_executor(self, ta_bank, monkeypatch, instrumented_executor):
         """ Return a wavebank with an instrumented executor. """
-        monkeypatch.setattr(ta_bank, "executor", instrumented_thread_executor)
+        monkeypatch.setattr(ta_bank, "executor", instrumented_executor)
         with suppress(FileNotFoundError):
             os.remove(ta_bank.index_path)
         return ta_bank

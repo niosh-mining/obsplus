@@ -174,7 +174,16 @@ class _Bank(ABC):
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
     def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
-        """A generator to yield un-indexed files and update progress bar."""
+        """
+        A generator to yield un-indexed files and update progress bar.
+
+        Parameters
+        ----------
+        iterable
+            Any iterable to yield.
+        bar
+            Any object which has a 'update' method.
+        """
         # get progress bar
         bar = self.get_progress_bar(bar)
         # get the iterator
@@ -262,9 +271,9 @@ class _Bank(ABC):
             return getattr(executor, "_max_workers", CPU_COUNT)
         return 1
 
-    def _map(self, func, args, chunksize=None):
+    def _map(self, func, args, chunksize=1):
         """
-        Map the args to function, using executor if defined else perform
+        Map the args to function, using executor if defined, else perform
         in serial.
         """
         if self.executor is not None:

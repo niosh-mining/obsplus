@@ -703,7 +703,7 @@ class WaveBank(_Bank):
         kwargs = dict(format=self.format, starttime=starttime, endtime=endtime)
         func = partial(_try_read_stream, **kwargs)
         stt = obspy.Stream()
-        chunksize = len(files) / self._max_workers
+        chunksize = (len(files) // self._max_workers) or 1
         for st in self._map(func, files, chunksize=chunksize):
             if st is not None:
                 stt += st

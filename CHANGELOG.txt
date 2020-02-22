@@ -24,6 +24,8 @@ obsplus master:
     * Removed `concurrent_updates` and `inventory` argument from `WaveBank`.
       see (#147 and #152)
     * The `updated` column in wavebank is now correct (see #146, #147).
+    * Fixed issue with using `ProcessPoolExecutor` in EventBank for `put_event`
+      and `update_index` (see issues #158, #159, #161).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the

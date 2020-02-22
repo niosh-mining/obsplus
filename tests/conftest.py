@@ -6,7 +6,7 @@ import glob
 import os
 import shutil
 import typing
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from os.path import basename
 from os.path import join, dirname, abspath
 from pathlib import Path
@@ -222,26 +222,32 @@ def thread_executor():
         yield executor
 
 
+@pytest.fixture(scope="class")
+def process_executor():
+    """ return a process pool """
+    # in order to avoid sapping too many resources, just use 1/2 CPU count
+    with ProcessPoolExecutor((CPU_COUNT // 2)) as executor:
+        yield executor
+
+
+@pytest.fixture(scope="class", params=["thread", "process"])
+def executor(request):
+    """Aggregate both the thread and process executors."""
+    fixture_name = f"{request.param}_executor"
+    return request.getfixturevalue(fixture_name)
+
+
 @pytest.fixture()
-def instrumented_thread_executor(thread_executor):
+def instrumented_executor(executor):
     """
     Return a thread pool executor which has been instrumented.
 
     This allows the calls to each of the executors methods to be counted. A
     Counter object is attached to the executor and each of the methods is
     wrapped to count how many times it is called.
-
-
-    Parameters
-    ----------
-    thread_executor
-
-    Returns
-    -------
-
     """
-    with instrument_methods(thread_executor):
-        yield thread_executor
+    with instrument_methods(executor):
+        yield executor
 
 
 @pytest.fixture(scope="session")

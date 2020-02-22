@@ -19,7 +19,7 @@ from obsplus.utils.time import make_time_chunks, to_utc
 @contextmanager
 def instrument_methods(obj):
     """
-    Temporarily instrument an objects methods.
+    Temporarily instrument an object's methods.
 
     This allows the calls to each of the objects methods to be counted.
     """
