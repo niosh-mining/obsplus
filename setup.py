@@ -127,6 +127,7 @@ setup(
     test_suite="tests",
     install_requires=read_requirements(package_req_path),
     tests_require=tests_require,
+    extras_require={"dev": dev_requires},
     python_requires=">=%s" % python_version_str,
     cmdclass=versioneer.get_cmdclass(),
 )
