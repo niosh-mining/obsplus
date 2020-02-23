@@ -17,4 +17,5 @@ if __name__ == "__main__":
 
     run("python setup.py sdist bdist_wheel", shell=True, cwd=base)
     run("twine upload dist/*", shell=True, cwd=base)
-    # run("twine upload --repository-url https://test.pypi.org/legacy/ dist/*", shell=True, cwd=base)
+    test_pypi_url = "--repository-url https://test.pypi.org/legacy/"
+    # run("twine upload {test_pypi_url}  dist/*", shell=True, cwd=base)
