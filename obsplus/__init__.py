@@ -59,7 +59,8 @@ from ._version import get_versions
 
 version_dict = get_versions()
 __version__ = version_dict["version"]
-__last_version__ = __version__.split("+")[0].replace("v", "")
+__last_version__ = __version__.split("+")[0].split("-")[0].replace("v", "")
+
 assert len(__last_version__.split(".")) == 3, "wrong version found!"
 
 
