@@ -2,7 +2,7 @@
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Coverage| |Version Status| |Supported Versions| |Style| |Downloads| |Licence|
+|Coverage| |Supported Versions| |PyPI| |Conda| |Licence|
 
 Documentation_
 
@@ -33,14 +33,10 @@ Code_of_Conduct_
 .. |Licence| image:: https://www.gnu.org/graphics/lgplv3-88x31.png
    :target: https://www.gnu.org/licenses/lgpl.html
 
-.. |Version Status| image:: https://img.shields.io/pypi/v/obsplus.svg
-   :target: https://pypi.python.org/pypi/obsplus/
-
-.. |Style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/ambv/black
-   :alt: Code style: black
-
-.. |Downloads| image:: https://pepy.tech/badge/obsplus
+.. |PyPI| image:: https://pepy.tech/badge/obsplus
    :target: https://pepy.tech/project/obsplus
-   :alt: Downloads
+   
+.. |Conda| image:: https://img.shields.io/conda/dn/conda-forge/obsplus?label=conda%20downloads
+   :target: https://github.com/conda-forge/obsplus-feedstock
+  
 
