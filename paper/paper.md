@@ -26,13 +26,9 @@ bibliography: paper.bib
 
 Over the past decade, ``ObsPy``, a python framework for seismology [@Krischer:2015], has become an integral part of many seismology research workflows. ``ObsPy`` provides parsers for most seismological data formats, clients for accessing data-centers, common signal processing routines, and event, station, and waveform data models.
 
-``ObsPlus`` significantly expands ``ObsPy``’s functionality by providing simple data management abstractions and data model conversions.   
-
+``ObsPlus`` significantly expands ``ObsPy``’s functionality by providing simple data management abstractions and conversions between ``ObsPy`` classes and the ubiquitous ``pandas`` ``DataFrame``.
 
 # Functionality and Features
- 
-
- 
 
 1. **A data retrieval interface**
 ``ObsPlus`` provides a unified data retrieval interface for in-memory, on disk, and remote seismological data. This is enabled by in-process databases which provide a simple mechanism to index and access local seismological data stored in directories of arbitrary organization. Importantly, the classes implement a superset of the interface already provided by ``ObsPy``’s remote clients, making it straight-forward to write data-source agnostic code.  
@@ -46,10 +42,6 @@ While ``ObsPy``'s data structures are quite powerful, they are not always the mo
 4. **Utilities**
 ``ObsPlus``’s list of utilities is quite long and more are being added regularly. Many are focused around validating and manipulating event data. 
 
-
 ``ObsPlus`` has become an important part of the National Institute for Occupational Safety and Health (NIOSH)’s data processing and management workflows and has enabled rapid prototyping of new ideas while managing complexity through appropriate abstractions. It is our hope that `ObsPlus` will provide similar benefits to the broader seismology community.
-
-
-
 
 # References
