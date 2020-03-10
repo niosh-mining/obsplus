@@ -523,8 +523,6 @@ class TestGetEvents:
         assert len(multiple_event_file.get_events(minmagnitude=minmag)) == 3
 
 
-
-
 class TestPutEvents:
     """ tests for putting events into the bank """
 
