@@ -465,6 +465,14 @@ class TestReadIndexQueries:
 class TestGetEvents:
     """ tests for pulling events out of the bank """
 
+    @pytest.fixture
+    def multiple_event_file(self, tmp_path_factory, crandall_dataset):
+        """ Create a bank from a single file with multiple events """
+        path = tmp_path_factory.mktemp("crandall_bank")
+        cat_name = path / "event_bank.xml"
+        crandall_dataset.event_client.write(cat_name, "QuakeML")
+        return EventBank(path)
+
     def test_no_params(self, bing_ebank, bingham_catalog):
         """ ensure a basic query can get an event """
         cat = bing_ebank.get_events()
@@ -505,6 +513,16 @@ class TestGetEvents:
         inds = ebank.read_index()["event_id"].values[0:2]
         # query with inds as np array
         assert len(ebank.get_events(eventid=np.array(inds))) == 2
+
+    def test_multiple_event_file(self, multiple_event_file):
+        """
+        Make sure a catalog file with multiple events is handled appropriately
+        """
+        minmag = 2.0
+        # Get the events; add a query for good measure
+        assert len(multiple_event_file.get_events(minmagnitude=minmag)) == 3
+
+
 
 
 class TestPutEvents:
