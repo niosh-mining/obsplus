@@ -401,8 +401,9 @@ class EventBank(_Bank):
             cat = obspy.Catalog()
         # Make sure only the events of interest are included
         cat1 = obspy.Catalog()
-        for eid in eids:
-            cat1.append(ev.ResourceIdentifier(eid).get_referred_object())
+        for eve in cat:
+            if eve.resource_id.id in eids:
+                cat1.append(eve)
         return cat1
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
