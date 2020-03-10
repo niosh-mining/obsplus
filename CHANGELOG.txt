@@ -26,6 +26,8 @@ obsplus master:
     * The `updated` column in wavebank is now correct (see #146, #147).
     * Fixed issue with using `ProcessPoolExecutor` in EventBank for `put_event`
       and `update_index` (see issues #158, #159, #161).
+    * Fixed bug where an EventBank with files containing multiple events would
+      duplicate events in the catalog on `get_events`. (See #166).
   - obsplus.interfaces
     * Added ProgressBar for defining classes compatible with how obsplus
       uses progress bar, modeled after the ProgressBar class from the
