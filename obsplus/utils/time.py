@@ -164,9 +164,13 @@ def to_datetime64(
             return to_datetime64(default)
         return default
     elif isinstance(value, np.datetime64):
-        return value
+        # The '.astype('datetime64[ns]') is necessary to make sure it really
+        # does get converted to nanoseconds
+        return value.astype("datetime64[ns]")
     elif isinstance(value, pd.Timestamp):
-        return value.to_datetime64()
+        # The '.astype('datetime64[ns]') is necessary to make sure it really
+        # does get converted to nanoseconds
+        return value.to_datetime64().astype("datetime64[ns]")
     try:
         utc = obspy.UTCDateTime(value)
         return np.datetime64(utc._ns, "ns")

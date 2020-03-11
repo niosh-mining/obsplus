@@ -174,7 +174,9 @@ class _IndexCache:
         con3 = self.cache.kwargs == self._kwargs_to_str(kwargs)
         cached_index = self.cache[con1 & con2 & con3]
         if not len(cached_index):  # query is not cached get it from hdf5 file
-            where = _get_kernel_query(int(starttime), int(endtime), int(buffer))
+            where = _get_kernel_query(
+                starttime.astype(np.int64), endtime.astype(np.int64), int(buffer)
+            )
             raw_index = self._get_index(where, **kwargs)
             # replace "None" with None
             ic = self.bank.index_str

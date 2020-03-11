@@ -387,8 +387,8 @@ class EventBank(_Bank):
         """
         ind = self.read_index(**kwargs)
         eids = ind["event_id"]
-        files_paths = ind["path"]
-        paths = str(self.bank_path) + _natify_paths(files_paths)
+        file_paths = ind["path"]
+        paths = str(self.bank_path) + _natify_paths(file_paths)
         paths.drop_duplicates(inplace=True)
         read_func = partial(try_read_catalog, format=self.format)
         # Divide work evenly between workers, with a min chunksize of 1.
@@ -400,11 +400,7 @@ class EventBank(_Bank):
         except TypeError:  # empty events
             cat = obspy.Catalog()
         # Make sure only the events of interest are included
-        cat1 = obspy.Catalog()
-        for eve in cat:
-            if eve.resource_id.id in eids:
-                cat1.append(eve)
-        return cat1
+        return obspy.Catalog([eve for eve in cat if eve.resource_id.id in eids.values])
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
