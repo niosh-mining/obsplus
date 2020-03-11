@@ -46,13 +46,13 @@ def count_calls(instance, bound_method, counter_attr):
     setattr(instance, counter_attr, 0)
 
     @functools.wraps(bound_method)
-    def wraper(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         out = bound_method(*args, **kwargs)
         # increment counter
         setattr(instance, counter_attr, getattr(instance, counter_attr) + 1)
         return out
 
-    return wraper
+    return wrapper
 
 
 def strip_processing(st: obspy.Stream) -> obspy.Stream:
@@ -366,9 +366,9 @@ class TestReadIndex:
         index = ta_bank_index.read_index(starttime=t1, endtime=t2)
         starttime = index.starttime.min()
         endtime = index.endtime.max()
+        assert not index.empty
         assert t1 >= starttime
         assert t2 <= endtime
-        assert not index.empty
 
     def test_crandall_query(self, crandall_dataset):
         """
@@ -1339,21 +1339,26 @@ class TestSelectDoesntReturnSuperset:
         df["network"] = "1"
         df["starttime"] = np.datetime64("now")
         df["endtime"] = df["starttime"] + np.timedelta64(3600, "s")
+        df["sampling_period"] = 0.01
+        df["path"] = "abcd"
         return df
 
     @pytest.fixture(scope="class")
-    def bank(self, df_index, ta_archive):
-        """ return a bank with monkeypatched index """
+    def modified_index_wbank(self, df_index, ta_archive, tmp_path_factory):
+        """ return a wbank with station names that have been modified """
         wbank = WaveBank(ta_archive)
-        wbank.update_index = lambda: None
-        wbank._index_cache = lambda *args, **kwargs: df_index
+        # Point the bank path to a temporary directory
+        path = tmp_path_factory.mktemp("temp_waveforms")
+        wbank.bank_path = path
+        # Make the bank write out the modified index
+        wbank._write_update(df_index, time.time())
         return wbank
 
     # test
-    def test_only_one_station_returned(self, bank):
+    def test_only_one_station_returned(self, modified_index_wbank):
         """ ensure selecting station 2 only returns one station """
         station = "2"
-        df = bank.read_index(station=station)
+        df = modified_index_wbank.read_index(station=station)
         stations = df.station.unique()
         assert len(stations) == 1
         assert set(stations) == {station}

@@ -385,17 +385,22 @@ class EventBank(_Bank):
         ----------
         {get_events_params}
         """
-        files_paths = self.read_index(**kwargs)["path"]
-        paths = str(self.bank_path) + _natify_paths(files_paths)
+        ind = self.read_index(**kwargs)
+        eids = ind["event_id"]
+        file_paths = ind["path"]
+        paths = str(self.bank_path) + _natify_paths(file_paths)
+        paths.drop_duplicates(inplace=True)
         read_func = partial(try_read_catalog, format=self.format)
         # Divide work evenly between workers, with a min chunksize of 1.
         chunksize = len(paths) // self._max_workers or 1
         map_kwargs = dict(chunksize=chunksize)
         try:
             mapped_values = self._map(read_func, paths.values, **map_kwargs)
-            return reduce(add, mapped_values)
+            cat = reduce(add, mapped_values)
         except TypeError:  # empty events
-            return obspy.Catalog()
+            cat = obspy.Catalog()
+        # Make sure only the events of interest are included
+        return obspy.Catalog([eve for eve in cat if eve.resource_id.id in eids.values])
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
