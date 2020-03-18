@@ -28,7 +28,7 @@ def try_permission_sleep(callable, *args, _count=0, **kwargs):
         return callable(*args, **kwargs)
     except PermissionError:
         time.sleep(0.01)
-        if _count > 10:
+        if _count > 20:
             raise
     return try_permission_sleep(callable, *args, _count=_count + 1, **kwargs)
 
