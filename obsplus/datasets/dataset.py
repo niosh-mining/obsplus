@@ -233,9 +233,12 @@ class DataSet(abc.ABC):
         """
         return copy_dataset(self, destination)
 
-    def get_fetcher(self) -> "obsplus.Fetcher":
+    def get_fetcher(self, **kwargs) -> "obsplus.Fetcher":
         """
         Return a Fetcher from the data.
+
+        kwargs are passed to :class:`~obsplus.structures.Fetcher`'s constructor.
+        See its documentation for acceptable kwargs.
         """
         assert self.data_loaded, "data have not been loaded into memory"
         # get events/waveforms/stations and put into dict for the Fetcher
@@ -244,6 +247,7 @@ class DataSet(abc.ABC):
             "events": self.event_client,
             "stations": self.station_client,
         }
+        fetch_kwargs.update(kwargs)
         return obsplus.Fetcher(**fetch_kwargs)
 
     __call__ = get_fetcher
