@@ -182,8 +182,8 @@ class Fetcher:
         # waveforms processor for applying filters and such
         self.stream_processor = stream_processor
         # set event time/query parameters
-        self.time_before = time_before
-        self.time_after = time_after
+        self.time_before = to_timedelta64(time_before)
+        self.time_after = to_timedelta64(time_after)
         self.event_query = event_query or {}
 
     def set_waveforms(self, waveforms: fetcher_waveform_type):

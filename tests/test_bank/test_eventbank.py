@@ -2,6 +2,7 @@
 tests for event wavebank
 """
 import os
+import shutil
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -194,15 +195,19 @@ class TestBankBasics:
         If the min version of the event bank is not met the index should
         be deleted and re-created. A warning should be issued.
         """
+        # Copy ebank to new directory to ensure this process owns files.
+        # This is to address windows PermissionError
+        new_path = ebank_low_version.bank_path.parent / "new_test"
+        shutil.copytree(str(ebank_low_version.bank_path), str(new_path))
         ebank = ebank_low_version
-        ipath = Path(ebank.index_path)
-        mtime1 = ipath.stat().st_mtime
+        ebank.bank_path = new_path
         with pytest.warns(UserWarning) as w:
             try_permission_sleep(ebank.update_index)
         assert len(w)  # a warning should have been raised
-        mtime2 = ipath.stat().st_mtime
-        # ensure the index was deleted and rewritten
-        assert mtime1 < mtime2
+        warning_strs = [str(x.message) for x in w.list]
+        expected_str = "indexing schema has changed"
+        in_warnings = [expected_str in x for x in warning_strs]
+        assert any(in_warnings)
 
     def test_get_events_recreates_index(self, ebank_low_version):
         """
