@@ -267,6 +267,13 @@ class TestGetWaveforms:
             assert isinstance(st, obspy.Stream)
             assert isinstance(eid, str)
 
+    def test_timebefore_time_after(self, bingham_dataset):
+        """Ensure using time_before and time_after as ints works. see #168. """
+        fetcher = bingham_dataset.get_fetcher(time_before=1, time_after=10)
+        for eid, st in fetcher.yield_event_waveforms():
+            assert len(st)
+            assert isinstance(st, obspy.Stream)
+
 
 class TestYieldWaveforms:
     """ tests for yielding chunks of data between a time range """
