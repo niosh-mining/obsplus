@@ -515,8 +515,13 @@ class Fetcher:
         df = inv[~(con1 | con2)].set_index("seed_id")[list(NSLC)]
         if df.empty:  # return empty list if no data found
             return []
-        df["starttime"] = starttime
-        df["endtime"] = endtime
+        if isinstance(starttime, pd.Series):
+            # Have to get clever here to make sure only active stations get used
+            df["starttime"] = starttime.loc[set(starttime.index).intersection(df.index)]
+            df["endtime"] = endtime.loc[set(endtime.index).intersection(df.index)]
+        else:
+            df["starttime"] = starttime
+            df["endtime"] = endtime
         # remove any rows that don't have defined start/end times
         out = df[~(df["starttime"].isnull() | df["endtime"].isnull())]
         # ensure we have UTCDateTime objects

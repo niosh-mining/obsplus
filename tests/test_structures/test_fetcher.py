@@ -390,6 +390,18 @@ class TestYieldEventWaveforms:
         )
         return Fetcher(**kwargs)
 
+    # @pytest.fixture(scope="class")
+    # def fetcher_inactive_stations(self, bingham_dataset):
+    #     """ Init wavefetcher with one event that starts after some stations end """
+    #     event = bingham_dataset.event_client.get_events()[-1]
+    #     event.preferred_origin().time = obspy.UTCDateTime(2013, 6, 1)
+    #     kwargs = dict(
+    #         waveforms=bingham_dataset.waveform_client,
+    #         events=event,
+    #         stations=bingham_dataset.station_client.get_stations(),
+    #     )
+    #     return Fetcher(**kwargs)
+
     # general test
 
     def test_duration(self, stream_dict):
