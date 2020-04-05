@@ -20,7 +20,6 @@ from obspy.core.util.obspy_types import Enum
 
 import obsplus
 from obsplus.constants import (
-    UTC_FORMATS,
     catalog_or_event,
     catalog_component,
     EVENT_ATTRS,
@@ -34,7 +33,7 @@ from obsplus.interfaces import EventClient
 from obsplus.utils.bank import EVENT_EXT, _get_time_values
 from obsplus.utils.misc import yield_obj_parent_attr, _get_path
 from obsplus.utils.pd import get_seed_id_series
-from obsplus.utils.time import get_reference_time, _get_event_origin_time, to_utc
+from obsplus.utils.time import _get_event_origin_time, to_utc
 
 
 def duplicate_events(
@@ -370,31 +369,6 @@ def get_seed_id(obj: catalog_component) -> str:
     # If it makes it this far, it could not find a non-None attribute
     # raise assertion error so this still works in validators
     assert 0, f"Unable to fetch a seed id for {obj.resource_id}"
-
-
-def _get_file_name_from_event(eve: Event, ext: str = ".xml") -> str:
-    """
-    Generate a file name for the given event.
-
-    Parameters
-    ----------
-    eve
-    ext
-
-    Returns
-    -------
-    """
-    # get utc and formatted list from event
-    utc = get_reference_time(eve)
-    fmt = "year month day hour minute second".split()
-    utc_list = [UTC_FORMATS[x] % getattr(utc, x) for x in fmt]
-    # append last 5 of resource_id
-    rid_str = str(eve.resource_id)[-5:]
-    utc_list.append(rid_str)
-    fn = "%s-%s-%sT%s-%s-%s-%s" % tuple(utc_list)
-    if ext:
-        fn = fn + ext
-    return fn
 
 
 def _get_params_from_docs(obj):

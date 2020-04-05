@@ -390,17 +390,18 @@ class TestYieldEventWaveforms:
         )
         return Fetcher(**kwargs)
 
-    # @pytest.fixture(scope="class")
-    # def fetcher_inactive_stations(self, bingham_dataset):
-    #     """ Init wavefetcher with one event that starts after some stations end """
-    #     event = bingham_dataset.event_client.get_events()[-1]
-    #     event.preferred_origin().time = obspy.UTCDateTime(2013, 6, 1)
-    #     kwargs = dict(
-    #         waveforms=bingham_dataset.waveform_client,
-    #         events=event,
-    #         stations=bingham_dataset.station_client.get_stations(),
-    #     )
-    #     return Fetcher(**kwargs)
+    @pytest.fixture(scope="class")
+    def fetcher_missing_events(self, bingham_dataset):
+        """ Create a fetcher which has an event for which there is not data."""
+        ds: obsplus.Fetcher = bingham_dataset.copy()
+        almost_last_event = ds.event_client[-2]
+        last_event = ds.event_client[-1]
+        # change origin time
+        last_event.origins[-1].time += 10_000
+        for pick in last_event.picks:
+            pick.time += 10_000
+        ds.event_client.events = [last_event, almost_last_event]
+        return ds.get_fetcher()
 
     # general test
 
@@ -508,6 +509,33 @@ class TestYieldEventWaveforms:
         fetcher = bingham_dataset.get_fetcher()
         with pytest.raises(ValueError):
             list(fetcher.yield_event_waveforms(1, 2, reference="not supported"))
+
+    def test_raises_with_no_time_before_time_after(self, bing_fetcher):
+        """ Not using time_before or time_after should raise ValueError"""
+        with pytest.raises(ValueError):
+            list(bing_fetcher.yield_event_waveforms())
+
+    def test_doesnt_raise_on_missing_waveform(self, fetcher_missing_events):
+        """ Ensure yield waveform doesnt raise on missing event. """
+        iterable = fetcher_missing_events.yield_event_waveforms(1, 10)
+        ev_wfs = list(iterable)
+        for event_id, stream in ev_wfs:
+            assert isinstance(stream, obspy.Stream)
+
+    def test_raise_on_missing_waveform(self, fetcher_missing_events, monkeypatch):
+        """ Ensure yield waveform raises on missing event when specified. """
+
+        def _func(*args, **kwargs):
+            raise ValueError("Something went wrong!")
+
+        fet = fetcher_missing_events
+        monkeypatch.setattr(fet.waveform_client, "get_waveforms_bulk", _func)
+        # this should raise
+        with pytest.raises(ValueError):
+            list(fet.yield_event_waveforms(1, 10, raise_on_fail=True))
+        # this should not, it should just return an empty list
+        out = list(fet.yield_event_waveforms(1, 10, raise_on_fail=False))
+        assert out == []
 
     def test_gather(self, event_list_origin, event_dict_p):
         """ Simply gather aggregated fixtures so they are marked as used. """

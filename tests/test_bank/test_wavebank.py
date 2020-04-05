@@ -398,6 +398,25 @@ class TestReadIndex:
         df2 = bank.read_index(starttime=pd.NaT, endtime=np.NaN)
         assert df1.equals(df2)
 
+    def test_handles_pd_read_hdf_raises(self, default_wbank, monkeypatch):
+        """Ensure when pd.read_hdf raises this is handled gracefully. """
+        from tables.exceptions import ClosedNodeError
+
+        state = {"has_raised": False}
+        original_func = pd.read_hdf
+
+        def raise_closed_node(*args, **kwargs):
+            if state["has_raised"]:
+                return original_func(*args, **kwargs)
+            state["has_raised"] = True
+            raise ClosedNodeError("simulated closed node")
+
+        monkeypatch.setattr(pd, "read_hdf", raise_closed_node)
+
+        default_wbank.update_index()
+        df = default_wbank.read_index()
+        assert not df.empty
+
 
 class TestYieldStreams:
     """ tests for yielding streams from the bank """

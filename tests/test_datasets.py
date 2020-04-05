@@ -24,6 +24,13 @@ from obsplus.exceptions import (
 from obsplus.interfaces import WaveformClient, EventClient, StationClient
 
 
+class BasicDataset(DataSet):
+    """ A minimal dataset for testing default behaviors."""
+
+    name = "basic_test_dataset"
+    version = "0.1.0"
+
+
 def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
     """ Create a dummy dataset and return cls definition. """
 
@@ -492,14 +499,47 @@ class TestVersioning:
             assert f.read() == "ijkl"
 
 
-#
-# class TestDatasetUtils:
-#     """ Tests for dataset utilities. """
-#
-#     def test_base_directory_created(self, tmp_path: Path):
-#         """ Ensure the base directory is created. """
-#         expected_path = tmp_path / "opsdata"
-#         assert not expected_path.exists()
-#         out = DataSet._get_opsdata_path(expected_path)
-#         assert out.exists()
-#         assert (out / "README.txt").exists()
+class TestBasicDataset:
+    """ Tests for default dataset implementations. """
+
+    def test_version_tuple(self):
+        """ Dataset should have means to convert version str to tuple. """
+        ds = BasicDataset()
+        version_tuple = ds.version_tuple
+        assert isinstance(version_tuple, tuple) and len(version_tuple) == 3
+
+    def test_creates_datapaths(self, tmp_path):
+        """Ensure the datapaths are created. """
+        ds = BasicDataset(base_path=tmp_path)
+        # each of the required paths should have been created.
+        for name in {"station", "waveform", "event"}:
+            path = getattr(ds, f"{name}_path")
+            assert path.is_dir()
+
+    @pytest.mark.requires_network
+    def test_download_client(self):
+        """Ensure a download client is avaliable"""
+        ds = BasicDataset()
+        client = ds._download_client
+        assert isinstance(client, WaveformClient)
+        ds._download_client = client
+
+    def test_source_path_of_dynamic_dataset(self):
+        """Ensure a sensible default source_path is created """
+        kwargs = dict(name="bob", version="0.1.0")
+        ds = type("test_dataset", (DataSet,), kwargs)()
+        assert ds.source_path.exists()
+
+    def test_load_failure_warns(self, tmp_path):
+        """Ensure when a load functons raises it issues a warning. """
+
+        def _func(*args, **kwargs):
+            raise ValueError("msg")
+
+        class SomeDataset(DataSet):
+            name = "one"
+            version = "0.0.1"
+
+            _load_funcs = dict(waveform=_func, event=_func, station=_func)
+
+        SomeDataset(base_path=tmp_path)

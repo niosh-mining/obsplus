@@ -630,8 +630,8 @@ class DataSet(abc.ABC):
         """
         Return a tuple of the version string.
         """
-        version_str = self._validate_version_str(self.version)
-        vsplit = version_str.split(".")
+        validate_version_str(self.version)
+        vsplit = self.version.split(".")
         return int(vsplit[0]), int(vsplit[1]), int(vsplit[2])
 
     # --- Abstract methods subclasses should implement
@@ -655,7 +655,6 @@ class DataSet(abc.ABC):
         """
         self.waveform_path.mkdir(exist_ok=True, parents=True)
 
-    @abc.abstractmethod
     def download_stations(self) -> None:
         """
         Method to ensure inventories have been downloaded.
@@ -664,6 +663,7 @@ class DataSet(abc.ABC):
         self.station_path. Since there is not yet a functional StationBank,
         this method must be implemented by subclass.
         """
+        self.station_path.mkdir(exist_ok=True, parents=True)
 
     def pre_download_hook(self):
         """Code to run before any downloads."""
