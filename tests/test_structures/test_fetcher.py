@@ -534,7 +534,8 @@ class TestYieldEventWaveforms:
         with pytest.raises(ValueError):
             list(fet.yield_event_waveforms(1, 10, raise_on_fail=True))
         # this should not, it should just return an empty list
-        out = list(fet.yield_event_waveforms(1, 10, raise_on_fail=False))
+        with suppress_warnings(UserWarning):
+            out = list(fet.yield_event_waveforms(1, 10, raise_on_fail=False))
         assert out == []
 
     def test_gather(self, event_list_origin, event_dict_p):
@@ -831,7 +832,8 @@ class TestFetchersFromDatasets:
     @pytest.fixture(scope="class", params=DataSet._datasets)
     def data_fetcher(self, request):
         """Return a datafetcher from all datasets."""
-        return obsplus.load_dataset(request.param).get_fetcher()
+        with suppress_warnings(UserWarning):
+            return obsplus.load_dataset(request.param).get_fetcher()
 
     def test_type(self, data_fetcher):
         """Ensure a fetcher was returned."""

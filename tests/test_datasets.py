@@ -531,10 +531,10 @@ class TestBasicDataset:
         assert ds.source_path.exists()
 
     def test_load_failure_warns(self, tmp_path):
-        """Ensure when a load functons raises it issues a warning. """
+        """Ensure when a load functions raises it issues a warning. """
 
         def _func(*args, **kwargs):
-            raise ValueError("msg")
+            raise TypeError("simulated failure")
 
         class SomeDataset(DataSet):
             name = "one"
@@ -542,4 +542,10 @@ class TestBasicDataset:
 
             _load_funcs = dict(waveform=_func, event=_func, station=_func)
 
-        SomeDataset(base_path=tmp_path)
+        # with pytest.warns(UserWarning):
+        ds = SomeDataset(base_path=tmp_path)
+        for name in SomeDataset._load_funcs.keys():
+            with pytest.warns(UserWarning) as w:
+                _ = getattr(ds, f"{name}_client")
+            assert len(w) == 1
+            assert "failed to load" in str(w.list[0].message)
