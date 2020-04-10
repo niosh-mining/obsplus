@@ -8,6 +8,7 @@ from collections import namedtuple
 from functools import partial
 from typing import Optional, Union, Callable, Tuple, Dict
 
+import numpy as np
 import obspy
 import pandas as pd
 from obspy import Stream
@@ -353,15 +354,24 @@ class Fetcher:
         cannot be obtained. For example, if reference='S' only events with some
         S picks will be yielded.
         """
-        if not reference.lower() in self.reference_funcs:
-            msg = (
-                f"reference of {reference} is not supported. Supported "
-                f"reference arguments are {list(self.reference_funcs)}"
-            )
-            raise ValueError(msg)
+
+        def _check_yield_event_waveform_(reference, ta, tb):
+            if not reference.lower() in self.reference_funcs:
+                msg = (
+                    f"reference of {reference} is not supported. Supported "
+                    f"reference arguments are {list(self.reference_funcs)}"
+                )
+                raise ValueError(msg)
+            if not (np.abs(tb) + np.abs(ta)) > np.timedelta64(0, "s"):
+                msg = (
+                    "time_before and/or time_after must be specified in either "
+                    "Fetcher's init or the yield_event_Waveforms call"
+                )
+                raise ValueError(msg)
+
         tb = to_timedelta64(time_before, default=self.time_before)
         ta = to_timedelta64(time_after, default=self.time_after)
-        assert (tb is not None) and (ta is not None)
+        _check_yield_event_waveform_(reference, ta, tb)
         # get reference times
         ref_func = self.reference_funcs[reference.lower()]
         reftime_df = ref_func(self)
