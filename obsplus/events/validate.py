@@ -7,7 +7,8 @@ import pandas as pd
 from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
 
 import obsplus
-from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS
+from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS, NSLC
+from obsplus.utils import get_seed_id_series
 from obsplus.utils.misc import yield_obj_parent_attr, iterate, replace_null_nlsc_codes
 from obsplus.utils.validate import validator, validate
 
@@ -100,26 +101,26 @@ def check_duplicate_picks(event: Event):
     """
     Ensure there are no picks with the same phases on the same channels.
     """
-    # A dict of {phase: column that cant be duplicated}
-    phase_duplicates = {"IAML": "seed_id", "AML": "seed_id"}
 
-    # first get dataframe of picks
-    pdf = obsplus.picks_to_df(event)
-    pdf = pdf.loc[pdf.evaluation_status != "rejected"]
-    event_id = str(event.resource_id)
-
-    def dup_picks(phase_hint, on="station"):
-        """ function for checking """
-        df = pdf.loc[pdf.phase_hint == phase_hint]
-        bad = df.loc[df[on].duplicated()][on].tolist()
+    def dup_picks(df, phase_hint, subset):
+        """ Function for checking for duplications. """
+        seed_id = get_seed_id_series(df, subset=subset)
+        bad = seed_id[seed_id.duplicated()].tolist()
         assert len(bad) == 0, (
-            f"Duplicate {phase_hint} picks found\n"
-            f"event_id: {event_id}, "
-            f"{on}/s: {bad}"
+            f"Duplicate {phase_hint} picks found\n" f"event_id: {event_id}, "
         )
 
-    for phase_hint in pdf["phase_hint"].unique():
-        dup_picks(phase_hint, on=phase_duplicates.get(phase_hint, "station"))
+    # A dict of {phase: column that cant be duplicated}
+    phase_duplicates = {"IAML": None, "AML": None}
+    # first get dataframe of picks, filter out rejected
+    pdf = obsplus.picks_to_df(event)
+    pdf = pdf.loc[pdf.evaluation_status != "rejected"]
+    # add column for network.station.location
+    event_id = str(event.resource_id)
+    for phase_hint, sub_df in pdf.groupby("phase_hint"):
+        # default to comparing network, station, location
+        subset = phase_duplicates.get(phase_hint, NSLC[:-1])
+        dup_picks(sub_df, phase_hint, subset=subset)
 
 
 @validator("obsplus", Event)
@@ -129,8 +130,6 @@ def check_pick_order(event: Event,):
         1. There are no S picks before P picks on any station
         2. There are no amplitude picks before P picks on any station
     """
-    pdf = obsplus.picks_to_df(event)
-    pdf = pdf.loc[pdf.evaluation_status != "rejected"]
 
     def pick_order(g, sp, ap):
         # get sub dfs with phases of interest
@@ -150,8 +149,13 @@ def check_pick_order(event: Event,):
             bad_amp_picks = amp_picks[amp_picks["time"] < ptime]
             ap.extend(list(bad_amp_picks["seed_id"]))
 
+    # get dataframe of picks, filter out rejected
+    pdf = obsplus.picks_to_df(event)
+    pdf = pdf.loc[pdf.evaluation_status != "rejected"]
+    # get series of network, station
+    ns = get_seed_id_series(pdf, subset=NSLC[:3])
     # Checking that picks are in acceptable order
-    gb, sp, ap = pdf.groupby("station"), [], []
+    gb, sp, ap = pdf.groupby(ns), [], []
     gb.apply(pick_order, sp, ap)
     assert len(sp) == 0, "S pick found before P pick:\n" f"station/s: {sp}"
     assert len(ap) == 0, "amplitude pick found before P pick:\n" f"seed_id/s: {ap}"
