@@ -1,3 +1,10 @@
+Master
+  - obsplus.events
+    * Fixed issue with validators flagging picks on stations with the same
+      name but different networks (#173).
+    * Added `subset` parameter to `get_seed_id_series` for selecting subsets
+      of full seed id.
+
 obsplus 0.1.0:
   - obsplus.structures.fetcher
     * Fixed issue with `time_before` and `time_after` params in `Fetcher`

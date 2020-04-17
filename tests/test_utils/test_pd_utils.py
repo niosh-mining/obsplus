@@ -8,9 +8,9 @@ import pytest
 
 import obsplus
 import obsplus.utils.pd as upd
-from obsplus.utils.time import to_datetime64, to_timedelta64
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.time import to_datetime64, to_timedelta64
 
 
 @pytest.fixture
@@ -189,6 +189,47 @@ class TestGetWaveformsBulkArgs:
         bulk = upd.get_waveforms_bulk_args(df)
         assert len(bulk) == len(df)
         self.assert_wellformed_bulk_args(bulk)
+
+
+class TestGetSeedIdSeries:
+    """
+    Tests for getting seed id series from dataframes with  network, station,
+    location, channel columns.
+    """
+
+    @pytest.fixture(scope="class")
+    def pick_df(self):
+        """Return the pick dataframe of Bingham."""
+        ds = obsplus.load_dataset("bingham_test")
+        cat = ds.event_client.get_events()
+        return obsplus.picks_to_df(cat)
+
+    def test_seed_id_basic(self, pick_df):
+        """Standard usage."""
+        seed = upd.get_seed_id_series(pick_df)
+        assert (seed == pick_df["seed_id"]).all()
+
+    def test_bad_subset(self, pick_df):
+        """ Bad subset should raise valuerror."""
+        with pytest.raises(ValueError):
+            upd.get_seed_id_series(pick_df, subset=["network", "monkey"])
+
+    def test_dataframe_missing_columns(self, pick_df):
+        """Dataframe without required columns should raise ValueError."""
+        new = pick_df.drop(columns=["network", "location"])
+        with pytest.raises(ValueError):
+            upd.get_seed_id_series(new)
+        # But it should work if only the required subset is there
+        out = upd.get_seed_id_series(new, subset=["station", "channel"])
+        assert len(out) == len(pick_df)
+        split = out.str.split(".", expand=True)
+        assert (split[0] == pick_df["station"]).all()
+        assert (split[1] == pick_df["channel"]).all()
+
+    def test_one_subset_raises(self, pick_df):
+        """At least two columns are required in subset."""
+        with pytest.raises(ValueError):
+            upd.get_seed_id_series(pick_df, subset=["network"])
 
 
 class TestMisc:

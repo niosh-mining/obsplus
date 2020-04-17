@@ -29,7 +29,6 @@ from obsplus.events.pd import (
     event_to_dataframe,
     magnitudes_to_dataframe,
 )
-from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.misc import register_func
 from obsplus.utils.time import to_datetime64, to_utc
 
@@ -1170,10 +1169,3 @@ class TestReadBingham:
         """
         null_count = pick_df["event_id"].isnull().sum()
         assert null_count == 0 or null_count == len(pick_df)
-
-    def test_seed_id(self, pick_df):
-        """Ensure valid seed_ids were created."""
-        # recreate seed_id and make sure columns are equal
-        df = pick_df
-        seed = get_seed_id_series(pick_df)
-        assert (seed == df["seed_id"]).all()

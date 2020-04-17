@@ -4,13 +4,13 @@ Generic Utilities for Pandas
 import fnmatch
 import re
 from contextlib import suppress
-from functools import lru_cache
-from typing import Optional, Sequence, Mapping, Collection, Iterable, Union
+from functools import lru_cache, reduce
+from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
 
 import numpy as np
+import obspy
 import pandas as pd
 
-import obspy
 from obsplus.constants import (
     column_function_map_type,
     NULL_SEED_CODES,
@@ -23,7 +23,6 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
-
 
 # maps obsplus datatypes to functions to apply to columns to obtain dtype
 OPS_DTYPE_FUNCS = {
@@ -217,7 +216,33 @@ def replace_or_swallow(df: pd.DataFrame, replace: dict) -> pd.DataFrame:
     return df
 
 
-def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Series:
+def join_str_columns(
+    df: pd.DataFrame, columns: Sequence[str], join_char: str = "."
+) -> pd.Series:
+    """
+    Join string columns on a dataframe together.
+
+    Parameters
+    ----------
+    df
+        The input dataframe with columns listed in columns parameter.
+    columns
+        The columns to be joined. Must be part of df.
+    join_char
+        The string to join the columns together.
+    """
+    if len(columns) < 2:
+        msg = "at least 2 columns are needed to join"
+        raise ValueError(msg)
+    slist = [df[x].astype(str) for x in columns]
+    return reduce(lambda x, y: x + join_char + y, slist[1:], slist[0])
+
+
+def get_seed_id_series(
+    df: pd.DataFrame,
+    null_codes: Optional[Any] = NULL_SEED_CODES,
+    subset: Optional[Sequence[str]] = None,
+) -> pd.Series:
     """
     Create a series of seed_ids from a dataframe with required columns.
 
@@ -234,6 +259,9 @@ def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Serie
             network, station, location, channel
     null_codes
         Codes which should be replaced with a blank string.
+    subset
+        Used to select a subset of the full seed_id. For example,
+        ('network', 'station') would return a series of network.station.
 
     Returns
     -------
@@ -243,17 +271,29 @@ def get_seed_id_series(df: pd.DataFrame, null_codes=NULL_SEED_CODES) -> pd.Serie
     --------
     >>> import obsplus
     >>> import obspy
-    >>> # get a dataframe with only network station location channel columns
+    >>> # Get a dataframe with only network station location channel columns
     >>> cat = obspy.read_inventory()
     >>> NSLC = ['network', 'station', 'location', 'channel']
     >>> df = obsplus.stations_to_df(cat)[NSLC]
     >>> out = get_seed_id_series(df)
+    >>> # Get a series of network.station
+    >>> net_sta = get_seed_id_series(df, subset=('network', 'station'))
     """
-    assert set(NSLC).issubset(df.columns), f"dataframe must have columns {NSLC}"
+    # first ensure subset is in standard NSLC codes
+    if subset is not None and not set(subset).issubset(set(NSLC)):
+        msg = f"subset must be a subset of {NSLC}, you passed {subset}"
+        raise ValueError(msg)
+    # get requested columns and check for their existence
+    cols = NSLC if subset is None else tuple(subset)
+    if not set(cols).issubset(df.columns):
+        missing = set(cols) - set(df.columns)
+        msg = f"dataframe is missing specified columns: {missing}"
+        raise ValueError(msg)
+    # replace nullish codes
     replace_dict = {x: "" for x in null_codes}
-    nslc = df[list(NSLC)].astype(str).replace(replace_dict)
-    net, sta, loc, chan = [nslc[x] for x in NSLC]
-    return net + "." + sta + "." + loc + "." + chan
+    nslc = df[list(cols)].astype(str).replace(replace_dict)
+    # join string columns and return
+    return join_str_columns(nslc, columns=cols, join_char=".")
 
 
 def filter_index(

@@ -1,8 +1,10 @@
 """
 Tests for validation logic.
 """
+import copy
 
 import obspy
+import obspy.core.event as ev
 import pytest
 from obspy.core.event import ResourceIdentifier, WaveformStreamID, TimeWindow
 
@@ -313,3 +315,20 @@ class TestValidateCatalog:
         cat[0].picks.append(pick)
         # this should not raise
         validate_catalog(cat)
+
+    def test_duplicate_station_different_network(self, cat1):
+        """
+        Ensure picks can have duplicated station codes if they have different
+        network codes. See issue #173.
+        """
+        # Add a copy of first pick, add new resource id and a new network code
+        new_pick1 = copy.deepcopy(cat1[0].picks[0])
+        new_pick1.waveform_id.network_code = "NW"
+        new_pick1.resource_id = ev.ResourceIdentifier()
+        cat1[0].picks.append(new_pick1)
+        # Do the same for network codes
+        new_pick2 = copy.deepcopy(cat1[0].picks[0])
+        new_pick2.waveform_id.location_code = "04"
+        new_pick2.resource_id = ev.ResourceIdentifier()
+        # test passes if this doesnt raise
+        validate_catalog(cat1)
