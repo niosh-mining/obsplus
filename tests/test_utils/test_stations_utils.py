@@ -182,3 +182,11 @@ class TestDfToInventory:
         inv = df_to_inventory(df)
         for net in inv:
             assert not net.stations
+
+    def test_00_location_code(self, df_from_inv):
+        """Ensure a 00 location code sticks until the inventory."""
+        df = df_from_inv.copy()
+        df["location"] = "00"
+        inv = df_to_inventory(df)
+        for channel in inv.get_contents()["channels"]:
+            assert channel.split(".")[2] == "00"
