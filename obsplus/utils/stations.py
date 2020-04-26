@@ -130,7 +130,7 @@ def df_to_inventory(df) -> obspy.Inventory:
 
     # make sure all seed_id codes are str
     for col in set(NSLC) & set(df.columns):
-        df[col] = df[col].astype(str).str.replace(".0", "")
+        df[col] = df[col].astype(str).str.replace("\.0", "")
     # first get key_mappings
     net_map = _make_key_mappings(Network)
     sta_map = _make_key_mappings(Station)
