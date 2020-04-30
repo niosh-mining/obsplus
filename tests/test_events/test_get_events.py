@@ -86,6 +86,13 @@ class TestGetEvents:
         # For the example catalog there should be exactly 2 events included
         assert len(cat) == 2
 
+    def test_circular_search_no_events(self, catalog):
+        """ Ensure no errors if no events within rectangular region. #177 """
+        lat, lon = 31.0, 30.0
+        with suppress_warnings():
+            cat = catalog.get_events(latitude=lat, longitude=lon, maxradius=1)
+        assert len(cat) == 0
+
     def test_max_min_radius_m(self, catalog):
         """ Ensure max and min radius work in m (ie when degrees=False). """
         minrad = 10000

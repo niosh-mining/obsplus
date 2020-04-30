@@ -89,6 +89,8 @@ def _get_ids(df, kwargs) -> set:
         # Circular kwargs are used, first apply non-circular query then trim
         kwargs.update(_get_bounding_box(circular_kwargs))
         df = get_event_summary(df, **kwargs)
+        if len(df) == 0:  # If there are no events in the rectangular region.
+            return set()
         filt = np.ones(len(df)).astype(bool)
         # Trim based on circular kwargs, first get distance dataframe.
         input = (circular_kwargs["latitude"], circular_kwargs["longitude"], 0)
