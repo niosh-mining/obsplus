@@ -122,7 +122,7 @@ def _summarize_trace(
     out.update(_get_time_values(t1, t2))
     out.update(dict((x, c) for x, c in zip(NSLC, trace.id.split("."))))
 
-    path_struct = path_struct or WAVEFORM_STRUCTURE
+    path_struct = path_struct if path_struct is not None else WAVEFORM_STRUCTURE
     name_struct = name_struct or WAVEFORM_NAME_STRUCTURE
 
     out.update(_get_path(out, path, name, path_struct, name_struct))

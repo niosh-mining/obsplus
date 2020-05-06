@@ -590,7 +590,7 @@ def _summarize_event(
     }
     t1 = _get_event_origin_time(event)
     out.update(_get_time_values(t1))
-    path_struct = path_struct or EVENT_PATH_STRUCTURE
+    path_struct = path_struct if path_struct is not None else EVENT_PATH_STRUCTURE
     name_struct = name_struct or EVENT_NAME_STRUCTURE
     out.update(_get_path(out, path, name, path_struct, name_struct))
     return out

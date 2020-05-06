@@ -4,6 +4,12 @@ Master
       name but different networks (#173).
     * Added `subset` parameter to `get_seed_id_series` for selecting subsets
       of full seed id.
+  - obsplus.EventBank
+    * Fixed issue where path_structure was overriding a user-specified value
+      of `""` (#178)
+  - obsplus.WaveBank
+    * Fixed issue where path_structure was overriding a user-specified value
+      of `""` (#178)
 
 obsplus 0.1.0:
   - obsplus.structures.fetcher

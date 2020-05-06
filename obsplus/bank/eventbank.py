@@ -168,7 +168,11 @@ class EventBank(_Bank):
         self.format = format
         self.ext = ext
         # get waveforms structure based on structures of path and filename
-        ps = path_structure or self._path_structure or EVENT_PATH_STRUCTURE
+        ps = (
+            path_structure
+            if path_structure is not None
+            else (self._path_structure or EVENT_PATH_STRUCTURE)
+        )
         self.path_structure = ps
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns

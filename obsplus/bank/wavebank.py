@@ -183,7 +183,9 @@ class WaveBank(_Bank):
         self.ext = ext
         self.bank_path = Path(base_path).absolute()
         # get waveforms structure based on structures of path and filename
-        self.path_structure = path_structure or WAVEFORM_STRUCTURE
+        self.path_structure = (
+            path_structure if path_structure is not None else WAVEFORM_STRUCTURE
+        )
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
         self.executor = executor
         # initialize cache

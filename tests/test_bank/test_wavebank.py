@@ -286,6 +286,14 @@ class TestBankBasics:
         expected_order = expected_order_1 + expected_order_2
         assert [str(x) for x in df.columns] == list(expected_order)
 
+    def test_path_structure(self, tmpdir):
+        """
+        Ensure that it is possible to not use a path structure (see #178)
+        """
+        path = Path(tmpdir) / "path_structure"
+        bank = WaveBank(path, path_structure="")
+        assert bank.path_structure == ""
+
 
 class TestEmptyBank:
     """ tests for graceful handling of empty WaveBanks"""
