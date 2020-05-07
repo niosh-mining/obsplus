@@ -340,6 +340,14 @@ class TestBankBasics:
         sensible_start = np.datetime64("2000-01-01T01:00:00")
         assert (df["updated"] > sensible_start).all()
 
+    def test_path_structure(self, tmpdir):
+        """
+        Ensure that it is possible to not use a path structure (see #178)
+        """
+        path = Path(tmpdir) / "path_structure"
+        bank = EventBank(path, path_structure="")
+        assert bank.path_structure == ""
+
 
 class TestEventIdInBank:
     """ Tests for determining if ids are in the bank. """
