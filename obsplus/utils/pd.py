@@ -477,7 +477,7 @@ def get_waveforms_bulk_args(
         # starttimes must be <= endtime
         invalid_time_range = df["starttime"] >= df["endtime"]
         if invalid_time_range.any():
-            msg = f"all values in starttime must be <= endtime"
+            msg = "all values in starttime must be <= endtime"
             raise DataFrameContentError(msg)
         return df
 

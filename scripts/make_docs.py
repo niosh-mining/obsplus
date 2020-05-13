@@ -43,8 +43,8 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
         if result.returncode != 0:
             raise RuntimeError(f"failed to run {note_book_path}")
     # run auto api-doc
-    run(f"sphinx-apidoc ../obsplus -e -M -o api", cwd=doc_path, shell=True)
-    run(f"make html", cwd=doc_path, shell=True, check=True)
+    run("sphinx-apidoc ../obsplus -e -M -o api", cwd=doc_path, shell=True)
+    run("make html", cwd=doc_path, shell=True, check=True)
     # ensure html directory was created, return path to it.
     expected_path: Path = doc_path / "_build" / "html"
     assert expected_path.is_dir(), f"{expected_path} does not exist!"
