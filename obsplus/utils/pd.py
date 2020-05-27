@@ -10,6 +10,7 @@ from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
 import numpy as np
 import obspy
 import pandas as pd
+from pandas.api.types import is_string_dtype
 
 from obsplus.constants import (
     column_function_map_type,
@@ -24,12 +25,21 @@ from obsplus.constants import (
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
+
+def _int_column_to_str(ser, width=2, fillchar="0"):
+    """Convert an int column to a string"""
+    # Do nothing if the column is already a string
+    if is_string_dtype(ser):
+        return ser
+    return ser.astype(str).str.pad(width=width, fillchar=fillchar)
+
+
 # maps obsplus datatypes to functions to apply to columns to obtain dtype
 OPS_DTYPE_FUNCS = {
     "ops_datetime": to_datetime64,
     "ops_timedelta": to_timedelta64,
     "utcdatetime": to_utc,
-    "location_code": lambda x: x.astype(str).str.pad(width=2, fillchar="0"),
+    "location_code": _int_column_to_str,
 }
 
 # the dtype of the columns
@@ -467,7 +477,7 @@ def get_waveforms_bulk_args(
         # starttimes must be <= endtime
         invalid_time_range = df["starttime"] >= df["endtime"]
         if invalid_time_range.any():
-            msg = f"all values in starttime must be <= endtime"
+            msg = "all values in starttime must be <= endtime"
             raise DataFrameContentError(msg)
         return df
 

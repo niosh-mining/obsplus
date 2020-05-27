@@ -494,7 +494,7 @@ def _objs_from_event(event, attr, extractor):
     """ return a dataframe of an obj type from an event """
     # ensure we have an iterable and flatten station_magnitudes
     cat = [event] if isinstance(event, ev.Event) else event
-    objs = [obj for e in cat for obj in e.__dict__[attr]]
+    objs = [obj for e in cat for obj in getattr(e, attr)]
     return extractor(objs, extras=_get_event_info(cat, attr))
 
 

@@ -22,6 +22,7 @@ ml_to_df = DataFrameExtractor(
     ev.Magnitude, required_columns=list(dtypes), dtypes=dtypes
 )
 
+
 # first extractor, get basic info from the magnitude object
 @ml_to_df.extractor
 def _get_basic(obj: ev.Magnitude):

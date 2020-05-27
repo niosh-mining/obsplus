@@ -628,6 +628,19 @@ class TestReadPicks:
         df["location"] = df["location"].astype(int)
         df2 = picks_to_df(df)
         assert (df2["location"] == df1["location"]).all()
+        # ensure the seed ids are still consistent
+        seed_id_loc = df2["seed_id"].str.split(".", expand=True)[2]
+        assert (seed_id_loc == df2["location"]).all()
+
+    def test_picks_one_digit_location(self):
+        """
+        Ensure 1 digit location codes get padded to comply with seed convention.
+        """
+        picks = pick_generator(["UU.TMU.1.HHZ", "UU.TMU.01.HHZ"])
+        df = picks_to_df(picks)
+        # there should be only one unique location code and seed_id.
+        assert len(set(df["location"])) == 2
+        assert len(set(df["seed_id"])) == 2
 
     def test_gather(self, catalog_output, dataframe_output):
         """ Simply gather aggregated fixtures so they are marked as used. """
