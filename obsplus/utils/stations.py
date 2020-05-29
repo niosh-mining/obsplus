@@ -2,8 +2,10 @@
 Utilities for working with inventories.
 """
 import inspect
+import json
 from functools import singledispatch, lru_cache
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import obspy
@@ -12,7 +14,14 @@ from obspy.core.inventory import Channel, Station, Network
 
 import obsplus
 import obsplus.utils.misc
-from obsplus.constants import station_clientable_type, SMALLDT64, LARGEDT64, NSLC
+from obsplus.constants import (
+    station_clientable_type,
+    SMALLDT64,
+    LARGEDT64,
+    NSLC,
+    GET_STATIONS_UTC_KWARGS,
+)
+from obsplus.exceptions import AmbiguousResponseError
 from obsplus.interfaces import StationClient
 from obsplus.utils.time import to_utc
 
@@ -29,7 +38,9 @@ mapping_keys = {
 type_mappings = {"start_date": to_utc, "end_date": to_utc}
 
 
-def df_to_inventory(df) -> obspy.Inventory:
+def df_to_inventory(
+    df: pd.DataFrame, client: Optional[StationClient] = None
+) -> obspy.Inventory:
     """
     Create a station inventory from a dataframe.
 
@@ -38,15 +49,42 @@ def df_to_inventory(df) -> obspy.Inventory:
     df
         A dataframe which must have the same columns as the once produced by
         :func:`obsplus.stations_to_df`.
+    client
+
 
     Notes
     -----
-    The dataframe can also contain columns named "sensor_keys" and
-    "datalogger_keys" which will indicate the response information should
-    be fetched suing obspy's ability to interact with the nominal response
-    library. Each of these columns should either contain tuples or strings
-    where the keys are separated by double underscores (__).
+    There are two ways to include response information:
+
+    1. Using the Nominal Response Library (NRL):
+    (https://docs.obspy.org/master/packages/obspy.clients.nrl.html)
+    If the dataframe has columns named "sensor_keys" and "datalogger_keys"
+    these will indicate the response information should
+    be fetched using ObsPy's NRL client. Each of these columns should either
+    contain tuples or strings where the keys are separated by double
+    underscores (__).
+    For example, to specify sensor keys:
+    ('Nanometrics', 'Trillium 120 Horizon')
+    or
+    'Nanometrics__Trillium 120 Horizon'
+    are both valid.
+
+    2. Using a station client:
+    If the dataframe contains a column get_stations_kwargs it indicates that
+    either a client was passed as the client argument or the fdsn IRIS client
+    should be used to download station information. The contents of this column
+    must be a dictionary of acceptable keyword arguments for the client's
+    `get_stations` method. All time values must be provided as iso8601
+    strings.
+    For example,
+    {'network': 'UU', 'station': 'TMU', 'location': '01', 'channel': 'HHZ',
+     'starttime': '2017-01-02',}
+    would use either a provided station client (or ObsPy's default FDSN client
+    if non is provided) to download a response for the corresponding channel.
+    - If more than one channel is returned from teh get_stations call an error
+      will be raised and a more specific query will be required.
     """
+    response_cols = {"get_station_kwargs", "sensor_keys", "datalogger_keys"}
 
     def _make_key_mappings(cls):
         """ Create a mapping from columns in df to kwargs for cls. """
@@ -101,7 +139,19 @@ def df_to_inventory(df) -> obspy.Inventory:
         return NRL()
 
     @lru_cache()
-    def get_response(datalogger_keys, sensor_keys):
+    def get_station_client():
+        """
+        Instantiate an IRIS FDSN client or return the provided client.
+        """
+        from obspy.clients.fdsn import Client
+
+        if client is not None:
+            assert isinstance(client, StationClient)
+            return client
+        return Client()
+
+    @lru_cache()
+    def get_nrl_response(datalogger_keys, sensor_keys):
         nrl = get_nrl()
         kwargs = dict(datalogger_keys=datalogger_keys, sensor_keys=sensor_keys)
         return nrl.get_response(**kwargs)
@@ -114,19 +164,74 @@ def df_to_inventory(df) -> obspy.Inventory:
             return tuple(key)
 
     def _maybe_add_response(series, channel_kwargs):
-        """ Maybe add the response information if required columns exist. """
+        """ Simple dispatch to determine which response function to use."""
+        # if no response columns are found exit early
+        if response_cols.isdisjoint(set(series.index)):
+            return
+        _maybe_add_nrl_response(series, channel_kwargs)
+        if "response" not in channel_kwargs:
+            _maybe_add_client_response(series, channel_kwargs)
+
+    def _get_nrl_keys(series):
+        """Return the sensor and datalogger keys or raise ValueError if invalid."""
         # bail out of required columns do not exist
         if not {"sensor_keys", "datalogger_keys"}.issubset(set(series.index)):
-            return
+            raise ValueError("Series doesn't have required keys")
         # determine if both required columns are populated, else bail out
         sensor = series["sensor_keys"]
         datalogger = series["datalogger_keys"]
-        if pd.isnull(sensor) or pd.isnull(datalogger):
+        invalid_sensor = pd.isnull(sensor) or len(sensor) == 0
+        invalid_logger = pd.isnull(datalogger) or len(datalogger) == 0
+        if invalid_sensor or invalid_logger:
+            raise ValueError("Invalid NRL keys found in series")
+        return sensor, datalogger
+
+    def _maybe_add_client_response(series, kwargs):
+        """Add the client response if a valid get_station_kwargs are found."""
+        try:
+            get_station_kwargs = _get_station_kwargs(series)
+        except ValueError:
+            return
+        client = get_station_client()
+        sub_inv = client.get_stations(level="response", **get_station_kwargs)
+        channels = sub_inv.get_contents()["channels"]
+        if not len(channels) == 1:
+            msg = f"More than one channel returned by client with kwargs " f"{kwargs}"
+            raise AmbiguousResponseError(msg)
+        kwargs["response"] = sub_inv[0][0][0].response
+
+    def _get_station_kwargs(series):
+        """Try to get station kwargs, else raise ValueError if invalid."""
+        if "get_station_kwargs" not in series.index:
+            raise ValueError("No station_get_stations kwargs found")
+        kwargs = series["get_station_kwargs"]
+        if isinstance(kwargs, str):
+            # replace single quotes with double quotes so json is valid
+            try:
+                return json.loads(kwargs.replace("'", '"'))
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid get_station_kwarg: {kwargs}")
+        elif not isinstance(kwargs, dict):
+            raise ValueError("No valid get_station_kwargs found")
+        # convert all time columns to UTCDateTime objects
+        out = dict(kwargs)  # makes a copy to not modify in place
+        for time_key in set(GET_STATIONS_UTC_KWARGS) & set(out):
+            out[time_key] = to_utc(out[time_key])
+        return out
+
+    def _maybe_add_nrl_response(series, channel_kwargs):
+        """
+        Maybe add the response information to channel kwargs if the required
+        columns exist.
+        """
+        try:
+            sensor, datalogger = _get_nrl_keys(series)
+        except ValueError:
             return
         sensor_keys = _get_resp_key(sensor)
         datalogger_keys = _get_resp_key(datalogger)
         # at this point all the required info for resp lookup should be there
-        channel_kwargs["response"] = get_response(datalogger_keys, sensor_keys)
+        channel_kwargs["response"] = get_nrl_response(datalogger_keys, sensor_keys)
 
     # make sure all seed_id codes are str
     for col in set(NSLC) & set(df.columns):
