@@ -24,6 +24,8 @@ from obsplus.constants import (
 from obsplus.exceptions import AmbiguousResponseError
 from obsplus.interfaces import StationClient
 from obsplus.utils.time import to_utc
+from obsplus.constants import STATION_DTYPES
+from obsplus.utils.docs import compose_docstring, format_dtypes
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
 
@@ -36,8 +38,10 @@ mapping_keys = {
 }
 
 type_mappings = {"start_date": to_utc, "end_date": to_utc}
+station_col_str = format_dtypes(STATION_DTYPES)
 
 
+@compose_docstring(station_columns=station_col_str)
 def df_to_inventory(
     df: pd.DataFrame, client: Optional[StationClient] = None
 ) -> obspy.Inventory:
@@ -47,9 +51,13 @@ def df_to_inventory(
     Parameters
     ----------
     df
-        A dataframe which must have the same columns as the once produced by
+        A dataframe which must have the the following columns:
+
+        {station_columns}
+
         :func:`obsplus.stations_to_df`.
     client
+        Any client
 
 
     Notes
