@@ -246,7 +246,7 @@ def df_to_inventory(
     df: pd.DataFrame, client: Optional[StationClient] = None
 ) -> obspy.Inventory:
     """
-    Create a station inventory from a dataframe.
+    Create an inventory from a dataframe.
 
     Parameters
     ----------
@@ -270,9 +270,9 @@ def df_to_inventory(
     ObsPy's NRL client. Each of these columns should either contain lists
     or josn-loadable strings.
     For example, to specify sensor keys:
-    ['Nanometrics', 'Trillium 120 Horizon']
+    ["Nanometrics", "Trillium 120 Horizon"]
     or
-    '[Nanometrics, Trillium 120 Horizon]'
+    '["Nanometrics", "Trillium 120 Horizon"]'
     are both valid.
 
     2. Using a station client:
@@ -285,8 +285,8 @@ def df_to_inventory(
     For example,
     {'network': 'UU', 'station': 'TMU', 'location': '01', 'channel': 'HHZ',
      'starttime': '2017-01-02',}
-    would use either a provided station client (or ObsPy's default FDSN client
-    if non is provided) to download a response for the corresponding channel.
+    would be passed to the provided client to download a response for the
+    corresponding channel.
     - If more than one channel is returned from the get_stations call an error
       will be raised and a more specific query will be required.
     - If not all the required seed_id information is provided it will be
@@ -295,6 +295,8 @@ def df_to_inventory(
       use an empty dict, or json string (eg '{}').
     - No responses will be fetched for any rows with empty strings or null
       values in the get_stations_kwargs column.
+    - If the required columns for the NRL client exist and have valid values
+      it will take precedence over the station client.
     """
     inv_constructor = _InventoryConstructor(station_client=client)
     return inv_constructor(df)
