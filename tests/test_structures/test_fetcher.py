@@ -12,6 +12,7 @@ from obspy.core.event import Event, Origin
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
+from obsplus.utils.stations import df_to_inventory
 from obsplus.utils.misc import suppress_warnings, register_func
 from obsplus.utils.testing import assert_streams_almost_equal
 from obsplus.utils.time import to_utc
@@ -843,3 +844,41 @@ class TestFetchersFromDatasets:
         """ ensure the event df has the event_id column. """
         df = data_fetcher.event_df
         assert "event_id" in df.columns
+
+
+class TestFetcherDuplicateChannels:
+    """
+    Ensure the fetcher does the right thing when duplicate channels occur
+    in the inventory.
+    """
+
+    def split_inventory(self, inv_df, cat):
+        """
+        Split the inventory and duplicate so first have encompasses half of
+        the events and second gets the second half.
+        """
+        edf = obsplus.events_to_df(cat).sort_values("time")
+        ser = edf.loc[len(edf) // 2]
+        inv1, inv2 = inv_df.copy(), inv_df.copy()
+        inv1["end_date"] = ser["time"]
+        inv2["start_date"] = ser["time"]
+        new = pd.concat([inv1, inv2], ignore_index=True, axis=0).reset_index()
+        return df_to_inventory(new)
+
+    @pytest.fixture
+    def fetcher_duplicate_channels(self, bingham_dataset):
+        """Create a fetcher with duplicate channels"""
+        inv_df = obsplus.stations_to_df(bingham_dataset.station_client)
+        cat = bingham_dataset.event_client
+        wbank = bingham_dataset.waveform_client
+        inv = self.split_inventory(inv_df, cat)
+        return Fetcher(waveforms=wbank, events=cat, stations=inv)
+
+    def test_get_waveforms(self, fetcher_duplicate_channels):
+        """Ensure the Fetcher can yield event waveforms."""
+        fet = fetcher_duplicate_channels
+        # before the fix this would raise; just check the output
+        st_dict = dict(fet.yield_event_waveforms(time_after=5, time_before=1))
+        for event_id, st in st_dict.items():
+            assert isinstance(st, obspy.Stream)
+            assert len(st)
