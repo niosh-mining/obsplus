@@ -5,13 +5,16 @@ import numpy as np
 import obspy
 import pandas as pd
 import pytest
+import json
 
 import obsplus
 from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
 from obsplus.utils import get_seed_id_series
 from obsplus.utils.misc import suppress_warnings
-from obsplus.utils.stations import df_to_inventory
+from obsplus.utils.stations import df_to_inventory, get_station_client
 from obsplus.utils.time import to_utc
+from obsplus.interfaces import StationClient
+from obsplus.exceptions import AmbiguousResponseError
 
 
 class TestDfToInventory:
@@ -176,7 +179,7 @@ class TestDfToInventoryGetResponses:
         )
         # keep one as a tuple and convert the other to str
         df["sensor_keys"] = [sensor_keys for _ in range(len(df))]
-        df["datalogger_keys"] = "__".join(datalogger_keys)
+        df["datalogger_keys"] = json.dumps(datalogger_keys)
         # drop seed id
         df = df.drop(columns="seed_id")
         return df
@@ -227,6 +230,16 @@ class TestDfToInventoryGetResponses:
         df1.loc[2, ("sensor_keys", "datalogger_keys")] = (None, "")
         return df1
 
+    @pytest.fixture
+    def df_ambiguous_client_query(self, df_with_get_stations_kwargs):
+        """
+        Get a dataframe which has get_station_kwargs which will pull more
+        than one station from IRIS.
+        """
+        df = df_with_get_stations_kwargs.copy()
+        df.loc[1, "get_station_kwargs"]["channel"] = "*"
+        return df
+
     def test_nrl_responses(self, df_with_nrl_response):
         """ Ensure the NRL is used to pull responses. """
         with suppress_warnings():
@@ -256,9 +269,43 @@ class TestDfToInventoryGetResponses:
         assert self.has_valid_response(inv, missing_seed_ids)
 
     def test_mixing_nrl_with_station_client(self, df_with_both_response_cols):
-        """Ensure mixing the two types of responses works."""
+        """
+        Ensure mixing the two types of responses works. Also test that a
+        client can be passed to the function.
+        """
+        from obspy.clients.fdsn import Client
+
+        client = Client()
         df = df_with_both_response_cols
         with suppress_warnings():
-            inv = df_to_inventory(df)
-
+            inv = df_to_inventory(df, client=client)
         assert self.has_valid_response(inv)
+
+    def test_ambiguous_query_raises(self, df_ambiguous_client_query):
+        """Ensure a query that returns multiple channels will raise."""
+
+        df = df_ambiguous_client_query
+        with pytest.raises(AmbiguousResponseError):
+            df_to_inventory(df)
+
+
+class TestGetStationClient:
+    """Tests for getting a station client from various inputs."""
+
+    def test_inventory(self, bingham_dataset):
+        """Ensure an inventory returns an inventory."""
+        client = get_station_client(bingham_dataset.station_client)
+        assert isinstance(client, StationClient)
+        assert isinstance(client, obspy.Inventory)
+
+    def test_inventory_on_disk(self, bingham_dataset):
+        """Ensure a path to an obspy-readable inventory works."""
+        path = bingham_dataset.station_path / "UU.NOQ.xml"
+        client = get_station_client(path)
+        assert isinstance(client, StationClient)
+        assert isinstance(client, obspy.Inventory)
+
+    def test_not_a_client(self):
+        """ensure a non station-client-able object raises."""
+        with pytest.raises(TypeError):
+            get_station_client(1)
