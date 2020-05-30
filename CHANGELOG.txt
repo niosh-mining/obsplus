@@ -10,6 +10,9 @@ Master
   - obsplus.WaveBank
     * Fixed issue where path_structure was overriding a user-specified value
       of `""` (#178)
+  - obsplus.structures.fetcher
+    * fixed issue with Fetcher raising Pandas error when an inventory with
+      duplicate chanenls was used (#183, #184).
 
 obsplus 0.1.0:
   - obsplus.structures.fetcher

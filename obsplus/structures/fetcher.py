@@ -527,8 +527,11 @@ class Fetcher:
             return []
         if isinstance(starttime, pd.Series):
             # Have to get clever here to make sure only active stations get used
-            df["starttime"] = starttime.loc[set(starttime.index).intersection(df.index)]
-            df["endtime"] = endtime.loc[set(endtime.index).intersection(df.index)]
+            # and indices are not duplicated.
+            new_start = starttime.loc[set(starttime.index).intersection(df.index)]
+            new_end = endtime.loc[set(endtime.index).intersection(df.index)]
+            df["starttime"] = new_start.loc[~new_start.index.duplicated()]
+            df["endtime"] = endtime.loc[~new_end.index.duplicated()]
         else:
             df["starttime"] = starttime
             df["endtime"] = endtime
