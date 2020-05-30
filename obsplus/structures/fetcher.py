@@ -531,7 +531,7 @@ class Fetcher:
             new_start = starttime.loc[set(starttime.index).intersection(df.index)]
             new_end = endtime.loc[set(endtime.index).intersection(df.index)]
             df["starttime"] = new_start.loc[~new_start.index.duplicated()]
-            df["endtime"] = endtime.loc[~new_end.index.duplicated()]
+            df["endtime"] = new_end.loc[~new_end.index.duplicated()]
         else:
             df["starttime"] = starttime
             df["endtime"] = endtime
