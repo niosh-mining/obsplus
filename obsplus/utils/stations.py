@@ -2,6 +2,7 @@
 Utilities for working with inventories.
 """
 import inspect
+
 import json
 from functools import singledispatch, lru_cache
 from pathlib import Path
@@ -23,6 +24,7 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import AmbiguousResponseError
 from obsplus.interfaces import StationClient
+from obsplus.utils import get_nslc_series
 from obsplus.utils.docs import compose_docstring, format_dtypes
 from obsplus.utils.misc import FunctionCacheDescriptor
 from obsplus.utils.time import to_utc
@@ -54,7 +56,7 @@ class _InventoryConstructor:
     """A private helper class for constructing inventories from dataframes."""
 
     _client_col = "get_station_kwargs"
-    nrl_response_cols = frozenset({"datalogger_keys", "sensor_keys"})
+    _nrl_response_cols = frozenset({"datalogger_keys", "sensor_keys"})
     # get cached expected kwargs for inventory class constructors
     net_map = FunctionCacheDescriptor(lambda: _make_key_mappings(Network))
     sta_map = FunctionCacheDescriptor(lambda: _make_key_mappings(Station))
@@ -151,7 +153,7 @@ class _InventoryConstructor:
     def _update_nrl_response(self, response, df):
         """Update the responses with NRL."""
         # df doesn't have needed columns, just exit
-        if not self.nrl_response_cols.issubset(set(df.columns)):
+        if not self._nrl_response_cols.issubset(set(df.columns)):
             return
         logger_keys = df["datalogger_keys"].map(self.get_valid_json_keys)
         sensor_keys = df["sensor_keys"].map(self.get_valid_json_keys)
@@ -193,12 +195,40 @@ class _InventoryConstructor:
             value = json.loads(value.replace("'", '"'))
         return value
 
+    def _check_only_one_response_method(self, df):
+        """Raise if both response methods are specified."""
+        valid_nrl_cols = ~df[self._nrl_response_cols].isnull().all(axis=1)
+        valid_client_cols = ~df[self._client_col].isnull()
+        both_types_used = valid_nrl_cols & valid_client_cols
+        if both_types_used.any():
+            bad_nslc = get_nslc_series(df[both_types_used])
+            msg = (
+                f"The following channels specify both a NRL and station "
+                f"client response methods, choose one or the other:\n "
+                f"{bad_nslc}."
+            )
+            raise AmbiguousResponseError(msg)
+
+    def _load_response_columns(self, df):
+        """Else rase an AmbiguousResponseError"""
+        # Load any json in any of the response columns
+        # Note: we copy the df at the start so mutation is ok
+        for col in [self._client_col] + list(self._nrl_response_cols):
+            if col not in df.columns:
+                df[col] = [None] * len(df)
+            else:
+                df[col] = df[col].apply(self.get_valid_json_keys)
+        self._check_only_one_response_method(df)
+        return df
+
     def _get_responses(self, df):
         """Return a series of response objects."""
         # init empty series of None for storing responses
         responses = pd.Series(index=df.index, dtype=object)
         responses.loc[responses.isnull()] = None
-        # update responses with both methods
+        # Ensure both methods are not requested for any rows
+        self._load_response_columns(df)
+        # update responses
         self._update_nrl_response(responses, df)
         self._update_client_responses(responses, df)
         return responses
@@ -208,7 +238,7 @@ class _InventoryConstructor:
         Loopy logic for creating the inventory form a dataframe.
         """
         # get dataframe with correct columns/conditioning from input
-        df = obsplus.stations_to_df(df)
+        df = obsplus.stations_to_df(df).copy()
         # make sure all seed_id codes are str
         for col in set(NSLC) & set(df.columns):
             df[col] = df[col].astype(str).str.replace("\.0", "")
@@ -287,16 +317,17 @@ def df_to_inventory(
      'starttime': '2017-01-02',}
     would be passed to the provided client to download a response for the
     corresponding channel.
-    - If more than one channel is returned from the get_stations call an error
-      will be raised and a more specific query will be required.
+    - If more than one channel is returned from the get_stations call an
+      AmbiguousResponseError will be raised and a more specific query will
+      be required.
     - If not all the required seed_id information is provided it will be
       ascertained from the appropriate column.
     - To simply fetch a response using only the info provided in other columns
       use an empty dict, or json string (eg '{}').
     - No responses will be fetched for any rows with empty strings or null
       values in the get_stations_kwargs column.
-    - If the required columns for the NRL client exist and have valid values
-      it will take precedence over the station client.
+    - If both NRL and client methods are indicated by column contents an
+      AmbiguousResponseError will be raised.
     """
     inv_constructor = _InventoryConstructor(station_client=client)
     return inv_constructor(df)

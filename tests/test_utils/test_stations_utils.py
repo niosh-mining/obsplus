@@ -270,16 +270,11 @@ class TestDfToInventoryGetResponses:
 
     def test_mixing_nrl_with_station_client(self, df_with_both_response_cols):
         """
-        Ensure mixing the two types of responses works. Also test that a
-        client can be passed to the function.
+        Ensure mixing the two types of responses raises an Error.
         """
-        from obspy.clients.fdsn import Client
-
-        client = Client()
         df = df_with_both_response_cols
-        with suppress_warnings():
-            inv = df_to_inventory(df, client=client)
-        assert self.has_valid_response(inv)
+        with pytest.raises(AmbiguousResponseError):
+            df_to_inventory(df)
 
     def test_ambiguous_query_raises(self, df_ambiguous_client_query):
         """Ensure a query that returns multiple channels will raise."""
