@@ -32,6 +32,13 @@ class DataFrameContentError(ValueError):
     """Raised when something is unexpected in a dataframe's contents."""
 
 
+class AmbiguousResponseError(ValueError):
+    """
+    Raised when trying to get a response for an inventory but more than
+    one response meets the criteria.
+    """
+
+
 # --- Warnings
 
 

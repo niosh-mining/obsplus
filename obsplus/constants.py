@@ -532,6 +532,16 @@ EVENT_ATTRS = (
     "preferred_focal_mechanism_id",
 )
 
+# get_station kwargs which are UTCDateTime objects
+GET_STATIONS_UTC_KWARGS = (
+    "starttime",
+    "endtime",
+    "startbefore",
+    "startafter",
+    "endbefore",
+    "endafter",
+)
+
 # Numpy int types
 NUMPY_INT_TYPES = {
     np.int,

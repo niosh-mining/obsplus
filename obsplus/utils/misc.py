@@ -585,3 +585,26 @@ def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
     validate_version_str(version_str)
     split = version_str.split(".")
     return int(split[0]), int(split[1]), int(split[2])
+
+
+class FunctionCacheDescriptor:
+    """
+    A Simple descriptor for making cached function calls.
+
+    Outputs are stored on instance _{name} where name is assigned to the
+    descriptor.
+    """
+
+    def __init__(self, func: Callable, func_kwargs: Optional[dict] = None):
+        self._func = func
+        self._func_kwargs = func_kwargs if func_kwargs is not None else {}
+
+    def __set_name__(self, owner, name):
+        self._name = f"_{name}"
+
+    def __get__(self, instance, owner):
+        value = getattr(instance, self._name, None)
+        if value is None:
+            value = self._func(**self._func_kwargs)
+            setattr(instance, self._name, value)
+        return value
