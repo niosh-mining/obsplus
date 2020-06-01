@@ -188,6 +188,9 @@ class TestDfToInventoryGetResponses:
     def df_with_get_stations_kwargs(self):
         """
         Add response information to the dataframe using get_stations_kwargs.
+
+        Add an additional station which will need to get all data from other
+        columns.
         """
         _inv = obsplus.load_dataset("bingham_test").station_client.get_stations()
         inv = _inv.select(station="NOQ")
@@ -207,7 +210,19 @@ class TestDfToInventoryGetResponses:
         # set the first kwargs to a string to make sure it can be parsed
         # this is important for eg reading data from a csv.
         df.loc[0, "get_station_kwargs"] = str(df.loc[0, "get_station_kwargs"])
-        return df
+        # now add a row with an empty get_station_kwargs column
+        old = dict(df.iloc[0])
+        new = {
+            "station": "CWU",
+            "network": "UU",
+            "channel": "EHZ",
+            "location": "01",
+            "seed_id": "UU.CWU.01.EHZ",
+            "get_station_kwargs": "{}",
+        }
+        old.update(new)
+        ser = pd.Series(old)
+        return df.append(ser, ignore_index=True)
 
     @pytest.fixture
     def df_with_partial_responses(self, df_with_nrl_response):

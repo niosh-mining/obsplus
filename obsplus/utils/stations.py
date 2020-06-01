@@ -155,8 +155,7 @@ class _InventoryConstructor:
         # df doesn't have needed columns, just exit
         if not self._nrl_response_cols.issubset(set(df.columns)):
             return
-        logger_keys = df["datalogger_keys"].map(self.get_valid_json_keys)
-        sensor_keys = df["sensor_keys"].map(self.get_valid_json_keys)
+        logger_keys, sensor_keys = df["datalogger_keys"], df["sensor_keys"]
         valid = (~logger_keys.isna()) & (~sensor_keys.isna())
         response[valid] = [
             self.get_nrl_response(tuple(x), tuple(y))
@@ -168,7 +167,7 @@ class _InventoryConstructor:
         if self._client_col not in df.columns:
             return
         # infer get_stations kwargs from existing columns
-        provided_kwargs = df[self._client_col].map(self.get_valid_json_keys)
+        provided_kwargs = df[self._client_col]
         # only try for chans that have kwargs and no response (yet)
         is_valid = (~pd.isnull(provided_kwargs)) & pd.isnull(response)
         base_kwargs = df[is_valid].apply(self.infer_get_station_kwargs, axis=1)
