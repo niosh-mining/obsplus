@@ -377,7 +377,8 @@ class Fetcher:
         reftime_df = ref_func(self)
         # if using a wavebank preload index over entire time-span for speedup
         if isinstance(self.waveform_client, WaveBank) and len(reftime_df):
-            mt, mx = reftime_df["time"].min(), reftime_df["time"].max()
+            mt = reftime_df["time"].min() - tb
+            mx = reftime_df["time"].max() + ta
             index = self.waveform_client.read_index(starttime=mt, endtime=mx)
             get_bulk_wf = partial(self._get_bulk_wf, index=index)
         else:

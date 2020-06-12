@@ -12,8 +12,8 @@ from obspy.core.event import Event, Origin
 import obsplus
 from obsplus import Fetcher, WaveBank, stations_to_df, get_reference_time
 from obsplus.datasets.dataset import DataSet
-from obsplus.utils.stations import df_to_inventory
 from obsplus.utils.misc import suppress_warnings, register_func
+from obsplus.utils.stations import df_to_inventory
 from obsplus.utils.testing import assert_streams_almost_equal
 from obsplus.utils.time import to_utc
 
@@ -404,6 +404,24 @@ class TestYieldEventWaveforms:
         ds.event_client.events = [last_event, almost_last_event]
         return ds.get_fetcher()
 
+    @pytest.fixture()
+    def fetcher_one_event(self, bingham_dataset, tmp_path):
+        """Make a fetcher with only one event. """
+        fetcher = bingham_dataset.get_fetcher()
+        inv = bingham_dataset.station_client.get_stations()
+        # get stream and event
+        kwargs = dict(time_before=1, time_after=1)
+        for eid, st in fetcher.yield_event_waveforms(**kwargs):
+            break
+        eve = fetcher.event_client.get_events(eventid=eid)
+        # create a new bank and return new fetcher
+        wbank_path = tmp_path / "waveforms"
+        wbank_path.mkdir(exist_ok=True, parents=True)
+        wbank = obsplus.WaveBank(wbank_path)
+        wbank.put_waveforms(st, update_index=True)
+        wbank.read_index()  # need to cache index
+        return Fetcher(events=eve, stations=inv, waveforms=wbank)
+
     # general test
 
     def test_duration(self, stream_dict):
@@ -538,6 +556,17 @@ class TestYieldEventWaveforms:
         with suppress_warnings(UserWarning):
             out = list(fet.yield_event_waveforms(1, 10, raise_on_fail=False))
         assert out == []
+
+    def test_event_bank_with_one_event(self, fetcher_one_event):
+        """
+        Ensure an event waveform can be retrieved from a bank with only
+        one event. See #186.
+        """
+        kwargs = dict(time_before=1, time_after=1)
+        out = dict(fetcher_one_event.yield_event_waveforms(**kwargs))
+        assert len(out) == 1
+        st = list(out.values())[0]
+        assert len(st)
 
     def test_gather(self, event_list_origin, event_dict_p):
         """ Simply gather aggregated fixtures so they are marked as used. """
