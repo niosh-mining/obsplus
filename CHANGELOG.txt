@@ -1,3 +1,8 @@
+obsplus master
+  - obsplus.structures.fetcher
+    * fixed an edge case were banks with only one file failed to return
+       streams (#186).
+
 obsplus 0.1.1
   - obsplus.events
     * Fixed issue with validators flagging picks on stations with the same
