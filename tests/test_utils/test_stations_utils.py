@@ -52,6 +52,22 @@ class TestDfToInventory:
         row2 = numerics + ["2020-01-01", "2200-01-01"]
         return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS)
 
+    @pytest.fixture
+    def inv_df_duplicate_channels(self, df_from_inv):
+        """
+        Create a dataframe with duplicate channels that have different
+        start/end dates.
+        """
+        # first add duplicates of fur with different start/end times
+        df_from_inv["end_date"] = np.datetime64("2020-01-01")
+        sub_fur = df_from_inv[df_from_inv["station"] == "FUR"]
+        sub_fur["end_date"] = sub_fur["start_date"] - np.timedelta64(1, "Y")
+        sub_fur["start_date"] = sub_fur["end_date"] - np.timedelta64(3, "Y")
+        new_df = pd.concat([df_from_inv, sub_fur], ignore_index=True).reset_index(
+            drop=True
+        )
+        return new_df
+
     def test_type(self, inv_from_df):
         """ An inv should have been returned. """
         assert isinstance(inv_from_df, obspy.Inventory)
@@ -129,6 +145,28 @@ class TestDfToInventory:
         inv = df_to_inventory(df)
         for channel in inv.get_contents()["channels"]:
             assert channel.split(".")[2] == "00"
+
+    def test_duplicate_stations(self, inv_df_duplicate_channels):
+        """
+        Ensure duplicate stations create Station objects with correct
+        time range.
+        """
+        df = inv_df_duplicate_channels
+        fur_df = df[df["station"] == "FUR"]
+        inv = df_to_inventory(fur_df).select(station="FUR")
+        stations = inv.networks
+        assert len(stations) == 1
+        fur = stations[0]
+        assert fur.start_date == to_utc(fur_df["start_date"].min())
+        assert fur.end_date == to_utc(fur_df["end_date"].max())
+
+    def test_unsupported_column_warns(self, df_from_inv):
+        """Ensure an unsupported column issues a warning."""
+        df_from_inv["bob"] = 1
+        with pytest.warns(UserWarning) as w:
+            df_to_inventory(df_from_inv)
+        assert len(w) == 1
+        assert "found unexpected columns" in w.list[0].message.args[0]
 
 
 @pytest.mark.requires_network

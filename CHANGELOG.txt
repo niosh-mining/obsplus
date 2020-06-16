@@ -2,6 +2,9 @@ obsplus master
   - obsplus.structures.fetcher
     * fixed an edge case were banks with only one file failed to return
        streams (#186).
+  - obsplus.utils
+    * Fixed issue with duplicate channels setting incorrect start_dates
+      on station level (#188, #190).
 
 obsplus 0.1.1
   - obsplus.events

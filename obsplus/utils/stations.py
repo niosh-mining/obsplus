@@ -1,9 +1,8 @@
 """
 Utilities for working with inventories.
 """
-import inspect
-
 import json
+import warnings
 from functools import singledispatch, lru_cache
 from pathlib import Path
 from typing import Optional
@@ -19,6 +18,8 @@ from obsplus.constants import (
     station_clientable_type,
     SMALLDT64,
     LARGEDT64,
+    SMALL_UTC,
+    BIG_UTC,
     NSLC,
     STATION_DTYPES,
 )
@@ -26,7 +27,6 @@ from obsplus.exceptions import AmbiguousResponseError
 from obsplus.interfaces import StationClient
 from obsplus.utils import get_nslc_series
 from obsplus.utils.docs import compose_docstring, format_dtypes
-from obsplus.utils.misc import FunctionCacheDescriptor
 from obsplus.utils.time import to_utc
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
@@ -43,28 +43,51 @@ type_mappings = {"start_date": to_utc, "end_date": to_utc}
 station_col_str = format_dtypes(STATION_DTYPES)
 
 
-def _make_key_mappings(cls):
-    """ Create a mapping from columns in df to kwargs for cls. """
-    base_params = set(inspect.signature(cls).parameters)
-    new_map = mapping_keys[cls]
-    base_map = {x: x for x in base_params - set(new_map)}
-    base_map.update(new_map)
-    return base_map
-
-
 class _InventoryConstructor:
     """A private helper class for constructing inventories from dataframes."""
 
     _client_col = "get_station_kwargs"
     _nrl_response_cols = frozenset({"datalogger_keys", "sensor_keys"})
-    # get cached expected kwargs for inventory class constructors
-    net_map = FunctionCacheDescriptor(lambda: _make_key_mappings(Network))
-    sta_map = FunctionCacheDescriptor(lambda: _make_key_mappings(Station))
-    cha_map = FunctionCacheDescriptor(lambda: _make_key_mappings(Channel))
+    # define expected kwargs for inventory class constructors
+    net_map = {
+        "code": "network",
+        "operator": "operator",
+    }
+    sta_map = {
+        "code": "station",
+        "equipment": "equipment",
+        "creation_date": "creation_date",
+        "latitude": "latitude",
+        "longitude": "longitude",
+        "elevation": "elevation",
+    }
+    cha_map = {
+        "response": "response",
+        "start_date": "start_date",
+        "end_date": "end_date",
+        "code": "channel",
+        "location_code": "location",
+        "sample_rate": "sample_rate",
+        "sensor": "sensor",
+        "equipment": "equipment",
+        "elevation": "elevation",
+        "azimuth": "azimuth",
+        "dip": "dip",
+        "data_logger": "data_logger",
+        "latitude": "latitude",
+        "longitude": "longitude",
+        "depth": "depth",
+    }
+    # A set of expected columns
+    _expected_cols = (
+        set(net_map.values()) | set(cha_map.values()) | set(sta_map.values())
+    )
+    # A set of columns to drop before building inventory
+    _drop_cols = list(_nrl_response_cols) + [_client_col, "index", "seed_id"]
     # columns for performing groupby at various levels
     _gb_cols = dict(
         network=("network",),
-        station=("station", "start_date", "end_date"),
+        station=("station", "latitude", "longitude", "elevation"),
         channel=("channel", "location", "start_date", "end_date"),
     )
 
@@ -153,8 +176,6 @@ class _InventoryConstructor:
     def _update_nrl_response(self, response, df):
         """Update the responses with NRL."""
         # df doesn't have needed columns, just exit
-        if not self._nrl_response_cols.issubset(set(df.columns)):
-            return
         logger_keys, sensor_keys = df["datalogger_keys"], df["sensor_keys"]
         valid = (~logger_keys.isna()) & (~sensor_keys.isna())
         response[valid] = [
@@ -164,8 +185,6 @@ class _InventoryConstructor:
 
     def _update_client_responses(self, response, df):
         """Update the client responses."""
-        if self._client_col not in df.columns:
-            return
         # infer get_stations kwargs from existing columns
         provided_kwargs = df[self._client_col]
         # only try for chans that have kwargs and no response (yet)
@@ -209,7 +228,7 @@ class _InventoryConstructor:
             raise AmbiguousResponseError(msg)
 
     def _load_response_columns(self, df):
-        """Else rase an AmbiguousResponseError"""
+        """Else raise an AmbiguousResponseError"""
         # Load any json in any of the response columns
         # Note: we copy the df at the start so mutation is ok
         for col in [self._client_col] + list(self._nrl_response_cols):
@@ -225,6 +244,10 @@ class _InventoryConstructor:
         # init empty series of None for storing responses
         responses = pd.Series(index=df.index, dtype=object)
         responses.loc[responses.isnull()] = None
+        # early return if neither response column is found
+        resp_cols = [self._client_col] + list(self._nrl_response_cols)
+        if set(resp_cols).isdisjoint(set(df.columns)):
+            return responses
         # Ensure both methods are not requested for any rows
         self._load_response_columns(df)
         # update responses
@@ -232,7 +255,25 @@ class _InventoryConstructor:
         self._update_client_responses(responses, df)
         return responses
 
-    def _make_inventory(self, df):
+    def _add_dates(self, kwargs, some_list):
+        """Add min start_date and max end_date to kwargs."""
+        if not some_list:
+            return
+        start_list = [x.start_date or SMALL_UTC for x in some_list]
+        end_list = [x.end_date or BIG_UTC for x in some_list]
+        kwargs["start_date"] = np.min(start_list)
+        kwargs["end_date"] = np.max(end_list)
+        return kwargs
+
+    def _maybe_warn_on_unexpected_columns(self, df):
+        """Issues a UserWarning if unexpected columns are found."""
+        col_set = set(df.columns)
+        diff = col_set - self._expected_cols
+        if diff:
+            msg = f"df_to_inventory found unexpected columns: {diff}"
+            warnings.warn(msg)
+
+    def _make_inventory(self, df: pd.DataFrame):
         """
         Loopy logic for creating the inventory form a dataframe.
         """
@@ -241,8 +282,11 @@ class _InventoryConstructor:
         # make sure all seed_id codes are str
         for col in set(NSLC) & set(df.columns):
             df[col] = df[col].astype(str).str.replace("\.0", "")
-        # add responses (if requested)
+        # add responses (if requested) and drop response cols
         df["response"] = self._get_responses(df)
+        df = df.drop(columns=self._drop_cols, errors="ignore")
+        # warn if any unexpected columns are found in df
+        self._maybe_warn_on_unexpected_columns(df)
         # Iterate networks and create stations
         networks = []
         for net_code, net_df in self._groupby_if_exists(df, "network"):
@@ -259,8 +303,10 @@ class _InventoryConstructor:
                     # try to add the inventory
                     channels.append(Channel(**kwargs))
                 kwargs = self._get_kwargs(sta_df.iloc[0], self.sta_map)
+                self._add_dates(kwargs, channels)
                 stations.append(Station(channels=channels, **kwargs))
             kwargs = self._get_kwargs(net_df.iloc[0], self.net_map)
+            self._add_dates(kwargs, stations)
             networks.append(Network(stations=stations, **kwargs))
 
         return obspy.Inventory(
