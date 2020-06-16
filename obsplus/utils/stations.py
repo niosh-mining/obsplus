@@ -1,7 +1,6 @@
 """
 Utilities for working with inventories.
 """
-import inspect
 import json
 import warnings
 from functools import singledispatch, lru_cache
@@ -42,15 +41,6 @@ mapping_keys = {
 
 type_mappings = {"start_date": to_utc, "end_date": to_utc}
 station_col_str = format_dtypes(STATION_DTYPES)
-
-
-def _make_key_mappings(cls):
-    """ Create a mapping from columns in df to kwargs for cls. """
-    base_params = set(inspect.signature(cls).parameters)
-    new_map = mapping_keys[cls]
-    base_map = {x: x for x in base_params - set(new_map)}
-    base_map.update(new_map)
-    return base_map
 
 
 class _InventoryConstructor:
@@ -186,8 +176,6 @@ class _InventoryConstructor:
     def _update_nrl_response(self, response, df):
         """Update the responses with NRL."""
         # df doesn't have needed columns, just exit
-        if not self._nrl_response_cols.issubset(set(df.columns)):
-            return
         logger_keys, sensor_keys = df["datalogger_keys"], df["sensor_keys"]
         valid = (~logger_keys.isna()) & (~sensor_keys.isna())
         response[valid] = [
@@ -197,8 +185,6 @@ class _InventoryConstructor:
 
     def _update_client_responses(self, response, df):
         """Update the client responses."""
-        if self._client_col not in df.columns:
-            return
         # infer get_stations kwargs from existing columns
         provided_kwargs = df[self._client_col]
         # only try for chans that have kwargs and no response (yet)
@@ -242,7 +228,7 @@ class _InventoryConstructor:
             raise AmbiguousResponseError(msg)
 
     def _load_response_columns(self, df):
-        """Else rase an AmbiguousResponseError"""
+        """Else raise an AmbiguousResponseError"""
         # Load any json in any of the response columns
         # Note: we copy the df at the start so mutation is ok
         for col in [self._client_col] + list(self._nrl_response_cols):
@@ -258,6 +244,10 @@ class _InventoryConstructor:
         # init empty series of None for storing responses
         responses = pd.Series(index=df.index, dtype=object)
         responses.loc[responses.isnull()] = None
+        # early return if neither response column is found
+        resp_cols = [self._client_col] + list(self._nrl_response_cols)
+        if set(resp_cols).isdisjoint(set(df.columns)):
+            return responses
         # Ensure both methods are not requested for any rows
         self._load_response_columns(df)
         # update responses

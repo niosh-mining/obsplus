@@ -4,7 +4,7 @@ obsplus master
        streams (#186).
   - obsplus.utils
     * Fixed issue with duplicate channels setting incorrect start_dates
-      on station level (#182).
+      on station level (#188, #190).
 
 obsplus 0.1.1
   - obsplus.events
