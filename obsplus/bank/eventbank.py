@@ -432,6 +432,7 @@ class EventBank(_Bank):
         events: Union[ev.Event, ev.Catalog, EventClient],
         update_index: bool = True,
         bar: Optional[ProgressBar] = None,
+        overwrite_existing=True,
     ) -> "EventBank":
         """
         Put events into the EventBank.
@@ -449,6 +450,9 @@ class EventBank(_Bank):
             writing the new events. Note: Only events added through this
             method call will get indexed. Default is True.
         {bar_parameter_description}
+        overwrite_existing
+            If True, overwrite any existing events in the EventBank which
+            share an event id with the new events.
 
         Notes
         -----
@@ -470,19 +474,30 @@ class EventBank(_Bank):
             path_structure=self.path_structure,
             name_structure=self.name_structure,
             format=self.format,
+            overwrite_existing=overwrite_existing,
         )
-        paths = list(self._map(new_func, event_feeder))
+        paths_raw = list(self._map(new_func, event_feeder))  # can include None
         if update_index:  # parse newly saved files and update index
+            paths = [x for x in paths_raw if x is not None]  # remove None
             self.update_index(paths=paths)
         return self
 
     @staticmethod
-    def _put_event(event, index, bank_path, path_structure, name_structure, format):
+    def _put_event(
+        event,
+        index,
+        bank_path,
+        path_structure,
+        name_structure,
+        format,
+        overwrite_existing,
+    ):
         """
         Get a single event's path, save to db, return path.
+
+        NOTE: This function must be static to avoid pickling the attached
+        executor (see #158)
         """
-        # NOTE: This function must be static to avoid pickling the attached
-        # executor (see #158)
         bank_path = str(bank_path)
         df = index
         rid = str(event.resource_id)
@@ -490,6 +505,8 @@ class EventBank(_Bank):
             path = df.loc[rid, "path"]
             save_path = bank_path + path
             assert exists(save_path)
+            if not overwrite_existing:  # dont update existing
+                return
         else:  # event file does not yet exist
             path = _summarize_event(
                 event, path_struct=path_structure, name_struct=name_structure
