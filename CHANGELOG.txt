@@ -5,6 +5,9 @@ obsplus master
   - obsplus.utils
     * Fixed issue with duplicate channels setting incorrect start_dates
       on station level (#188, #190).
+  - obsplus.EventBank
+    * Added `overwrite_existing` keyword to `put_events` to disable squashing
+      existing events if desired (#191).
 
 obsplus 0.1.1
   - obsplus.events

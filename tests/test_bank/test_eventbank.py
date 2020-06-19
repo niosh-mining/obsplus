@@ -628,6 +628,21 @@ class TestPutEvents:
         with pytest.raises(ValueError):
             ebank.put_events(event)
 
+    def test_put_event_dont_overwrite(self, ebank):
+        """Ensure events are not squashed when overwrite_existing=False"""
+        # get mtimes of files in event bank
+        df = ebank.read_index()
+        files = [ebank.bank_path / x[1:] for x in df["path"]]
+        assert all([x.exists() for x in files])
+        mtimes_1 = [x.stat().st_mtime for x in files]
+        # put the same events back into the bank
+        cat = obspy.read_events()
+        time.sleep(0.001)  # a minimum separation in mtime
+        ebank.put_events(cat, overwrite_existing=False)
+        # make sure mtimes didn't change (ie files werent overwritten)
+        mtimes_2 = [x.stat().st_mtime for x in files]
+        assert mtimes_1 == mtimes_2
+
 
 class TestProgressBar:
     """ Tests for the progress bar functionality of banks. """
