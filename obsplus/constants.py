@@ -209,18 +209,7 @@ AMPLITUDE_DTYPES = OrderedDict(
     confidence_level=float,
 )
 
-AMPLITUDE_COLUMNS = (
-    "resource_id",
-    "event_id",
-    "event_time",
-    "generic_amplitude",
-    "type",
-    "magnitude_hint",
-    "network",
-    "station",
-    "location",
-    "channel",
-)
+AMPLITUDE_COLUMNS = tuple(AMPLITUDE_DTYPES)
 
 # columns required for station magnitudes
 STATION_MAGNITUDE_DTYPES = OrderedDict(
@@ -247,15 +236,8 @@ STATION_MAGNITUDE_DTYPES = OrderedDict(
     confidence_level=float,
 )
 
-STATION_MAGNITUDE_COLUMNS = (
-    "resource_id",
-    "mag",
-    "station_magnitude_type",
-    "network",
-    "station",
-    "location",
-    "channel",
-)
+# This is messy, but want to exclude the magnitude_id column
+STATION_MAGNITUDE_COLUMNS = tuple(set(STATION_MAGNITUDE_DTYPES.keys()) - {"magnitude_id"})
 
 # columns required for magnitudes
 MAGNITUDE_DTYPES = OrderedDict(
@@ -280,7 +262,7 @@ MAGNITUDE_DTYPES = OrderedDict(
     confidence_level=float,
 )
 
-MAGNITUDE_COLUMNS = ("resource_id", "event_id", "event_time", "mag", "magnitude_type")
+MAGNITUDE_COLUMNS = tuple(MAGNITUDE_DTYPES)
 
 # columns required for arrivals
 ARRIVAL_DTYPES = OrderedDict(
@@ -310,22 +292,7 @@ ARRIVAL_DTYPES = OrderedDict(
     origin_time="datetime64[ns]",
 )
 
-ARRIVAL_COLUMNS = (
-    "resource_id",
-    "origin_id",
-    "origin_time",
-    "pick_id",
-    "phase",
-    "time_residual",
-    "azimuth",
-    "distance",
-    "time_weight",
-    "time_correction",
-    "network",
-    "station",
-    "location",
-    "channel",
-)
+ARRIVAL_COLUMNS = tuple(ARRIVAL_DTYPES)
 
 # Waveform datatypes
 WAVEFORM_DTYPES = OrderedDict(
