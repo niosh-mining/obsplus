@@ -237,7 +237,9 @@ STATION_MAGNITUDE_DTYPES = OrderedDict(
 )
 
 # This is messy, but want to exclude the magnitude_id column
-STATION_MAGNITUDE_COLUMNS = tuple(set(STATION_MAGNITUDE_DTYPES.keys()) - {"magnitude_id"})
+STATION_MAGNITUDE_COLUMNS = tuple(
+    set(STATION_MAGNITUDE_DTYPES.keys()) - {"magnitude_id"}
+)
 
 # columns required for magnitudes
 MAGNITUDE_DTYPES = OrderedDict(
