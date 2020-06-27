@@ -205,7 +205,7 @@ class TestDfToInventoryGetResponses:
             df = obsplus.stations_to_df(inv)
 
         # set instrument str
-        sensor_keys = ("Nanometrics", "Trillium 120 Horizon")
+        sensor_keys = ("Nanometrics", "Trillium 120 Horizon", "Trillium 120 Horizon")
         # get digitizer keys
         datalogger_keys = (
             "Nanometrics",
