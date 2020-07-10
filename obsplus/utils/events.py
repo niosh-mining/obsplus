@@ -363,7 +363,7 @@ def get_seed_id(obj: catalog_component) -> str:
     # go down a level until it finds a seed id
     for att in attrs:
         val = getattr(obj, att, None)
-        if val:
+        if val is not None:
             with suppress((TypeError, AttributeError)):
                 return get_seed_id(val)
     # If it makes it this far, it could not find a non-None attribute
