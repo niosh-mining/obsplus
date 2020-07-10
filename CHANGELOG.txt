@@ -5,6 +5,9 @@ obsplus master
   - obsplus.utils
     * Fixed issue with duplicate channels setting incorrect start_dates
       on station level (#188, #190).
+    * Fixed an issue with `picks_to_df` which would return the wrong channel
+      code if the location code had a decimal. Now a ValueError is raised if
+      any seed ids are found which don't have exactly 3 decimals (see #193).
   - obsplus.EventBank
     * Added `overwrite_existing` keyword to `put_events` to disable squashing
       existing events if desired (#191).
