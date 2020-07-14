@@ -642,6 +642,18 @@ class TestReadPicks:
         assert len(set(df["location"])) == 2
         assert len(set(df["seed_id"])) == 2
 
+    def test_dot_in_location_code(self):
+        """Ensure a dot in the location code causes a ValueError. """
+        waveform_id = ev.WaveformStreamID(
+            network_code="UU",
+            station_code="TMU",
+            location_code="1.0",
+            channel_code="HHZ",
+        )
+        pick = ev.Pick(time=obspy.UTCDateTime("2020-01-01"), waveform_id=waveform_id)
+        with pytest.raises(ValueError):
+            _ = obsplus.picks_to_df([pick])
+
     def test_gather(self, catalog_output, dataframe_output):
         """ Simply gather aggregated fixtures so they are marked as used. """
 
