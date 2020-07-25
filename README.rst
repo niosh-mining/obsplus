@@ -10,11 +10,14 @@ Code_
 
 Change_Log_
 
+Contributing_
+
 License_
 
 About_
 
 Code_of_Conduct_
+
 
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
@@ -22,7 +25,8 @@ Code_of_Conduct_
 .. _Code: https://github.com/niosh-mining/obsplus
 .. _Change_Log: https://github.com/niosh-mining/obsplus/CHANGELOG.txt
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
-.. _Code_of_Conduct: https://github.com/niosh-mining/.github/CODE_OF_CONDUCT.md
+.. _Code_of_Conduct: https://github.com/niosh-mining/obsplus/blob/master/.github/CODE_OF_CONDUCT.md
+.. _Contributing: https://niosh-mining.github.io/obsplus/versions/latest/notebooks/contributing.html
 
 .. |Coverage| image:: https://codecov.io/gh/niosh-mining/obsplus/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/niosh-mining/obsplus
@@ -35,8 +39,6 @@ Code_of_Conduct_
 
 .. |PyPI| image:: https://pepy.tech/badge/obsplus
    :target: https://pepy.tech/project/obsplus
-   
+
 .. |Conda| image:: https://img.shields.io/conda/dn/conda-forge/obsplus?label=conda%20downloads
    :target: https://github.com/conda-forge/obsplus-feedstock
-  
-
