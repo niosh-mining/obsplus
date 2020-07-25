@@ -148,4 +148,3 @@ jobs:
 #      call activate $(env_name)
 #      pytest --cov obsplus && pytest --nbval docs/
 #    displayName: pytest
-

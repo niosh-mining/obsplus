@@ -49,10 +49,7 @@ class _InventoryConstructor:
     _client_col = "get_station_kwargs"
     _nrl_response_cols = frozenset({"datalogger_keys", "sensor_keys"})
     # define expected kwargs for inventory class constructors
-    net_map = {
-        "code": "network",
-        "operator": "operator",
-    }
+    net_map = {"code": "network", "operator": "operator"}
     sta_map = {
         "code": "station",
         "equipment": "equipment",
