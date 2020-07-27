@@ -15,7 +15,7 @@ from make_docs import make_docs
 
 import obsplus
 
-version = obsplus.__version__
+VERSION = obsplus.__version__
 
 INDEX_TEMPLATE = """
 <head>
@@ -23,13 +23,9 @@ INDEX_TEMPLATE = """
 </head>
 <body>
       <h1>ObsPlus Documentation</h1>
-      <h3>Releases</h3>
+      <p><a href="versions/latest/">latest</a></p>
       {% for version in release_versions %}
-      <p><a href="versions/{{ version }}/index.html">{{ version }}</a></p>
-      {% endfor %}
-      <h3>Inter-Release</h3>
-      {% for version in non_release_versions %}
-      <p><a href="versions/{{ version }}/index.html">{{ version }}</a></p>
+      <p><a href="versions/{{ version }}/">{{ version }}</a></p>
       {% endfor %}
 </body>
 """
@@ -94,16 +90,12 @@ def _build_index(pages_path, remove_dirty=False):
 
     def _create_latest(pages_path, kwargs):
         """ Create the 'latest' version directory. """
-        try:
-            latest_version = sorted(kwargs["release_versions"])[-1]
-        except IndexError:
-            latest_version = sorted(kwargs["non_release_versions"])[-1]
+        latest_version = VERSION
         latest_path = pages_path / "versions" / "latest"
         if latest_path.is_dir():
             shutil.rmtree(latest_path)
         from_path = pages_path / "versions" / latest_version
         shutil.copytree(from_path, latest_path)
-        kwargs["release_versions"].insert(0, "latest")
 
     def _render_html(kwargs):
         """Render and write the index.html file."""
@@ -129,12 +121,15 @@ def _build_index(pages_path, remove_dirty=False):
 
 def _commit_new_docs(pages_path):
     """Commit the new docs, overwrite second commit."""
+    # remove precommit hooks
+    cmd = "pre-commit uninstall"
+    run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
     # reset to the first commit in gh-pages branch
     cmd = "git reset --soft `git rev-list --max-parents=0 HEAD | tail -n 1`"
     run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
     # make a commit
     run("git add -A", shell=True, check=True, cwd=pages_path)
-    cmd = f'git commit -m "{version} docs"'
+    cmd = f'git commit -m "{VERSION} docs"'
     run(cmd, shell=True, check=True, cwd=pages_path)
 
 
@@ -164,7 +159,7 @@ def stage_docs(build_path=None, pages_path=None, remove_dirty: bool = False) -> 
     _make_gh_pages_repo(base, pages_path)
     # copy build html directory
     expected_html = build_path / "html"
-    new_path = pages_path / "versions" / version
+    new_path = pages_path / "versions" / VERSION
     if new_path.exists():
         shutil.rmtree(new_path)
     shutil.copytree(expected_html, new_path)

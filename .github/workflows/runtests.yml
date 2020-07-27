@@ -2,7 +2,7 @@ name: validate
 on: [push]
 
 jobs:
-  # Simply applies flake8 to the codebase
+  # Simply applies flake8 to code using pre-commit
   lint_code:
     runs-on: ubuntu-latest
 
@@ -17,8 +17,8 @@ jobs:
       - name: install linting packages
         run: pip install -r tests/requirements.txt
 
-      - name: flake8
-        run: flake8 .
+      - name: run all precommits
+        run: pre-commit run flake8 --files obsplus/**/*
 
   # Runs the tests on combinations of the supported python/os matrix.
   test_code:

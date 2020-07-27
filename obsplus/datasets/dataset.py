@@ -267,7 +267,9 @@ class DataSet(abc.ABC):
             fi.write(str(self.data_path))
 
     @classmethod
-    def load_dataset(cls: DataSetType, name: Union[str, "DataSet"]) -> DataSetType:
+    def load_dataset(
+        cls: DataSetType, name: Union[str, "DataSet"], silent=False
+    ) -> DataSetType:
         """
         Get a loaded dataset.
 
