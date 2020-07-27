@@ -23,9 +23,9 @@ INDEX_TEMPLATE = """
 </head>
 <body>
       <h1>ObsPlus Documentation</h1>
-      <p><a href="versions/latest/index.html">latest</a></p>
+      <p><a href="versions/latest/">latest</a></p>
       {% for version in release_versions %}
-      <p><a href="versions/{{ version }}/index.html">{{ version }}</a></p>
+      <p><a href="versions/{{ version }}/">{{ version }}</a></p>
       {% endfor %}
 </body>
 """
@@ -121,6 +121,9 @@ def _build_index(pages_path, remove_dirty=False):
 
 def _commit_new_docs(pages_path):
     """Commit the new docs, overwrite second commit."""
+    # remove precommit hooks
+    cmd = "pre-commit uninstall"
+    run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
     # reset to the first commit in gh-pages branch
     cmd = "git reset --soft `git rev-list --max-parents=0 HEAD | tail -n 1`"
     run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
