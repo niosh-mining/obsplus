@@ -122,14 +122,15 @@ def _ints_to_time_columns(df, columns=None, nat_value=SMALLDT64):
 
     Needs a fill value for NaT.
     """
+    # TODO will have to be more specific if we ever add other int cols
     dtypes = [int, np.int64]
     cols = columns or df.select_dtypes(include=dtypes).columns
-    df.loc[:, cols] = (
+    ser = (
         df.loc[:, cols]
         .apply(pd.to_datetime, unit="ns", axis=1)
         .replace(nat_value, np.datetime64("NaT"))
     )
-    return df
+    return pd.concat([df.drop(columns=cols), ser], axis=1)[df.columns]
 
 
 def cast_dtypes(

@@ -524,11 +524,20 @@ class TestBasicDataset:
         assert isinstance(client, WaveformClient)
         ds._download_client = client
 
-    def test_source_path_of_dynamic_dataset(self):
-        """Ensure a sensible default source_path is created """
+    def test_dynamic_dataset_no_source_path(self):
+        """Ensure a source path isn't required.
+        (no reason to create an empty directory)
+        """
         kwargs = dict(name="bob", version="0.1.0")
+        # first make sure the expected source path doesn't exist
         ds = type("test_dataset", (DataSet,), kwargs)()
-        assert ds.source_path.exists()
+        if ds.source_path.exists():
+            shutil.rmtree(str(ds.source_path))
+        # then ensure it isn't created
+        ds = type("test_dataset", (DataSet,), kwargs)()
+        assert not ds.source_path.exists()
+        # but that the *data path* was
+        assert ds.data_path.exists()
 
     def test_load_failure_warns(self, tmp_path):
         """Ensure when a load functions raises it issues a warning. """
