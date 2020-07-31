@@ -73,7 +73,8 @@ class SpatialCalculator:
                 set(cols).issubset(obj.columns) or set(cols1).issubset(obj.columns)
             ):
                 raise DataFrameContentError(
-                    f"SpatialCalculator input dataframe must have the following columns: {cols} or {cols1}"
+                    "SpatialCalculator input dataframe must have the following "
+                    f"columns: {cols} or {cols1}"
                 )
             return self._validate_dataframe(obj)
         try:  # first try events
@@ -132,7 +133,7 @@ class SpatialCalculator:
     def _validate_dataframe(self, df) -> pd.DataFrame:
         """ Ensure all the parameters of the dataframe are reasonable. """
         # first cull out columns that aren't needed and de-dup index
-        if ("depth" in df.columns) and (not "elevation" in df.columns):
+        if ("depth" in df.columns) and ("elevation" not in df.columns):
             # Make sure that the df has an elevation column
             out = (
                 df[list(ALT_DISTANCE_COLUMN_DTYPES)]
