@@ -153,6 +153,7 @@ class TestCalculateDistance:
             spatial_calc(cat, df2)
 
     def test_invalid_lat_lon(self, spatial_calc, cat, inv):
+        """ Ensure invalid latitudes or longitudes get flagged """
         df = inv.to_df()
         df["latitude"] = 200
         with pytest.raises(DataFrameContentError, match="invalid lat/lon"):
