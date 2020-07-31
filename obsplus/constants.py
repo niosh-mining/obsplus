@@ -171,6 +171,10 @@ DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
     latitude=float, longitude=float, elevation=float
 )
 
+ALT_DISTANCE_COLUMN_DTYPES = OrderedDict(
+    latitude=float, longitude=float, depth=float
+)
+
 # DISTANCE_COLUMNS = tuple(DISTANCE_COLUMN_DTYPES)
 # DISTANCE_INPUT_COLUMNS = tuple(DISTANCE_COLUMN_INPUT_DTYPES)
 

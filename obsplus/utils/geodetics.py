@@ -16,6 +16,7 @@ from obsplus.constants import (
     inventory_type,
     DISTANCE_COLUMN_DTYPES,
     DISTANCE_COLUMN_INPUT_DTYPES,
+    ALT_DISTANCE_COLUMN_DTYPES,
 )
 from obsplus.utils.docs import compose_docstring
 from obsplus.exceptions import DataFrameContentError
@@ -65,8 +66,13 @@ class SpatialCalculator:
         Return a dataframe with latitude, longitude, elevation, and id.
         """
         cols = list(DISTANCE_COLUMN_INPUT_DTYPES)
+        cols1 = list(ALT_DISTANCE_COLUMN_DTYPES)
         # if a dataframe is used
-        if isinstance(obj, pd.DataFrame) and set(cols).issubset(obj.columns):
+        if isinstance(obj, pd.DataFrame):
+            if not (set(cols).issubset(obj.columns) or set(cols1).issubset(obj.columns)):
+                raise DataFrameContentError(
+                    f"SpatialCalculator input dataframe must have the following columns: {cols} or {cols1}"
+                )
             return self._validate_dataframe(obj)
         try:  # first try events
             df = self._df_from_events(obj)
@@ -124,16 +130,26 @@ class SpatialCalculator:
     def _validate_dataframe(self, df) -> pd.DataFrame:
         """ Ensure all the parameters of the dataframe are reasonable. """
         # first cull out columns that aren't needed and de-dup index
-        out = (
-            df[list(DISTANCE_COLUMN_INPUT_DTYPES)]
-            .astype(DISTANCE_COLUMN_INPUT_DTYPES)
-            .pipe(self._de_duplicate_df_index)
-        )
+        if ("depth" in df.columns) and (not "elevation" in df.columns):
+            # Make sure that the df has an elevation column
+            out = (
+                df[list(ALT_DISTANCE_COLUMN_DTYPES)]
+                .astype(ALT_DISTANCE_COLUMN_DTYPES)
+                .pipe(self._de_duplicate_df_index)
+            )
+            out["elevation"] = -1 * out["depth"]
+        else:
+            out = (
+                df[list(DISTANCE_COLUMN_INPUT_DTYPES)]
+                .astype(DISTANCE_COLUMN_INPUT_DTYPES)
+                .pipe(self._de_duplicate_df_index)
+            )
         # sanity checks on lat/lon
         lat_valid = abs(df["latitude"]) <= 90.0
         lons_valid = abs(df["longitude"]) <= 180.0
-        if not (lat_valid.all() & lons_valid.all()):
-            msg = f"invalid lat/lon values found in {df}"
+        elevs_valid = df["elevation"].notnull()
+        if not (lat_valid.all() & lons_valid.all() & elevs_valid.all()):
+            msg = f"invalid lat/lon/elevation values found in {df}"
             raise DataFrameContentError(msg)
         return out
 
