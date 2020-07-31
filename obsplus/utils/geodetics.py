@@ -69,7 +69,9 @@ class SpatialCalculator:
         cols1 = list(ALT_DISTANCE_COLUMN_DTYPES)
         # if a dataframe is used
         if isinstance(obj, pd.DataFrame):
-            if not (set(cols).issubset(obj.columns) or set(cols1).issubset(obj.columns)):
+            if not (
+                set(cols).issubset(obj.columns) or set(cols1).issubset(obj.columns)
+            ):
                 raise DataFrameContentError(
                     f"SpatialCalculator input dataframe must have the following columns: {cols} or {cols1}"
                 )

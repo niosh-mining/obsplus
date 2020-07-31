@@ -141,7 +141,13 @@ class TestCalculateDistance:
         """ Ensure dfs with missing columns raise. """
         df1 = cat.to_df().drop(columns="latitude")
         df2 = inv.to_df().drop(columns="latitude")
-        with pytest.raises(DataFrameContentError, match="SpatialCalculator input dataframe must have the following"):
+        with pytest.raises(
+            DataFrameContentError,
+            match="SpatialCalculator input dataframe must have the following",
+        ):
             spatial_calc(df1, inv)
-        with pytest.raises(DataFrameContentError, match="SpatialCalculator input dataframe must have the following"):
+        with pytest.raises(
+            DataFrameContentError,
+            match="SpatialCalculator input dataframe must have the following",
+        ):
             spatial_calc(cat, df2)
