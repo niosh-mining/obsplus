@@ -135,9 +135,8 @@ class SpatialCalculator:
         # first cull out columns that aren't needed and de-dup index
         if ("depth" in df.columns) and ("elevation" not in df.columns):
             # Make sure that the df has an elevation column
-            out = (
-                df[list(ALT_DISTANCE_COLUMN_DTYPES)]
-                .astype(ALT_DISTANCE_COLUMN_DTYPES)
+            out = df[list(ALT_DISTANCE_COLUMN_DTYPES)].astype(
+                ALT_DISTANCE_COLUMN_DTYPES
             )
             out["elevation"] = -1 * out["depth"]
             out.drop("depth", inplace=True, axis=1)
