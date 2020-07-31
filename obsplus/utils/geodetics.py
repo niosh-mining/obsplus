@@ -138,9 +138,10 @@ class SpatialCalculator:
             out = (
                 df[list(ALT_DISTANCE_COLUMN_DTYPES)]
                 .astype(ALT_DISTANCE_COLUMN_DTYPES)
-                .pipe(self._de_duplicate_df_index)
             )
             out["elevation"] = -1 * out["depth"]
+            out.drop("depth", inplace=True, axis=1)
+            self._de_duplicate_df_index(out)
         else:
             out = (
                 df[list(DISTANCE_COLUMN_INPUT_DTYPES)]
@@ -150,9 +151,8 @@ class SpatialCalculator:
         # sanity checks on lat/lon
         lat_valid = abs(df["latitude"]) <= 90.0
         lons_valid = abs(df["longitude"]) <= 180.0
-        elevs_valid = df["elevation"].notnull()
-        if not (lat_valid.all() & lons_valid.all() & elevs_valid.all()):
-            msg = f"invalid lat/lon/elevation values found in {df}"
+        if not (lat_valid.all() & lons_valid.all()):
+            msg = f"invalid lat/lon values found in {df}"
             raise DataFrameContentError(msg)
         return out
 
