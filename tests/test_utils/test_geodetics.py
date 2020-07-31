@@ -151,3 +151,9 @@ class TestCalculateDistance:
             match="SpatialCalculator input dataframe must have the following",
         ):
             spatial_calc(cat, df2)
+
+    def test_invalid_lat_lon(self, spatial_calc, cat, inv):
+        df = inv.to_df()
+        df["latitude"] = 200
+        with pytest.raises(DataFrameContentError, match="invalid lat/lon"):
+            spatial_calc(cat, df)
