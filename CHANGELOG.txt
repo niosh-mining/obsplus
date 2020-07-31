@@ -13,6 +13,7 @@ obsplus master
   - obsplus.EventBank
     * Added `overwrite_existing` keyword to `put_events` to disable squashing
       existing events if desired (#191).
+    * Fixes issue with read inventory casting ints to datetime on pd 1.1.0
   - obsplus.events.pd
     * Made sure that the pre-defined extractors (`*_to_df`) still return all of
       the expected columns if there are no valid objects.
