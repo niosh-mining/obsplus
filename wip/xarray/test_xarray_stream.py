@@ -30,8 +30,8 @@ rand = np.random.RandomState(13)
 
 
 def starttimes_consistent(dar, tolerance=0.0001):
-    """ Return True if the starttimes in the data array are consistent with
-    those in the attrs """
+    """Return True if the starttimes in the data array are consistent with
+    those in the attrs"""
 
     for eve_id, stat_dict in dar.attrs["stats"].items():
         for chan_id, stats in stat_dict.items():
@@ -82,7 +82,7 @@ class TestWaveform2ArrayDict:
 
     @pytest.fixture(scope="class")
     def array_dict_different_sr(self):
-        """ return a data_array dict made from a waveforms with different sample
+        """return a data_array dict made from a waveforms with different sample
         rates"""
         st = obspy.read()
         out = {}
@@ -117,8 +117,8 @@ class TestWaveform2ArrayDict:
 
     # homogeneous tests
     def test_default_array_is_len_1(self, homogeneous_array_dict):
-        """ since the default array only has 1 sampling rate it should produce
-        a dict with only one key """
+        """since the default array only has 1 sampling rate it should produce
+        a dict with only one key"""
         assert isinstance(homogeneous_array_dict, dict)
         assert len(homogeneous_array_dict) == 1
         # ensure each element is a data array
@@ -180,8 +180,8 @@ class TestStreamDict2DataArray:
         assert "starttime" in dar.coords
 
     def test_bingham_data_array(self, bingham_dar, bingham_stream_dict):
-        """ ensure the bingham_test data array does not contain NaNs and has
-        correct starttimes """
+        """ensure the bingham_test data array does not contain NaNs and has
+        correct starttimes"""
         assert not bingham_dar.isnull().any()
         assert set(bingham_dar.stream_id.values) == set(bingham_stream_dict)
         assert starttimes_consistent(bingham_dar, tolerance=0.02)
@@ -195,8 +195,8 @@ class TestStreamDict2DataArray:
                 assert abs(time - ar_time) < 1
 
     def test_disjoint_seed_ids(self, dar_disjoint_seeds):
-        """ test that data arrays with disjoint seed ids still return some
-        values """
+        """test that data arrays with disjoint seed ids still return some
+        values"""
         dar = dar_disjoint_seeds
         assert len(dar.time.values), " empty time dimension "
 
@@ -370,8 +370,8 @@ class TestArray2Dict:
         return st
 
     def equal_without_processing(self, st1, st2):
-        """ Return True if the streams are equal when processing in stats is
-        removed """
+        """Return True if the streams are equal when processing in stats is
+        removed"""
         st1, st2 = self._remove_processing(st1), self._remove_processing(st2)
         # make sure lengths are the same
         for tr1, tr2 in zip(st1, st2):
@@ -497,8 +497,8 @@ class TestAttachPicks:
             assert not dtype.hasobject  # shouldn't be an object dtype
 
     def test_starttime_origin_time_seperation(self, dar_attached_picks):
-        """ ensure the start of the trace and start of the events arent too
-        far off """
+        """ensure the start of the trace and start of the events arent too
+        far off"""
         dar = dar_attached_picks
         cat = dar.attrs["events"]
         for ev in cat:
@@ -539,8 +539,8 @@ class TestTrimArray:
     # fixtures
     @pytest.fixture(scope="class")
     def trimmed_dar(self, dar_attached_picks):
-        """ copy the data array with attached picks and trim the channels
-        independently """
+        """copy the data array with attached picks and trim the channels
+        independently"""
         dar = copy.deepcopy(dar_attached_picks)
         return dar.ops.trim(trim="p_time")
 
@@ -622,7 +622,7 @@ class TestTrimArray:
         assert hasattr(trimmed_dar, "attrs")
 
     def test_all_times_changed(self, trimmed_group, attached_picks_and_groups):
-        """ since each waveform was in a group that had a change, all of the
+        """since each waveform was in a group that had a change, all of the
         start times should now be different
         """
         dar1, dar2 = trimmed_group, attached_picks_and_groups
@@ -734,8 +734,7 @@ class TestPadTime:
         assert t1[-1] > t2[-1]
 
     def test_trimmed_array(self, default_array):
-        """ ensure the array was trimmed when a negative time_before is used
-        """
+        """ensure the array was trimmed when a negative time_before is used"""
         negative_pad_time = pad_time(default_array, time_before=self.negative_time)
 
         old_time = default_array.time.values
@@ -792,8 +791,8 @@ class TestAggregations:
 
     # helper functions
     def split_seeds(self, dar):
-        """ split the seed_ids, return a df with columns: network, station,
-        location, channel, if all are present, else return a subset """
+        """split the seed_ids, return a df with columns: network, station,
+        location, channel, if all are present, else return a subset"""
         ser = dar.seed_id.to_dataframe()["seed_id"]
         split = ser.str.split(".", expand=True)
         # reset columns to seed_col names
@@ -817,8 +816,8 @@ class TestAggregations:
 
     @pytest.fixture(params=common_fixtures)
     def aggregated(self, request):
-        """ parametrize all aggregation fixtures to run through basic common
-        tests """
+        """parametrize all aggregation fixtures to run through basic common
+        tests"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture
@@ -872,16 +871,16 @@ class TestAggregations:
         assert zoo_std_all.to_dataset(name="var").dims["seed_id"] == 1
 
     def test_groups_are_truncated_1d(self, aggregated_with_group_1d):
-        """ ensure the group coord is truncated to reflect the station
-        aggregation """
+        """ensure the group coord is truncated to reflect the station
+        aggregation"""
         ar = aggregated_with_group_1d
         groups = ar.coords["group"]
         for group in groups.values.flatten():
             assert len(str(group).split(".")) == 2  # only station level
 
     def test_groups_are_truncated_2d(self, aggregated_with_group_2d):
-        """ ensure the group coord is truncated to reflect the station
-        aggregation """
+        """ensure the group coord is truncated to reflect the station
+        aggregation"""
         ar = aggregated_with_group_2d
         groups = ar.coords["group"]
         for group in groups.values.flatten():
@@ -1010,8 +1009,8 @@ class TestArrayFFTAndIFFT:
         assert array_fft_outputs.values.dtype == np.complex128
 
     def test_requencies(self, array_fft_outputs):
-        """ ensure frequency is an axis and has both positive and negative
-         numbers """
+        """ensure frequency is an axis and has both positive and negative
+        numbers"""
         assert "frequency" in array_fft_outputs.coords
         freqs = array_fft_outputs.coords["frequency"].values
         assert freqs[0] == 0
@@ -1151,8 +1150,8 @@ class Test2Netcdf:
     # fixtures
     @pytest.fixture(scope="class")
     def default_array_more(self, default_array: xr.DataArray):
-        """ return a deep copy of the default array with
-        an obspy events and stations attached """
+        """return a deep copy of the default array with
+        an obspy events and stations attached"""
         dar = default_array.copy(deep=True)
         dar.attrs["events"] = obspy.read_events()
         dar.attrs["stations"] = obspy.read_inventory()

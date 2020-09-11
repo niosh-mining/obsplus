@@ -720,7 +720,7 @@ class TestBankCache:
     # fixtures
     @pytest.fixture(scope="class")
     def mp_ta_bank(self, ta_bank):
-        """ monkey patch the ta_bank instance to count how many times the .h5
+        """monkey patch the ta_bank instance to count how many times the .h5
         index is accessed, store it on the accessed_times in the ._cache.times
         """
         func = count_calls(ta_bank, ta_bank._index_cache._get_index, "index_calls")
@@ -1352,7 +1352,7 @@ class TestConcurrentUpdateIndex:
 
 
 class TestSelectDoesntReturnSuperset:
-    """ make sure selecting on an attribute doesnt return a superset of that
+    """make sure selecting on an attribute doesnt return a superset of that
     attribute. EG, selecting station '2' should not also return station '22'
     """
 

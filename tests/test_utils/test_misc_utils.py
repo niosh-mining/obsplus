@@ -46,7 +46,7 @@ class TestReplaceNullSeedCodes:
     """ tests for replacing nulish NSLC codes for various objects. """
 
     @pytest.fixture
-    def null_stream(self,):
+    def null_stream(self):
         """ return a stream with various nullish nslc codes. """
         st = obspy.read()
         st[0].stats.location = ""
@@ -268,7 +268,7 @@ class TestProgressBar:
         monkeypatch.setattr(ProgressBar, "start", raise_exception)
         assert obsplus.utils.misc.get_progressbar(100) is None
 
-    def test_simple_progress_bar(self,):
+    def test_simple_progress_bar(self):
         """ Ensure a simple progress bar can be used. """
         ProgressBar = obsplus.utils.misc._get_progressbar()
 

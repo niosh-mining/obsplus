@@ -79,7 +79,7 @@ class TestDuplicateEvent:
         obsplus.validate_catalog(duplicated_big_catalog)
 
     def test_interconnected_rids(self, catalog_cache):
-        """ Tests for ensuring resource IDs are changed to point to new
+        """Tests for ensuring resource IDs are changed to point to new
         objects. This can get messed up when there are many objects
         that point to resource ids of other objects. EG picks/amplitudes.
         """
