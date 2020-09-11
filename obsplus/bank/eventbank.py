@@ -400,11 +400,13 @@ class EventBank(_Bank):
         map_kwargs = dict(chunksize=chunksize)
         try:
             mapped_values = self._map(read_func, paths.values, **map_kwargs)
-            cat = reduce(add, mapped_values)
+            non_none_values = (x for x in mapped_values if x is not None)
+            cat = reduce(add, non_none_values)
         except TypeError:  # empty events
             cat = obspy.Catalog()
         # Make sure only the events of interest are included
-        return obspy.Catalog([eve for eve in cat if eve.resource_id.id in eids.values])
+        events = [eve for eve in cat if eve.resource_id.id in eids.values]
+        return obspy.Catalog(events=events)
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
