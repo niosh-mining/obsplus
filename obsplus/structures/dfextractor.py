@@ -209,7 +209,15 @@ class DataFrameExtractor(UserDict):
         )
         # If the extracted info contains NSLC information, make sure the seed_id matches
         if self.nslc.issubset(out.columns):
-            out["seed_id"] = out["network"] + "." + out["station"] + "." + out["location"] + "." + out["channel"]
+            out["seed_id"] = (
+                out["network"]
+                + "."
+                + out["station"]
+                + "."
+                + out["location"]
+                + "."
+                + out["channel"]
+            )
         return out
 
     def __str__(self):

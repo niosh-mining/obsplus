@@ -49,7 +49,17 @@ class TestDfToInventory:
         """
         Return a dataframe with different datatypes for the nslc information
         """
-        common = [request.param[0], request.param[0], request.param[0], request.param[0], 40.0, -111.0, 2000, 0, 250]
+        common = [
+            request.param[0],
+            request.param[0],
+            request.param[0],
+            request.param[0],
+            40.0,
+            -111.0,
+            2000,
+            0,
+            250,
+        ]
         row1 = common + ["2019-01-01", "2020-01-01"]
         row2 = common + ["2020-01-01", "2020-01-01"]
         return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS), request.param[1]
