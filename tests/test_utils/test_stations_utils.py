@@ -44,12 +44,25 @@ class TestDfToInventory:
         """Is this getting confusing yet?"""
         return obsplus.stations_to_df(inv_from_df)
 
-    @pytest.fixture
-    def dummy_df(self):
-        """ df 'inventory' with odd data types for the NSLC columns """
-        numerics = [1.0, 1.0, 1.0, 1.0, 40.0, -111.0, 2000, 0, 250]
-        row1 = numerics + ["2019-01-01", "2020-01-01"]
-        row2 = numerics + ["2020-01-01", "2200-01-01"]
+    @pytest.fixture(params=[(1.0, "01"), (1, "01"), ("1", "1"), ("01", "01")])
+    def nslc_dtype_variation(self, request):
+        """
+        Return a dataframe with different datatypes for the nslc information
+        """
+        common = [request.param[0], request.param[0], request.param[0], request.param[0], 40.0, -111.0, 2000, 0, 250]
+        row1 = common + ["2019-01-01", "2020-01-01"]
+        row2 = common + ["2020-01-01", "2020-01-01"]
+        return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS), request.param[1]
+
+    @pytest.fixture(params=range(4))
+    def invalid_nslc(self, request):
+        """
+        Return a dataframes with bad data types for the NSLC data
+        """
+        common = ["a", "b", "c", "d", 50.0, -111.0, 2000, 0, 250]
+        common[request.param] = "1.0"
+        row1 = common + ["2019-01-01", "2020-01-01"]
+        row2 = common + ["2020-01-01", "2020-01-01"]
         return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS)
 
     @pytest.fixture
@@ -72,16 +85,23 @@ class TestDfToInventory:
         """ An inv should have been returned. """
         assert isinstance(inv_from_df, obspy.Inventory)
 
-    def test_column_dtypes(self, dummy_df):
+    def test_nslc_variations_float(self, nslc_dtype_variation):
         """ Make sure data types get set (particularly for NSLC columns) """
-        inv = df_to_inventory(dummy_df)
+        inp = nslc_dtype_variation[0]
+        expect = nslc_dtype_variation[1]
+        inv = df_to_inventory(inp)
         for network in inv.networks:
-            assert network.code == "1"
+            assert network.code == expect
             for station in network:
-                assert station.code == "1"
-            for channel in station:
-                assert channel.code == "1"
-                assert channel.location_code == "1"
+                assert station.code == expect
+                for channel in station:
+                    assert channel.code == expect
+                    assert channel.location_code == expect
+
+    def test_invalid_nslc(self, invalid_nslc):
+        """ Make sure data types get set (particularly for NSLC columns) """
+        with pytest.raises(TypeError, match="cannot contain '.'"):
+            df_to_inventory(invalid_nslc)
 
     def test_new(self, df_from_inv, df_from_inv_from_df):
         """ Ensure the transformation is lossless from df side. """
@@ -139,7 +159,7 @@ class TestDfToInventory:
             assert not net.stations
 
     def test_00_location_code(self, df_from_inv):
-        """Ensure a 00 location code sticks until the inventory."""
+        """Ensure a 00 location code makes it into the inventory."""
         df = df_from_inv.copy()
         df["location"] = "00"
         inv = df_to_inventory(df)

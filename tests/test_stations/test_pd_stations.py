@@ -60,6 +60,25 @@ class TestInv2Df:
         assert invdf["start_date"].dt  # if not dt this will raise
         assert invdf["end_date"].dt
 
+    @pytest.mark.parametrize("input,expected", [(1, "01"), (1.0, "01"), ("01", "01"), ("1", "1")])
+    def test_location_codes(self, invdf, input, expected):
+        """ make sure location codes are handled nicely """
+        invdf = invdf.copy()
+        if isinstance(input, int):
+            invdf = invdf.loc[invdf["station"] == "RJOB"]
+            invdf["location"] = input
+            invdf["location"] = invdf["location"].astype(int)
+        elif isinstance(input, float):
+            invdf["location"] = np.nan
+            invdf.loc[invdf["station"] == "RJOB", "location"] = input
+        else:
+            invdf.loc[invdf["station"] == "RJOB", "location"] = input
+        # breakpoint()
+        invdf = stations_to_df(invdf)
+        assert (invdf.loc[invdf["station"] == "RJOB"]["location"] == expected).all()
+        assert (invdf.loc[invdf["station"] != "RJOB"]["location"] == "").all()
+        assert (invdf["location"] == invdf["seed_id"].str.split(".", expand=True)[2]).all()  # This one will be a little bit tougher
+
 
 class TestReadInventory:
     """ ensure inventories can be read in """
