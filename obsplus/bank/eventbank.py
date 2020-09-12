@@ -6,7 +6,7 @@ import time
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
-from os.path import exists, getmtime
+from os.path import getmtime
 from pathlib import Path
 from typing import Optional, Union, Sequence, Set
 
@@ -506,7 +506,6 @@ class EventBank(_Bank):
         if rid in df.index:  # event needs to be updated
             path = df.loc[rid, "path"]
             save_path = bank_path + path
-            assert exists(save_path)
             if not overwrite_existing:  # dont update existing
                 return
         else:  # event file does not yet exist
