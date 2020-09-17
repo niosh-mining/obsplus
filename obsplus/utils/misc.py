@@ -17,7 +17,6 @@ from typing import (
     Optional,
     Callable,
     Union,
-    Sequence,
     TypeVar,
     Collection,
     Dict,
@@ -288,7 +287,7 @@ def iterate(obj):
         return ()
     if isinstance(obj, str):
         return (obj,)
-    return obj if isinstance(obj, Sequence) else (obj,)
+    return obj if isinstance(obj, Iterable) else (obj,)
 
 
 class DummyFile(object):

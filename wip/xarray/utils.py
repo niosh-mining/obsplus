@@ -106,8 +106,8 @@ def trim_waveform_array(
 
 
 def _prepare_trim_output(dar, out, remove_nan):
-    """ prepare the output of trim function by adjusting starttimes, deleting
-    temporary coord, and removing nan output """
+    """prepare the output of trim function by adjusting starttimes, deleting
+    temporary coord, and removing nan output"""
     # TODO remove this when xarray issue # 1428 gets resolved
     if (dar.starttime == out.starttime).all():  # starttimes didnt update
         fill_values = out.coords["_trim"].fillna(0.0)
@@ -130,7 +130,7 @@ def _overwrite_group_values(dar: xr.DataArray, func: Callable):
 
 
 def _get_trim_data_array(dar, trim, is_timestamp):
-    """ return a data array that shares some dims with dar for trimming.
+    """return a data array that shares some dims with dar for trimming.
     Values in data array will be referenced from the start of each waveform
     rather than a timestamp"""
     # figure out what trim is turn it into a data array
@@ -160,7 +160,7 @@ def _trim_array(dar: xr.DataArray):  # , trim_coord: str,
 
 
 def get_seed_id_df(dar: xr.DataArray) -> pd.DataFrame:
-    """ return a dataframe with network station location channel
+    """return a dataframe with network station location channel
     from seed_id on a detex data array"""
     ser = dar.seed_id.to_pandas() if isinstance(dar, xr.DataArray) else dar
     ser_ind = pd.Series(np.array(ser.index), index=ser.index)
@@ -415,8 +415,8 @@ def reset_time(dar: xr.DataArray, inplace=False) -> xr.DataArray:
 
 
 def _add_level(dar, level, dim="seed_id", coord=None):
-    """ given a data array, add the level the aggregation is to occur on
-     to the coord """
+    """given a data array, add the level the aggregation is to occur on
+    to the coord"""
     new_coord = None
     assert level in AGG_LEVEL_MAP
     if level == "all":  # set all the seed_ids to 1
@@ -431,8 +431,8 @@ def _add_level(dar, level, dim="seed_id", coord=None):
 
 
 def _adjust_coord(dar, coord, coord_map, level, dim):
-    """ create new dataframe that will be joined back to aggregated data
-    array """
+    """create new dataframe that will be joined back to aggregated data
+    array"""
     # TODO this is ugly and probably not efficient, clean up
     assert coord in dar.coords, f"{coord} is not found in coord of {dar}"
     # convert to dataframe and replace any full seed str with substr

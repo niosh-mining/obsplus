@@ -486,6 +486,16 @@ class TestGetEvents:
         crandall_dataset.event_client.write(cat_name, "QuakeML")
         return EventBank(path)
 
+    @pytest.fixture
+    def ebank_with_deleted_files(self, ebank):
+        """Create an event bank and delete all but 1 qml."""
+        df = ebank.read_index()
+        for path in df["path"][:-1]:
+            file_path = Path(str(ebank.bank_path) + path)
+            assert file_path.exists()
+            file_path.unlink()
+        return ebank
+
     def test_no_params(self, bing_ebank, bingham_catalog):
         """ ensure a basic query can get an event """
         cat = bing_ebank.get_events()
@@ -534,6 +544,19 @@ class TestGetEvents:
         minmag = 2.0
         # Get the events; add a query for good measure
         assert len(multiple_event_file.get_events(minmagnitude=minmag)) == 3
+
+    def test_deleted_file(self, ebank_with_deleted_files):
+        """Ensure trying to read a non-existent file returns empty catalog."""
+        ebank = ebank_with_deleted_files
+        df = ebank.read_index()
+        eid = df["event_id"].iloc[0]
+        with pytest.warns(UserWarning):
+            cat = ebank.get_events(event_id=eid)
+        assert len(cat) == 0
+        # But any files that still exist should be loadable
+        with pytest.warns(UserWarning):
+            cat = ebank.get_events()
+        assert len(cat)
 
 
 class TestPutEvents:

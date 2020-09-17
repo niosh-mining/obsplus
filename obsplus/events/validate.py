@@ -124,7 +124,7 @@ def check_duplicate_picks(event: Event):
 
 
 @validator("obsplus", Event)
-def check_pick_order(event: Event,):
+def check_pick_order(event: Event):
     """
     Ensure:
         1. There are no S picks before P picks on any station

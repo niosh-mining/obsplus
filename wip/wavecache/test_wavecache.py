@@ -42,8 +42,8 @@ class TestBasics:
         assert st2 is st
 
     def test_add_processor(self, wavecache):
-        """ ensure when a processor is added it runs on the streams, and all
-        processors can be cleared. """
+        """ensure when a processor is added it runs on the streams, and all
+        processors can be cleared."""
         inds = [{}, {}]
         index = 0
 
@@ -82,8 +82,8 @@ class TestBasics:
             assert not hasattr(tr, "new_attr")
 
     def test_waveforms_are_sliced(self, wavecache):
-        """ ensure if the starttime/endtime are specified the waveforms are
-        trimmed to desired time. """
+        """ensure if the starttime/endtime are specified the waveforms are
+        trimmed to desired time."""
         # get time of first trace, set trim times to one second in
         st = wavecache.get_waveforms()
         stats = st[0].stats

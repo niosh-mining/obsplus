@@ -6,7 +6,7 @@ import time
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
-from os.path import exists, getmtime
+from os.path import getmtime
 from pathlib import Path
 from typing import Optional, Union, Sequence, Set
 
@@ -400,11 +400,13 @@ class EventBank(_Bank):
         map_kwargs = dict(chunksize=chunksize)
         try:
             mapped_values = self._map(read_func, paths.values, **map_kwargs)
-            cat = reduce(add, mapped_values)
+            non_none_values = (x for x in mapped_values if x is not None)
+            cat = reduce(add, non_none_values)
         except TypeError:  # empty events
             cat = obspy.Catalog()
         # Make sure only the events of interest are included
-        return obspy.Catalog([eve for eve in cat if eve.resource_id.id in eids.values])
+        events = [eve for eve in cat if eve.resource_id.id in eids.values]
+        return obspy.Catalog(events=events)
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
@@ -504,7 +506,6 @@ class EventBank(_Bank):
         if rid in df.index:  # event needs to be updated
             path = df.loc[rid, "path"]
             save_path = bank_path + path
-            assert exists(save_path)
             if not overwrite_existing:  # dont update existing
                 return
         else:  # event file does not yet exist
