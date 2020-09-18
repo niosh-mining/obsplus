@@ -4,19 +4,22 @@ functions for merging catalogs together
 
 import warnings
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, List, Union
 
-from obspy.core.event import Catalog, Origin, Event
+import pandas as pd
+from obspy.core.event import Catalog, Origin, Event, Pick
 
+import obsplus
 from obsplus import validate_catalog
 from obsplus.utils.events import bump_creation_version
+from obsplus.utils import to_timedelta64
 
 
 def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
     """
     Merge picks and amplitudes of two events together.
 
-    This function attempts to merge pciks and amplitudes of two events
+    This function attempts to merge picks and amplitudes of two events
     together that may have different resource_ids in some attributes. The
     second event is imposed on the first which is modified in place.
 
@@ -188,6 +191,52 @@ def _associate_picks(old_eve, new_event, new_origin):
         # get corresponding old pick and swap resource id of arrival
         old_pick = old_pick_dict[new_pick_hash]
         arrival.pick_id = old_pick.resource_id
+
+
+def merge_new_picks(
+    catalog: Catalog, new_catalog_or_picks: Union[Catalog, List[Pick]]
+) -> Catalog:
+    """
+    Merge new picks into a catalog.
+
+    Merges picks in new_catalog into catalog. For each event in catalog,
+    the picks from new_catalog with the closest median pick time will be
+    added to the event. If any new picks have the same seed_id and phase hint
+    as the old picks the old picks will be marked as rejected.
+
+    Parameters
+    ----------
+    catalog
+        The base catalog which will be modified in place.
+    new_catalog_or_picks
+        A new catalog which contains new picks, or a list of Picks to
+        merge into the catalog.
+    """
+
+    def _get_pick_median(picks):
+        """Return the median of the picks."""
+        pdf = obsplus.picks_to_df(picks)
+        med = to_timedelta64(pdf["time"].astype(int).median())
+        return med
+
+    def _get_new_catalog():
+        if not isinstance(new_catalog_or_picks, Catalog):
+            new_cat = Catalog(events=[Event(picks=new_catalog_or_picks)])
+        else:
+            new_cat = new_catalog_or_picks
+        return new_cat
+
+    def _get_median_pick_df(catalog):
+        """Return picks from new catalog closest to picks in old catalog."""
+        out = []
+        for event in catalog:
+            med = _get_pick_median(event)
+            out.append({"event_id": event.resource_id, "mpick": med, "event": event})
+        return pd.DataFrame(out)
+
+    # new_df = _get_median_pick_df(_get_new_catalog())
+    # old_df = _get_median_pick_df(catalog).sort_values("mpick")
+    print("hey")
 
 
 # ---------- silly hash functions for getting around resource_ids (sorta)

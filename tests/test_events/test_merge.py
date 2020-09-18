@@ -292,3 +292,11 @@ class TestAttachNewOrigin:
         self.origin_is_preferred(cat1, origin)
         assert origin in cat1[0].origins
         assert cat1[0].origins[-1] == origin
+
+
+class TestMergeNewPicks:
+    """Tests for merging new picks into old catalogs."""
+
+    @pytest.fixture
+    def catalog_to_merge(self, bingham_cat):
+        """Create a catalog to merge into bingham_cat."""
