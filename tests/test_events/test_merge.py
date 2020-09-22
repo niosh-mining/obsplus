@@ -4,11 +4,14 @@ Tests for merging catalogs together.
 from glob import glob
 from os.path import join
 
+import numpy as np
 import obspy
+import obspy.core.event as ev
 import pytest
 
 from obsplus import validate_catalog
-from obsplus.events.merge import merge_events, attach_new_origin
+from obsplus.events.merge import merge_events, attach_new_origin, associate_merge
+from obsplus.utils import yield_obj_parent_attr
 
 CAT = obspy.read_events()
 ORIGINS = [ori for eve in CAT for ori in eve.origins]
@@ -297,6 +300,48 @@ class TestAttachNewOrigin:
 class TestMergeNewPicks:
     """Tests for merging new picks into old catalogs."""
 
-    @pytest.fixture
-    def catalog_to_merge(self, bingham_cat):
-        """Create a catalog to merge into bingham_cat."""
+    @pytest.fixture()
+    def merge_base_event(self, bingham_catalog):
+        """The base event for merging."""
+        event = bingham_catalog[0].copy()
+        return event
+
+    @pytest.fixture()
+    def simple_catalog_to_merge(self, bingham_catalog):
+        """
+        Create a simple catalog to merge into bingham_cat using only one event.
+        """
+        cat = obspy.Catalog(events=bingham_catalog[:2]).copy()
+        # drop first pick
+        cat[0].picks = cat[0].picks[1:]
+        # modify the picks to whole seconds, reset pick IDS
+        for pick, _, _ in yield_obj_parent_attr(cat, ev.Pick):
+            pick.time -= (pick.time.timestamp) % 1
+            pick.id = ev.ResourceIdentifier(referred_object=pick)
+        return cat
+
+    @pytest.fixture()
+    def miss_merge_catalog(self, bingham_catalog):
+        """
+        Create a catalog whose events are too far in time to be merged.
+        """
+        cat = obspy.Catalog(events=bingham_catalog[2:]).copy()
+        return cat
+
+    def test_picks_merged(self, simple_catalog_to_merge, merge_base_event):
+        """Test merging. """
+        merged = associate_merge(merge_base_event, simple_catalog_to_merge)
+        # iterate and test each pick
+        first_pick = merged.picks[0]
+        assert (first_pick).time.timestamp % 1 != 0
+        for pick in merged.picks[1:]:
+            remain = pick.time.timestamp % 1
+            close_to_1 = np.isclose(remain, 1, atol=1e-05)
+            close_to_0 = np.isclose(remain, 0, atol=1e-05)
+            assert close_to_0 or close_to_1
+
+    def test_miss_merge(self, merge_base_event, miss_merge_catalog):
+        """Ensure a catalog which is far away from the base does nothing."""
+        original = merge_base_event.copy()
+        cat = associate_merge(merge_base_event, miss_merge_catalog)
+        assert cat == original

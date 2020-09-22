@@ -4,15 +4,13 @@ functions for merging catalogs together
 
 import warnings
 from collections import OrderedDict
-from typing import Optional, List, Union
+from typing import Optional
 
-import pandas as pd
-from obspy.core.event import Catalog, Origin, Event, Pick
+from obspy.core.event import Catalog, Origin, Event
 
 import obsplus
 from obsplus import validate_catalog
 from obsplus.utils.events import bump_creation_version
-from obsplus.utils import to_timedelta64
 
 
 def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
@@ -193,50 +191,65 @@ def _associate_picks(old_eve, new_event, new_origin):
         arrival.pick_id = old_pick.resource_id
 
 
-def merge_new_picks(
-    catalog: Catalog, new_catalog_or_picks: Union[Catalog, List[Pick]]
-) -> Catalog:
+def associate_merge(
+    event: Event,
+    new_catalog: Catalog,
+    median_tolerance: float = 1.0,
+    delete_old: bool = False,
+) -> Event:
     """
-    Merge new picks into a catalog.
+    Merge the "closest" event in a catalog into an existing event.
 
-    Merges picks in new_catalog into catalog. For each event in catalog,
-    the picks from new_catalog with the closest median pick time will be
-    added to the event. If any new picks have the same seed_id and phase hint
-    as the old picks the old picks will be marked as rejected.
+    Finds the closest event in new_catalog to event using median pick
+    times, then calls :func:`obsplus.events.merge.merge_events` to merge
+    the events together.
 
     Parameters
     ----------
-    catalog
-        The base catalog which will be modified in place.
-    new_catalog_or_picks
-        A new catalog which contains new picks, or a list of Picks to
-        merge into the catalog.
+    event
+        The base event which will be modified in place.
+    new_catalog
+        A new catalog which contains picks, or a list of Picks to
+        merge into the original event.
+    median_tolerance
+        The tolerance, in seconds, of the median pick for associating
+        events in new_catalog_or_picks into event.
+    delete_old
+        Delete any picks/amplitudes in old event if not found in new
+        event.
     """
 
-    def _get_pick_median(picks):
-        """Return the median of the picks."""
-        pdf = obsplus.picks_to_df(picks)
-        med = to_timedelta64(pdf["time"].astype(int).median())
-        return med
-
-    def _get_new_catalog():
+    def _get_new_pick_df(new_catalog_or_picks):
         if not isinstance(new_catalog_or_picks, Catalog):
             new_cat = Catalog(events=[Event(picks=new_catalog_or_picks)])
         else:
             new_cat = new_catalog_or_picks
-        return new_cat
+        return obsplus.picks_to_df(new_cat)
 
-    def _get_median_pick_df(catalog):
-        """Return picks from new catalog closest to picks in old catalog."""
-        out = []
-        for event in catalog:
-            med = _get_pick_median(event)
-            out.append({"event_id": event.resource_id, "mpick": med, "event": event})
-        return pd.DataFrame(out)
+    def _get_pick_median(time_ser):
+        """Return a (close enough) approximation of the median for datetimes"""
+        int_median = int(time_ser.astype(int).median())
+        return int_median
 
-    # new_df = _get_median_pick_df(_get_new_catalog())
-    # old_df = _get_median_pick_df(catalog).sort_values("mpick")
-    print("hey")
+    def _get_associated_event_id(new_picks, old_picks):
+        """Return the associated event id"""
+        new_med = new_picks.groupby("event_id")["time"].apply(_get_pick_median)
+        old_med = _get_pick_median(old_picks["time"])
+        diffs = abs(new_med - old_med)
+        # check on min tolerance, if exceeded return empty
+        if diffs.min() / 1_000_000_000 > median_tolerance:
+            return None
+        return diffs.idxmin()
+
+    assert len(new_catalog) > 0
+    new_pick_df = _get_new_pick_df(new_catalog)
+    old_pick_df = obsplus.picks_to_df(event)
+    eid = _get_associated_event_id(new_pick_df, old_pick_df)
+    new_event = {str(x.resource_id): x for x in new_catalog}.get(eid)
+    # The association failed, just return original event
+    if new_event is None:
+        return event
+    return merge_events(event, new_event, delete_old=delete_old)
 
 
 # ---------- silly hash functions for getting around resource_ids (sorta)
