@@ -2,6 +2,9 @@ obsplus master
   - obsplus.structures.fetcher
     * fixed an edge case were banks with only one file failed to return
        streams (#186).
+  - obsplus.structures.dfextractor
+    * Handled the case of null integers in the NSLC columns and added a logic
+      to force the seed_id column to match the other NSLC columns(#199)
   - obsplus.utils
     * Fixed issue with duplicate channels setting incorrect start_dates
       on station level (#188, #190).
@@ -10,6 +13,8 @@ obsplus master
       any seed ids are found which don't have exactly 3 decimals (see #193).
     * Made sure that `SpatialCalculator` returns a meaningful error message if
       required columns are missing from DataFrame inputs (#197).
+    * Fixed issue in df_to_inventory where a location code of '01' was getting
+      converted to '1'. (#199)
   - obsplus.EventBank
     * Added `overwrite_existing` keyword to `put_events` to disable squashing
       existing events if desired (#191).
@@ -17,6 +22,9 @@ obsplus master
   - obsplus.events.pd
     * Made sure that the pre-defined extractors (`*_to_df`) still return all of
       the expected columns if there are no valid objects.
+  - obsplus.stations.pd.inventory_to_df
+    * Made sure that location codes and other NSLC components are handled
+      consistently (#199)
 
 obsplus 0.1.1
   - obsplus.events
