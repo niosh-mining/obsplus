@@ -8,7 +8,7 @@ from obsplus.waveforms.xarray.utils import keep_attrs
 
 
 def _get_frequencies(dar, dim, dim_len=None):
-    """ get a list of frequencies each complex point represents, return in
+    """get a list of frequencies each complex point represents, return in
     dict for coords input"""
     dim_len = dim_len or len(dar[dim])  # the req_len of the dimension
     try:  # if metadata are still attached (they come off easy)

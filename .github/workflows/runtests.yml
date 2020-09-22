@@ -15,7 +15,7 @@ jobs:
           python-version: 3.7
 
       - name: install linting packages
-        run: pip install -r tests/requirements.txt
+        run: pip install pre-commit
 
       - name: run all precommits
         run: pre-commit run flake8 --files obsplus/**/*

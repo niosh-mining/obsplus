@@ -60,7 +60,7 @@ def obspy_to_array_dict(
 
 
 def _iter_events_assemble(waveform: Dict[Any, Union[Stream, Trace]]):
-    """ given a dict of the form {event_id: waveforms}, create a new dict of
+    """given a dict of the form {event_id: waveforms}, create a new dict of
     the structure {sampling_rage: {event_id: waveforms}}"""
     out = defaultdict(lambda: defaultdict(obspy.Stream))
     for item, value in waveform.items():
@@ -75,8 +75,8 @@ def _iter_events_assemble(waveform: Dict[Any, Union[Stream, Trace]]):
 def _split_by_sampling_rate(
     st: Union[obspy.Stream, obspy.Trace]
 ) -> Dict[int, obspy.Stream]:
-    """ given a waveforms, split the waveforms into dicts with unique sampling
-    rates """
+    """given a waveforms, split the waveforms into dicts with unique sampling
+    rates"""
     if isinstance(st, obspy.Trace):  # convert to waveforms if trace passed
         st = obspy.Stream(traces=[st])
     # iterate and separate sampling_rates
@@ -231,8 +231,8 @@ def _trace_to_datarray(trace: obspy.Trace) -> xr.DataArray:
 
 
 def _get_starttime_df(waveform):
-    """ return a df of starttimes with stream_id as coulmns and seed_id as
-    index """
+    """return a df of starttimes with stream_id as coulmns and seed_id as
+    index"""
     start_time = {
         (stream_id, tr.id): tr.stats.starttime.timestamp
         for stream_id, st in waveform.items()
