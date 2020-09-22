@@ -9,7 +9,7 @@ from typing import Mapping, Sequence, Optional, Dict
 
 import pandas as pd
 
-from obsplus.constants import column_function_map_type, TIME_COLUMNS
+from obsplus.constants import column_function_map_type, TIME_COLUMNS, NSLC
 from obsplus.utils.time import to_datetime64
 from obsplus.utils.pd import (
     apply_funcs_to_columns,
@@ -70,6 +70,9 @@ class DataFrameExtractor(UserDict):
         Columns that are UTCDateTime objects. Will correctly handle
         UTCDateTime-able objects (like date-time strings, floats, etc).
     """
+
+    nslc = set(NSLC)
+    nslc.add("seed_id")
 
     def __init__(
         self,
@@ -202,8 +205,19 @@ class DataFrameExtractor(UserDict):
             df.pipe(apply_funcs_to_columns, funcs=self._column_funcs)
             .pipe(order_columns, required_columns=self._base_required_columns)
             .pipe(cast_dtypes, dtype=self.dtypes)
-            .pipe(replace_or_swallow, {"nan": "", "None": ""})
+            .pipe(replace_or_swallow, {"nan": "", "None": "", "<NA>": ""})
         )
+        # If the extracted info contains NSLC information, make sure the seed_id matches
+        if self.nslc.issubset(out.columns):
+            out["seed_id"] = (
+                out["network"]
+                + "."
+                + out["station"]
+                + "."
+                + out["location"]
+                + "."
+                + out["channel"]
+            )
         return out
 
     def __str__(self):

@@ -29,9 +29,11 @@ from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 def _int_column_to_str(ser, width=2, fillchar="0"):
     """Convert an int column to a string"""
     # Do nothing if the column is already a string
-    if is_string_dtype(ser):
-        return ser
-    return ser.astype(str).str.pad(width=width, fillchar=fillchar)
+    if not is_string_dtype(ser):
+        ser = ser.astype("Int64").astype(str).str.pad(width=width, fillchar=fillchar)
+    if len(ser.str.split(".", expand=True).columns) > 1:
+        raise TypeError("NSLC information cannot contain '.'")
+    return ser
 
 
 # maps obsplus datatypes to functions to apply to columns to obtain dtype
@@ -39,7 +41,7 @@ OPS_DTYPE_FUNCS = {
     "ops_datetime": to_datetime64,
     "ops_timedelta": to_timedelta64,
     "utcdatetime": to_utc,
-    "location_code": _int_column_to_str,
+    "nslc_code": _int_column_to_str,
 }
 
 # the dtype of the columns
@@ -47,7 +49,7 @@ OPS_DTYPES = {
     "ops_datetime": "datetime64",
     "ops_timedelta": "timedelta64",
     "utcdatetime": obspy.UTCDateTime,
-    "location_code": str,
+    "nslc_code": str,
 }
 
 

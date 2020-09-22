@@ -612,7 +612,7 @@ class TestReadPicks:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
-        """Test extacting info from an event directory."""
+        """Test extracting info from an event directory."""
         df = picks_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -634,11 +634,11 @@ class TestReadPicks:
 
     def test_picks_one_digit_location(self):
         """
-        Ensure 1 digit location codes get padded to comply with seed convention.
+        Ensure 1 digit location codes get preserved
         """
         picks = pick_generator(["UU.TMU.1.HHZ", "UU.TMU.01.HHZ"])
         df = picks_to_df(picks)
-        # there should be only one unique location code and seed_id.
+        # there should be two unique location code and seed_ids.
         assert len(set(df["location"])) == 2
         assert len(set(df["seed_id"])) == 2
 

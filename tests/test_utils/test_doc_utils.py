@@ -62,4 +62,4 @@ class TestFormatDtypes:
     def test_formatting(self):
         """Test for formatting StationDtypes."""
         out = format_dtypes(STATION_DTYPES)
-        assert "\nstation: str" in out
+        assert "\nstation: nslc_code" in out
