@@ -24,9 +24,13 @@ obsplus master
   - obsplus.events.pd
     * Made sure that the pre-defined extractors (`*_to_df`) still return all of
       the expected columns if there are no valid objects.
-  - obsplus.stations.pd.inventory_to_df
+  - obsplus.stations
     * Made sure that location codes and other NSLC components are handled
-      consistently (#199)
+      consistently within stations_to_df (#199).
+  - obsplus.events.merge
+    # Added a new function called associate merge for merging one event with
+      the closest (defined by median pick time) of several possible events
+      (#200).
 
 obsplus 0.1.1
   - obsplus.events
