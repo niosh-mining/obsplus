@@ -4,8 +4,9 @@ functions for merging catalogs together
 
 import warnings
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Union
 
+import numpy as np
 from obspy.core.event import Catalog, Origin, Event
 
 import obsplus
@@ -193,7 +194,7 @@ def _associate_picks(old_eve, new_event, new_origin):
 
 def associate_merge(
     event: Event,
-    new_catalog: Catalog,
+    new_catalog: Union[Catalog, Event],
     median_tolerance: float = 1.0,
     delete_old: bool = False,
 ) -> Event:
@@ -209,8 +210,7 @@ def associate_merge(
     event
         The base event which will be modified in place.
     new_catalog
-        A new catalog which contains picks, or a list of Picks to
-        merge into the original event.
+        A new catalog or event which contains picks.
     median_tolerance
         The tolerance, in seconds, of the median pick for associating
         events in new_catalog_or_picks into event.
@@ -219,16 +219,11 @@ def associate_merge(
         event.
     """
 
-    def _get_new_pick_df(new_catalog_or_picks):
-        if not isinstance(new_catalog_or_picks, Catalog):
-            new_cat = Catalog(events=[Event(picks=new_catalog_or_picks)])
-        else:
-            new_cat = new_catalog_or_picks
-        return obsplus.picks_to_df(new_cat)
-
     def _get_pick_median(time_ser):
-        """Return a (close enough) approximation of the median for datetimes"""
-        int_median = int(time_ser.astype(int).median())
+        """
+        Return a (close enough) approximation of the median for datetimes in ns.
+        """
+        int_median = int(time_ser.astype(np.int64).median())
         return int_median
 
     def _get_associated_event_id(new_picks, old_picks):
@@ -241,8 +236,11 @@ def associate_merge(
             return None
         return diffs.idxmin()
 
+    # Get list-like of events from new_catalog
+    new_cat = new_catalog if isinstance(new_catalog, Catalog) else [new_catalog]
     assert len(new_catalog) > 0
-    new_pick_df = _get_new_pick_df(new_catalog)
+    # Get dataframes of event info
+    new_pick_df = obsplus.picks_to_df(new_cat)
     old_pick_df = obsplus.picks_to_df(event)
     eid = _get_associated_event_id(new_pick_df, old_pick_df)
     new_event = {str(x.resource_id): x for x in new_catalog}.get(eid)
