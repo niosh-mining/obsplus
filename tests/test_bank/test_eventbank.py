@@ -666,6 +666,18 @@ class TestPutEvents:
         mtimes_2 = [x.stat().st_mtime for x in files]
         assert mtimes_1 == mtimes_2
 
+    def test_put_events_no_update_index_timestamp(self, ebank):
+        """
+        Ensure events can be put into the bank without updating the index
+        timestamp.
+        """
+        last_update = ebank.last_updated
+        cat = obspy.read_events()
+        ebank.put_events(cat, update_timestamp=False)
+        time.sleep(0.001)
+        new_update_time = ebank.last_updated
+        assert last_update == new_update_time
+
 
 class TestProgressBar:
     """ Tests for the progress bar functionality of banks. """

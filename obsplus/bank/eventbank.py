@@ -255,6 +255,7 @@ class EventBank(_Bank):
         self,
         bar: Optional[ProgressBar] = None,
         paths: Optional[bank_subpaths_type] = None,
+        update_timestamp: bool = True,
     ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
@@ -263,12 +264,17 @@ class EventBank(_Bank):
         ----------
         {bar_parameter_description}
         {paths_description}
+        update_timestamp
+            If True, update the time stamp in the index. The timestamp is used
+            when update_index is called to determine which files have not yet
+            been included in the index. In most cases the default value
+            produces the desired behavior.
         """
         bank_path = str(self.bank_path)
 
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
-        update_time = time.time()
+        update_time = time.time() if update_timestamp else None
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
         update_file_feeder = self._measure_iterator(file_yielder, bar)
@@ -362,9 +368,10 @@ class EventBank(_Bank):
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
             with suppress_warnings():  # ignore pandas collection warning
-                timestamp = update_time or time.time()
-                dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
-                dft.to_sql(self._time_node, con, if_exists="replace", index=False)
+                if update_time is not None:
+                    timestamp = update_time or time.time()
+                    dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
+                    dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
 
@@ -435,6 +442,7 @@ class EventBank(_Bank):
         update_index: bool = True,
         bar: Optional[ProgressBar] = None,
         overwrite_existing=True,
+        update_timestamp=True,
     ) -> "EventBank":
         """
         Put events into the EventBank.
@@ -455,6 +463,10 @@ class EventBank(_Bank):
         overwrite_existing
             If True, overwrite any existing events in the EventBank which
             share an event id with the new events.
+        update_timestamp
+            If True, update the timestamp which keeps track of the last time
+            the index was updated. The default value of True should be used
+            in most cases. Does nothing if update_index is False.
 
         Notes
         -----
@@ -481,7 +493,7 @@ class EventBank(_Bank):
         paths_raw = list(self._map(new_func, event_feeder))  # can include None
         if update_index:  # parse newly saved files and update index
             paths = [x for x in paths_raw if x is not None]  # remove None
-            self.update_index(paths=paths)
+            self.update_index(paths=paths, update_timestamp=update_timestamp)
         return self
 
     @staticmethod
