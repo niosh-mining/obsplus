@@ -112,7 +112,9 @@ class EventBank(_Bank):
 
     Attributes
     ----------
-    name_structure
+    allow_update_timestamp
+        If True, allow the bank to update its index timestamp. The default value
+        of True is appropriate for all but some very complicated setups.
 
     Examples
     --------
@@ -144,6 +146,7 @@ class EventBank(_Bank):
 
     namespace = "/events"
     index_name = ".index.db"  # name of index file
+    allow_update_timestamp = True
     _min_files_for_bar = 50
     _dtypes_output = EVENT_TYPES_OUTPUT
     _dtypes_input = EVENT_TYPES_INPUT
@@ -362,9 +365,10 @@ class EventBank(_Bank):
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
             with suppress_warnings():  # ignore pandas collection warning
-                timestamp = update_time or time.time()
-                dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
-                dft.to_sql(self._time_node, con, if_exists="replace", index=False)
+                if self.allow_update_timestamp:
+                    timestamp = update_time or time.time()
+                    dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
+                    dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
 
