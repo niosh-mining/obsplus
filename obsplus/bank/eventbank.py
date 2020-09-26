@@ -112,7 +112,9 @@ class EventBank(_Bank):
 
     Attributes
     ----------
-    name_structure
+    allow_update_timestamp
+        If True, allow the bank to update its index timestamp. The default value
+        of True is appropriate for all but some very complicated setups.
 
     Examples
     --------
@@ -144,6 +146,7 @@ class EventBank(_Bank):
 
     namespace = "/events"
     index_name = ".index.db"  # name of index file
+    allow_update_timestamp = True
     _min_files_for_bar = 50
     _dtypes_output = EVENT_TYPES_OUTPUT
     _dtypes_input = EVENT_TYPES_INPUT
@@ -255,7 +258,6 @@ class EventBank(_Bank):
         self,
         bar: Optional[ProgressBar] = None,
         paths: Optional[bank_subpaths_type] = None,
-        update_timestamp: bool = True,
     ) -> "EventBank":
         """
         Iterate files in bank and add any modified since last update to index.
@@ -264,17 +266,12 @@ class EventBank(_Bank):
         ----------
         {bar_parameter_description}
         {paths_description}
-        update_timestamp
-            If True, update the time stamp in the index. The timestamp is used
-            when update_index is called to determine which files have not yet
-            been included in the index. In most cases the default value
-            produces the desired behavior.
         """
         bank_path = str(self.bank_path)
 
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
-        update_time = time.time() if update_timestamp else None
+        update_time = time.time()
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
         update_file_feeder = self._measure_iterator(file_yielder, bar)
@@ -368,7 +365,7 @@ class EventBank(_Bank):
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
             with suppress_warnings():  # ignore pandas collection warning
-                if update_time is not None:
+                if self.allow_update_timestamp:
                     timestamp = update_time or time.time()
                     dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
                     dft.to_sql(self._time_node, con, if_exists="replace", index=False)
@@ -442,7 +439,6 @@ class EventBank(_Bank):
         update_index: bool = True,
         bar: Optional[ProgressBar] = None,
         overwrite_existing=True,
-        update_timestamp=True,
     ) -> "EventBank":
         """
         Put events into the EventBank.
@@ -463,10 +459,6 @@ class EventBank(_Bank):
         overwrite_existing
             If True, overwrite any existing events in the EventBank which
             share an event id with the new events.
-        update_timestamp
-            If True, update the timestamp which keeps track of the last time
-            the index was updated. The default value of True should be used
-            in most cases. Does nothing if update_index is False.
 
         Notes
         -----
@@ -493,7 +485,7 @@ class EventBank(_Bank):
         paths_raw = list(self._map(new_func, event_feeder))  # can include None
         if update_index:  # parse newly saved files and update index
             paths = [x for x in paths_raw if x is not None]  # remove None
-            self.update_index(paths=paths, update_timestamp=update_timestamp)
+            self.update_index(paths=paths)
         return self
 
     @staticmethod

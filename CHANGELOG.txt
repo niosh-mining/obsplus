@@ -21,6 +21,8 @@ obsplus master
     * Fixes issue with read inventory casting ints to datetime on pd 1.1.0.
     * Fixed issue which caused reading deleted files from an EventBank to
       raise a TypeError (#198).
+    * Added an obscure attribute called 'allow_update_index' for the rare
+      cases when index timestamp shouldn't be updated (#201).
   - obsplus.events.pd
     * Made sure that the pre-defined extractors (`*_to_df`) still return all of
       the expected columns if there are no valid objects.
