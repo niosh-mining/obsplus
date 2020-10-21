@@ -1,5 +1,5 @@
 pytest
-# coveralls current requires coverage < 5.0
+# coveralls currently requires coverage < 5.0
 coverage < 5.0
 pytest-cov
 coveralls
