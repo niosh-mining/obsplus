@@ -84,15 +84,7 @@ def _merge_picks(eve1, eve2, reject_old=False):
 
     # reject old
     if reject_old:
-        for x in eve1.picks:
-            try:
-                wid = _hash_wid(x, "phase_hint")
-            except AttributeError:
-                # It is not a valid Pick... reject it
-                x.evaluation_status = "rejected"
-            else:
-                if wid not in widp_p2:
-                    x.evaluation_status = "rejected"
+        _reject_old(eve1.picks, "phase_hint", widp_p2)
         # eve1.picks = [x for x in eve1.picks if _hash_wid(x, "phase_hint") in widp_p2]
 
 
@@ -122,16 +114,21 @@ def _merge_amplitudes(eve1, eve2, reject_old=False):
         eve1.amplitudes.append(pid1_a2[key])
     # reject old
     if reject_old:
-        for x in eve1.amplitudes:
-            try:
-                wid = _hash_wid(x, "magnitude_hint")
-            except AttributeError:
-                # It is not a valid Amplitude... reject it
-                x.evaluation_status = "rejected"
-            else:
-                if wid not in pid1_a2:
-                    x.evaluation_status = "rejected"
+        _reject_old(eve1.amplitudes, "magnitude_hint", pid1_a2)
         # eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
+
+
+def _reject_old(objs, hash_attr, checklist):
+    """ Set the evaluation status of outdated objects to 'rejected' """
+    for x in objs:
+        try:
+            wid = _hash_wid(x, hash_attr)
+        except AttributeError:
+            # It is not a valid Amplitude... reject it
+            x.evaluation_status = "rejected"
+        else:
+            if wid not in checklist:
+                x.evaluation_status = "rejected"
 
 
 def attach_new_origin(
