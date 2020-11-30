@@ -10,7 +10,12 @@ import obspy.core.event as ev
 import pytest
 
 from obsplus import validate_catalog
-from obsplus.events.merge import merge_events, attach_new_origin, associate_merge
+from obsplus.events.merge import (
+    merge_events,
+    attach_new_origin,
+    associate_merge,
+    _hash_wids,
+)
 from obsplus.utils import yield_obj_parent_attr
 
 CAT = obspy.read_events()
@@ -98,8 +103,16 @@ class TestMergePicks:
     def merge_catalogs_delete_pick(self, qml_to_merge_basic):
         """ Delete a pick and amplitude from the new cat, merge with old."""
         cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
-        cat2[0].picks.pop(0)
+        # Get rid of the first arrival and its associated pick
+        arrivals = cat2[0].preferred_origin().arrivals
+        pick_id = arrivals[0].pick_id
+        assert not pick_id.get_referred_object().evaluation_status == "rejected"
+        cat2[0].picks = [x for x in cat2[0].picks if not x.resource_id == pick_id]
+        arrivals.pop(0)
+        # Get rid of the first amplitude
         cat2[0].amplitudes.pop(0)
+        validate_catalog(cat1)
+        validate_catalog(cat2)
         merge_events(cat1[0], cat2[0])
         return cat1, cat2
 
@@ -135,7 +148,7 @@ class TestMergePicks:
 
     # tests
     def test_pick_times(self, merged_catalogs):
-        """ test that the times are the same in the picks """
+        """ test that the times are the merged_catalogssame in the picks """
         cat1, cat2 = merged_catalogs
         assert len(cat1[0].picks) == len(cat2[0].picks)
         for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
@@ -165,23 +178,36 @@ class TestMergePicks:
     def test_cat1_amplitude_ids_unchanged(
         self, merged_catalogs, amplitude_resource_ids
     ):
-        """ ensure the resource IDs on the amplitudes havent changed """
+        """ ensure the resource IDs on the amplitudes haven't changed """
         cat1, _ = merged_catalogs
         new_amplitude_ids = [x.resource_id.id for x in cat1[0].amplitudes]
         assert amplitude_resource_ids == new_amplitude_ids
 
-    def test_deleted_pick(self, merge_catalogs_delete_pick):
+    def test_reject_old(self, merge_catalogs_delete_pick):
         """
         Test that when a pick is deleted from the new cat_name and the
-        CATALOG_PATH are merged it is also deleted from the old.
+        CATALOG_PATH are merged it is also rejected on the old.
         """
         cat1, cat2 = merge_catalogs_delete_pick
-        assert len(cat1[0].picks) == len(cat2[0].picks)
-        for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
-            assert pick1.time == pick2.time
-        assert len(cat1[0].amplitudes) == len(cat2[0].amplitudes)
-        for amp1, amp2 in zip(cat1[0].amplitudes, cat2[0].amplitudes):
-            assert amp1.generic_amplitude == amp2.generic_amplitude
+        # Make sure both events are still valid
+        validate_catalog(cat1)
+        validate_catalog(cat2)
+
+        def _check_vals(attr, val, hash_attr):
+            assert len(cat1[0].picks) == len(cat2[0].picks) + 1
+            eve1_wids = _hash_wids(getattr(cat1[0], attr), hash_attr)
+            eve2_wids = _hash_wids(getattr(cat1[0], attr), hash_attr)
+            assert set(eve2_wids).issubset(set(eve1_wids))
+            for key, obj in eve1_wids.items():
+                if key in eve2_wids:
+                    assert getattr(obj, val) == getattr(eve2_wids[key], val)
+                else:
+                    assert obj.evaluation_status == "rejected"
+
+        # Check the picks
+        _check_vals("picks", "time", "phase_hint")
+        # Check the amplitudes
+        _check_vals("amplitudes", "generic_amplitude", "magnitude_hint")
 
     def test_add_pick(self, merge_catalogs_add_pick):
         """

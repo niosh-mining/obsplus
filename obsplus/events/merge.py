@@ -14,7 +14,7 @@ from obsplus import validate_catalog
 from obsplus.utils.events import bump_creation_version
 
 
-def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
+def merge_events(eve1: Event, eve2: Event, reject_old: bool = True) -> Event:
     """
     Merge picks and amplitudes of two events together.
 
@@ -28,16 +28,16 @@ def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
         The first (former) event
     eve2 : Catalog
         The second (new) event
-    delete_old : bool
-        If True delete from eve1 anything not in eve2
+    reject_old : bool
+        If True, reject anything in eve1 not in eve2
 
     Returns
     -------
     Event
         The merged events
     """
-    _merge_picks(eve1, eve2, delete_old=delete_old)
-    _merge_amplitudes(eve1, eve2, delete_old=delete_old)
+    _merge_picks(eve1, eve2, reject_old=reject_old)
+    _merge_amplitudes(eve1, eve2, reject_old=reject_old)
     return eve1
 
 
@@ -60,7 +60,7 @@ def _generate_pick_phase_maps(eve1, eve2):
     return maps
 
 
-def _merge_picks(eve1, eve2, delete_old=False):
+def _merge_picks(eve1, eve2, reject_old=False):
     """
     Merge a list of objects that have waveform ids (arrivals, picks,
     amplitudes)
@@ -82,12 +82,13 @@ def _merge_picks(eve1, eve2, delete_old=False):
     for key in set(widp_p2) - set(widp_p1):
         eve1.picks.append(widp_p2[key])
 
-    # delete old
-    if delete_old:
-        eve1.picks = [x for x in eve1.picks if _hash_wid(x, "phase_hint") in widp_p2]
+    # reject old
+    if reject_old:
+        _reject_old(eve1.picks, "phase_hint", widp_p2)
+        # eve1.picks = [x for x in eve1.picks if _hash_wid(x, "phase_hint") in widp_p2]
 
 
-def _merge_amplitudes(eve1, eve2, delete_old=False):
+def _merge_amplitudes(eve1, eve2, reject_old=False):
     """Merge the amplitudes together."""
     attrs_no_update = {"pick_id", "resource_id", "force_resource_id"}
     maps = _generate_pick_phase_maps(eve1, eve2)
@@ -111,9 +112,23 @@ def _merge_amplitudes(eve1, eve2, delete_old=False):
     # for new amplitudes append
     for key in set(pid1_a2) - set(pid1_a1):
         eve1.amplitudes.append(pid1_a2[key])
-    # delete old
-    if delete_old:
-        eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
+    # reject old
+    if reject_old:
+        _reject_old(eve1.amplitudes, "magnitude_hint", pid1_a2)
+        # eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
+
+
+def _reject_old(objs, hash_attr, checklist):
+    """ Set the evaluation status of outdated objects to 'rejected' """
+    for x in objs:
+        try:
+            wid = _hash_wid(x, hash_attr)
+        except AttributeError:
+            # It is not a valid Amplitude... reject it
+            x.evaluation_status = "rejected"
+        else:
+            if wid not in checklist:
+                x.evaluation_status = "rejected"
 
 
 def attach_new_origin(
@@ -147,7 +162,7 @@ def attach_new_origin(
         modifies old_cat in-place, returns old_catalog
     """
     # make sure all the picks/amplitudes in new_event are also in old_event
-    merge_events(old_event, new_event, delete_old=False)
+    merge_events(old_event, new_event, reject_old=False)
     # point the arrivals in the new origin at the old picks
     _associate_picks(old_event, new_event, new_origin)
     # append the origin
@@ -196,7 +211,7 @@ def associate_merge(
     event: Event,
     new_catalog: Union[Catalog, Event],
     median_tolerance: float = 1.0,
-    delete_old: bool = False,
+    reject_old: bool = False,
 ) -> Event:
     """
     Merge the "closest" event in a catalog into an existing event.
@@ -214,8 +229,8 @@ def associate_merge(
     median_tolerance
         The tolerance, in seconds, of the median pick for associating
         events in new_catalog_or_picks into event.
-    delete_old
-        Delete any picks/amplitudes in old event if not found in new
+    reject_old
+        Reject any picks/amplitudes in old event if not found in new
         event.
     """
 
@@ -247,7 +262,7 @@ def associate_merge(
     # The association failed, just return original event
     if new_event is None:
         return event
-    return merge_events(event, new_event, delete_old=delete_old)
+    return merge_events(event, new_event, reject_old=reject_old)
 
 
 # ---------- silly hash functions for getting around resource_ids (sorta)
