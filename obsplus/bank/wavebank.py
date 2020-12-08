@@ -325,10 +325,6 @@ class WaveBank(_Bank):
             kwargs are passed to pandas.read_hdf function
         """
         self.ensure_bank_path_exists()
-        if starttime is not None and endtime is not None:
-            if starttime > endtime:
-                msg = "starttime cannot be greater than endtime."
-                raise ValueError(msg)
         if not self.index_path.exists():
             self.update_index()
         # if no file was created (dealing with empty bank) return empty index

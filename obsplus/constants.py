@@ -350,7 +350,18 @@ EMPTYTD64 = np.timedelta64(0, "s")
 OPSDATA_PATH = Path().home() / "opsdata"
 
 # Number of cores
-CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
+CPU_COUNT = cpu_count() or 4  # fallback to four if None is returned
+
+# supported read_hdf5 kwargs
+READ_HDF5_KWARGS = frozenset(
+    {"columns", "where", "mode", "errors", "start", "stop", "key", "chunksize"}
+)
+
+# keywords associated with get_events
+CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
+NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
+UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
+
 
 # ------------------- type aliases (aliai?)
 
