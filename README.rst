@@ -24,7 +24,7 @@ Code_of_Conduct_
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
 .. _Documentation: https://niosh-mining.github.io/obsplus/versions/latest/index.html
-.. _Support: https://niosh-mining.github.io/obsplus/versions/notebooks/support.html
+.. _Support: https://niosh-mining.github.io/obsplus/versions/latest/notebooks/support.html
 .. _Code: https://github.com/niosh-mining/obsplus
 .. _Change_Log: https://github.com/niosh-mining/obsplus/CHANGELOG.txt
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
