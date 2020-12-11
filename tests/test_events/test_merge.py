@@ -343,7 +343,7 @@ class TestMergeNewPicks:
         # modify the picks to whole seconds, reset pick IDS
         for pick, _, _ in yield_obj_parent_attr(cat, ev.Pick):
             pick.time -= (pick.time.timestamp) % 1
-            pick.id = ev.ResourceIdentifier(referred_object=pick)
+            pick.resource_id = ev.ResourceIdentifier(referred_object=pick)
         return cat
 
     @pytest.fixture()

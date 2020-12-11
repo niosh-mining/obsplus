@@ -21,7 +21,9 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     SMALLDT64,
     LARGEDT64,
+    READ_HDF5_KWARGS,
 )
+from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.misc import READ_DICT, _get_path
 from obsplus.utils.mseed import summarize_mseed
 from obsplus.utils.time import to_datetime64, _dict_times_to_ns
@@ -163,11 +165,8 @@ class _IndexCache:
 
     def __call__(self, starttime, endtime, buffer, **kwargs):
         """ get start and end times, perform in kernel lookup """
-        # get defaults if starttime or endtime is none
-        starttime = None if pd.isnull(starttime) else starttime
-        endtime = None if pd.isnull(endtime) else endtime
-        starttime = to_datetime64(starttime or SMALLDT64)
-        endtime = to_datetime64(endtime or LARGEDT64)
+        starttime, endtime = self._get_times(starttime, endtime)
+        self._validate_kwargs(kwargs)
         # find out if the query falls within one cached times
         con1 = self.cache.t1 <= starttime
         con2 = self.cache.t2 >= endtime
@@ -191,8 +190,30 @@ class _IndexCache:
         con2 = index["endtime"] <= (starttime - buffer)
         return index[~(con1 | con2)]
 
+    @staticmethod
+    def _get_times(starttime, endtime):
+        """Return starttimes and endtimes."""
+        # get defaults if starttime or endtime is none
+        starttime = None if pd.isnull(starttime) else starttime
+        endtime = None if pd.isnull(endtime) else endtime
+        starttime = to_datetime64(starttime or SMALLDT64)
+        endtime = to_datetime64(endtime or LARGEDT64)
+        if starttime is not None and endtime is not None:
+            if starttime > endtime:
+                msg = "starttime cannot be greater than endtime."
+                raise ValueError(msg)
+        return starttime, endtime
+
+    def _validate_kwargs(self, kwargs):
+        """Ensure kwargs are supported."""
+        kwarg_set = set(kwargs)
+        if not kwarg_set.issubset(READ_HDF5_KWARGS):
+            bad_kwargs = kwarg_set - set(READ_HDF5_KWARGS)
+            msg = f"The following kwargs are not supported: {bad_kwargs}. "
+            raise UnsupportedKeyword(msg)
+
     def _set_cache(self, index, starttime, endtime, kwargs):
-        """ cache the current index """
+        """Cache the current index """
         ser = pd.Series(
             {
                 "t1": starttime,

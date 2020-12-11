@@ -16,11 +16,12 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
 import obsplus.utils.misc
-from obsplus.constants import EVENT_DTYPES
 from obsplus import EventBank, copy_dataset
+from obsplus.constants import EVENT_DTYPES
+from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.events import get_preferred
 from obsplus.utils.testing import instrument_methods
-from obsplus.utils.misc import suppress_warnings
+from obsplus.utils.misc import suppress_warnings, get_progressbar
 
 
 def try_permission_sleep(callable, *args, _count=0, **kwargs):
@@ -474,6 +475,11 @@ class TestReadIndexQueries:
         sub = df.select_dtypes([np.datetime64])
         assert {"time", "creation_time", "updated"}.issubset(sub.columns)
 
+    def test_unsupported_params_raise(self, ebank):
+        """Ensure unsupported kwargs raise."""
+        with pytest.raises(UnsupportedKeyword, match="not_a_kwarg"):
+            ebank.read_index(not_a_kwarg=10)
+
 
 class TestGetEvents:
     """ tests for pulling events out of the bank """
@@ -751,7 +757,7 @@ class TestProgressBar:
 
         def new_get_bar(*args, **kwargs):
             state["called"] = True
-            obsplus.utils.misc.get_progressbar(*args, **kwargs)
+            get_progressbar(*args, **kwargs)
 
         monkeypatch.setattr(obsplus.utils.misc, "get_progressbar", new_get_bar)
 

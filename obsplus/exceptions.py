@@ -39,6 +39,12 @@ class AmbiguousResponseError(ValueError):
     """
 
 
+class UnsupportedKeyword(TypeError):
+    """
+    Raised when ObsPlus encounters an unexpected keyword.
+    """
+
+
 # --- Warnings
 
 

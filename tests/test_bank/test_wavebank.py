@@ -27,7 +27,7 @@ import obsplus.utils.misc
 import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
-from obsplus.exceptions import BankDoesNotExistError
+from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeyword
 from obsplus.utils.misc import iter_files
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obsplus.utils.bank import _natify_paths
@@ -424,6 +424,11 @@ class TestReadIndex:
         default_wbank.update_index()
         df = default_wbank.read_index()
         assert not df.empty
+
+    def test_read_index_raises_on_bad_param(self, default_wbank):
+        """Ensure an unsupported kwarg raises. See #207."""
+        with pytest.raises(UnsupportedKeyword, match="startime"):
+            default_wbank.read_index(startime="2012-01-01")
 
 
 class TestYieldStreams:

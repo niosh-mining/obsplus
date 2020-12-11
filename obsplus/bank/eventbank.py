@@ -19,7 +19,6 @@ import obsplus
 import obsplus.events.pd
 from obsplus.bank.core import _Bank
 from obsplus.utils.bank import (
-    _IndexCache,
     sql_connection,
     _read_table,
     _get_tables,
@@ -44,7 +43,11 @@ from obsplus.constants import (
     bank_subpaths_type,
     paths_description,
 )
-from obsplus.events.get_events import _sanitize_circular_search, _get_ids
+from obsplus.events.get_events import (
+    _sanitize_circular_search,
+    _get_ids,
+    _validate_get_event_kwargs,
+)
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar, EventClient
 from obsplus.utils import iterate
@@ -63,6 +66,9 @@ STR_COLUMNS = {
     if inspect.isclass(v) and issubclass(v, str)
 }
 INT_COLUMNS = {i for i, v in EVENT_TYPES_OUTPUT.items() if v is int}
+
+# kwargs supported by get_index
+SUPPORTED_KWARGS = set(EVENT_TYPES_OUTPUT) | {"columns", "_allow_update"}
 
 
 class EventBank(_Bank):
@@ -101,10 +107,6 @@ class EventBank(_Bank):
     ext
         The extension on the files. Can be used to avoid parsing non-event
         files.
-    cache_size
-        The number of queries to store. Avoids having to read the index of
-        the database multiple times for queries involving the same start and
-        end times.
     executor
         An executor with the same interface as
         :py:class:`concurrent.futures.Executor, the map method of the executor
@@ -157,7 +159,6 @@ class EventBank(_Bank):
         base_path: Union[str, Path, "EventBank"] = ".",
         path_structure: Optional[str] = None,
         name_structure: Optional[str] = None,
-        cache_size: int = 5,
         format="quakeml",
         ext=".xml",
         executor: Optional[Executor] = None,
@@ -180,8 +181,6 @@ class EventBank(_Bank):
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns
         self.executor = executor
-        # initialize cache
-        self._index_cache = _IndexCache(self, cache_size=cache_size)
         # enforce min version and warn on newer
         self._enforce_min_version()
         self._warn_on_newer_version()
@@ -223,10 +222,12 @@ class EventBank(_Bank):
         {get_events_params}
         """
         self.ensure_bank_path_exists()
-        # Make sure all times are numpy datetime64
+        # make sure all times are numpy datetime64
         kwargs = _dict_times_to_npdatetimes(kwargs)
         # a simple switch to prevent infinite recursion
         allow_update = kwargs.pop("_allow_update", True)
+        # validate kwargs
+        _validate_get_event_kwargs(kwargs, extra=SUPPORTED_KWARGS)
         # Circular search requires work to be done on the dataframe - we need
         # to get the whole dataframe then calculate the distances and search in
         # that
