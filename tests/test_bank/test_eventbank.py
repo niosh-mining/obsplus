@@ -649,7 +649,7 @@ class TestPutEvents:
 
     def test_put_event_no_reference_time(self, ebank):
         """Test that putting an event with no reference time raises."""
-        # get an event with no reference time and no idm
+        # get an event with no reference time and no id
         event = obspy.read_events()[0]
         event.origins.clear()
         event.preferred_origin_id = None

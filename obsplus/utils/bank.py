@@ -209,10 +209,7 @@ class _IndexCache:
         kwarg_set = set(kwargs)
         if not kwarg_set.issubset(READ_HDF5_KWARGS):
             bad_kwargs = kwarg_set - set(READ_HDF5_KWARGS)
-            msg = (
-                f"The following kwargs are not supported: {bad_kwargs}. "
-                f"Supported kwargs are {kwarg_set}"
-            )
+            msg = f"The following kwargs are not supported: {bad_kwargs}. "
             raise UnsupportedKeyword(msg)
 
     def _set_cache(self, index, starttime, endtime, kwargs):
