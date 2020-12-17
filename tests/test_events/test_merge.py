@@ -329,8 +329,8 @@ class TestMergeNewPicks:
     @pytest.fixture()
     def merge_base_event(self, bingham_catalog):
         """The base event for merging."""
-        event = bingham_catalog[0].copy()
-        return event
+        events = sorted(bingham_catalog, key=get_reference_time)
+        return events[0].copy()
 
     @pytest.fixture()
     def simple_catalog_to_merge(self, bingham_catalog):
@@ -338,7 +338,7 @@ class TestMergeNewPicks:
         Create a simple catalog to merge into bingham_cat using only one event.
         """
         events = sorted(bingham_catalog, key=get_reference_time)
-        cat = obspy.Catalog(events=events).copy()
+        cat = obspy.Catalog(events=events[:2]).copy()
         # drop first pick
         cat[0].picks = cat[0].picks[1:]
         # modify the picks to whole seconds, reset pick IDS
@@ -358,7 +358,6 @@ class TestMergeNewPicks:
 
     def test_picks_merged(self, simple_catalog_to_merge, merge_base_event):
         """Test merging. """
-        breakpoint()
         merged = associate_merge(
             merge_base_event, simple_catalog_to_merge, reject_old=True
         )
