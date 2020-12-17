@@ -358,6 +358,7 @@ class TestMergeNewPicks:
 
     def test_picks_merged(self, simple_catalog_to_merge, merge_base_event):
         """Test merging. """
+        breakpoint()
         merged = associate_merge(
             merge_base_event, simple_catalog_to_merge, reject_old=True
         )
