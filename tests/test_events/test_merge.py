@@ -16,7 +16,7 @@ from obsplus.events.merge import (
     associate_merge,
     _hash_wids,
 )
-from obsplus.utils import yield_obj_parent_attr
+from obsplus.utils import yield_obj_parent_attr, get_reference_time
 
 CAT = obspy.read_events()
 ORIGINS = [ori for eve in CAT for ori in eve.origins]
@@ -337,13 +337,15 @@ class TestMergeNewPicks:
         """
         Create a simple catalog to merge into bingham_cat using only one event.
         """
-        cat = obspy.Catalog(events=bingham_catalog[:2]).copy()
+        events = sorted(bingham_catalog, key=get_reference_time)
+        cat = obspy.Catalog(events=events).copy()
         # drop first pick
         cat[0].picks = cat[0].picks[1:]
         # modify the picks to whole seconds, reset pick IDS
         for pick, _, _ in yield_obj_parent_attr(cat, ev.Pick):
-            pick.time -= (pick.time.timestamp) % 1
-            pick.resource_id = ev.ResourceIdentifier(referred_object=pick)
+            nearest_second = np.round(pick.time.timestamp)
+            pick.time = obspy.UTCDateTime(nearest_second)
+            pick.id = ev.ResourceIdentifier(referred_object=pick)
         return cat
 
     @pytest.fixture()
@@ -356,7 +358,9 @@ class TestMergeNewPicks:
 
     def test_picks_merged(self, simple_catalog_to_merge, merge_base_event):
         """Test merging. """
-        merged = associate_merge(merge_base_event, simple_catalog_to_merge)
+        merged = associate_merge(
+            merge_base_event, simple_catalog_to_merge, reject_old=True
+        )
         # iterate and test each pick
         first_pick = merged.picks[0]
         assert (first_pick).time.timestamp % 1 != 0

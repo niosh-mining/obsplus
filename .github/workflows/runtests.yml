@@ -94,6 +94,12 @@ jobs:
 
 
 # This is a very useful step for debugging, it allows you to ssh into the CI
-# machine (https://github.com/marketplace/actions/debugging-with-tmate)
+# machine (https://github.com/marketplace/actions/debugging-with-tmate).
+# Make sure to open the log before the job starts else you cant see the tmate
+# url. See https://github.com/mxschmitt/action-tmate/issues/1.
+# Also, the CI machine will close on a non-zero exit code (annoying). This can
+# be overcome by coalescing the null command like so:
+# $ some-command-that-can-fail || :
+#
 #- name: Setup tmate session
-#  uses: mxschmitt/action-tmate@v1
+#  uses: mxschmitt/action-tmate@v3
