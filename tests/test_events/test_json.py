@@ -47,8 +47,8 @@ class TestCat2Json:
     def json_cat_from_disk(self, cat_from_json):
         """ save the json events to disk and read it again into memory """
         tf = tempfile.mkstemp()
-        cat_from_json = obspy.Catalog(cat_from_json)
-        cat_from_json.write(tf[1], "quakeml")
+        new_cat_from_json = cat_from_json
+        new_cat_from_json.write(tf[1], "quakeml")
         cat = obspy.read_events(tf[1])
         return cat
 
@@ -72,6 +72,22 @@ class TestCat2Json:
         still equal.
         """
         assert test_catalog == json_cat_from_disk
+
+    def test_single_event(self):
+        """Ensure a single event can be converted to json."""
+        event = obspy.read_events()[0]
+        out = cat_to_json(event)
+        assert isinstance(out, str)
+        cat_again = json_to_cat(out)
+        assert len(cat_again) == 1
+
+    def test_list_of_events(self):
+        """Ensure a list of events can be converted to json."""
+        events = obspy.read_events().events
+        out = cat_to_json(events)
+        assert isinstance(out, str)
+        cat_again = json_to_cat(out)
+        assert len(cat_again) == len(events)
 
 
 class TestSerializeUTCDateTime:

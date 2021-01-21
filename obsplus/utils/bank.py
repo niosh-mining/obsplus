@@ -2,7 +2,6 @@
 Utils for banks
 """
 import contextlib
-import itertools
 import os
 import re
 import sqlite3
@@ -161,7 +160,8 @@ class _IndexCache:
         self.cache = pd.DataFrame(
             index=range(cache_size), columns="t1 t2 kwargs cindex".split()
         )
-        self.next_index = itertools.cycle(self.cache.index)
+        self._current_index = 0
+        # self.next_index = itertools.cycle(self.cache.index)
 
     def __call__(self, starttime, endtime, buffer, **kwargs):
         """ get start and end times, perform in kernel lookup """
@@ -222,7 +222,7 @@ class _IndexCache:
                 "kwargs": self._kwargs_to_str(kwargs),
             }
         )
-        self.cache.loc[next(self.next_index)] = ser
+        self.cache.loc[self._get_next_index()] = ser
 
     def _kwargs_to_str(self, kwargs):
         """ convert kwargs to a string """
@@ -250,6 +250,18 @@ class _IndexCache:
         self.cache = pd.DataFrame(
             index=range(self.max_size), columns="t1 t2 kwargs cindex".split()
         )
+
+    def _get_next_index(self):
+        """
+        Get the next index value on cache.
+
+        Note we can't use itertools.cycle here because it cant be pickled.
+        """
+        if self._current_index == len(self.cache.index) - 1:
+            self._current_index = 0
+        else:
+            self._current_index += 1
+        return self.cache.index[self._current_index]
 
 
 @contextlib.contextmanager
