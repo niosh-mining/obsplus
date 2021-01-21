@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
-<q:quakeml xmlns:q="http://quakeml.org/xmlns/quakeml/1.2" xmlns="http://quakeml.org/xmlns/bed/1.2">
-  <eventParameters publicID="smi:local/06beb835-4876-4dad-92f4-9a949f6ff845">
-    <event publicID="smi:local/7fc65097-882e-4593-8235-9aff5493e254">
+<q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+  <eventParameters publicID="smi:local/8df04c7a-6c27-48c1-bdb3-a667cb5c2968">
+    <event publicID="smi:local/a0e9726e-a474-4dd7-b93e-4d5e5aadd5d4">
       <preferredOriginID>smi:local/First</preferredOriginID>
-      <preferredMagnitudeID>smi:local/36841170-f007-4a22-8c80-783f4ac089e6</preferredMagnitudeID>
-      <preferredFocalMechanismID>smi:local/ed0d51a9-a1f2-41f6-8061-c6ae5c41c86f</preferredFocalMechanismID>
+      <preferredMagnitudeID>smi:local/2e3e2873-5625-4507-a098-0805091cc47f</preferredMagnitudeID>
+      <preferredFocalMechanismID>smi:local/55a23b13-a1cc-466b-accc-b89689a7c1e6</preferredFocalMechanismID>
       <type>mining explosion</type>
       <description>
         <text>some text about the EQ</text>
@@ -30,29 +30,24 @@
         <depthType>from location</depthType>
         <timeFixed>false</timeFixed>
         <epicenterFixed>false</epicenterFixed>
-        <referenceSystemID>smi:local/f57cb5d0-a301-40a3-be1c-0b91dfa3ea3c</referenceSystemID>
-        <methodID>smi:local/c054c3c8-8fb5-476b-8c38-bc43139f9273</methodID>
-        <earthModelID>smi:local/1170c8dc-16ab-44fc-85dd-a2af6648394e</earthModelID>
+        <referenceSystemID>smi:local/86e209b8-7da1-4c88-8e2b-549dd3de9937</referenceSystemID>
+        <methodID>smi:local/983ddf01-0d9b-4dd2-bd2c-6e316b171f12</methodID>
+        <earthModelID>smi:local/5f57ef6b-b44c-4412-a63e-78d1eed54e29</earthModelID>
         <compositeTime>
           <year>
             <value>2016</value>
-            <uncertainty>0</uncertainty>
           </year>
           <month>
             <value>5</value>
-            <uncertainty>0</uncertainty>
           </month>
           <day>
             <value>4</value>
-            <uncertainty>0</uncertainty>
           </day>
           <hour>
             <value>0</value>
-            <uncertainty>0</uncertainty>
           </hour>
           <minute>
             <value>0</value>
-            <uncertainty>0</uncertainty>
           </minute>
           <second>
             <value>0.0</value>
@@ -85,7 +80,7 @@
           </confidenceEllipsoid>
         </originUncertainty>
         <arrival publicID="smi:local/Ar1">
-          <pickID>smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864</pickID>
+          <pickID>smi:local/386644a6-d199-4ac2-94dc-647295f3a89b</pickID>
           <phase>P</phase>
           <timeCorrection>0.2</timeCorrection>
           <azimuth>12.0</azimuth>
@@ -100,10 +95,10 @@
           <timeWeight>0.23</timeWeight>
           <horizontalSlownessWeight>12.0</horizontalSlownessWeight>
           <backazimuthWeight>12.0</backazimuthWeight>
-          <earthModelID>smi:local/0f89d61a-259f-4d7d-a250-534623696121</earthModelID>
+          <earthModelID>smi:local/9310a275-573a-47b7-944e-45972f7070c0</earthModelID>
         </arrival>
       </origin>
-      <magnitude publicID="smi:local/36841170-f007-4a22-8c80-783f4ac089e6">
+      <magnitude publicID="smi:local/2e3e2873-5625-4507-a098-0805091cc47f">
         <mag>
           <value>5.5</value>
           <uncertainty>0.01</uncertainty>
@@ -112,25 +107,25 @@
         <originID>smi:local/First</originID>
         <stationCount>1</stationCount>
         <stationMagnitudeContribution>
-          <stationMagnitudeID>smi:local/576d78f7-910b-434b-8d4e-cd328e476a04</stationMagnitudeID>
+          <stationMagnitudeID>smi:local/7397c32b-6097-4958-ac96-651a958f7863</stationMagnitudeID>
         </stationMagnitudeContribution>
       </magnitude>
-      <stationMagnitude publicID="smi:local/576d78f7-910b-434b-8d4e-cd328e476a04">
-        <originID>smi:local/None</originID>
+      <stationMagnitude publicID="smi:local/7397c32b-6097-4958-ac96-651a958f7863">
+        <originID>smi:local/First</originID>
         <mag>
           <value>2.24</value>
         </mag>
       </stationMagnitude>
-      <pick publicID="smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864">
+      <pick publicID="smi:local/386644a6-d199-4ac2-94dc-647295f3a89b">
         <time>
           <value>2016-05-04T12:00:01.000000Z</value>
         </time>
-        <waveformID channelCode="HHZ" locationCode="--" networkCode="UU" stationCode="FOO"></waveformID>
-        <filterID>smi:local/77cd41ec-1afe-45c5-bb71-416c136fd05d</filterID>
-        <methodID>smi:local/84db1abe-39bc-44f5-a1bd-aa4f3cbe3ce1</methodID>
+        <waveformID networkCode="UU" stationCode="FOO" locationCode="--" channelCode="HHZ"></waveformID>
+        <filterID>smi:local/41ab79ca-d9c9-45bb-a9db-4df75987be48</filterID>
+        <methodID>smi:local/85dbab81-f4c2-4b08-b4f2-6fc179246b63</methodID>
         <horizontalSlowness>
           <value>12.0</value>
-          <uncertainty>12.0</uncertainty>
+          <uncertainty>12</uncertainty>
         </horizontalSlowness>
         <backazimuth>
           <value>122.1</value>
@@ -141,22 +136,22 @@
         <polarity>positive</polarity>
         <evaluationMode>manual</evaluationMode>
         <evaluationStatus>final</evaluationStatus>
-        <comment id="smi:local/1f5c13ae-e32b-4b7f-ba33-c8f23618b1bc">
+        <comment id="smi:local/663faddc-33df-4486-b8d0-cd1a83ab98be">
           <text/>
         </comment>
-        <comment id="smi:local/f0df75b9-2598-4ccf-b23e-21a8a3af8bcf">
+        <comment id="smi:local/f154cdef-589e-4db4-92f5-db3e7aa991b7">
           <text/>
         </comment>
-        <comment id="smi:local/d49ec84f-d1d6-4ced-adb3-88068199864d">
+        <comment id="smi:local/24aba464-a572-402e-b191-a1bc086c6c35">
           <text/>
         </comment>
         <creationInfo>
           <author>Indago</author>
-          <creationTime>2018-03-21T16:41:58.445322Z</creationTime>
+          <creationTime>2021-01-20T19:26:41.533563Z</creationTime>
           <version>10.10</version>
         </creationInfo>
       </pick>
-      <amplitude publicID="smi:local/7f93a304-c07b-448f-a85f-64ec6e55c32a">
+      <amplitude publicID="smi:local/b0b5f5f8-e8ba-4122-9a86-695050459d3d">
         <genericAmplitude>
           <value>0.0012</value>
         </genericAmplitude>
@@ -170,9 +165,9 @@
           <begin>1.2</begin>
           <end>2.2</end>
         </timeWindow>
-        <pickID>smi:local/1dea1911-ad70-4907-9087-6d4e6e0cc864</pickID>
+        <pickID>smi:local/386644a6-d199-4ac2-94dc-647295f3a89b</pickID>
       </amplitude>
-      <focalMechanism publicID="smi:local/ed0d51a9-a1f2-41f6-8061-c6ae5c41c86f">
+      <focalMechanism publicID="smi:local/55a23b13-a1cc-466b-accc-b89689a7c1e6">
         <azimuthalGap>12.0</azimuthalGap>
         <stationPolarityCount>12</stationPolarityCount>
         <misfit>0.12</misfit>
@@ -201,7 +196,7 @@
             </rake>
           </nodalPlane2>
         </nodalPlanes>
-        <momentTensor publicID="smi:local/de49c6af-bf8e-4113-900b-366750b139e4">
+        <momentTensor publicID="smi:local/215e19bb-e2ba-4074-852a-6a8b6b7275f0">
           <dataUsed>
             <waveType>body waves</waveType>
             <stationCount>12</stationCount>
@@ -244,7 +239,7 @@
             <riseTime>0.33</riseTime>
             <decayTime>0.23</decayTime>
           </sourceTimeFunction>
-          <methodID>smi:local/d3512394-93a4-4d3c-a215-76966a980e3c</methodID>
+          <methodID>smi:local/894b8712-003a-4fb7-9840-f17a160d1619</methodID>
           <inversionType>general</inversionType>
         </momentTensor>
       </focalMechanism>

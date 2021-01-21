@@ -4,10 +4,9 @@ General utility functions which are not specific to one data type.
 
 import copy
 import logging
-import re
 import warnings
 from contextlib import suppress
-from functools import lru_cache, singledispatch
+from functools import singledispatch
 from pathlib import Path
 from typing import Optional, Callable, Iterable
 
@@ -15,15 +14,11 @@ import obspy
 import obspy.core.event as ev
 import pandas as pd
 from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamID
-from obspy.core.event.base import QuantityError
-from obspy.core.util.obspy_types import Enum
 
 import obsplus
 from obsplus.constants import (
     catalog_or_event,
     catalog_component,
-    EVENT_ATTRS,
-    UTC_KEYS,
     event_clientable_type,
     EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
@@ -371,32 +366,6 @@ def get_seed_id(obj: catalog_component) -> str:
     assert 0, f"Unable to fetch a seed id for {obj.resource_id}"
 
 
-def _get_params_from_docs(obj):
-    """ Attempt to figure out params for obj from the doc strings """
-    doc_list = obj.__doc__.splitlines(keepends=False)
-    params_lines = [x for x in doc_list if ":param" in x]
-    params = [x.split(":")[1].replace("param ", "") for x in params_lines]
-    return params
-
-
-def _getattr_factory(attrs_to_get):
-    """ return a function that tries to get attrs into dict """
-
-    def func(obj):
-        out = {x: getattr(obj, x) for x in attrs_to_get if hasattr(obj, x)}
-        return out or None  # return None rather than empty dict
-
-    return func
-
-
-def _get_str(obj):
-    """ return str of obj """
-    return str(obj)
-
-
-_TO_DICT_FUNCS = {obspy.UTCDateTime: _get_str, Event: _getattr_factory(EVENT_ATTRS)}
-
-
 @singledispatch
 def get_event_client(events: event_clientable_type) -> EventClient:
     """
@@ -442,63 +411,6 @@ def _catalog_to_client(path):
 @get_event_client.register(ev.Event)
 def _event_to_catalog(event):
     return get_event_client(obspy.Catalog(events=[event]))
-
-
-def obj_to_dict(obj):
-    """
-    Return the dict representation of an obspy object.
-
-    Attributes and type are determined from the docstrings of the object.
-    """
-    try:
-        return _TO_DICT_FUNCS[type(obj)](obj)
-    except KeyError:
-        params = _get_params_from_docs(obj)
-        # create function for processing and register
-        _TO_DICT_FUNCS[type(obj)] = _getattr_factory(params)
-        # register function for future caching
-        return _TO_DICT_FUNCS[type(obj)](obj)
-
-
-def _camel2snake(name):
-    """
-    Convert CamelCase to snake_case.
-
-    """
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    s2 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-    return s2
-
-
-@lru_cache()
-def make_class_map():
-    """
-    Return a dict that maps names in QML to the appropriate obspy class.
-    """
-
-    # add "special" cases to mapping
-    out = dict(mag_errors=QuantityError)
-    out.update({x: obspy.UTCDateTime for x in UTC_KEYS})
-
-    def _add_lower_and_plural(name, cls):
-        """ add the lower case and plural case to dict"""
-        name_lower = _camel2snake(name)
-        name_plural = name_lower + "s"
-        out[name_lower] = cls
-        out[name_plural] = cls  # add both singular and plural
-
-    # iterate all classes contained in core.event and add to dict
-    for name, cls in ev.__dict__.items():
-        if not isinstance(cls, type):
-            continue
-        if hasattr(cls, "_property_dict"):
-            for name_, obj_type in cls._property_dict.items():
-                # skip enums, object creation handles validation of these
-                if isinstance(obj_type, Enum):
-                    continue
-                _add_lower_and_plural(name_, obj_type)
-        _add_lower_and_plural(name, cls)
-    return out
 
 
 def get_preferred(event: Event, what: str, init_empty=False):

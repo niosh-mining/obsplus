@@ -3,6 +3,7 @@ import functools
 import glob
 import os
 import pathlib
+import pickle
 import shutil
 import tempfile
 import time
@@ -1271,9 +1272,10 @@ class TestConcurrentReads:
         assert counter.get("map", 0) > 0
 
 
-class TestConcurrentUpdateIndex:
+class TestConcurrentBank:
     """
-    Tests to make sure running update index in different threads/processes.
+    Concurrency tests for bank operations which can be run in multiple
+    threads/processes.
     """
 
     worker_count = 3
@@ -1281,7 +1283,6 @@ class TestConcurrentUpdateIndex:
 
     def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
-        # first write some new files
         try:
             wbank.read_index()
         except Exception as e:
@@ -1331,6 +1332,13 @@ class TestConcurrentUpdateIndex:
         return list(as_completed(out))
 
     # tests
+    def test_pickle_bank(self, concurrent_bank):
+        """Ensure the bank can be pickled."""
+        pkl = pickle.dumps(concurrent_bank)
+        new_bank = pickle.loads(pkl)
+        assert isinstance(new_bank, WaveBank)
+        assert new_bank.bank_path == concurrent_bank.bank_path
+
     def test_index_read_thread(self, thread_read):
         """
         Ensure the index updated and the threads didn't kill each other.
