@@ -32,9 +32,11 @@ obsplus master
     * Made sure that location codes and other NSLC components are handled
       consistently within stations_to_df (#199).
   - obsplus.events.merge
-    # Added a new function called associate merge for merging one event with
-      the closest (defined by median pick time) of several possible events
-      (#200).
+    * Added a new function called associate merge for merging one event with
+      the closest (defined by median pick time) of several possible events.
+  - obsplus.events.json
+    * Replaced ObsPlus' heavily recursive json conversion code with pydantic
+      models (#218).
 
 obsplus 0.1.1
   - obsplus.events
