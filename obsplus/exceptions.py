@@ -45,6 +45,18 @@ class UnsupportedKeyword(TypeError):
     """
 
 
+class InvalidModelOperation(TypeError):
+    """
+    Raised when an invalid operation is requested on a model.
+    """
+
+
+class InvalidModelAttribute(AttributeError):
+    """
+    Raised when an invalid operation is requested on a model.
+    """
+
+
 # --- Warnings
 
 

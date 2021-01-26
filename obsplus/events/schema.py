@@ -6,12 +6,13 @@ model.
 """
 from datetime import datetime
 from typing import Optional, List
-from uuid import uuid4
 
-import obspy.core.event as ev
 from obsplus.constants import NSLC
-from pydantic import BaseModel, validator, root_validator
+from pydantic import root_validator
 from typing_extensions import Literal
+
+
+from obsplus.utils.model import ObsPlusModel, ResourceIdentifier, _ModelWithResourceID
 
 # ----- Type Literals (enum like)
 
@@ -124,74 +125,34 @@ PickPolarity = Literal["positive", "negative", "undecidable"]
 
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
+# --- Subclass of resource_id to indicated referred object type
+# TODO this is a bit of a hack, consider how to improve
+
+
+class ResourceIdentifierPick(ResourceIdentifier):
+    """ID which points to picks."""
+
+
+class ResourceIdentifierOrigin(ResourceIdentifier):
+    """ID which points to origins."""
+
+
+class ResourceIdentifierMagnitude(ResourceIdentifier):
+    """ID which points to magnitudes."""
+
+
+class ResourceIdentifierStationMagnitude(ResourceIdentifier):
+    """ID which points to station magnitudes."""
+
+
+class ResourceIdentifierFocalMechanism(ResourceIdentifier):
+    """ID which points to focal mechanisms."""
+
 
 # ----- Type Models
 
 
-class _ObsPyModel(BaseModel):
-    # extra: Optional[Dict[str, Any]] = None
-
-    class Config:
-        pass
-        validate_assignment = True
-        arbitrary_types_allowed = True
-        orm_mode = True
-        extra = "allow"
-
-    @staticmethod
-    def _convert_to_obspy(value):
-        """Convert an object to obspy or return value."""
-        if hasattr(value, "to_obspy"):
-            return value.to_obspy()
-        return value
-
-    def to_obspy(self):
-        """Convert to obspy objects."""
-        name = self.__class__.__name__
-        cls = getattr(ev, name)
-        out = {}
-        # get schema and properties
-        schema = self.schema()
-        props = schema["properties"]
-        array_props = {x for x, y in props.items() if y.get("type") == "array"}
-        # iterate each property and convert back to obspy
-        for prop in props:
-            val = getattr(self, prop)
-            if prop in array_props:
-                out[prop] = [self._convert_to_obspy(x) for x in val]
-            else:
-                out[prop] = self._convert_to_obspy(val)
-        return cls(**out)
-
-
-class ResourceIdentifier(_ObsPyModel):
-    """Resource ID"""
-
-    id: Optional[str] = None
-
-    @root_validator(pre=True)
-    def get_id(cls, values):
-        """Get the id string from the resource id"""
-        value = values.get("id")
-        if value is None:
-            value = str(uuid4())
-        return {"id": value}
-
-
-class _ModelWithResourceID(_ObsPyModel):
-    """A model which has a resource ID"""
-
-    resource_id: Optional[ResourceIdentifier]
-
-    @validator("resource_id", always=True)
-    def get_resource_id(cls, value):
-        """Ensure a valid str is returned."""
-        if value is None:
-            return str(uuid4())
-        return value
-
-
-class QuantityError(_ObsPyModel):
+class QuantityError(ObsPlusModel):
     """Quantity Error"""
 
     uncertainty: Optional[float] = None
@@ -200,7 +161,7 @@ class QuantityError(_ObsPyModel):
     confidence_level: Optional[float] = None
 
 
-class CreationInfo(_ObsPyModel):
+class CreationInfo(ObsPlusModel):
     """Creation info"""
 
     agency_id: Optional[str] = None
@@ -211,7 +172,7 @@ class CreationInfo(_ObsPyModel):
     version: Optional[str] = None
 
 
-class TimeWindow(_ObsPyModel):
+class TimeWindow(ObsPlusModel):
     """Time Window"""
 
     begin: Optional[float] = None
@@ -219,7 +180,7 @@ class TimeWindow(_ObsPyModel):
     reference: Optional[datetime] = None
 
 
-class CompositeTime(_ObsPyModel):
+class CompositeTime(ObsPlusModel):
     """Composite Time"""
 
     year: Optional[int]
@@ -243,7 +204,7 @@ class Comment(_ModelWithResourceID):
     creation_info: Optional[CreationInfo] = None
 
 
-class WaveformStreamID(_ObsPyModel):
+class WaveformStreamID(ObsPlusModel):
     """Waveform stream ID"""
 
     network_code: Optional[str] = None
@@ -269,7 +230,7 @@ class WaveformStreamID(_ObsPyModel):
         return values
 
 
-class ConfidenceEllipsoid(_ObsPyModel):
+class ConfidenceEllipsoid(ObsPlusModel):
     """Confidence Ellipsoid"""
 
     semi_major_axis_length: Optional[float] = None
@@ -280,8 +241,9 @@ class ConfidenceEllipsoid(_ObsPyModel):
     major_axis_rotation: Optional[float] = None
 
 
-class DataUsed(_ObsPyModel):
-    """Data Used"""
+
+class DataUsed(ObsPlusModel):
+    """ Data Used"""
 
     wave_type: Optional[DataUsedWaveType] = None
     station_count: Optional[int] = None
@@ -296,7 +258,7 @@ class DataUsed(_ObsPyModel):
 class StationMagnitude(_ModelWithResourceID):
     """Station Magnitude."""
 
-    origin_id: Optional[ResourceIdentifier] = None
+    origin_id: Optional[ResourceIdentifierOrigin] = None
     mag: Optional[float] = None
     mag_errors: Optional[QuantityError] = None
     station_magnitude_type: Optional[str] = None
@@ -307,10 +269,11 @@ class StationMagnitude(_ModelWithResourceID):
     comments: List[Comment] = []
 
 
-class StationMagnitudeContribution(_ObsPyModel):
-    """Station Magnitude Contribution"""
+class StationMagnitudeContribution(ObsPlusModel):
+    """ Station Magnitude Contribution"""
 
-    station_magnitude_id: Optional[ResourceIdentifier] = None
+
+    station_magnitude_id: Optional[ResourceIdentifierStationMagnitude] = None
     residual: Optional[float] = None
     weight: Optional[float] = None
 
@@ -328,7 +291,7 @@ class Amplitude(_ModelWithResourceID):
     period_errors: Optional[QuantityError] = None
     snr: Optional[float] = None
     time_window: Optional[TimeWindow] = None
-    pick_id: Optional[ResourceIdentifier] = None
+    pick_id: Optional[ResourceIdentifierPick] = None
     waveform_id: Optional[WaveformStreamID] = None
     filter_id: Optional[ResourceIdentifier] = None
     scaling_time: Optional[datetime] = None
@@ -343,7 +306,7 @@ class Amplitude(_ModelWithResourceID):
 # --- Origin classes
 
 
-class OriginUncertainty(_ObsPyModel):
+class OriginUncertainty(ObsPlusModel):
     """Origin Uncertainty"""
 
     horizontal_uncertainty: Optional[float] = None
@@ -355,7 +318,7 @@ class OriginUncertainty(_ObsPyModel):
     confidence_level: Optional[float] = None
 
 
-class OriginQuality(_ObsPyModel):
+class OriginQuality(ObsPlusModel):
     """Origin Quality"""
 
     associated_phase_count: Optional[int] = None
@@ -398,7 +361,7 @@ class Pick(_ModelWithResourceID):
 class Arrival(_ModelWithResourceID):
     """Arrival"""
 
-    pick_id: Optional[ResourceIdentifier] = None
+    pick_id: Optional[ResourceIdentifierPick] = None
     phase: Optional[str] = None
     time_correction: Optional[float] = None
     azimuth: Optional[float] = None
@@ -453,7 +416,7 @@ class Magnitude(_ModelWithResourceID):
     mag: Optional[float] = None
     mag_errors: Optional[QuantityError] = None
     magnitude_type: Optional[str] = None
-    origin_id: Optional[ResourceIdentifier] = None
+    origin_id: Optional[ResourceIdentifierOrigin] = None
     method_id: Optional[ResourceIdentifier] = None
     station_count: Optional[int] = None
     azimuthal_gap: Optional[float] = None
@@ -467,7 +430,7 @@ class Magnitude(_ModelWithResourceID):
 # --- Source objects
 
 
-class Axis(_ObsPyModel):
+class Axis(ObsPlusModel):
     """Axis"""
 
     azimuth: Optional[float] = None
@@ -475,7 +438,7 @@ class Axis(_ObsPyModel):
     length: Optional[float] = None
 
 
-class NodalPlane(_ObsPyModel):
+class NodalPlane(ObsPlusModel):
     """Nodal Plane"""
 
     strike: Optional[float] = None
@@ -483,7 +446,7 @@ class NodalPlane(_ObsPyModel):
     rake: Optional[float] = None
 
 
-class NodalPlanes(_ObsPyModel):
+class NodalPlanes(ObsPlusModel):
     """Nodal Planes"""
 
     nodal_plane_1: Optional[NodalPlane] = None
@@ -491,7 +454,7 @@ class NodalPlanes(_ObsPyModel):
     preferred_plane: Optional[int] = None
 
 
-class PrincipalAxes(_ObsPyModel):
+class PrincipalAxes(ObsPlusModel):
     """Principal Axes"""
 
     t_axis: Optional[Axis] = None
@@ -499,9 +462,8 @@ class PrincipalAxes(_ObsPyModel):
     n_axis: Optional[Axis] = None
 
 
-class Tensor(_ObsPyModel):
-    """Tensor"""
-
+class Tensor(ObsPlusModel):
+    """Tensor """
     m_rr: Optional[float] = None
     m_rr_errors: Optional[QuantityError] = None
     m_tt: Optional[float] = None
@@ -516,7 +478,7 @@ class Tensor(_ObsPyModel):
     m_tp_errors: Optional[QuantityError] = None
 
 
-class SourceTimeFunction(_ObsPyModel):
+class SourceTimeFunction(ObsPlusModel):
     """Source Time Function"""
 
     type: Optional[SourceTimeFunctionType] = None
@@ -528,8 +490,8 @@ class SourceTimeFunction(_ObsPyModel):
 class MomentTensor(_ModelWithResourceID):
     """Moment Tensor"""
 
-    derived_origin_id: Optional[ResourceIdentifier] = None
-    moment_magnitude_id: Optional[ResourceIdentifier] = None
+    derived_origin_id: Optional[ResourceIdentifierOrigin] = None
+    moment_magnitude_id: Optional[ResourceIdentifierMagnitude] = None
     scalar_moment: Optional[float] = None
     scalar_moment_errors: Optional[QuantityError] = None
     tensor: Optional[Tensor] = None
@@ -571,7 +533,7 @@ class FocalMechanism(_ModelWithResourceID):
 # --- Event definitions
 
 
-class EventDescription(_ObsPyModel):
+class EventDescription(ObsPlusModel):
     """Event Description"""
 
     text: Optional[str] = None
@@ -579,14 +541,13 @@ class EventDescription(_ObsPyModel):
 
 
 class Event(_ModelWithResourceID):
-    """Event"""
-
+    """Event """
     event_type: Optional[EventType] = None
     event_type_certainty: Optional[EventTypeCertainty] = None
     creation_info: Optional[CreationInfo] = None
-    preferred_origin_id: Optional[ResourceIdentifier] = None
-    preferred_magnitude_id: Optional[ResourceIdentifier] = None
-    preferred_focal_mechanism_id: Optional[ResourceIdentifier] = None
+    preferred_origin_id: Optional[ResourceIdentifierOrigin] = None
+    preferred_magnitude_id: Optional[ResourceIdentifierMagnitude] = None
+    preferred_focal_mechanism_id: Optional[ResourceIdentifierFocalMechanism] = None
     event_descriptions: List[EventDescription] = []
     comments: List[Comment] = []
     picks: List[Pick] = []
