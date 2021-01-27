@@ -12,7 +12,11 @@ from pydantic import root_validator
 from typing_extensions import Literal
 
 
-from obsplus.utils.model import ObsPlusModel, ResourceIdentifier, _ModelWithResourceID
+from obsplus.structures.model import (
+    ObsPlusModel,
+    ResourceIdentifier,
+    _ModelWithResourceID,
+)
 
 # ----- Type Literals (enum like)
 
@@ -352,7 +356,6 @@ class Pick(_ModelWithResourceID):
     evaluation_mode: Optional[EvaluationMode] = None
     evaluation_status: Optional[EvaluationStatus] = None
     creation_info: Optional[CreationInfo] = None
-
     comments: List[Comment] = []
 
 
@@ -524,7 +527,6 @@ class FocalMechanism(_ModelWithResourceID):
     evaluation_status: Optional[EvaluationStatus] = None
     moment_tensor: Optional[MomentTensor] = None
     creation_info: Optional[CreationInfo] = None
-
     waveform_id: List[WaveformStreamID] = []
     comments: List[Comment] = []
 
@@ -541,6 +543,7 @@ class EventDescription(ObsPlusModel):
 
 class Event(_ModelWithResourceID):
     """Event """
+
     event_type: Optional[EventType] = None
     event_type_certainty: Optional[EventTypeCertainty] = None
     creation_info: Optional[CreationInfo] = None

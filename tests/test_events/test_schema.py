@@ -7,13 +7,9 @@ import obspy
 import obspy.core.event as ev
 
 import obsplus.events.schema as esc
-import obsplus.utils.model
+import obsplus.structures.model
 from obsplus.constants import NSLC
 from obsplus.events.json import cat_to_dict
-
-
-from typing import Optional
-
 
 
 class TestResourceID:
@@ -21,14 +17,14 @@ class TestResourceID:
 
     def test_null(self):
         """Ensure Null generates a resource ID a la ObsPy"""
-        rid = obsplus.utils.model.ResourceIdentifier()
+        rid = obsplus.structures.model.ResourceIdentifier()
         assert isinstance(rid.id, str)
         assert len(rid.id)
 
     def test_defined_resource_id(self):
         """Ensure the defined resource_id sticks."""
         rid = str(ev.ResourceIdentifier())
-        out = obsplus.utils.model.ResourceIdentifier(id=rid)
+        out = obsplus.structures.model.ResourceIdentifier(id=rid)
         assert out.id == rid
 
 
