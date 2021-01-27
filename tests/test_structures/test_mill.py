@@ -8,10 +8,10 @@ import obsplus.events.schema as schema
 from obsplus.structures.mill import Mill, DFCatalogMapping
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def event_mill():
     """Init a mill from an event."""
-    cat = obsplus.load_dataset('bingham_test').event_client.get_events()
+    cat = obsplus.load_dataset("bingham_test").event_client.get_events()
     mill = Mill(cat, schema.CatalogSchema)
     return mill
 

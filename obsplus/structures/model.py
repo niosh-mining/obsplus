@@ -39,8 +39,8 @@ class ObsPlusMeta(ModelMetaclass):
     #
     # def __setstate__(cls):
     #     breakpoint()
-    def __getattr__(cls: 'ObsPlusModel', item):
-        if item in getattr(cls, '__fields__', {}):
+    def __getattr__(cls: "ObsPlusModel", item):
+        if item in getattr(cls, "__fields__", {}):
             cls_name = cls.__name__
             op_str = f"{cls_name}.{item}"
             return OperationTracker(op_str)
@@ -70,7 +70,7 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     def to_obspy(self):
         """Convert to obspy objects."""
         name = self.__class__.__name__
-        name = 'ResourceIdentifier' if 'ResourceIdentifier' in name else name
+        name = "ResourceIdentifier" if "ResourceIdentifier" in name else name
         cls = getattr(ev, name)
         out = {}
         # get schema and properties
@@ -110,7 +110,7 @@ class ResourceIdentifier(ObsPlusModel):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__()
         # set the name of what this points to (if specified)
-        name = cls.__name__.replace('ResourceIdentifier', '')
+        name = cls.__name__.replace("ResourceIdentifier", "")
         cls._points_to = name or cls._points_to
 
 
@@ -127,14 +127,12 @@ class _ModelWithResourceID(ObsPlusModel):
         return value
 
 
-
-
 class OperationTracker:
     """
     A simple class for keeping track of operations on a model.
     """
 
-    def __init__(self, op_str: Union[str, 'OperationTracker']):
+    def __init__(self, op_str: Union[str, "OperationTracker"]):
         if isinstance(op_str, self.__class__):
             self._op_str = op_str._op_str
         self._op_str = op_str
@@ -149,7 +147,7 @@ class OperationTracker:
         return f"AttributeTracker:: {self._op_str}"
 
     def __or__(self, other):
-        if ' | ' in self._op_str:
+        if " | " in self._op_str:
             msg = "Only one '|' operation is currently permitted."
             raise InvalidModelOperation(msg)
         new_str = f"({self._op_str} | {other._op_str})"
@@ -157,8 +155,10 @@ class OperationTracker:
 
     def __getitem__(self, item):
         if not isinstance(item, int):
-            msg = ('getitem is reserved for selecting elements from as list ' 
-                   f'and therefore must be an int. You passed {item}')
+            msg = (
+                "getitem is reserved for selecting elements from as list "
+                f"and therefore must be an int. You passed {item}"
+            )
             raise TypeError(msg)
         return self.__class__(f"{self._op_str}[{item}]")
 
@@ -182,10 +182,10 @@ class OperationTracker:
 
         # first resolve | by slicing out both strings
         op_str = self._op_str
-        if ' | ' in op_str:
-            paren_index1 = op_str.index('(')
-            paren_index2 = op_str.index(')')
-            inside_or_str = op_str[paren_index1 + 1: paren_index2]
+        if " | " in op_str:
+            paren_index1 = op_str.index("(")
+            paren_index2 = op_str.index(")")
+            inside_or_str = op_str[paren_index1 + 1 : paren_index2]
             resulting_type = self._validate_or(inside_or_str, graph_dict)
             op_str = op_str.replace(f"({inside_or_str})", resulting_type)
 
@@ -196,7 +196,7 @@ class OperationTracker:
 
     def _validate_or(self, or_str, graph_dict):
         """"""
-        str_1, str_2 = or_str.split(' | ')
+        str_1, str_2 = or_str.split(" | ")
         # first make sure attributes exist and are valid.
         obj1 = OperationTracker(str_1).validate(graph_dict)
         obj2 = OperationTracker(str_2).validate(graph_dict)
@@ -204,19 +204,21 @@ class OperationTracker:
         type1 = obj1._get_type(graph_dict)
         type2 = obj2._get_type(graph_dict)
         if type1 != type2:
-            msg = (f"Invalid | found in {or_str}. {obj1} is of type {type1} "
-                   f"and {obj2} is of type {type2}, they must be the same.")
+            msg = (
+                f"Invalid | found in {or_str}. {obj1} is of type {type1} "
+                f"and {obj2} is of type {type2}, they must be the same."
+            )
             raise InvalidModelOperation(msg)
         return type1[0]
 
     def _get_type(self, graph_dict) -> Tuple[str, bool]:
         """Get a string of the type. """
         # first split on attrs
-        assert ' | ' not in self._op_str, 'or is not supported at this stage.'
+        assert " | " not in self._op_str, "or is not supported at this stage."
         return _get_type_from_graph(self._op_str, graph_dict)
 
 
-def _get_type_from_graph(address_string: str, graph_dict: dict)->Tuple[str, bool]:
+def _get_type_from_graph(address_string: str, graph_dict: dict) -> Tuple[str, bool]:
     """
     Get the type an address string refers to from a graph_dict.
 
@@ -235,12 +237,13 @@ def _get_type_from_graph(address_string: str, graph_dict: dict)->Tuple[str, bool
     -------
     A tuple of ('type': str, 'is_array': bool)
     """
+
     def _get_type_from_entry(attr_dict, attr_name):
         """Get the type from an attr_dict """
-        atype = attr_dict['attr_type'][attr]
-        ref = attr_dict['attr_ref'].get(attr)
-        ref_id = attr_dict['attr_id_ref'].get(attr)
-        is_array = attr_dict['attr_is_array'].get(attr, False)
+        atype = attr_dict["attr_type"][attr]
+        ref = attr_dict["attr_ref"].get(attr)
+        ref_id = attr_dict["attr_id_ref"].get(attr)
+        is_array = attr_dict["attr_is_array"].get(attr, False)
         if ref:
             atype = ref
         if ref_id:
@@ -248,14 +251,14 @@ def _get_type_from_graph(address_string: str, graph_dict: dict)->Tuple[str, bool
         return atype, is_array
 
     # split attributes, determine which refer to arrays
-    attr_list = address_string.split('.')
-    has_getitem = ['[' in x and ']' in x for x in attr_list[1:]]
+    attr_list = address_string.split(".")
+    has_getitem = ["[" in x and "]" in x for x in attr_list[1:]]
     # init values and iterate through each level of attribute map
     current_parent_type = atype = attr_list[0]
     array = False
     for attr, has_getitem in zip(attr_list[1:], has_getitem):
         if has_getitem:
-            attr = attr[:attr.index('[')]  # strip out []
+            attr = attr[: attr.index("[")]  # strip out []
         current = graph_dict[current_parent_type]
         try:
             atype, array = _get_type_from_entry(current, attr)
@@ -275,21 +278,21 @@ def _get_attr_ref_type(attr_dict):
 
     Returns a tuple of (
     """
-    ref_str = '#/definitions/'
-    atype = attr_dict.get('type', 'object')
-    is_array = atype == 'array'
+    ref_str = "#/definitions/"
+    atype = attr_dict.get("type", "object")
+    is_array = atype == "array"
     ref = None
     if is_array:  # dealing with array, find out sub-type
-        items = attr_dict.get('items', {})
-        ref = items.get('$ref', None)
-        atype = items.get('type', atype)
+        items = attr_dict.get("items", {})
+        ref = items.get("$ref", None)
+        atype = items.get("type", atype)
     else:
-        ref = attr_dict.get('$ref', None)
+        ref = attr_dict.get("$ref", None)
     if ref:  # there is a reference to a def, just get name
-        ref = ref.replace(ref_str, '')
+        ref = ref.replace(ref_str, "")
     # check if this is a datetime
-    if attr_dict.get('format', '') == 'date-time':
-        atype = 'datetime64[ns]'
+    if attr_dict.get("format", "") == "date-time":
+        atype = "datetime64[ns]"
     return atype, ref, is_array
 
 
@@ -300,50 +303,50 @@ def _get_graph_dict(schema: ObsPlusModel) -> dict:
     #TODO fill in form of dict
     """
     # type_dict = {'string': str, 'array': list, 'float': float, 'int': int}
-    rid_str = 'ResourceIdentifier'
+    rid_str = "ResourceIdentifier"
 
     def _init_empty():
         """Return an empty form of dict."""
         return {
-            'address': [],
-            'attr_type': {},
-            'attr_is_array': {},
-            'attr_ref': {},
-            'attr_id_ref': {},
+            "address": [],
+            "attr_type": {},
+            "attr_is_array": {},
+            "attr_ref": {},
+            "attr_id_ref": {},
         }
 
     def _recurse(base, definitions, cls_dict=None, address=()):
         # init empty data structures or reuse
         cls_dict = cls_dict if cls_dict is not None else {}
-        title = base.get('title', '')
+        title = base.get("title", "")
         # get the class dictionary file
         current = _init_empty() if title not in cls_dict else cls_dict[title]
         # add address and return if attributes have already been parsed
-        current['address'].append(tuple(address))
-        if current['attr_type']:
+        current["address"].append(tuple(address))
+        if current["attr_type"]:
             return
         # next iterate attributes
-        for attr, attr_dict in base['properties'].items():
+        for attr, attr_dict in base["properties"].items():
             # this attribute has no linked items
             atype, ref, is_array = _get_attr_ref_type(attr_dict)
-            current['attr_type'][attr] = atype
-            current['attr_is_array'][attr] = is_array
+            current["attr_type"][attr] = atype
+            current["attr_is_array"][attr] = is_array
             # this is not object which should have a definition.
             if ref is None:
                 continue
             # add reference type
-            current['attr_ref'][attr] = ref
+            current["attr_ref"][attr] = ref
             # add name resource_id points to, if resource_id
-            cadd = [attr] if atype == 'array' else attr
+            cadd = [attr] if atype == "array" else attr
             new_address = list(address) + [cadd]
             new_base = definitions[ref]
             _recurse(new_base, definitions, cls_dict, new_address)
             # add resource_id info
             if rid_str in ref:
-                name = ref.replace(rid_str, '')
+                name = ref.replace(rid_str, "")
                 if name in definitions:
-                    current['attr_id_ref'][attr] = name
+                    current["attr_id_ref"][attr] = name
         cls_dict[title] = current
         return cls_dict
 
-    return _recurse(schema, schema['definitions'])
+    return _recurse(schema, schema["definitions"])

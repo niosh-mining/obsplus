@@ -3,7 +3,7 @@ Module for converting tree-like structures into tables and visa-versa.
 """
 from typing import Any, Type
 
-from obsplus.utils.model import ObsPlusModel
+from obsplus.structures.model import ObsPlusModel
 
 
 class _DFMappingMeta(type):
@@ -14,6 +14,7 @@ class DFMapping:
     """
     A class for defining mappings between schema and dataframes.
     """
+
     _validated = False
 
     @classmethod
@@ -55,12 +56,5 @@ class Mill:
         return msg
 
 
-
-
-
 # class DFCatalogMapping:
-    # _base =
-
-
-
-
+# _base =
