@@ -24,8 +24,6 @@ class DFMapping:
         pass
 
 
-
-
 class Mill:
     """
     A class for converting tree-like structures to json and back.
@@ -57,8 +55,11 @@ class Mill:
         return msg
 
 
-class DFMapping:
-    _base = Catalog
+
+
+
+# class DFCatalogMapping:
+    # _base =
 
 
 

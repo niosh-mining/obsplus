@@ -1,28 +1,18 @@
 """
 A module for testing the mill.
 """
-from pathlib import Path
-from functools import lru_cache
-from typing import Union, Optional, List, Mapping, Dict, Any
-
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy
-import obsplus
-import obspy
-import pandas as pd
 import pytest
 
-
-from obsplus.events.schema import Catalog as CatalogSchema
-from obsplus.structures.mill import Mill
+import obsplus
+import obsplus.events.schema as schema
+from obsplus.structures.mill import Mill, DFCatalogMapping
 
 
 @pytest.fixture(scope='class')
 def event_mill():
     """Init a mill from an event."""
     cat = obsplus.load_dataset('bingham_test').event_client.get_events()
-    mill = Mill(cat, CatalogSchema)
+    mill = Mill(cat, schema.CatalogSchema)
     return mill
 
 
