@@ -260,7 +260,7 @@ class WaveformStreamID(_ObsPyModel):
         # need to add seed_str
         if not seed_str:
             seed = ".".join([values[f"{x}_code"] for x in NSLC])
-            values["seed_str"] = seed
+            values["seed_string"] = seed
             return values
         # need to get other codes from seed_str
         split = seed_str.split(".")
