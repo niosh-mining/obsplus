@@ -1,4 +1,4 @@
-obsplus master
+obsplus 0.2.0
   - obsplus.structures.fetcher
     * fixed an edge case were banks with only one file failed to return
        streams (#186).
