@@ -228,7 +228,7 @@ def associate_merge(
         A new catalog or event which contains picks.
     median_tolerance
         The tolerance, in seconds, of the median pick for associating
-        events in new_catalog_or_picks into event.
+        events in new_catalog into event.
     reject_old
         Reject any picks/amplitudes in old event if not found in new
         event.
