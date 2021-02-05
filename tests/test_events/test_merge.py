@@ -335,7 +335,7 @@ class TestMergeNewPicks:
     @pytest.fixture()
     def simple_catalog_to_merge(self, bingham_catalog):
         """
-        Create a simple catalog to merge into bingham_cat using only one event.
+        Create a simple catalog to merge into bingham_cat using only two event.
         """
         events = sorted(bingham_catalog, key=get_reference_time)
         cat = obspy.Catalog(events=events[:2]).copy()
@@ -345,7 +345,7 @@ class TestMergeNewPicks:
         for pick, _, _ in yield_obj_parent_attr(cat, ev.Pick):
             nearest_second = np.round(pick.time.timestamp)
             pick.time = obspy.UTCDateTime(nearest_second)
-            pick.id = ev.ResourceIdentifier(referred_object=pick)
+            # pick.resource_id = ev.ResourceIdentifier(referred_object=pick)
         return cat
 
     @pytest.fixture()

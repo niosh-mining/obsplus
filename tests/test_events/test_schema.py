@@ -1,7 +1,7 @@
 """
 Tests for event schema.
 """
-from collections import Sequence
+from typing import Sequence
 
 import obspy
 import obspy.core.event as ev
