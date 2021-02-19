@@ -1,8 +1,13 @@
+obsplus master
+  - obsplus.utils
+    * Handled edge case of a lower precision datetime64 causing an int64
+      overflow in `obsplus.utils.time.to_datetime64`. (#224)
+
 obsplus 0.2.0
   - obsplus.structures.fetcher
     * fixed an edge case were banks with only one file failed to return
        streams (#186).
-  - obsplus.structures.dfextractor
+  - obsplus.structures.dxfextractor
     * Handled the case of null integers in the NSLC columns and added a logic
       to force the seed_id column to match the other NSLC columns(#199)
   - obsplus.utils
@@ -49,7 +54,7 @@ obsplus 0.1.1
       of `""` (#178)
   - obsplus.structures.fetcher
     * fixed issue with Fetcher raising Pandas error when an inventory with
-      duplicate chanenls was used (#183, #184).
+      duplicate channels was used (#183, #184).
   - obsplus.utils
     * Refactored df_to_inventory (#182).
     * Refactored compose_docstring and added function for printing dataframe
