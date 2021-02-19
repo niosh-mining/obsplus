@@ -1,6 +1,7 @@
 obsplus master
   - obsplus.utils
-    * Handled edge case of a lower precision datetime64 causing an int64 overflow in `obsplus.utils.time.to_datetime64`. (#224)
+    * Handled edge case of a lower precision datetime64 causing an int64
+      overflow in `obsplus.utils.time.to_datetime64`. (#224)
 
 obsplus 0.2.0
   - obsplus.structures.fetcher
