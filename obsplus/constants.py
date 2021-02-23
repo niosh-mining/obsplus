@@ -526,7 +526,7 @@ GET_STATIONS_UTC_KWARGS = (
 
 # Numpy int types
 NUMPY_INT_TYPES = {
-    np.int,
+    # np.int,  # This is deprecated in numpy 1.20
     np.int32,
     np.int64,
     np.uint,
