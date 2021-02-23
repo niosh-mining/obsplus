@@ -230,7 +230,9 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
             {
                 "trace": x,
                 "nslc": x.id,
-                "sr": np.int64(np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000),
+                "sr": np.int64(
+                    np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000
+                ),
                 "start": x.stats.starttime._ns,
                 "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
             }
