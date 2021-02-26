@@ -369,7 +369,8 @@ UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
 path_types = Union[str, Path]
 
 # number types
-number_type = Union[float, int, np.float, np.int, np.complex]
+# number_type = Union[float, int, np.float, np.int, np.complex]  # deprecated
+number_type = Union[float, int]
 
 # The waveforms processor type
 stream_proc_type = Callable[[Stream], Stream]
@@ -526,7 +527,7 @@ GET_STATIONS_UTC_KWARGS = (
 
 # Numpy int types
 NUMPY_INT_TYPES = {
-    np.int,
+    # np.int,  # This is deprecated in numpy 1.20
     np.int32,
     np.int64,
     np.uint,
