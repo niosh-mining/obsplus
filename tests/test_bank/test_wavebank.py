@@ -1,4 +1,5 @@
 """ test for core functionality of wavebank """
+import copy
 import functools
 import glob
 import os
@@ -100,6 +101,24 @@ def ta_index(ta_bank_index):
 def empty_bank(tmp_path):
     """ init a bank with an empty directory, return """
     return WaveBank(tmp_path)
+
+
+@pytest.fixture
+def duplicate_bank(tmp_path):
+    """ init a bank with duplicate waveforms. """
+    # create two overlapping traces for each stream
+    st1 = obspy.read()
+    st1.trim(endtime=st1[0].stats.endtime - 10)
+    st2 = obspy.read()
+    for tr in st2:
+        tr.stats.starttime = st1[0].stats.endtime - 10
+    # get bank and save streams
+    wbank = WaveBank(tmp_path)
+    st1.write(str(tmp_path / "first.mseed"), "mseed")
+    st2.write(str(tmp_path / "second.mseed"), "mseed")
+    df = wbank.update_index().read_index()
+    assert len(df) == 6, "there should be 6 files"
+    return wbank
 
 
 # ------------------------------ Tests
@@ -632,6 +651,16 @@ class TestGetWaveforms:
         st = bank.get_waveforms()
         assert len(st) == 3
 
+    def test_de_duplicate_stream(self, duplicate_bank):
+        """get_waveforms should de-dup/merge when calling get_waveforms."""
+        std = obspy.read()  # default
+        st = duplicate_bank.get_waveforms()
+        assert len(st) == 3, "traces were not merged!"
+        starttime = min([tr.stats.starttime for tr in st])
+        endtime = max([tr.stats.endtime for tr in st])
+        default_duration = std[0].stats.endtime - std[0].stats.starttime
+        assert (endtime - starttime) > default_duration
+
 
 class TestGetBulkWaveforms:
     """ tests for pulling multiple waveforms using get_bulk_waveforms """
@@ -716,6 +745,22 @@ class TestGetBulkWaveforms:
         bulk = [tuple(nslc)]
         stt = ta_bank.get_waveforms_bulk(bulk)
         assert isinstance(stt, obspy.Stream)
+
+    def test_no_duplicate_traces(self, duplicate_bank):
+        """Ensure overlap in bulk args doesn't result in overlapping traces."""
+        st = duplicate_bank.get_waveforms()
+        args = list(NSLC) + ["starttime", "endtime"]
+        bulk = [{i: tr.stats[i] for i in args} for tr in st]
+        # create overlaps
+        new = copy.deepcopy(bulk)
+        for new_b in new:
+            new_b["starttime"] += 5
+            new_b["endtime"] -= 5
+        # and duplicates
+        bulky_bulk = bulk + bulk + new
+
+        st = duplicate_bank.get_waveforms_bulk(bulky_bulk)
+        assert len(st) == 3
 
 
 class TestBankCache:

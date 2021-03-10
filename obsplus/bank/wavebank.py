@@ -516,8 +516,8 @@ class WaveBank(_Bank):
         traces = []
         for utime in unique_times:
             sub = _filter_index_to_bulk(utime, ind, df)
-            traces += self._index2stream(sub, utime[0], utime[1]).traces
-        return obspy.Stream(traces=traces)
+            traces += self._index2stream(sub, utime[0], utime[1], merge=False).traces
+        return merge_traces(obspy.Stream(traces=traces))
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(
@@ -661,7 +661,7 @@ class WaveBank(_Bank):
 
     # ------------------------ misc methods
 
-    def _index2stream(self, index, starttime=None, endtime=None) -> Stream:
+    def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
         """ return the waveforms in the index """
         # get abs path to each datafame
         files: pd.Series = (str(self.bank_path) + index.path).unique()
@@ -683,21 +683,25 @@ class WaveBank(_Bank):
         nslc = set(get_seed_id_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
-        stt = self._prep_output_stream(stt, starttime, endtime)
+        stt = self._prep_output_stream(stt, starttime, endtime, merge=merge)
         return stt
 
-    def _prep_output_stream(self, st, starttime=None, endtime=None) -> obspy.Stream:
+    def _prep_output_stream(
+        self, st, starttime=None, endtime=None, merge=True
+    ) -> obspy.Stream:
         """
         Prepare waveforms object for output by trimming to desired times,
         merging channels, and attaching responses.
         """
         if not len(st):
             return st
-        starttime = starttime or min([x.stats.starttime for x in st])
-        endtime = endtime or max([x.stats.endtime for x in st])
-        # trim
-        st.trim(starttime=to_utc(starttime), endtime=to_utc(endtime))
-        return merge_traces(st, inplace=True).sort()
+        if starttime is not None or endtime is not None:
+            starttime = starttime or min([x.stats.starttime for x in st])
+            endtime = endtime or max([x.stats.endtime for x in st])
+            st.trim(starttime=to_utc(starttime), endtime=to_utc(endtime))
+        if merge:
+            st = merge_traces(st, inplace=True)
+        return st.sort()
 
     def get_service_version(self):
         """ Return the last version of obsplus """
