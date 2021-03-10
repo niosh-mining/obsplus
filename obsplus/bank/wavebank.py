@@ -2,6 +2,7 @@
 A local database for waveform formats.
 """
 import time
+
 from collections import defaultdict
 from contextlib import suppress
 from concurrent.futures import Executor
@@ -48,7 +49,7 @@ from obsplus.utils.misc import replace_null_nlsc_codes
 from obsplus.utils.pd import get_seed_id_series, cast_dtypes, convert_bytestrings
 from obsplus.utils.pd import order_columns, filter_index, _column_contains
 from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
-from obsplus.utils.waveforms import merge_traces
+from obsplus.utils.waveforms import merge_traces, get_waveform_bulk_df
 
 # No idea why but this needs to be here to avoid problems with pandas
 assert tables.get_hdf5_version()
@@ -499,8 +500,6 @@ class WaveBank(_Bank):
             A dataframe returned by read_index. Enables calling code to only
             read the index from disk once for repetitive calls.
         """
-        if not bulk:  # return emtpy waveforms if empty list or None
-            return obspy.Stream()
 
         def _func(time, ind, df):
             """ return waveforms from df of bulk parameters """
@@ -511,7 +510,8 @@ class WaveBank(_Bank):
             ind = ind[in_time]
             # create indices used to load data
             ar = np.ones(len(ind))  # indices of ind to use to load data
-            df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
+            # filter bulk df to only include specified time
+            df = df[(df["starttime"] == time[0]) & (df["endtime"] == time[1])]
             # determine which columns use any matching or other select features
             uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
             match_ar = np.array(uses_matches).any(axis=0)
@@ -519,7 +519,7 @@ class WaveBank(_Bank):
             df_no_match = df[~match_ar]
             # handle columns that need matches (more expensive)
             if not df_match.empty:
-                match_bulk = df_match.to_records(index=False)
+                match_bulk = df_match[list(NSLC)].to_records(index=False)
                 mar = np.array([filter_index(ind, *tuple(b)[:4]) for b in match_bulk])
                 ar = np.logical_and(ar, mar.any(axis=0))
             # handle columns that do not need matches
@@ -529,22 +529,17 @@ class WaveBank(_Bank):
                 ar = np.logical_and(ar, nslc2.isin(nslc1))
             return self._index2stream(ind[ar], t1, t2)
 
-        # get a dataframe of the bulk arguments, convert time to float
-        df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-        # df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
-        # df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
+        df = get_waveform_bulk_df(bulk)
+        if not len(df):
+            return obspy.Stream()
 
-        df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
-        df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
-        # read index that contains any times that might be used, or filter
-        # provided index
-        t1, t2 = df["t1"].min(), df["t2"].max()
+        t1, t2 = df["starttime"].min(), df["endtime"].max()
         if index is not None:
             ind = index[~((index.starttime > t2) | (index.endtime < t1))]
         else:
             ind = self.read_index(starttime=t1, endtime=t2)
         # groupby.apply calls two times for each time set, avoid this.
-        unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
+        unique_times = np.unique(df[["starttime", "endtime"]].values, axis=0)
         streams = [_func(t, df=df, ind=ind) for t in unique_times]
         return reduce(add, streams)
 

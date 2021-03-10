@@ -2,6 +2,7 @@
 Stream utilities
 """
 import copy
+
 import warnings
 from functools import singledispatch
 from pathlib import Path
@@ -20,10 +21,12 @@ from obsplus.constants import (
     NUMPY_FLOAT_TYPES,
     NUMPY_INT_TYPES,
     waveform_request_type,
+    WAVEFORM_REQUEST_DTYPES,
 )
+from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
 from obsplus.utils.pd import filter_index
-from obsplus.utils.pd import get_seed_id_series
+from obsplus.utils.pd import get_seed_id_series, cast_dtypes
 from obsplus.utils.time import to_utc
 
 
@@ -517,3 +520,46 @@ def _get_waveclient_from_path(path):
         return get_waveform_client(obsplus.WaveBank(path))
     else:
         return get_waveform_client(obspy.read(str(path)))
+
+
+@singledispatch
+def get_waveform_bulk_df(
+    bulk,
+    # bulk: Union[Sequence[waveform_request_type], pd.DataFrame]
+) -> pd.DataFrame:
+    """
+    Create a bulk request dataframe from a variety of inputs.
+
+    Parameters
+    ----------
+    bulk
+        A sequence of
+            [network, station, location, channel, starttime, endtime]
+        or a dataframe with columns named the same.
+
+    Returns
+    -------
+    A dataframe with waveform bulk columns.
+    """
+    df = pd.DataFrame(bulk, columns=list(WAVEFORM_REQUEST_DTYPES))
+    return _df_to_waveform_bulk(df)
+
+
+@get_waveform_bulk_df.register(pd.DataFrame)
+def _df_to_waveform_bulk(df):
+    """Ensure the dataframe has appropriate columns and return."""
+    current_columns = set(df.columns)
+    required_columns = list(WAVEFORM_REQUEST_DTYPES)
+    # ensure columns exist
+    if not current_columns.issuperset(required_columns):
+        missing = set(required_columns) - set(current_columns)
+        msg = (
+            f"Dataframe is missing the following columns to be valid input"
+            f" for bulk waveform request {missing}"
+        )
+        raise ValidationError(msg)
+    out = df[list(required_columns)]
+    # # need to explicitly cast to datetime64 for some reason?
+    # for tname in ['starttime', 'endtime']:
+    #     out[tname] = out[tname].apply(to_datetime64).astype("datetime64[ns]")
+    return cast_dtypes(out, dtype=WAVEFORM_REQUEST_DTYPES)[required_columns]
