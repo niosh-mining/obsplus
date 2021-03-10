@@ -2,13 +2,11 @@
 A local database for waveform formats.
 """
 import time
-
 from collections import defaultdict
-from contextlib import suppress
 from concurrent.futures import Executor
-from functools import partial, reduce
+from contextlib import suppress
+from functools import partial
 from itertools import chain
-from operator import add
 from pathlib import Path
 from typing import Optional, Union
 
@@ -47,9 +45,13 @@ from obsplus.utils.bank import (
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import replace_null_nlsc_codes
 from obsplus.utils.pd import get_seed_id_series, cast_dtypes, convert_bytestrings
-from obsplus.utils.pd import order_columns, filter_index, _column_contains
+from obsplus.utils.pd import order_columns, filter_index
 from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
-from obsplus.utils.waveforms import merge_traces, get_waveform_bulk_df
+from obsplus.utils.waveforms import (
+    merge_traces,
+    get_waveform_bulk_df,
+    _filter_index_to_bulk,
+)
 
 # No idea why but this needs to be here to avoid problems with pandas
 assert tables.get_hdf5_version()
@@ -500,48 +502,22 @@ class WaveBank(_Bank):
             A dataframe returned by read_index. Enables calling code to only
             read the index from disk once for repetitive calls.
         """
-
-        def _func(time, ind, df):
-            """ return waveforms from df of bulk parameters """
-            match_chars = {"*", "?", "[", "]"}
-            t1, t2 = time[0], time[1]
-            # filter index based on start/end times
-            in_time = ~((ind["starttime"] > t2) | (ind["endtime"] < t1))
-            ind = ind[in_time]
-            # create indices used to load data
-            ar = np.ones(len(ind))  # indices of ind to use to load data
-            # filter bulk df to only include specified time
-            df = df[(df["starttime"] == time[0]) & (df["endtime"] == time[1])]
-            # determine which columns use any matching or other select features
-            uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
-            match_ar = np.array(uses_matches).any(axis=0)
-            df_match = df[match_ar]
-            df_no_match = df[~match_ar]
-            # handle columns that need matches (more expensive)
-            if not df_match.empty:
-                match_bulk = df_match[list(NSLC)].to_records(index=False)
-                mar = np.array([filter_index(ind, *tuple(b)[:4]) for b in match_bulk])
-                ar = np.logical_and(ar, mar.any(axis=0))
-            # handle columns that do not need matches
-            if not df_no_match.empty:
-                nslc1 = set(get_seed_id_series(df_no_match))
-                nslc2 = get_seed_id_series(ind)
-                ar = np.logical_and(ar, nslc2.isin(nslc1))
-            return self._index2stream(ind[ar], t1, t2)
-
         df = get_waveform_bulk_df(bulk)
         if not len(df):
             return obspy.Stream()
-
-        t1, t2 = df["starttime"].min(), df["endtime"].max()
+        # get index and filter to temporal extents of request.
+        t_min, t_max = df["starttime"].min(), df["endtime"].max()
         if index is not None:
-            ind = index[~((index.starttime > t2) | (index.endtime < t1))]
+            ind = index[~((index.starttime > t_max) | (index.endtime < t_min))]
         else:
-            ind = self.read_index(starttime=t1, endtime=t2)
-        # groupby.apply calls two times for each time set, avoid this.
+            ind = self.read_index(starttime=t_min, endtime=t_max)
+        # for each unique time, apply other filtering conditions and get traces
         unique_times = np.unique(df[["starttime", "endtime"]].values, axis=0)
-        streams = [_func(t, df=df, ind=ind) for t in unique_times]
-        return reduce(add, streams)
+        out = obspy.Stream()
+        for utime in unique_times:
+            ar = _filter_index_to_bulk(utime, ind, df, only_time=True)
+            out += self._index2stream(ind[ar], utime[0], utime[1])
+        return out
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(

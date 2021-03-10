@@ -26,7 +26,7 @@ from obsplus.constants import (
 from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
 from obsplus.utils.pd import filter_index
-from obsplus.utils.pd import get_seed_id_series, cast_dtypes
+from obsplus.utils.pd import get_seed_id_series, cast_dtypes, _column_contains
 from obsplus.utils.time import to_utc
 
 
@@ -559,7 +559,47 @@ def _df_to_waveform_bulk(df):
         )
         raise ValidationError(msg)
     out = df[list(required_columns)]
-    # # need to explicitly cast to datetime64 for some reason?
-    # for tname in ['starttime', 'endtime']:
-    #     out[tname] = out[tname].apply(to_datetime64).astype("datetime64[ns]")
     return cast_dtypes(out, dtype=WAVEFORM_REQUEST_DTYPES)[required_columns]
+
+
+def _filter_index_to_bulk(time, index_df, bulk_df, only_time=False) -> np.array:
+    """
+    Using an index_df, apply conditions in request_df and return array indicating
+    if values in index meet requested conditions.
+
+    Parameters
+    ----------
+    time
+        A tuple of mintime, maxtime
+    index_df
+        A dataframe indexing a waveform resource. Can be an index of traces
+        in a stream or an index from a wavebank.
+    bulk_df
+        The dataframe containing bulk requests.
+    only_time
+        If True, filter index_df to not include values outside of those in
+        time tuple.
+    """
+    match_chars = {"*", "?", "[", "]"}
+    ar = np.ones(len(index_df))  # indices of ind to use to load data
+    if only_time:
+        is_starttime = bulk_df["starttime"] == time[0]
+        is_endtime = bulk_df["endtime"] == time[1]
+        bulk_df = bulk_df[is_starttime & is_endtime]
+    # determine which columns use matching. These must be handled separately.
+    uses_matches = [_column_contains(bulk_df[x], match_chars) for x in NSLC]
+    match_ar = np.array(uses_matches).any(axis=0)
+    df_match = bulk_df[match_ar]
+    df_no_match = bulk_df[~match_ar]
+    # handle columns that need matches (more expensive)
+    if not df_match.empty:
+        match_bulk = df_match.to_records(index=False)
+        mar = np.array([filter_index(index_df, *tuple(b)[:4]) for b in match_bulk])
+        ar = np.logical_and(ar, mar.any(axis=0))
+    # handle columns that do not need matches
+    if not df_no_match.empty:
+        nslc1 = set(get_seed_id_series(df_no_match))
+        nslc2 = get_seed_id_series(index_df)
+        ar = np.logical_and(ar, nslc2.isin(nslc1))
+    # get a list of used traces, combine and trim
+    return ar
