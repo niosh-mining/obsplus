@@ -10,9 +10,10 @@ from obspy import Stream, UTCDateTime as UTC
 from obsplus.constants import SMALLDT64, LARGEDT64, NSLC, bulk_waveform_arg_type
 from obsplus.utils.time import to_utc
 from obsplus.utils.waveforms import (
-    _stream_data_to_df,
+    _get_waveform_df,
     get_waveform_bulk_df,
     _filter_index_to_bulk,
+    merge_traces,
 )
 
 
@@ -69,25 +70,21 @@ def get_waveforms_bulk(
         (network, station, location, channel, starttime, endtime).
     """
     # get a dataframe of stream contents
-    index = _stream_data_to_df(stream)
+    index = _get_waveform_df(stream)
     # get a dataframe of the bulk arguments, convert time to datetime64
-    df = get_waveform_bulk_df(bulk)
-    if not len(df):  # return empty string if no bulk reqs provided
+    request_df = get_waveform_bulk_df(bulk)
+    if not len(request_df):  # return empty string if no bulk reqs provided
         return obspy.Stream()
-    # filter stream and index to only include requested times
-    min_time, max_time = index["starttime"].min(), index["endtime"].max()
-    needed = ~((index.starttime > max_time) | (index.endtime < min_time))
-    index = index[needed]
-    stream = obspy.Stream([tr for tr, bo in zip(stream, needed.values) if bo])
     # get unique times and check conditions for string columns
-    # groupby.apply calls two times for each time set, avoid this.
-    unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
-    out = obspy.Stream()
-    for utime in unique_times:
-        ar = _filter_index_to_bulk(utime, index_df=index, bulk_df=df)
-        st = obspy.Stream([x for x, y in zip(stream, ar) if y])
-        out += st.slice(starttime=to_utc(utime[0]), endtime=to_utc(utime[1]))
-    return out
+    unique_times = np.unique(request_df[["starttime", "endtime"]].values, axis=0)
+    traces = []
+    for (t1, t2) in unique_times:
+        sub = _filter_index_to_bulk((t1, t2), index_df=index, bulk_df=request_df)
+        new = obspy.Stream(traces=[x.data for x in sub["trace"]]).slice(
+            starttime=to_utc(t1), endtime=to_utc(t2)
+        )
+        traces.extend(new.traces)
+    return merge_traces(obspy.Stream(traces=traces))
 
 
 # --- add get_waveforms to Stream class

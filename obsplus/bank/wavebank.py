@@ -513,11 +513,11 @@ class WaveBank(_Bank):
             ind = self.read_index(starttime=t_min, endtime=t_max)
         # for each unique time, apply other filtering conditions and get traces
         unique_times = np.unique(df[["starttime", "endtime"]].values, axis=0)
-        out = obspy.Stream()
+        traces = []
         for utime in unique_times:
-            ar = _filter_index_to_bulk(utime, ind, df, only_time=True)
-            out += self._index2stream(ind[ar], utime[0], utime[1])
-        return out
+            sub = _filter_index_to_bulk(utime, ind, df)
+            traces += self._index2stream(sub, utime[0], utime[1]).traces
+        return obspy.Stream(traces=traces)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(

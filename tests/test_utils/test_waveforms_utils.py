@@ -184,6 +184,14 @@ class TestMergeStream:
         for tr in st_out4:
             assert tr.data.dtype == np.float64
 
+    def test_merge_bingham_st(self, bingham_stream):
+        """Ensure the bingham stream can be merged"""
+        out = merge_traces(bingham_stream, inplace=False)
+        cols = list(NSLC) + ["starttime", "endtime", "gap_time", "gap_samps"]
+        gaps_df = pd.DataFrame(out.get_gaps(), columns=cols)
+        # overlaps are indicated by negative gap times
+        assert (gaps_df["gap_time"] > 0).all()
+
 
 class TestStream2Contiguous:
     """ test the stream2contiguous function works """
