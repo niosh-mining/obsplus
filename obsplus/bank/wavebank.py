@@ -517,7 +517,7 @@ class WaveBank(_Bank):
         for utime in unique_times:
             sub = _filter_index_to_bulk(utime, ind, df)
             traces += self._index2stream(sub, utime[0], utime[1], merge=False).traces
-        return merge_traces(obspy.Stream(traces=traces))
+        return merge_traces(obspy.Stream(traces=traces), inplace=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(

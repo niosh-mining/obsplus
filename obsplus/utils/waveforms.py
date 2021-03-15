@@ -269,12 +269,13 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
         gtraces = [x.data for x in df.trace[ind]]  # unpack traces
         dtype = _get_dtype(gtraces)
         # create list of time, y values, and marker for when values are filled
-        sampling_period = sampling_periods[gnum]
-        t = np.arange(t1[gnum], stop=t2[gnum] + sampling_period, step=sampling_period)
+        sampling_period = sampling_periods[gnum].to_numpy()
+        start, stop = t1[gnum].to_numpy(), t2[gnum].to_numpy()
+        t = np.arange(start=start, stop=stop + sampling_period, step=sampling_period)
         y = np.empty(np.shape(t), dtype=dtype)
         has_filled = np.zeros(len(t), dtype=np.int32)
         for tr in gtraces:
-            start_ind = np.searchsorted(t, to_timedelta64(tr.stats.starttime))
+            start_ind = np.searchsorted(t, to_datetime64(tr.stats.starttime))
             y[start_ind : start_ind + len(tr.data)] = tr.data
             has_filled[start_ind : start_ind + len(tr.data)] = 1
         gtraces[0].data = y

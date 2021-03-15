@@ -10,6 +10,7 @@ import numpy as np
 import obspy
 import pandas as pd
 import pytest
+from obspy import UTCDateTime
 
 import obsplus
 from obsplus.constants import NSLC, WAVEFORM_REQUEST_DTYPES
@@ -113,6 +114,41 @@ class TestTrimEventStream:
 class TestMergeStream:
     """ Tests for obsplus' style for merging streams together. """
 
+    @pytest.fixture()
+    def gapped_high_sample_stream(self):
+        """
+        Create a stream which has two overlapping traces with high sampling
+        rates.
+        """
+        # first trace
+        stats1 = {
+            "sampling_rate": 6000.0,
+            "starttime": UTCDateTime(2017, 9, 23, 18, 50, 29, 715100),
+            "endtime": UTCDateTime(2017, 9, 23, 18, 50, 31, 818933),
+            "network": "XI",
+            "station": "00037",
+            "location": "00",
+            "channel": "FL1",
+        }
+        data1 = np.random.rand(12624)
+        tr1 = obspy.Trace(data=data1, header=stats1)
+        # second trace
+        stat2 = {
+            "sampling_rate": 6000.0,
+            "delta": 0.00016666666666666666,
+            "starttime": UTCDateTime(2017, 9, 23, 18, 50, 31, 819100),
+            "endtime": UTCDateTime(2017, 9, 23, 18, 50, 31, 973933),
+            "npts": 930,
+            "calib": 1.0,
+            "network": "XI",
+            "station": "00037",
+            "location": "00",
+            "channel": "FL1",
+        }
+        data2 = np.random.rand(930)
+        tr2 = obspy.Trace(data=data2, header=stat2)
+        return obspy.Stream(traces=[tr1, tr2])
+
     def convert_stream_dtype(self, st, dtype):
         """ Convert datatypes on each trace in the stream. """
         st = st.copy()
@@ -191,6 +227,11 @@ class TestMergeStream:
         gaps_df = pd.DataFrame(out.get_gaps(), columns=cols)
         # overlaps are indicated by negative gap times
         assert (gaps_df["gap_time"] > 0).all()
+
+    def test_merge_high_sampling_rate(self, gapped_high_sample_stream):
+        """Ensure high sampling rate overlapped data still work."""
+        # if this runs the test passes due to unmerged assert in function
+        merge_traces(gapped_high_sample_stream)
 
 
 class TestStream2Contiguous:
