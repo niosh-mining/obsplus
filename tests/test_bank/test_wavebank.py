@@ -1280,6 +1280,12 @@ class TestGetGaps:
         gap_df = small_overlap_gaps.get_gaps_df()
         assert len(gap_df) == 0
 
+    def test_min_gap_param(self, gappy_bank):
+        """Ensure the min gap parameter works."""
+        no_gap = gappy_bank.get_gaps_df(min_gap=10000000)
+        with_gap = gappy_bank.get_gaps_df()
+        assert len(no_gap) < len(with_gap)
+
 
 class TestBadInputs:
     """ ensure wavebank handles bad inputs correctly """

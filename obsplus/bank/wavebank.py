@@ -16,7 +16,6 @@ import pandas as pd
 import tables
 from obspy import UTCDateTime, Stream
 
-import obsplus
 from obsplus.bank.core import _Bank
 from obsplus.constants import (
     NSLC,
@@ -702,7 +701,3 @@ class WaveBank(_Bank):
         if merge:
             st = merge_traces(st, inplace=True)
         return st.sort()
-
-    def get_service_version(self):
-        """ Return the last version of obsplus """
-        return obsplus.__last_version__
