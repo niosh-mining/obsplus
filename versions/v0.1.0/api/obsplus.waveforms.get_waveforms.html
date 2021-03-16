@@ -1,0 +1,139 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.waveforms.get_waveforms module &#8212; ObsPlus v0.1.0+0.gae64b2d.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.waveforms.get_waveforms.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <div class="section" id="module-obsplus.waveforms.get_waveforms">
+<span id="obsplus-waveforms-get-waveforms-module"></span><h1>obsplus.waveforms.get_waveforms module<a class="headerlink" href="#module-obsplus.waveforms.get_waveforms" title="Permalink to this headline">¶</a></h1>
+<p>Module for adding the client-like “get_waveforms” to the Stream class</p>
+<dl class="function">
+<dt id="obsplus.waveforms.get_waveforms.get_waveforms">
+<code class="sig-prename descclassname">obsplus.waveforms.get_waveforms.</code><code class="sig-name descname">get_waveforms</code><span class="sig-paren">(</span><em class="sig-param">stream</em>, <em class="sig-param">network='*'</em>, <em class="sig-param">station='*'</em>, <em class="sig-param">location='*'</em>, <em class="sig-param">channel='*'</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/waveforms/get_waveforms.html#get_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.waveforms.get_waveforms.get_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>A subset of the Client.get_waveforms method.</p>
+<p>Simply makes successive calls to Stream.select and Stream.trim under the
+hood. Matching is available on all str parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>) – A stream object.</p></li>
+<li><p><strong>network</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The network code</p></li>
+<li><p><strong>station</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The station code</p></li>
+<li><p><strong>location</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Location code</p></li>
+<li><p><strong>channel</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Channel code</p></li>
+<li><p><strong>starttime</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]) – Starttime for query</p></li>
+<li><p><strong>endtime</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]) – Endtime for query</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.waveforms.get_waveforms.get_waveforms_bulk">
+<code class="sig-prename descclassname">obsplus.waveforms.get_waveforms.</code><code class="sig-name descname">get_waveforms_bulk</code><span class="sig-paren">(</span><em class="sig-param">stream</em>, <em class="sig-param">bulk</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/waveforms/get_waveforms.html#get_waveforms_bulk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.waveforms.get_waveforms.get_waveforms_bulk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a large number of waveforms with a bulk request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>) – A stream object.</p></li>
+<li><p><strong>bulk</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]]) – A list of any number of tuples containing the following:
+(network, station, location, channel, starttime, endtime).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+obsplus.get\_waveform\_client
+=============================
+
+.. currentmodule:: obsplus
+
+.. autofunction:: get_waveform_client

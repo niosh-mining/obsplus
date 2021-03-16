@@ -1,0 +1,214 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.waveforms.get_waveforms &#8212; ObsPlus  [ v0.1.1+15.g5a158f6.dirty ] v0.1.1+15.g5a158f6.dirty documentation</title>
+    <link rel="stylesheet" href="../../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ v0.1.1+15.g5a158f6.dirty ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.waveforms.get_waveforms</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.waveforms.get_waveforms</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for adding the client-like &quot;get_waveforms&quot; to the Stream class</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">add</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">UTCDateTime</span> <span class="k">as</span> <span class="n">UTC</span>
+
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="n">SMALLDT64</span><span class="p">,</span> <span class="n">LARGEDT64</span><span class="p">,</span> <span class="n">NSLC</span><span class="p">,</span> <span class="n">bulk_waveform_arg_type</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.pd</span> <span class="kn">import</span> <span class="n">filter_index</span><span class="p">,</span> <span class="n">_column_contains</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.pd</span> <span class="kn">import</span> <span class="n">get_seed_id_series</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">to_datetime64</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">to_utc</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.waveforms</span> <span class="kn">import</span> <span class="n">_stream_data_to_df</span>
+
+
+<div class="viewcode-block" id="get_waveforms"><a class="viewcode-back" href="../../../api/obsplus.waveforms.get_waveforms.html#obsplus.waveforms.get_waveforms.get_waveforms">[docs]</a><span class="k">def</span> <span class="nf">get_waveforms</span><span class="p">(</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">Stream</span><span class="p">,</span>
+    <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">starttime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UTC</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">endtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UTC</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A subset of the Client.get_waveforms method.</span>
+
+<span class="sd">    Simply makes successive calls to Stream.select and Stream.trim under the</span>
+<span class="sd">    hood. Matching is available on all str parameters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stream</span>
+<span class="sd">        A stream object.</span>
+<span class="sd">    network</span>
+<span class="sd">        The network code</span>
+<span class="sd">    station</span>
+<span class="sd">        The station code</span>
+<span class="sd">    location</span>
+<span class="sd">        Location code</span>
+<span class="sd">    channel</span>
+<span class="sd">        Channel code</span>
+<span class="sd">    starttime</span>
+<span class="sd">        Starttime for query</span>
+<span class="sd">    endtime</span>
+<span class="sd">        Endtime for query</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">starttime</span> <span class="ow">or</span> <span class="n">SMALLDT64</span><span class="p">),</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">endtime</span> <span class="ow">or</span> <span class="n">LARGEDT64</span><span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">NSLC</span><span class="p">,</span> <span class="p">[</span><span class="n">network</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">channel</span><span class="p">])}</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">st</span></div>
+
+
+<div class="viewcode-block" id="get_waveforms_bulk"><a class="viewcode-back" href="../../../api/obsplus.waveforms.get_waveforms.html#obsplus.waveforms.get_waveforms.get_waveforms_bulk">[docs]</a><span class="k">def</span> <span class="nf">get_waveforms_bulk</span><span class="p">(</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">bulk</span><span class="p">:</span> <span class="n">bulk_waveform_arg_type</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a large number of waveforms with a bulk request.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stream</span>
+<span class="sd">        A stream object.</span>
+<span class="sd">    bulk</span>
+<span class="sd">        A list of any number of tuples containing the following:</span>
+<span class="sd">        (network, station, location, channel, starttime, endtime).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bulk</span><span class="p">:</span>  <span class="c1"># return emtpy waveforms if empty list or None</span>
+        <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_func</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">st</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; return waveforms from df of bulk parameters &quot;&quot;&quot;</span>
+        <span class="n">match_chars</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">}</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">))</span>  <span class="c1"># indices of ind to use to load data</span>
+        <span class="n">_t1</span><span class="p">,</span> <span class="n">_t2</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">t1</span> <span class="o">==</span> <span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t2</span> <span class="o">==</span> <span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="c1"># determine which columns use any matching or other select features</span>
+        <span class="n">uses_matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">_column_contains</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">match_chars</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">]</span>
+        <span class="n">match_ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">uses_matches</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">df_match</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">match_ar</span><span class="p">]</span>
+        <span class="n">df_no_match</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">match_ar</span><span class="p">]</span>
+        <span class="c1"># handle columns that need matches (more expensive)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">df_match</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">match_bulk</span> <span class="o">=</span> <span class="n">df_match</span><span class="o">.</span><span class="n">to_records</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">mar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">filter_index</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">b</span><span class="p">)[:</span><span class="mi">4</span><span class="p">])</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">match_bulk</span><span class="p">])</span>
+            <span class="n">ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span> <span class="n">mar</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># handle columns that do not need matches</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">df_no_match</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">nslc1</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">df_no_match</span><span class="p">))</span>
+            <span class="n">nslc2</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+            <span class="n">ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span> <span class="n">nslc2</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nslc1</span><span class="p">))</span>
+        <span class="c1"># get a list of used traces, combine and trim</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">ar</span><span class="p">)</span> <span class="k">if</span> <span class="n">y</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">_t1</span><span class="p">),</span> <span class="n">endtime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">_t2</span><span class="p">))</span>
+
+    <span class="c1"># get a dataframe of stream contents</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">_stream_data_to_df</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+    <span class="c1"># get a dataframe of the bulk arguments, convert time to datetime64</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">bulk</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;utc1&quot;</span><span class="p">,</span> <span class="s2">&quot;utc2&quot;</span><span class="p">])</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;utc1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">to_datetime64</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;t2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;utc2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">to_datetime64</span><span class="p">)</span>
+    <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;t1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;t2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="c1"># filter index and streams to be as short as possible</span>
+    <span class="n">needed</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="o">~</span><span class="p">((</span><span class="n">index</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&gt;</span> <span class="n">t2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">endtime</span> <span class="o">&lt;</span> <span class="n">t1</span><span class="p">))</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="n">needed</span><span class="p">]</span>
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">([</span><span class="n">tr</span> <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">bo</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">needed</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">bo</span><span class="p">])</span>
+    <span class="c1"># groupby.apply calls two times for each time set, avoid this.</span>
+    <span class="n">unique_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s2">&quot;t1&quot;</span><span class="p">,</span> <span class="s2">&quot;t2&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">streams</span> <span class="o">=</span> <span class="p">[</span><span class="n">_func</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">ind</span><span class="o">=</span><span class="n">ind</span><span class="p">,</span> <span class="n">st</span><span class="o">=</span><span class="n">stream</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">unique_times</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="n">streams</span><span class="p">)</span></div>
+
+
+<span class="c1"># --- add get_waveforms to Stream class</span>
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="o">.</span><span class="n">get_waveforms</span> <span class="o">=</span> <span class="n">get_waveforms</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="o">.</span><span class="n">get_waveforms_bulk</span> <span class="o">=</span> <span class="n">get_waveforms_bulk</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ v0.1.1+15.g5a158f6.dirty ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.waveforms.get_waveforms</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,168 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.utils.validate module &#8212; ObsPlus v0.1.0+0.gae64b2d.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.validate.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <div class="section" id="module-obsplus.utils.validate">
+<span id="obsplus-utils-validate-module"></span><h1>obsplus.utils.validate module<a class="headerlink" href="#module-obsplus.utils.validate" title="Permalink to this headline">¶</a></h1>
+<p>Core modules for validate.</p>
+<dl class="function">
+<dt id="obsplus.utils.validate.decompose">
+<code class="sig-prename descclassname">obsplus.utils.validate.</code><code class="sig-name descname">decompose</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/validate.html#decompose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.validate.decompose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decompose an object into a dict of {class: [instance1, instance2, …]}.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – The object to decompose.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A dict of class definitions (keys) and lists of instances (values)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.validate.decomposer">
+<code class="sig-prename descclassname">obsplus.utils.validate.</code><code class="sig-name descname">decomposer</code><span class="sig-paren">(</span><em class="sig-param">cls</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/validate.html#decomposer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.validate.decomposer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a function as a decomposer for a given class.</p>
+<p>The decomposer simply splits the object into its constitutive parts
+that may need to be tested. It should return a dict of the following form:</p>
+<blockquote>
+<div><p>{cls: [instance1, instance2, …], … }</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cls</strong> – The class the registered decomposer is to act on. Can be a tuple
+of classes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.validate.validate">
+<code class="sig-prename descclassname">obsplus.utils.validate.</code><code class="sig-name descname">validate</code><span class="sig-paren">(</span><em class="sig-param">obj</em>, <em class="sig-param">namespace</em>, <em class="sig-param">report=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/validate.html#validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.validate.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate an object using validators in specified namespace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – Any function whose type has registered validators.</p></li>
+<li><p><strong>namespace</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The validation namespace specified by validators.</p></li>
+<li><p><strong>report</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, return a dataframe which passed/failed validators and objects
+and suppress all failures.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Parameters can be passed individual validators using kwargs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.validate.validator">
+<code class="sig-prename descclassname">obsplus.utils.validate.</code><code class="sig-name descname">validator</code><span class="sig-paren">(</span><em class="sig-param">namespace</em>, <em class="sig-param">cls</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/validate.html#validator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.validate.validator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a callable to a given namespace to operate on type cls.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>namespace</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – </p></li>
+<li><p><strong>cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

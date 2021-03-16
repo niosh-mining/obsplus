@@ -1,0 +1,576 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.WaveBank &#8212; ObsPlus v0.0.5+0.gd319514.dirty documentation</title>
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/quickref/stubs/obsplus.WaveBank.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <div class="section" id="obsplus-wavebank">
+<h1>obsplus.WaveBank<a class="headerlink" href="#obsplus-wavebank" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="obsplus.WaveBank">
+<em class="property">class </em><code class="sig-prename descclassname">obsplus.</code><code class="sig-name descname">WaveBank</code><span class="sig-paren">(</span><em class="sig-param">base_path='.'</em>, <em class="sig-param">path_structure=None</em>, <em class="sig-param">name_structure=None</em>, <em class="sig-param">cache_size=5</em>, <em class="sig-param">format='mseed'</em>, <em class="sig-param">ext=None</em>, <em class="sig-param">executor=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class to interact with a directory of waveform files.</p>
+<p>WaveBank recursively reads each file in a directory and creates an index
+to allow the files to be efficiently queried.</p>
+<p>Implements a superset of the <a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveformClient</span></code></a>
+interface.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_path</strong> (<em>str</em>) – The path to the directory containing waveform files. If it does not
+exist an empty directory will be created.</p></li>
+<li><p><strong>path_structure</strong> (<em>str</em>) – <p>Define the directory structure of the wavebank that will be used to
+put waveforms into the directory. Characters are separated by /,
+regardless of operating system. The following words can be used in
+curly braces as data specific variables:</p>
+<blockquote>
+<div><p>year, month, day, julday, hour, minute, second, network,
+station, location, channel, time</p>
+</div></blockquote>
+<p>example : streams/{year}/{month}/{day}/{network}/{station}
+If no structure is provided it will be read from the index, if no
+index exists the default is {net}/{sta}/{chan}/{year}/{month}/{day}</p>
+</p></li>
+<li><p><strong>name_structure</strong> (<em>str</em>) – The same as path structure but for the file name. Supports the same
+variables but requires a period as the separation character. The
+default extension (.mseed) will be added. The default is {time}
+example : {seedid}.{time}</p></li>
+<li><p><strong>cache_size</strong> (<em>int</em>) – The number of queries to store. Avoids having to read the index of
+the bank multiple times for queries involving the same start and end
+times.</p></li>
+<li><p><strong>format</strong> (<em>str</em>) – The expected format for the waveform files. Any format supported by
+obspy.read is permitted. The default is mseed. Other formats will be
+tried after the default parser fails.</p></li>
+<li><p><strong>ext</strong> (<em>str</em><em> or </em><em>None</em>) – The extension of the waveform files. If provided, only files with
+this extension will be read.</p></li>
+<li><p><strong>executor</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code>]) – An executor with the same interface as concurrent.futures.Executor,
+the map method of the executor will be used for reading files and
+updating indices.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Create a `WaveBank` from a path to a directory with waveform files.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">waveform_path</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;default_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">waveform_path</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># init a WaveBank and index the files.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wbank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">waveform_path</span><span class="p">)</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Retrieve a stream objects from the bank.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load all Z component data (dont do this for large datasets!)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span> <span class="o">=</span> <span class="n">wbank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s1">&#39;*Z&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Read the index used by WaveBank as a DataFrame.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">wbank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;there should be 3 traces in the bank.&#39;</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Get availability of archive as dataframe</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">avail</span> <span class="o">=</span> <span class="n">wbank</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Get table of gaps in the archive</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gaps_df</span> <span class="o">=</span> <span class="n">wbank</span><span class="o">.</span><span class="n">get_gaps_df</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- yield 5 sec contiguous streams with 1 sec overlap (6 sec total)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># get input parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">avail</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;starttime&#39;</span><span class="p">],</span> <span class="n">avail</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;endtime&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># init list for storing output</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">wbank</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Put a new stream and into the bank</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># get an event from another dataset, keep track of its id</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;bingham_test&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">query_kwargs</span> <span class="o">=</span> <span class="nb">dict</span> <span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s1">&#39;NOQ&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s1">&#39;*Z&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_st</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">query_kwargs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_st</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wbank</span><span class="o">.</span><span class="n">put_waveforms</span><span class="p">(</span><span class="n">new_st</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st2</span> <span class="o">=</span> <span class="n">wbank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s1">&#39;*Z&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_st</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="obsplus.WaveBank.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">base_path='.'</em>, <em class="sig-param">path_structure=None</em>, <em class="sig-param">name_structure=None</em>, <em class="sig-param">cache_size=5</em>, <em class="sig-param">format='mseed'</em>, <em class="sig-param">ext=None</em>, <em class="sig-param">executor=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.__init__" title="obsplus.WaveBank.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([base_path, path_structure, …])</p></td>
+<td><p>Initialize self.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.availability" title="obsplus.WaveBank.availability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">availability</span></code></a>([network, station, location, …])</p></td>
+<td><p>Get availability for a given group of instruments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_cache</span></code>(self)</p></td>
+<td><p>Clear the index cache if the bank is using one.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensure_bank_path_exists</span></code>(self[, create])</p></td>
+<td><p>Ensure the bank_path exists else raise an BankDoesNotExistError.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_availability_df" title="obsplus.WaveBank.get_availability_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_availability_df</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Return a dataframe specifying the availability of the archive.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_gaps_df" title="obsplus.WaveBank.get_gaps_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gaps_df</span></code></a>(*args[, min_gap])</p></td>
+<td><p>Return a dataframe containing an entry for every gap in the archive.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_progress_bar</span></code>([bar])</p></td>
+<td><p>Return a progress bar instance based on bar parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_service_version" title="obsplus.WaveBank.get_service_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_service_version</span></code></a>(self)</p></td>
+<td><p>Return the last version of obsplus</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_uptime_df" title="obsplus.WaveBank.get_uptime_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_uptime_df</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Return a dataframe with uptime stats for selected channels.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_waveforms" title="obsplus.WaveBank.get_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_waveforms</span></code></a>([network, station, location, …])</p></td>
+<td><p>Get waveforms from the bank.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.get_waveforms_bulk" title="obsplus.WaveBank.get_waveforms_bulk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_waveforms_bulk</span></code></a>(bulk[, index])</p></td>
+<td><p>Get a large number of waveforms with a bulk request.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_example_bank</span></code>([dataset, path])</p></td>
+<td><p>Create an example bank which is safe to modify.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.put_waveforms" title="obsplus.WaveBank.put_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put_waveforms</span></code></a>(stream[, name, update_index])</p></td>
+<td><p>Add the waveforms in a waveforms to the bank.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.read_index" title="obsplus.WaveBank.read_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_index</span></code></a>([network, station, location, …])</p></td>
+<td><p>Return a dataframe of the index, optionally applying filters.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.update_index" title="obsplus.WaveBank.update_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_index</span></code></a>(self[, bar, paths])</p></td>
+<td><p>Iterate files in bank and add any modified since last update to index.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.yield_waveforms" title="obsplus.WaveBank.yield_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">yield_waveforms</span></code></a>([network, station, …])</p></td>
+<td><p>Yield time-series segments.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">bank_path</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">buffer</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">columns_no_path</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">executor</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ext</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.WaveBank.hdf_kwargs" title="obsplus.WaveBank.hdf_kwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hdf_kwargs</span></code></a></p></td>
+<td><p>A dict of hdf_kwargs to pass to PyTables</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">index_columns</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">index_ints</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">index_name</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">index_path</span></code></p></td>
+<td><p>Return the expected path to the index file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">index_str</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_updated</span></code></p></td>
+<td><p>Get the last time (UTC) that the bank was updated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.WaveBank.last_updated_timestamp" title="obsplus.WaveBank.last_updated_timestamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_updated_timestamp</span></code></a></p></td>
+<td><p>Return the last modified time stored in the index, else None.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">metadata_columns</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_itemsize</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">name_structure</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">namespace</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">path_structure</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="obsplus.WaveBank.availability">
+<code class="sig-name descname">availability</code><span class="sig-paren">(</span><em class="sig-param">network=None</em>, <em class="sig-param">station=None</em>, <em class="sig-param">location=None</em>, <em class="sig-param">channel=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.availability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.availability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get availability for a given group of instruments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The network code.</p></li>
+<li><p><strong>station</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The station code.</p></li>
+<li><p><strong>location</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The location code</p></li>
+<li><p><strong>channel</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The chanel code.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_availability_df">
+<code class="sig-name descname">get_availability_df</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_availability_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_availability_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dataframe specifying the availability of the archive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_gaps_df">
+<code class="sig-name descname">get_gaps_df</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">min_gap=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_gaps_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_gaps_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dataframe containing an entry for every gap in the archive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+<li><p><strong>min_gap</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">timedelta64</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – <dl class="simple">
+<dt>The minimum gap to report in seconds or as a timedelta64.</dt><dd><p>If None, use 1.5 x sampling rate for</p>
+</dd>
+</dl>
+<p>each channel.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_service_version">
+<code class="sig-name descname">get_service_version</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_service_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_service_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the last version of obsplus</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_uptime_df">
+<code class="sig-name descname">get_uptime_df</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_uptime_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_uptime_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dataframe with uptime stats for selected channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_waveforms">
+<code class="sig-name descname">get_waveforms</code><span class="sig-paren">(</span><em class="sig-param">network=None</em>, <em class="sig-param">station=None</em>, <em class="sig-param">location=None</em>, <em class="sig-param">channel=None</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get waveforms from the bank.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>All string parameters can use posix style matching with * and ? chars.
+All datapoints between selected starttime and endtime will be returned.
+Consequently there may be gaps in the returned stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.get_waveforms_bulk">
+<code class="sig-name descname">get_waveforms_bulk</code><span class="sig-paren">(</span><em class="sig-param">bulk</em>, <em class="sig-param">index=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.get_waveforms_bulk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.get_waveforms_bulk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a large number of waveforms with a bulk request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bulk</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]]) – A list of any number of lists containing the following:
+(network, station, location, channel, starttime, endtime).</p></li>
+<li><p><strong>index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]) – A dataframe returned by read_index. Enables calling code to only
+read the index from disk once for repetitive calls.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.hdf_kwargs">
+<em class="property">property </em><code class="sig-name descname">hdf_kwargs</code><a class="headerlink" href="#obsplus.WaveBank.hdf_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict of hdf_kwargs to pass to PyTables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.last_updated_timestamp">
+<em class="property">property </em><code class="sig-name descname">last_updated_timestamp</code><a class="headerlink" href="#obsplus.WaveBank.last_updated_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the last modified time stored in the index, else None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.put_waveforms">
+<code class="sig-name descname">put_waveforms</code><span class="sig-paren">(</span><em class="sig-param">stream</em>, <em class="sig-param">name=None</em>, <em class="sig-param">update_index=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.put_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.put_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the waveforms in a waveforms to the bank.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Trace</span></code>]) – An obspy waveforms object to add to the bank</p></li>
+<li><p><strong>name</strong> – Name of file, if None it will be determined based on contents</p></li>
+<li><p><strong>update_index</strong> – Flag to indicate whether or not to update the waveform index
+after writing the new events. Default is True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.read_index">
+<code class="sig-name descname">read_index</code><span class="sig-paren">(</span><em class="sig-param">network=None</em>, <em class="sig-param">station=None</em>, <em class="sig-param">location=None</em>, <em class="sig-param">channel=None</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.read_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.read_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dataframe of the index, optionally applying filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+<li><p><strong>kwargs</strong> – kwargs are passed to pandas.read_hdf function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.update_index">
+<code class="sig-name descname">update_index</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">bar=None</em>, <em class="sig-param">paths=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.update_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.update_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate files in bank and add any modified since last update to index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bar</strong> – <p>This parameter controls if a progress bar will be used for this
+function call. Its behavior is dependent on the <cite>bar</cite> parameter:</p>
+<blockquote>
+<div><p>False - Don’t use a progress bar
+None - Use the default progress bar
+ProgressBar - a custom implementation of progress bar is used.</p>
+</div></blockquote>
+<p>If a custom progress bar is to be used, it must have an <cite>update</cite>
+and <cite>finish</cite> method.</p>
+</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>sub_paths</dt><dd><p>A str, or iterable of str, specifying subdirectories (relative
+to bank path) to allow updating only files in specific directories
+of the bank. This is useful for large banks which have files added
+to them in predictable locations. However, if other files are added
+outside of these locations they may not get indexed as the banks timestamp
+indicating the last time of indexing will still get updated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.WaveBank.yield_waveforms">
+<code class="sig-name descname">yield_waveforms</code><span class="sig-paren">(</span><em class="sig-param">network=None</em>, <em class="sig-param">station=None</em>, <em class="sig-param">location=None</em>, <em class="sig-param">channel=None</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em>, <em class="sig-param">duration=3600.0</em>, <em class="sig-param">overlap=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/bank/wavebank.html#WaveBank.yield_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.WaveBank.yield_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield time-series segments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+<li><p><strong>duration</strong> (<em>float</em>) – The duration of the streams to yield. All channels selected
+channels will be included in the waveforms.</p></li>
+<li><p><strong>overlap</strong> (<em>float</em>) – If duration is used, the amount of overlap in yielded streams,
+added to the end of the waveforms.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>All string parameters can use posix style matching with * and ? chars.</p>
+<p>Total duration of yielded streams = duration + overlap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.3.
+    </div>
+  </body>
+</html>

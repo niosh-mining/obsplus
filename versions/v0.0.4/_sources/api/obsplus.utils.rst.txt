@@ -1,0 +1,26 @@
+obsplus.utils package
+=====================
+
+.. automodule:: obsplus.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   obsplus.utils.bank
+   obsplus.utils.dataset
+   obsplus.utils.docs
+   obsplus.utils.events
+   obsplus.utils.geodetics
+   obsplus.utils.misc
+   obsplus.utils.mseed
+   obsplus.utils.pd
+   obsplus.utils.stations
+   obsplus.utils.testing
+   obsplus.utils.time
+   obsplus.utils.validate
+   obsplus.utils.waveforms

@@ -1,0 +1,1531 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WaveBank &#8212; ObsPlus v0.1.1+0.g8a3ac2f.dirty documentation</title>
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">WaveBank</a><ul>
+<li><a class="reference internal" href="#Create-a-WaveBank-object">Create a WaveBank object</a></li>
+<li><a class="reference internal" href="#Get-waveforms">Get waveforms</a></li>
+<li><a class="reference internal" href="#Yield-waveforms">Yield waveforms</a></li>
+<li><a class="reference internal" href="#Put-waveforms">Put waveforms</a></li>
+<li><a class="reference internal" href="#Availability">Availability</a></li>
+<li><a class="reference internal" href="#Get-Gaps-and-uptime">Get Gaps and uptime</a></li>
+<li><a class="reference internal" href="#Read-index">Read index</a></li>
+<li><a class="reference internal" href="#Similar-Projects">Similar Projects</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/interfaces/wavebank.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="section" id="WaveBank">
+<h1>WaveBank<a class="headerlink" href="#WaveBank" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> is an in-process database for accessing seismic time-series data. Any directory structure containing obspy-readable waveforms can be used as the data source. <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> uses a simple indexing scheme and the <a class="reference external" href="https://en.wikipedia.org/wiki/Hierarchical_Data_Format">Hierarchical Data Format</a> to keep track of each <code class="docutils literal notranslate"><span class="pre">Trace</span></code> in the directory.</p>
+<p>For example, after downloading seismic data with <a class="reference external" href="https://docs.obspy.org/packages/autogen/obspy.clients.fdsn.mass_downloader.html">obspy’s fdsn mass download</a>, you need a way to access the data. You could manually read in each file but this can become very tedious and clutters up your application code with data access code. Enter WaveBank.</p>
+<div class="section" id="Create-a-WaveBank-object">
+<h2>Create a WaveBank object<a class="headerlink" href="#Create-a-WaveBank-object" title="Permalink to this headline">¶</a></h2>
+<p>We will use the <a class="reference external" href="https://en.wikipedia.org/wiki/Crandall_Canyon_Mine">Crandall Canyon</a> dataset from <a class="reference internal" href="../datasets/datasets.html"><span class="doc">ObsPlus’ datasets</span></a> to create a new <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> instance. This will ensure the waveforms have been downloaded (to the obsplus installation directory), copy the dataset to a temporary directory, and initialize a <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> instance.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">obsplus</span>
+
+<span class="c1"># get the crandall dataset bank</span>
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+<span class="c1"># a directory of waveforms now lives here:</span>
+<span class="n">waveform_path</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">waveform_path</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">waveform_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+downloading waveform data for crandall_test dataset ...
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2020-06-01 23:19:41,864] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:19:41,866] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:19:41,867] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:19:41,867] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:19:43,120] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.25 seconds)
+[2020-06-01 23:19:43,177] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:19:43,182] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:19:43,186] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:19:44,450] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:19:47,671] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-06-01 23:19:47,672] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:19:47,732] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.4 MB [98.56 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:19:47,733] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:19:47,734] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:19:47,926] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O18A.xml&#39;.
+[2020-06-01 23:19:47,929] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O15A.xml&#39;.
+[2020-06-01 23:19:47,942] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P16A.xml&#39;.
+[2020-06-01 23:19:48,053] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P15A.xml&#39;.
+[2020-06-01 23:19:48,058] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O16A.xml&#39;.
+[2020-06-01 23:19:48,117] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P17A.xml&#39;.
+[2020-06-01 23:19:48,693] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P18A.xml&#39;.
+[2020-06-01 23:19:48,695] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.R17A.xml&#39;.
+[2020-06-01 23:19:48,695] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q16A.xml&#39;.
+[2020-06-01 23:19:48,789] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q15A.xml&#39;.
+[2020-06-01 23:19:48,820] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q18A.xml&#39;.
+[2020-06-01 23:19:48,831] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.CTU.xml&#39;.
+[2020-06-01 23:19:48,937] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.MPU.xml&#39;.
+[2020-06-01 23:19:49,036] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.SRU.xml&#39;.
+[2020-06-01 23:19:49,060] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.NLU.xml&#39;.
+[2020-06-01 23:19:49,141] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.TMU.xml&#39;.
+[2020-06-01 23:19:49,161] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 16 station files [0.4 MB] in 1.4 seconds [303.39 KB/sec].
+[2020-06-01 23:19:49,162] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:19:49,163] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:19:49,163] - obspy.clients.fdsn.mass_downloader - INFO: 0 StationXML files [0.0 MB] already existed.
+[2020-06-01 23:19:49,165] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.4 MB].
+[2020-06-01 23:19:49,165] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 16 StationXML files [0.4 MB].
+[2020-06-01 23:19:49,166] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.8 MB in total.
+[2020-06-01 23:19:49,367] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:19:49,369] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:19:49,370] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:19:49,370] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:19:50,769] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.40 seconds)
+[2020-06-01 23:19:50,824] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:19:50,830] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:19:50,833] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:19:52,650] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:19:55,200] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-06-01 23:19:55,201] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:19:55,262] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [68.83 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:19:55,262] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:19:55,263] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:19:55,472] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.R16A.xml&#39;.
+[2020-06-01 23:19:55,475] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 1 station files [0.0 MB] in 0.2 seconds [122.06 KB/sec].
+[2020-06-01 23:19:55,476] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:19:55,476] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:19:55,477] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:19:55,478] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-06-01 23:19:55,479] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 1 StationXML files [0.0 MB].
+[2020-06-01 23:19:55,479] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:19:55,674] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:19:55,676] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:19:55,677] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:19:55,677] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:19:56,597] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.92 seconds)
+[2020-06-01 23:19:56,652] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:19:56,658] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:19:56,661] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:19:57,783] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:19:59,128] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-06-01 23:19:59,129] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:19:59,189] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [128.53 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:19:59,191] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:19:59,191] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:19:59,218] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:19:59,219] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:19:59,220] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:19:59,221] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:19:59,222] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-06-01 23:19:59,223] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:19:59,223] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:19:59,404] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:19:59,406] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:19:59,407] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:19:59,407] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:00,341] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.93 seconds)
+[2020-06-01 23:20:00,396] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:00,402] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:00,406] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:01,680] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:20:03,998] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-06-01 23:20:03,999] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:04,059] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [89.09 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:04,060] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:04,061] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:20:04,087] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:04,088] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:04,088] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:20:04,089] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:04,090] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-06-01 23:20:04,091] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:04,092] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:20:04,279] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:04,280] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:04,281] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:04,282] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:05,187] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.90 seconds)
+[2020-06-01 23:20:05,243] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:05,249] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:05,253] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:06,451] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:20:08,599] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-06-01 23:20:08,600] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:08,659] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [97.29 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:08,660] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:08,661] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:20:08,687] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:08,687] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:08,688] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:20:08,690] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:08,691] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-06-01 23:20:08,691] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:08,692] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:20:08,872] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:08,873] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:08,874] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:08,874] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:09,836] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.96 seconds)
+[2020-06-01 23:20:09,891] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:09,897] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:09,901] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:11,414] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:20:12,909] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-06-01 23:20:12,910] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:12,965] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [95.07 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:12,966] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:12,966] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:20:12,989] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:12,989] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:12,990] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:20:12,991] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:12,992] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.3 MB].
+[2020-06-01 23:20:12,992] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:12,993] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:20:13,199] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:13,201] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:13,201] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:13,202] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:14,474] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.27 seconds)
+[2020-06-01 23:20:14,532] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:14,538] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:14,541] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:15,076] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:20:17,227] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-06-01 23:20:17,229] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:17,288] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [119.33 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:17,289] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:17,290] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:20:17,314] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:17,315] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:17,315] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:20:17,316] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:17,318] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-06-01 23:20:17,318] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:17,319] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-06-01 23:20:17,501] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:17,503] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:17,504] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:17,505] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:18,665] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.16 seconds)
+[2020-06-01 23:20:18,720] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:18,727] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:18,730] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:19,428] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-06-01 23:20:20,454] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-06-01 23:20:20,456] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:20,512] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [182.99 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:20,513] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:20,514] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-06-01 23:20:20,537] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:20,538] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:20,538] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-06-01 23:20:20,540] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:20,541] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.3 MB].
+[2020-06-01 23:20:20,541] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:20,542] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+finished downloading waveform data for crandall_test
+downloading station data for crandall_test dataset ...
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2020-06-01 23:20:22,522] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:22,524] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:22,525] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:22,525] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:24,242] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.72 seconds)
+[2020-06-01 23:20:24,299] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:24,305] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:24,308] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:24,309] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:24,738] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:24,739] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:24,740] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:24,741] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:24,741] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:24,764] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:24,765] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:24,766] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.4 MB] already existed.
+[2020-06-01 23:20:24,767] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:24,768] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:24,768] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:24,769] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:24,864] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:24,866] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:24,867] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:24,867] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:26,199] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.33 seconds)
+[2020-06-01 23:20:26,256] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:26,262] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:26,265] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:26,266] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:26,710] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:26,711] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:26,712] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:26,712] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:26,713] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:26,737] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:26,738] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:26,739] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:26,740] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:26,740] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:26,741] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:26,741] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:26,840] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:26,842] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:26,842] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:26,843] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:28,008] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.16 seconds)
+[2020-06-01 23:20:28,066] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:28,072] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:28,075] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:28,075] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:28,467] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:28,468] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:28,469] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:28,469] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:28,470] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:28,496] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:28,497] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:28,498] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:28,499] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:28,499] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:28,500] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:28,500] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:28,598] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:28,600] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:28,600] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:28,601] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:30,055] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.45 seconds)
+[2020-06-01 23:20:30,112] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:30,118] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:30,121] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:30,122] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:30,511] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:30,512] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:30,512] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:30,513] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:30,514] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:30,539] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:30,539] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:30,540] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:30,541] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:30,542] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:30,543] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:30,543] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:30,635] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:30,637] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:30,637] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:30,638] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:31,804] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.17 seconds)
+[2020-06-01 23:20:31,859] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:31,865] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:31,867] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:31,868] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:32,258] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:32,260] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:32,260] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:32,261] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:32,262] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:32,288] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:32,289] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:32,290] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:32,291] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:32,292] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:32,292] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:32,293] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:32,389] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:32,391] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:32,392] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:32,392] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:33,275] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.88 seconds)
+[2020-06-01 23:20:33,332] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:33,338] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:33,341] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:33,342] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:33,685] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:33,687] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:33,688] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:33,688] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:33,689] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:33,711] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:33,712] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:33,713] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:33,714] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:33,715] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:33,715] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:33,716] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:33,815] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:33,817] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:33,818] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:33,818] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:34,804] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (0.99 seconds)
+[2020-06-01 23:20:34,861] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:34,867] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:34,870] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:34,871] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:35,292] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:35,293] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:35,294] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:35,295] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:35,295] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:35,321] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:35,322] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:35,323] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:35,324] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:35,325] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:35,325] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:35,326] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-06-01 23:20:35,419] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-06-01 23:20:35,421] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-06-01 23:20:35,422] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-06-01 23:20:35,422] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-06-01 23:20:36,465] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.04 seconds)
+[2020-06-01 23:20:36,522] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-06-01 23:20:36,528] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-06-01 23:20:36,531] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-06-01 23:20:36,532] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-06-01 23:20:37,207] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-06-01 23:20:37,208] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-06-01 23:20:37,209] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-06-01 23:20:37,210] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-06-01 23:20:37,210] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-06-01 23:20:37,234] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-06-01 23:20:37,235] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-06-01 23:20:37,237] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.3 MB] already existed.
+[2020-06-01 23:20:37,237] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-06-01 23:20:37,238] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-06-01 23:20:37,238] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-06-01 23:20:37,239] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+finished downloading station data for crandall_test
+downloading event data for crandall_test dataset ...
+finished downloading event data for crandall_test
+/tmp/tmpusyijvwd/crandall_test/waveforms
+</pre></div></div>
+</div>
+<p>Now we just need to feed the path of the waveform files to the WaveBank constructor.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">waveform_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>To ensure the index is up-to-date you can call the <code class="docutils literal notranslate"><span class="pre">udpate_index</span></code> method on the bank. This will iterate through all files that are timestamped later than the last time <code class="docutils literal notranslate"><span class="pre">update_index</span></code> was run.</p>
+<p>You only need to run <code class="docutils literal notranslate"><span class="pre">update_index</span></code> if the directory has not been indexed before or you have added new files to it.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bank</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WaveBank(base_path=/tmp/tmpusyijvwd/crandall_test/waveforms)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Get-waveforms">
+<h2>Get waveforms<a class="headerlink" href="#Get-waveforms" title="Permalink to this headline">¶</a></h2>
+<p>Now we can get files from the directory with the <code class="docutils literal notranslate"><span class="pre">get_waveforms</span></code> method, which has the same signature as the obspy client get_waveform methods:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">obspy</span>
+
+<span class="n">t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2007-08-06T01-44-48&#39;</span><span class="p">)</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">60</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span>
+<span class="nb">print</span> <span class="p">(</span><span class="n">st</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>  <span class="c1"># print first 5 traces</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+5 Trace(s) in Stream:
+TA.O15A..BHE | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+TA.O15A..BHN | 2007-08-06T01:44:47.999998Z - 2007-08-06T01:45:47.999998Z | 40.0 Hz, 2401 samples
+TA.O15A..BHZ | 2007-08-06T01:44:47.999998Z - 2007-08-06T01:45:47.999998Z | 40.0 Hz, 2401 samples
+TA.O16A..BHE | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+TA.O16A..BHN | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+</pre></div></div>
+</div>
+<p>We can, of course, filter on channels, locations, stations, networks, etc. using linux style search strings or regex.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">st2</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">network</span><span class="o">=</span><span class="s1">&#39;UU&#39;</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span>
+
+<span class="c1"># ensure only UU traces were returned</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st2</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span> <span class="o">==</span> <span class="s1">&#39;UU&#39;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">st2</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>  <span class="c1"># print first 5 traces</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+5 Trace(s) in Stream:
+UU.CTU..HHE | 2007-08-06T01:44:48.004000Z - 2007-08-06T01:45:48.004000Z | 100.0 Hz, 6001 samples
+UU.CTU..HHN | 2007-08-06T01:44:48.004000Z - 2007-08-06T01:45:48.004000Z | 100.0 Hz, 6001 samples
+UU.CTU..HHZ | 2007-08-06T01:44:48.004000Z - 2007-08-06T01:45:48.004000Z | 100.0 Hz, 6001 samples
+UU.MPU..HHE | 2007-08-06T01:44:48.002000Z - 2007-08-06T01:45:48.002000Z | 100.0 Hz, 6001 samples
+UU.MPU..HHN | 2007-08-06T01:44:48.002000Z - 2007-08-06T01:45:48.002000Z | 100.0 Hz, 6001 samples
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s1">&#39;O1??&#39;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s1">&#39;BH[NE]&#39;</span><span class="p">)</span>
+
+<span class="c1"># test returned traces</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&gt;=</span> <span class="n">t1</span> <span class="o">-</span> <span class="o">.</span><span class="mi">00001</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="o">&lt;=</span> <span class="n">t2</span> <span class="o">+</span> <span class="o">.</span><span class="mi">00001</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;O1&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;BH&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+6 Trace(s) in Stream:
+TA.O15A..BHE | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+TA.O15A..BHN | 2007-08-06T01:44:47.999998Z - 2007-08-06T01:45:47.999998Z | 40.0 Hz, 2401 samples
+TA.O16A..BHE | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+TA.O16A..BHN | 2007-08-06T01:44:48.000000Z - 2007-08-06T01:45:48.000000Z | 40.0 Hz, 2401 samples
+TA.O18A..BHE | 2007-08-06T01:44:47.999998Z - 2007-08-06T01:45:47.999998Z | 40.0 Hz, 2401 samples
+TA.O18A..BHN | 2007-08-06T01:44:47.999998Z - 2007-08-06T01:45:47.999998Z | 40.0 Hz, 2401 samples
+</pre></div></div>
+</div>
+<p>WaveBank also shares the <code class="docutils literal notranslate"><span class="pre">get_waveforms_bulk</span></code> method with the FDSN client for efficiently retrieving a large number of streams.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span>  <span class="c1"># in practice this list may contain hundreds or thousands of requests</span>
+    <span class="p">(</span><span class="s1">&#39;TA&#39;</span><span class="p">,</span> <span class="s1">&#39;O15A&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;BHZ&#39;</span><span class="p">,</span> <span class="n">t1</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">t2</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,),</span>
+    <span class="p">(</span><span class="s1">&#39;UU&#39;</span><span class="p">,</span> <span class="s1">&#39;SRU&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;HHZ&#39;</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,),</span>
+<span class="p">]</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">st</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2 Trace(s) in Stream:
+TA.O15A..BHZ | 2007-08-06T01:44:42.999998Z - 2007-08-06T01:45:42.999998Z | 40.0 Hz, 2401 samples
+UU.SRU..HHZ  | 2007-08-06T01:44:47.995000Z - 2007-08-06T01:45:47.995000Z | 100.0 Hz, 6001 samples
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Yield-waveforms">
+<h2>Yield waveforms<a class="headerlink" href="#Yield-waveforms" title="Permalink to this headline">¶</a></h2>
+<p>The Bank class also provides a generator for iterating large amounts of continuous waveforms. For example, if you wanted to run a power detector on the data it might make sense to process one hour at a time with a minute of overlap between the slices. We first need to create a bank on a dataset which has continuous data. For this we will use the TA dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;TA_test&#39;</span><span class="p">)</span>
+<span class="n">ta_bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+downloading waveform data for ta_test dataset ...
+finished downloading waveform data for ta_test
+downloading station data for ta_test dataset ...
+finished downloading station data for ta_test
+downloading event data for ta_test dataset ...
+finished downloading event data for ta_test
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># get a few hours of kemmerer data</span>
+<span class="n">ta_t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2007-02-15&#39;</span><span class="p">)</span>
+<span class="n">ta_t2</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2007-02-16&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">ta_bank</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">ta_t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">ta_t2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span><span class="si">}</span><span class="s1"> streams from </span><span class="si">{</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="si">}</span><span class="s1"> to </span><span class="si">{</span><span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+got 6 streams from 2007-02-15T00:00:09.999998Z to 2007-02-15T01:00:59.999998Z
+got 6 streams from 2007-02-15T00:59:59.999998Z to 2007-02-15T02:00:59.999998Z
+got 6 streams from 2007-02-15T01:59:59.999998Z to 2007-02-15T03:00:59.999998Z
+got 6 streams from 2007-02-15T02:59:59.999998Z to 2007-02-15T04:00:59.999998Z
+got 6 streams from 2007-02-15T03:59:59.999998Z to 2007-02-15T05:00:59.999998Z
+got 6 streams from 2007-02-15T04:59:59.999998Z to 2007-02-15T06:00:59.999998Z
+got 6 streams from 2007-02-15T05:59:59.999998Z to 2007-02-15T07:00:59.999998Z
+got 6 streams from 2007-02-15T06:59:59.999998Z to 2007-02-15T08:00:59.999998Z
+got 6 streams from 2007-02-15T07:59:59.999998Z to 2007-02-15T09:00:59.999998Z
+got 6 streams from 2007-02-15T08:59:59.999998Z to 2007-02-15T10:00:59.999998Z
+got 6 streams from 2007-02-15T09:59:59.999998Z to 2007-02-15T11:00:59.999998Z
+got 6 streams from 2007-02-15T10:59:59.999998Z to 2007-02-15T12:00:59.999998Z
+got 6 streams from 2007-02-15T11:59:59.999998Z to 2007-02-15T13:00:59.999998Z
+got 6 streams from 2007-02-15T12:59:59.999998Z to 2007-02-15T14:00:59.999998Z
+got 6 streams from 2007-02-15T13:59:59.999998Z to 2007-02-15T15:00:59.999998Z
+got 6 streams from 2007-02-15T14:59:59.999998Z to 2007-02-15T16:00:59.999998Z
+got 6 streams from 2007-02-15T15:59:59.999998Z to 2007-02-15T17:00:59.999998Z
+got 6 streams from 2007-02-15T16:59:59.999998Z to 2007-02-15T18:00:59.999998Z
+got 6 streams from 2007-02-15T17:59:59.999998Z to 2007-02-15T19:00:59.999998Z
+got 6 streams from 2007-02-15T18:59:59.999998Z to 2007-02-15T20:00:59.999998Z
+got 6 streams from 2007-02-15T19:59:59.999998Z to 2007-02-15T21:00:59.999998Z
+got 6 streams from 2007-02-15T20:59:59.999998Z to 2007-02-15T22:00:59.999998Z
+got 6 streams from 2007-02-15T21:59:59.999998Z to 2007-02-15T23:00:59.999998Z
+got 6 streams from 2007-02-15T22:59:59.999998Z to 2007-02-16T00:00:59.999998Z
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Put-waveforms">
+<h2>Put waveforms<a class="headerlink" href="#Put-waveforms" title="Permalink to this headline">¶</a></h2>
+<p>You can also add files to the bank by passing a stream or trace to the <code class="docutils literal notranslate"><span class="pre">bank.put_waveforms</span></code> method. WaveBank, however, does not do any file merging so you might end up with overlaps in data if you are not careful.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># show that no data for RJOB is in the bank</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s1">&#39;RJOB&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0 Trace(s) in Stream:
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># add the default stream to the archive (which contains data for RJOB)</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">put_waveforms</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="n">st_out</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s1">&#39;RJOB&#39;</span><span class="p">)</span>
+
+<span class="c1"># test output</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">st_out</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st_out</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="s1">&#39;RJOB&#39;</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">st_out</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+3 Trace(s) in Stream:
+BW.RJOB..EHE | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples
+BW.RJOB..EHN | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples
+BW.RJOB..EHZ | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Availability">
+<h2>Availability<a class="headerlink" href="#Availability" title="Permalink to this headline">¶</a></h2>
+<p>You can also use WaveBank to get availability of data, either as a dataframe or as a list of tuples in the form of [(network, station, location, channel, min_starttime, max_endtime)], which is the same as output by the <code class="docutils literal notranslate"><span class="pre">availability</span></code> method of <a class="reference external" href="https://docs.obspy.org/master/packages/obspy.clients.earthworm.html">Obspy’s Earthworm client</a>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># get a dataframe of availability by seed ids and timestamps</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s1">&#39;BHE&#39;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s1">&#39;[OR]*&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.124998</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>O16A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>O18A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.824998</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>R16A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:04:54.500000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>R17A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bank</span><span class="o">.</span><span class="n">availability</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s1">&#39;BHE&#39;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s1">&#39;[OR]*&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[(&#39;TA&#39;,
+  &#39;O15A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.124998Z),
+ (&#39;TA&#39;,
+  &#39;O16A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;O18A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.824998Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;R16A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-07T02:04:54.500000Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;R17A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.125000Z)]
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Get-Gaps-and-uptime">
+<h2>Get Gaps and uptime<a class="headerlink" href="#Get-Gaps-and-uptime" title="Permalink to this headline">¶</a></h2>
+<p>WaveBank can also return a dataframe of missing data with the <code class="docutils literal notranslate"><span class="pre">get_gaps_df</span></code> method, as well as return a dataframe of reliability statistics. These are useful, for example, if you are trying to assess the completeness of an archive of contiguous data.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bank</span><span class="o">.</span><span class="n">get_gaps_df</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s1">&#39;BHE&#39;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s1">&#39;O*&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>sampling_period</th>
+      <th>path</th>
+      <th>gap_duration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:45:48.799998</td>
+      <td>2007-08-06 08:48:30.024998</td>
+      <td>00:00:00.025000</td>
+      <td>/TA.O15A..BHE__20070806T014438Z__20070806T0145...</td>
+      <td>07:02:41.225000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 08:49:39.999998</td>
+      <td>2007-08-06 10:47:15.624998</td>
+      <td>00:00:00.025000</td>
+      <td>/TA.O15A..BHE__20070806T084830Z__20070806T0849...</td>
+      <td>01:57:35.625000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 10:48:25.599998</td>
+      <td>2007-08-07 02:04:54.499998</td>
+      <td>00:00:00.025000</td>
+      <td>/TA.O15A..BHE__20070806T104715Z__20070806T1048...</td>
+      <td>15:16:28.900000</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:06:04.474998</td>
+      <td>2007-08-07 02:14:14.100000</td>
+      <td>00:00:00.025000</td>
+      <td>/TA.O15A..BHE__20070807T020454Z__20070807T0206...</td>
+      <td>00:08:09.625002</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:15:24.074998</td>
+      <td>2007-08-07 03:44:08.474998</td>
+      <td>00:00:00.025000</td>
+      <td>/TA.O15A..BHE__20070807T021414Z__20070807T0215...</td>
+      <td>01:28:44.400000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ta_bank</span><span class="o">.</span><span class="n">get_uptime_df</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>duration</th>
+      <th>gap_duration</th>
+      <th>uptime</th>
+      <th>availability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHE</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHE</td>
+      <td>2007-02-15 00:00:00.000003</td>
+      <td>2007-02-25 00:00:00.000003</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 00:00:00.000003</td>
+      <td>2007-02-25 00:00:00.000003</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-15 00:00:00.000004</td>
+      <td>2007-02-25 00:00:00.000004</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Read-index">
+<h2>Read index<a class="headerlink" href="#Read-index" title="Permalink to this headline">¶</a></h2>
+<p>You can also read the index directly, although in most cases this shouldn’t be needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ta_bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>sampling_period</th>
+      <th>path</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-17 11:59:59.999998</td>
+      <td>2007-02-17 12:59:59.999998</td>
+      <td>00:00:10</td>
+      <td>/TA/M11A/VHZ/2007-02-17T12-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-17 12:00:00.000004</td>
+      <td>2007-02-17 13:00:00.000004</td>
+      <td>00:00:10</td>
+      <td>/TA/M11A/VHZ/2007-02-17T12-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-24 14:59:59.999998</td>
+      <td>2007-02-24 15:59:59.999998</td>
+      <td>00:00:10</td>
+      <td>/TA/M11A/VHZ/2007-02-24T15-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-24 15:00:00.000004</td>
+      <td>2007-02-24 16:00:00.000004</td>
+      <td>00:00:10</td>
+      <td>/TA/M11A/VHZ/2007-02-24T15-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-15 16:59:59.999998</td>
+      <td>2007-02-15 17:59:59.999998</td>
+      <td>00:00:10</td>
+      <td>/TA/M11A/VHZ/2007-02-15T17-00-00.mseed</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Similar-Projects">
+<h2>Similar Projects<a class="headerlink" href="#Similar-Projects" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> is a useful tool, but it may not be a good fit for every application. Check out the following items as well:</p>
+<p>Obspy has a way to visualize availability of waveform data in a directory using <a class="reference external" href="https://docs.obspy.org/tutorial/code_snippets/visualize_data_availability_of_local_waveform_archive.html">obspy-scan</a>. If you prefer a graphical option to working with <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s this might be for you.</p>
+<p>Obspy also has <a class="reference external" href="https://docs.obspy.org/master/packages/autogen/obspy.clients.filesystem.sds.Client.html#obspy.clients.filesystem.sds.Client">filesystem client</a> for working with SeisComP structured archives.</p>
+<p><a class="reference external" href="https://www.iris.edu/hq/">IRIS</a> released a mini-seed indexing program called <a class="reference external" href="https://github.com/iris-edu/mseedindex">mseedindex</a> which will have an <a class="reference external" href="https://github.com/obspy/obspy/pull/2206">ObsPy API</a>. We personally have not yet used mseedindex but it certainly looks worth checking out.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.4.
+    </div>
+  </body>
+</html>

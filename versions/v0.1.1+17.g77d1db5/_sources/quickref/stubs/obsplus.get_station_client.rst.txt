@@ -1,0 +1,6 @@
+﻿obsplus.get\_station\_client
+============================
+
+.. currentmodule:: obsplus
+
+.. autofunction:: get_station_client

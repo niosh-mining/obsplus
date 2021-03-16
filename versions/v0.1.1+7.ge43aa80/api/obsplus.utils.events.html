@@ -1,0 +1,289 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>obsplus.utils.events module &#8212; ObsPlus  [ v0.1.1+7.ge43aa80.dirty ] v0.1.1+7.ge43aa80.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.events module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.utils.events">
+<span id="obsplus-utils-events-module"></span><h1>obsplus.utils.events module<a class="headerlink" href="#module-obsplus.utils.events" title="Permalink to this headline">¶</a></h1>
+<p>General utility functions which are not specific to one data type.</p>
+<dl class="py function">
+<dt id="obsplus.utils.events.bump_creation_version">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">bump_creation_version</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#bump_creation_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.bump_creation_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bump the version in an object’s CreationInfo and add creation time.</p>
+<p>Take an obspy object and try to bump creation info. This is done
+by first creating info if obj.creation_info is None, then addition
+creation_time and bumping the version by one</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.duplicate_events">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">duplicate_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">resource_generator</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#duplicate_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.duplicate_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duplicate an event.</p>
+<p>Creates a copy of the event, and assigns new resource IDs to all
+internal objects (ie picks, station_magnitudes, etc.). Will not
+assign new resource_id to those representing external resources
+(eg analyst, velocity models, etc.).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> (<em>~catalog_or_event</em>) – The event to duplicate.</p></li>
+<li><p><strong>resource_generator</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – A callable that can be used to generate resource IDs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>~catalog_or_event</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.get_event_client">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_event_client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#get_event_client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.get_event_client" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_event_client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">pathlib.Path</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_event_client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">pathlib.Path</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_event_client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span><span class="p">:</span> <span class="n">obspy.core.event.event.Event</span></em><span class="sig-paren">)</span></dt>
+<dd><p>Extract an event client from various inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>events</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>, <a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventClient</span></code></a>]) – <dl class="simple">
+<dt>Any of the following:</dt><dd><ul class="simple">
+<li><p>A path to an obspy-readable event file</p></li>
+<li><p>A path to a directory of obspy-readable event files</p></li>
+<li><p>An <cite>obspy.Catalog</cite> instance</p></li>
+<li><p>An instance of <a class="reference internal" href="../quickref/stubs/obsplus.EventBank.html#obsplus.EventBank" title="obsplus.EventBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventBank</span></code></a></p></li>
+<li><p>Any other object that has a <cite>get_events</cite> method</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If an event client cannot be determined from the input.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventClient</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.get_preferred">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_preferred</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">what</span></em>, <em class="sig-param"><span class="n">init_empty</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#get_preferred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.get_preferred" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the preferred object (eg origin, magnitude) from the event.</p>
+<p>If not defined use the last in the list. If list is empty init empty
+object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> (<em>obspy.core.event.Event</em>) – The instance for which the preferred should be sought.</p></li>
+<li><p><strong>what</strong> (<em>the preferred item to get</em>) – Can either be “magnitude”, “origin”, or “focal_mechanism”.</p></li>
+<li><p><strong>init_empty</strong> – If True, rather than return None when no preferred object is found
+create an empty object of the appropriate class and return it.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.get_seed_id">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">get_seed_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#get_seed_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.get_seed_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the NSLC associated with an station-specific object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">AttribDict</span></code>) – The object for which to retrieve the seed id. Can be anything that
+has a waveform_id attribute or refers to an object with a
+waveform_id attribute.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The seed_id in the form of “network.station.location.channel”</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.make_class_map">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">make_class_map</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#make_class_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.make_class_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict that maps names in QML to the appropriate obspy class.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.make_origins">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">make_origins</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">inventory</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">phase_hints</span><span class="o">=</span><span class="default_value">'P', 'p'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#make_origins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.make_origins" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate a catalog or single events and ensure each has an origin.</p>
+<p>If no origins are found for an event, create one with the time set to
+the earliest pick and the location set to the location of the first hit
+station. Events are modified in place.</p>
+<p>This may be useful for location codes that need a starting location.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>events</strong> (<em>~catalog_or_event</em>) – The events to scan and add origins were necessary.</p></li>
+<li><p><strong>inventory</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Inventory</span></code>) – An inventory object which contains all the stations referenced in
+quakeml elements of events.</p></li>
+<li><p><strong>depth</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The default depth for created origins. Should be in meters. See the
+obspy docs for Origin or the quakeml standard for more details.</p></li>
+<li><p><strong>phase_hints</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>]) – List of acceptable phase hints to use for identifying the earliest
+pick. By default will only search for “P” or “p” phase hints.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Either a Catalog or Event object (same as input)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.obj_to_dict">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">obj_to_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#obj_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.obj_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the dict representation of an obspy object.</p>
+<p>Attributes and type are determined from the docstrings of the object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.prune_events">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">prune_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#prune_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.prune_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all the unreferenced rejected objects from an event or catalog.</p>
+<p>This function first creates a copy of the event/catalog. Then it looks
+all objects with rejected evaluation status’, which are not referred to
+by any un-rejected object, and removes them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>events</strong> (<em>~catalog_or_event</em>) – The events to iterate and modify</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A Catalog with the pruned events.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.events.strip_events">
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">strip_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">reject_evaluation_status</span><span class="o">=</span><span class="default_value">'rejected'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/events.html#strip_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.events.strip_events" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.events.</code><code class="sig-name descname">strip_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eve</span></em>, <em class="sig-param"><span class="n">reject_evaluation_status</span><span class="o">=</span><span class="default_value">'rejected'</span></em><span class="sig-paren">)</span></dt>
+<dd><p>Removes all derivative data and rejected objects from an event or catalog</p>
+<p>This is a nuclear option for when processing goes horribly wrong. It will
+only keep picks and amplitudes that are not rejected in addition to the
+first event description for the event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>events</strong> (<em>~catalog_or_event</em>) – The events to strip</p></li>
+<li><p><strong>reject_evaluation_status</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>) – Reject picks and amplitudes that have this as an evaluation status
+(accepts either a single value or a list)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>The stripped events</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.events.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.events module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

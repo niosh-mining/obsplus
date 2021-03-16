@@ -1,0 +1,395 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.Fetcher &#8212; ObsPlus v0.0.4+0.gdff59ab.dirty documentation</title>
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/quickref/stubs/obsplus.Fetcher.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <div class="section" id="obsplus-fetcher">
+<h1>obsplus.Fetcher<a class="headerlink" href="#obsplus-fetcher" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="obsplus.Fetcher">
+<em class="property">class </em><code class="sig-prename descclassname">obsplus.</code><code class="sig-name descname">Fetcher</code><span class="sig-paren">(</span><em class="sig-param">waveforms</em>, <em class="sig-param">stations=None</em>, <em class="sig-param">events=None</em>, <em class="sig-param">picks=None</em>, <em class="sig-param">stream_processor=None</em>, <em class="sig-param">time_before=None</em>, <em class="sig-param">time_after=None</em>, <em class="sig-param">event_query=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class for serving up data from various sources.</p>
+<p>Integrates station, event, and waveform clients to enable dataset-aware
+querying.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>waveforms</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveformClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Trace</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>, <a class="reference internal" href="../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank" title="obsplus.bank.wavebank.WaveBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveBank</span></code></a>]) – Any argument from which a waveform client can be extracted. This
+includes an obspy waveforms, directory of waveform files, or an object
+with a <cite>get_waveforms</cite> method.</p></li>
+<li><p><strong>stations</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>, <a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <a class="reference internal" href="../../api/obsplus.bank.eventbank.html#obsplus.bank.eventbank.EventBank" title="obsplus.bank.eventbank.EventBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventBank</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – Any argument from which an station client can be extracted. This
+includes an obspy Inventory, directory of station files, or an object
+with a <cite>get_stations</cite> method.</p></li>
+<li><p><strong>events</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>, <a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <a class="reference internal" href="../../api/obsplus.bank.eventbank.html#obsplus.bank.eventbank.EventBank" title="obsplus.bank.eventbank.EventBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventBank</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – Any argument from which an event client can be extracted. This
+includes an obspy Catalog, directory of event files, or an object with
+a <cite>get_events</cite> method.</p></li>
+<li><p><strong>picks</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]) – Data from which picks can be extracted. A dataframe, events, or
+event_client are all acceptable.</p></li>
+<li><p><strong>stream_processor</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>]]) – A callable that takes an obspy waveforms as input and returns an obspy
+waveforms.</p></li>
+<li><p><strong>time_before</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The default time before an given time to fetch.</p></li>
+<li><p><strong>time_after</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The default time after a supplied time to fetch.</p></li>
+<li><p><strong>event_query</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]) – A dict of arguments used to filter events.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obspy</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1">#--- Init a Fetcher</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># from a dataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;bingham_test&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds_fetcher</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds_fetcher</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># from separate clients (includes Stream, Inventory, Catalog)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">waveforms</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">events</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">event_client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stations</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">station_client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span> <span class="n">waveforms</span><span class="o">=</span><span class="n">waveforms</span><span class="p">,</span> <span class="n">stations</span><span class="o">=</span><span class="n">stations</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fetcher</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get contiguous (not event) waveform data</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># simple get_waveform calls are passed to the waveforms client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;ta_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2007-02-15&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">60</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">station</span> <span class="o">=</span> <span class="s1">&#39;M14A&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span> <span class="o">=</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+<span class="go">3 Trace(s) ...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># iterate over a range of times</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2007-02-16&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get event waveforms</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;bingham_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># iterate each event yielding streams 30 seconds after origin</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">time_before</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="s1">&#39;origin&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">yield_event_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="obsplus.Fetcher.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">waveforms</em>, <em class="sig-param">stations=None</em>, <em class="sig-param">events=None</em>, <em class="sig-param">picks=None</em>, <em class="sig-param">stream_processor=None</em>, <em class="sig-param">time_before=None</em>, <em class="sig-param">time_after=None</em>, <em class="sig-param">event_query=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.__init__" title="obsplus.Fetcher.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(waveforms[, stations, events, …])</p></td>
+<td><p>Initialize self.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.Fetcher.copy" title="obsplus.Fetcher.copy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copy</span></code></a>()</p></td>
+<td><p>Return a deep copy of the fetcher.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.get_event_waveforms" title="obsplus.Fetcher.get_event_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_event_waveforms</span></code></a>([time_before, …])</p></td>
+<td><p>Return a dict of event_ids and waveforms for each event in events.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.Fetcher.get_waveforms" title="obsplus.Fetcher.get_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_waveforms</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Get waveforms for all channels in stations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.set_events" title="obsplus.Fetcher.set_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_events</span></code></a>(events)</p></td>
+<td><p>Set event state in fetcher.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.Fetcher.set_stations" title="obsplus.Fetcher.set_stations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_stations</span></code></a>(stations)</p></td>
+<td><p>Set the station state in fetcher.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.set_waveforms" title="obsplus.Fetcher.set_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_waveforms</span></code></a>(waveforms)</p></td>
+<td><p>Set waveform state in Fetcher.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#obsplus.Fetcher.yield_event_waveforms" title="obsplus.Fetcher.yield_event_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">yield_event_waveforms</span></code></a>([time_before, …])</p></td>
+<td><p>Yield event_id and streams for each event.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.yield_waveforms" title="obsplus.Fetcher.yield_waveforms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">yield_waveforms</span></code></a>([network, station, …])</p></td>
+<td><p>Yield time-series segments from the waveform client.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#obsplus.Fetcher.picks_df" title="obsplus.Fetcher.picks_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">picks_df</span></code></a></p></td>
+<td><p>return a dataframe from the picks (if possible)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reference_funcs</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="obsplus.Fetcher.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a deep copy of the fetcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher" title="obsplus.structures.fetcher.Fetcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fetcher</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.get_event_waveforms">
+<code class="sig-name descname">get_event_waveforms</code><span class="sig-paren">(</span><em class="sig-param">time_before=None</em>, <em class="sig-param">time_after=None</em>, <em class="sig-param">reference='origin'</em>, <em class="sig-param">raise_on_fail=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.get_event_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.get_event_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of event_ids and waveforms for each event in events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_before</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The time before (in seconds) the reference that will be included
+in the waveforms if possible.</p></li>
+<li><p><strong>time_after</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The Time after (in seconds) the reference that will be included
+in the waveforms if possible.</p></li>
+<li><p><strong>reference</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – <p>A str that indicates how the starttime of the trace should be
+determined. The following are supported:</p>
+<blockquote>
+<div><p>origin - use the origin time of the event for each channel
+p - use the first p times as the start of the station traces
+s - use the first s times as the start of the station traces</p>
+</div></blockquote>
+<p>If a station doesn’t have p or s picks and “p” or “s” is used,
+it’s streams will not be returned.</p>
+</p></li>
+<li><p><strong>raise_on_fail</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, re raise and exception if one is caught during waveform
+fetching, else continue to next event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p><em>obspy.Stream</em></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.get_waveforms">
+<code class="sig-name descname">get_waveforms</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.get_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.get_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get waveforms for all channels in stations.</p>
+<p>{get_waveform_parameters}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.picks_df">
+<em class="property">property </em><code class="sig-name descname">picks_df</code><a class="headerlink" href="#obsplus.Fetcher.picks_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a dataframe from the picks (if possible)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.set_events">
+<code class="sig-name descname">set_events</code><span class="sig-paren">(</span><em class="sig-param">events</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.set_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.set_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set event state in fetcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>events</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>, <a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <a class="reference internal" href="../../api/obsplus.bank.eventbank.html#obsplus.bank.eventbank.EventBank" title="obsplus.bank.eventbank.EventBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventBank</span></code></a>]) – Data representing events, from which a client or dataframe can
+be obtained.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.set_stations">
+<code class="sig-name descname">set_stations</code><span class="sig-paren">(</span><em class="sig-param">stations</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.set_stations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.set_stations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the station state in fetcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stations</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Inventory</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]) – Data representing stations, from which a client or dataframe
+can be inferred.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.set_waveforms">
+<code class="sig-name descname">set_waveforms</code><span class="sig-paren">(</span><em class="sig-param">waveforms</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.set_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.set_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set waveform state in Fetcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>waveforms</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="../../api/obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveformClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Trace</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>, <a class="reference internal" href="../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank" title="obsplus.bank.wavebank.WaveBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveBank</span></code></a>]) – Data representing waveforms, from which a wave client can be
+inferred.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.yield_event_waveforms">
+<code class="sig-name descname">yield_event_waveforms</code><span class="sig-paren">(</span><em class="sig-param">time_before=None</em>, <em class="sig-param">time_after=None</em>, <em class="sig-param">reference='origin'</em>, <em class="sig-param">raise_on_fail=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.yield_event_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.yield_event_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield event_id and streams for each event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_before</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The time before (in seconds) the reference that will be included
+in the waveforms if possible.</p></li>
+<li><p><strong>time_after</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The Time after (in seconds) the reference that will be included
+in the waveforms if possible.</p></li>
+<li><p><strong>reference</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – <p>A str that indicates how the starttime of the trace should be
+determined. The following are supported:</p>
+<blockquote>
+<div><p>origin - use the origin time of the event
+p - use the first p time as the start for each station
+s - use the first s times as the start for each station</p>
+</div></blockquote>
+<p>If “p” or “s” is used only streams corresponding to stations with
+the appropriate phase pick will be returned.</p>
+</p></li>
+<li><p><strong>raise_on_fail</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, re raise an exception if one is caught during waveform
+fetching, else continue to next event.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Streams will not be yielded for any event for which a reference time
+cannot be obtained. For example, if reference=’S’ only events with some
+S picks will be yielded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="obsplus.Fetcher.yield_waveforms">
+<code class="sig-name descname">yield_waveforms</code><span class="sig-paren">(</span><em class="sig-param">network=None</em>, <em class="sig-param">station=None</em>, <em class="sig-param">location=None</em>, <em class="sig-param">channel=None</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em>, <em class="sig-param">duration=3600.0</em>, <em class="sig-param">overlap=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/structures/fetcher.html#Fetcher.yield_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.Fetcher.yield_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield time-series segments from the waveform client.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>str</em>) – The network code</p></li>
+<li><p><strong>station</strong> (<em>str</em>) – The station code</p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The location code</p></li>
+<li><p><strong>channel</strong> (<em>str</em>) – The channel code</p></li>
+<li><p><strong>starttime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired starttime of the waveforms</p></li>
+<li><p><strong>endtime</strong> (<em>float</em><em> or </em><em>obspy.UTCDateTime</em>) – The desired endtime of the waveforms</p></li>
+<li><p><strong>duration</strong> (<em>float</em>) – The duration of the streams to yield. All channels selected
+channels will be included in the waveforms.</p></li>
+<li><p><strong>overlap</strong> (<em>float</em>) – If duration is used, the amount of overlap in yielded streams,
+added to the end of the waveforms.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>All string parameters can use posix style matching with * and ? chars.</p>
+<p>Total duration of yielded streams = duration + overlap.</p>
+<p>If no starttime or endtime is provided the min/max indicated by the
+stations will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.2.
+    </div>
+  </body>
+</html>

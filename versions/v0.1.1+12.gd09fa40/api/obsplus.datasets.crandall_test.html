@@ -1,0 +1,179 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.datasets.crandall_test module &#8212; ObsPlus  [ v0.1.1+12.gd09fa40.dirty ] v0.1.1+12.gd09fa40.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+12.gd09fa40.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.crandall_test module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.datasets.crandall_test">
+<span id="obsplus-datasets-crandall-test-module"></span><h1>obsplus.datasets.crandall_test module<a class="headerlink" href="#module-obsplus.datasets.crandall_test" title="Permalink to this headline">¶</a></h1>
+<p>The Crandall Canyon dataset</p>
+<dl class="py class">
+<dt id="obsplus.datasets.crandall_test.Crandall">
+<em class="property">class </em><code class="sig-prename descclassname">obsplus.datasets.crandall_test.</code><code class="sig-name descname">Crandall</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/crandall_test.html#Crandall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.datasets.dataset.DataSet</span></code></a></p>
+<p>Seismic data recorded by regional stations associated with the Crandall
+Canyon Mine Collapse (goo.gl/2ezyZD). Six mine workers and three rescue
+workers lost their lives in the disaster.</p>
+<p>This dataset is of interest to mine seismology researchers because better
+understanding of the conditions and sources involved will help prevent
+future disasters.</p>
+<p>I have personally modified and added some phase picks to the events.
+As such, this dataset should be used for testing and demonstration
+purposes only.</p>
+<dl class="py method">
+<dt id="obsplus.datasets.crandall_test.Crandall.download_events">
+<code class="sig-name descname">download_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/crandall_test.html#Crandall.download_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.download_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just copy the events into a directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.datasets.crandall_test.Crandall.download_stations">
+<code class="sig-name descname">download_stations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.download_stations" title="Permalink to this definition">¶</a></dt>
+<dd><p>download waveform/station info for dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.datasets.crandall_test.Crandall.download_waveforms">
+<code class="sig-name descname">download_waveforms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.download_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>download waveform/station info for dataset.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.endtime">
+<code class="sig-name descname">endtime</code><em class="property"> = UTCDateTime(2007, 8, 10, 0, 0)</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.endtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.latitude">
+<code class="sig-name descname">latitude</code><em class="property"> = 39.462</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.latitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.longitude">
+<code class="sig-name descname">longitude</code><em class="property"> = -111.228</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.longitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.max_dist">
+<code class="sig-name descname">max_dist</code><em class="property"> = 150</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.max_dist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.name">
+<code class="sig-name descname">name</code><em class="property"> = 'crandall_test'</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.starttime">
+<code class="sig-name descname">starttime</code><em class="property"> = UTCDateTime(2007, 8, 6, 0, 0)</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.starttime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.time_after">
+<code class="sig-name descname">time_after</code><em class="property"> = numpy.timedelta64(60,'s')</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.time_after" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.time_before">
+<code class="sig-name descname">time_before</code><em class="property"> = numpy.timedelta64(10,'s')</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.time_before" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.crandall_test.Crandall.version">
+<code class="sig-name descname">version</code><em class="property"> = '0.0.1'</em><a class="headerlink" href="#obsplus.datasets.crandall_test.Crandall.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.datasets.crandall_test.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+12.gd09fa40.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.crandall_test module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

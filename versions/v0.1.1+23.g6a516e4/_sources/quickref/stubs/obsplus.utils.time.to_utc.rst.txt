@@ -1,0 +1,6 @@
+﻿obsplus.utils.time.to\_utc
+==========================
+
+.. currentmodule:: obsplus.utils.time
+
+.. autofunction:: to_utc

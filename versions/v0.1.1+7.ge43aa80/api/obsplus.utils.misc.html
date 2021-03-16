@@ -1,0 +1,429 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>obsplus.utils.misc module &#8212; ObsPlus  [ v0.1.1+7.ge43aa80.dirty ] v0.1.1+7.ge43aa80.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.misc module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.utils.misc">
+<span id="obsplus-utils-misc-module"></span><h1>obsplus.utils.misc module<a class="headerlink" href="#module-obsplus.utils.misc" title="Permalink to this headline">¶</a></h1>
+<p>Misc. ObsPlus utilities.</p>
+<dl class="py class">
+<dt id="obsplus.utils.misc.DummyFile">
+<em class="property">class </em><code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">DummyFile</code><a class="reference internal" href="../_modules/obsplus/utils/misc.html#DummyFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.DummyFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Dummy class to mock std out interface but go nowhere.</p>
+<dl class="py method">
+<dt id="obsplus.utils.misc.DummyFile.flush">
+<code class="sig-name descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#DummyFile.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.DummyFile.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>do nothing</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.utils.misc.DummyFile.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#DummyFile.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.DummyFile.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>do nothing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.apply_to_files_or_skip">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">apply_to_files_or_skip</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">directory</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#apply_to_files_or_skip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.apply_to_files_or_skip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator for applying func to all files in directory.</p>
+<p>Skip any files that raise an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>) – Any callable that takes a file path as the only input.</p></li>
+<li><p><strong>directory</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>]) – A directory that exists.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p><em>outputs of func</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.deprecated_callable">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">deprecated_callable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">replacement_str</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#deprecated_callable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.deprecated_callable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark a function as deprecated.</p>
+<p>Whenever it is used a userwarning will be issued. You can optionally
+provide a string to indicate which function should be used in its place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> – </p></li>
+<li><p><strong>replacement_str</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.get_instances_from_tree">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">get_instances_from_tree</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">object</span></em>, <em class="sig-param"><span class="n">cls</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#get_instances_from_tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.get_instances_from_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all instances in an object tree.</p>
+<p>Simply uses <a class="reference internal" href="#obsplus.utils.misc.yield_obj_parent_attr" title="obsplus.utils.misc.yield_obj_parent_attr"><code class="xref py py-func docutils literal notranslate"><span class="pre">yield_obj_parent_attr()</span></code></a> under the
+hood.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.get_progressbar">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">get_progressbar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_value</span></em>, <em class="sig-param"><span class="n">min_value</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#get_progressbar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.get_progressbar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a progress bar object using the ProgressBar2 library.</p>
+<p>Fails gracefully if bar cannot be displayed (eg if no std out).
+Args and kwargs are passed to ProgressBar constructor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_value</strong> – The highest number expected</p></li>
+<li><p><strong>min_value</strong> – The minimum number of updates required to show the bar</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.get_version_tuple">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">get_version_tuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">version_str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#get_version_tuple"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.get_version_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a semantic version string to a tuple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>version_str</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A version of the form “x.y.z”. Google semantic versioning for more
+details.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.getattrs">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">getattrs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em>, <em class="sig-param"><span class="n">col_set</span></em>, <em class="sig-param"><span class="n">default_value</span><span class="o">=</span><span class="default_value">nan</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#getattrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.getattrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse an object for a collection of attributes, return a dict of values.</p>
+<p>If obj does not have a requested attribute, or if its value is None, fill
+with the default value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code>) – Any object.</p></li>
+<li><p><strong>col_set</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>) – A sequence of attributes to extract from obj.</p></li>
+<li><p><strong>default_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code>) – If not attribute is found fill with this value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.hash_directory">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">hash_directory</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">match</span><span class="o">=</span><span class="default_value">'*'</span></em>, <em class="sig-param"><span class="n">exclude</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hidden</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#hash_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.hash_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the sha256 hash of all files in a directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The path to the directory</p></li>
+<li><p><strong>match</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A unix-style matching string</p></li>
+<li><p><strong>exclude</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – A list of unix style strings to exclude</p></li>
+<li><p><strong>hidden</strong> – If True skip all files starting with a .</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A dict containing paths and md5 hashes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.hash_file">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">hash_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#hash_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.hash_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the sha256 hash of a file.</p>
+<p>Reads the file in chunks to allow using large files. Taken from this stack
+overflow answer: <a class="reference external" href="http://bit.ly/2Jqb1Jr">http://bit.ly/2Jqb1Jr</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>]) – The path to the file to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A str of hex for file hash</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.iter_files">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">iter_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">paths</span></em>, <em class="sig-param"><span class="n">ext</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mtime</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_hidden</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#iter_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.iter_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>use os.scan dir to iter files, optionally only for those with given
+extension (ext) or modified times after mtime</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paths</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The path to the base directory to traverse. Can also use a collection
+of paths.</p></li>
+<li><p><strong>ext</strong> (<em>str</em><em> or </em><em>None</em>) – The extensions to map.</p></li>
+<li><p><strong>mtime</strong> (<em>int</em><em> or </em><em>float</em>) – Time stamp indicating the minimum mtime.</p></li>
+<li><p><strong>skip_hidden</strong> (<em>bool</em>) – If True skip files or folders (they begin with a ‘.’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p><em>Paths, as strings, meeting requirements.</em></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.iterate">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">iterate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an iterable from any object.</p>
+<p>If string, do not iterate characters, return str in tuple .</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.read_file">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">read_file</code><span class="sig-paren">(</span><em class="sig-param">file_path</em>, <em class="sig-param">funcs=(&lt;function read_csv&gt;</em>, <em class="sig-param">)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#read_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.read_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a given file_path, try reading it with each function in funcs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> – The path to the file to read</p></li>
+<li><p><strong>funcs</strong> – A tuple of functions to try to read the file (starting with first)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.register_func">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">register_func</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">list_or_dict</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#register_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.register_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator for registering a function name in a list or dict.</p>
+<p>If list_or_dict is a list only append the name of the function. If it is
+as dict append name (as key) and function as the value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list_or_dict</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]) – A list or dict to which the wrapped function will be added.</p></li>
+<li><p><strong>key</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The name to use, if different than the name of the function.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.replace_null_nlsc_codes">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obspy_object</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#replace_null_nlsc_codes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.replace_null_nlsc_codes" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">st</span><span class="p">:</span> <span class="n">obspy.core.stream.Stream</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tr</span><span class="p">:</span> <span class="n">obspy.core.trace.Trace</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inv</span><span class="p">:</span> <span class="n">obspy.core.inventory.channel.Channel</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inv</span><span class="p">:</span> <span class="n">obspy.core.inventory.channel.Channel</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span></dt>
+<dt>
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">replace_null_nlsc_codes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inv</span><span class="p">:</span> <span class="n">obspy.core.inventory.channel.Channel</span></em>, <em class="sig-param"><span class="n">null_codes</span><span class="o">=</span><span class="default_value">None, '--', 'None', 'nan', 'null', nan</span></em>, <em class="sig-param"><span class="n">replacement_value</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span></dt>
+<dd><p>Iterate an obspy object and replace nullish nslc codes with some value.</p>
+<p>Operates in place, but also returns the original object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obspy_object</strong> (<em>~any_type</em>) – An obspy catalog, event, (or any sub element), stream, trace,
+inventory, etc.</p></li>
+<li><p><strong>null_codes</strong> – The codes that are considered null values and should be replaced.</p></li>
+<li><p><strong>replacement_value</strong> – The value with which to replace the null_codes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>~any_type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.suppress_warnings">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">suppress_warnings</code><span class="sig-paren">(</span><em class="sig-param">category=&lt;class 'Warning'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#suppress_warnings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.suppress_warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context manager for suppressing warnings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>category</strong> – The types of warnings to suppress. Must be a subclass of Warning.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.try_read_catalog">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">try_read_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">catalog_path</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#try_read_catalog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.try_read_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Try to read a events from file, if it raises return None</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.validate_version_str">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">validate_version_str</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">version_str</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#validate_version_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.validate_version_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the version string is of the form x.y.z.</p>
+<p>If the version string is not valid raise a ValueError.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.utils.misc.yield_obj_parent_attr">
+<code class="sig-prename descclassname">obsplus.utils.misc.</code><code class="sig-name descname">yield_obj_parent_attr</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em>, <em class="sig-param"><span class="n">cls</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">is_attr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">has_attr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">basic_types</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/misc.html#yield_obj_parent_attr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.misc.yield_obj_parent_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recurse an object, yield a tuple of object, parent, attr.</p>
+<p>Useful when data need to be changed or the provided DataFrame extractors
+don’t quite perform the desired task. Can also be used to extract
+relationships between entities in object trees to build a connecting graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – The object to recurse through attributes of lists, tuples, and other
+instances.</p></li>
+<li><p><strong>cls</strong> – Only return instances of cls if not None, dont filter on types.</p></li>
+<li><p><strong>is_attr</strong> – Only return objects stored as attr_name, if None return all.</p></li>
+<li><p><strong>has_attr</strong> – Only return objects that have attribute has_attr, if None return all.</p></li>
+<li><p><strong>basic_types</strong> – If True, yield non-sequence basic types (int, float, str, bool).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get all picks from a catalog object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obspy.core.event</span> <span class="k">as</span> <span class="nn">ev</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cat</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;bingham_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># put all the picks in a list.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">pick</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- yield all objects which have resource identifiers</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">objects</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of (rid, parent)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RID</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">ResourceIdentifier</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RID</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">objects</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">rid</span><span class="p">),</span> <span class="n">parent</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Create a dict of {resource_id: [(attr, parent), ...]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rid_mapping</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RID</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">rid_mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">rid</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">attr</span><span class="p">,</span> <span class="n">parent</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># count how many times each resource_id is referred to</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">count</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rid_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.misc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.misc module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

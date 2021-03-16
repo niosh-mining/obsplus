@@ -1,0 +1,1835 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>obspy.core.utcdatetime &#8212; ObsPlus  [ v0.1.1+6.g3ae8213.dirty ] v0.1.1+6.g3ae8213.dirty documentation</title>
+    <link rel="stylesheet" href="../../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ v0.1.1+6.g3ae8213.dirty ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obspy.core.utcdatetime</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obspy.core.utcdatetime</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module containing a UTC-based datetime class.</span>
+
+<span class="sd">:copyright:</span>
+<span class="sd">    The ObsPy Development Team (devs@obspy.org)</span>
+<span class="sd">:license:</span>
+<span class="sd">    GNU Lesser General Public License, Version 3</span>
+<span class="sd">    (https://www.gnu.org/copyleft/lesser.html)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span>
+                        <span class="n">unicode_literals</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">future.builtins</span> <span class="kn">import</span> <span class="o">*</span>  <span class="c1"># NOQA @UnusedWildImport</span>
+<span class="kn">from</span> <span class="nn">future.utils</span> <span class="kn">import</span> <span class="n">native_str</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">obspy.core.compatibility</span> <span class="kn">import</span> <span class="n">py3_round</span>
+<span class="kn">from</span> <span class="nn">obspy.core.util.deprecation_helpers</span> <span class="kn">import</span> <span class="n">ObsPyDeprecationWarning</span>
+
+<span class="c1"># Regular expression used in the init function of the UTCDateTime objects which</span>
+<span class="c1"># is called a lot. Thus pre-compile it.</span>
+<span class="n">_YEAR0REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(\d{1,3}[-/,])(.*)$&quot;</span><span class="p">)</span>
+
+<span class="c1"># based on https://www.myintervals.com/blog/2009/05/20/iso-8601, w/ week 53 fix</span>
+<span class="n">_ISO8601_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    ^</span>
+<span class="s2">    ([\+-]?\d</span><span class="si">{4}</span><span class="s2">(?!\d</span><span class="si">{2}</span><span class="s2">\b))</span>
+<span class="s2">    ((-?)</span>
+<span class="s2">     ((0[1-9]|1[0-2])</span>
+<span class="s2">      (\3([12]\d|0[1-9]|3[01]))?</span>
+<span class="s2">      |W([0-4]\d|5[0-3])(-?[1-7])?</span>
+<span class="s2">      |(00[1-9]|0[1-9]\d|[12]\d</span><span class="si">{2}</span><span class="s2">|3([0-5]\d|6[1-6]))</span>
+<span class="s2">     )</span>
+<span class="s2">     ([T\s]</span>
+<span class="s2">      ((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?</span>
+<span class="s2">      (\17[0-5]\d([\.,]\d+)?)?</span>
+<span class="s2">      ([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?</span>
+<span class="s2">     )?</span>
+<span class="s2">    )?</span>
+<span class="s2">    $</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span><span class="p">)</span>
+
+<span class="n">TIMESTAMP0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1970</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="c1"># XXX the strftime problem seems to be specific to Python &lt; 3.2</span>
+<span class="c1"># XXX so this can be removed after dropping Python 2 support</span>
+<span class="n">STRFTIME_MAPPING</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span> <span class="s1">&#39;04d&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;%m&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;%H&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;%M&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;minute&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;%S&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;06d&#39;</span><span class="p">,</span> <span class="s1">&#39;microsecond&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;%y&#39;</span><span class="p">,</span> <span class="s1">&#39;02d&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="p">)</span>
+
+<span class="c1"># common attributes</span>
+<span class="n">YMDHMS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;minute&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">)</span>
+<span class="n">YJHMS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;julday&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;minute&#39;</span><span class="p">,</span> <span class="s1">&#39;second&#39;</span><span class="p">)</span>
+<span class="n">YMDHMS_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">T</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">UTCDateTime</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A UTC-based datetime object.</span>
+
+<span class="sd">    This datetime class is based on the POSIX time, a system for describing</span>
+<span class="sd">    instants in time, defined as the number of seconds elapsed since midnight</span>
+<span class="sd">    Coordinated Universal Time (UTC) of Thursday, January 1, 1970. Internally,</span>
+<span class="sd">    the POSIX time is represented in nanoseconds as an integer, which allows</span>
+<span class="sd">    higher precision than the default Python :class:`datetime.datetime` class.</span>
+<span class="sd">    It features the full `ISO8601:2004`_ specification and some additional</span>
+<span class="sd">    string patterns during object initialization.</span>
+
+<span class="sd">    :type args: int, float, str, :class:`datetime.datetime`, optional</span>
+<span class="sd">    :param args: The creation of a new `UTCDateTime` object depends from the</span>
+<span class="sd">        given input parameters. All possible options are summarized in the</span>
+<span class="sd">        `Examples`_ section below.</span>
+<span class="sd">    :type iso8601: bool or None, optional</span>
+<span class="sd">    :param iso8601: Enforce/disable `ISO8601:2004`_ mode. Defaults to ``None``</span>
+<span class="sd">        for auto detection. Works only with a string as first input argument.</span>
+<span class="sd">    :type strict: bool, optional</span>
+<span class="sd">    :param strict: If True, Conform to `ISO8601:2004`_ limits on positional</span>
+<span class="sd">        and keyword arguments. If False, allow hour, minute, second, and</span>
+<span class="sd">        microsecond values to exceed 23, 59, 59, and 1_000_000 respectively.</span>
+<span class="sd">    :type precision: int, optional</span>
+<span class="sd">    :param precision: Sets the precision used by the rich comparison operators.</span>
+<span class="sd">        Defaults to ``6`` digits after the decimal point. See also `Precision`_</span>
+<span class="sd">        section below.</span>
+
+<span class="sd">    .. versionchanged:: 1.1.0</span>
+<span class="sd">        UTCDateTime is no longer based on a single floating point value but</span>
+<span class="sd">        rather an integer representing nanoseconds elapsed since midnight</span>
+<span class="sd">        Coordinated Universal Time (UTC) of Thursday, January 1, 1970.</span>
+<span class="sd">        An integer internal representation allows higher precision and more</span>
+<span class="sd">        predictable behavior than a float representation.</span>
+
+<span class="sd">    .. rubric:: Supported Operations</span>
+
+<span class="sd">    ``UTCDateTime = UTCDateTime + delta``</span>
+<span class="sd">        Adds/removes ``delta`` seconds (given as int or float) to/from the</span>
+<span class="sd">        current ``UTCDateTime`` object and returns a new ``UTCDateTime``</span>
+<span class="sd">        object.</span>
+<span class="sd">        See also: :meth:`~obspy.core.utcdatetime.UTCDateTime.__add__`.</span>
+
+<span class="sd">    ``delta = UTCDateTime - UTCDateTime``</span>
+<span class="sd">        Calculates the time difference in seconds between two ``UTCDateTime``</span>
+<span class="sd">        objects. The time difference is given as float data type and may also</span>
+<span class="sd">        contain a negative number.</span>
+<span class="sd">        See also: :meth:`~obspy.core.utcdatetime.UTCDateTime.__sub__`.</span>
+
+<span class="sd">    .. rubric:: _`Examples`</span>
+
+<span class="sd">    (1) Using a timestamp.</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(0)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 0)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1240561632)</span>
+<span class="sd">        UTCDateTime(2009, 4, 24, 8, 27, 12)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1240561632.5)</span>
+<span class="sd">        UTCDateTime(2009, 4, 24, 8, 27, 12, 500000)</span>
+
+<span class="sd">    (2) Using a `ISO8601:2004`_ string. The detection may be enabled/disabled</span>
+<span class="sd">        using the``iso8601`` parameter, the default is to attempt to</span>
+<span class="sd">        auto-detect ISO8601 compliant strings.</span>
+
+<span class="sd">        * Calendar date representation.</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009-12-31T12:23:34.5&quot;)</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;20091231T122334.5&quot;)           # compact</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009-12-31T12:23:34.5Z&quot;)      # w/o time zone</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009-12-31T12:23:34+01:15&quot;)   # w/ time zone</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 11, 8, 34)</span>
+
+<span class="sd">        * Ordinal date representation.</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009-365T12:23:34.5&quot;)</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009365T122334.5&quot;)            # compact</span>
+<span class="sd">            UTCDateTime(2009, 12, 31, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009001&quot;, iso8601=True)       # enforce ISO8601</span>
+<span class="sd">            UTCDateTime(2009, 1, 1, 0, 0)</span>
+
+<span class="sd">        * Week date representation.</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009-W53-7T12:23:34.5&quot;)</span>
+<span class="sd">            UTCDateTime(2010, 1, 3, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009W537T122334.5&quot;)           # compact</span>
+<span class="sd">            UTCDateTime(2010, 1, 3, 12, 23, 34, 500000)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&quot;2009W011&quot;, iso8601=True)      # enforce ISO8601</span>
+<span class="sd">            UTCDateTime(2008, 12, 29, 0, 0)</span>
+
+<span class="sd">        * Specifying time zones.</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&#39;2019-09-18T+06&#39;)  # time zone is UTC+6</span>
+<span class="sd">            UTCDateTime(2019, 9, 17, 18, 0)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&#39;2019-09-18T02-02&#39;)  # time zone is UTC-2</span>
+<span class="sd">            UTCDateTime(2019, 9, 18, 4, 0)</span>
+
+<span class="sd">            &gt;&gt;&gt; UTCDateTime(&#39;2019-09-18T18:23:10.22-01&#39;)  # time zone is UTC-1</span>
+<span class="sd">            UTCDateTime(2019, 9, 18, 19, 23, 10, 220000)</span>
+
+<span class="sd">    (3) Using not ISO8601 compatible strings.</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;1970-01-01 12:23:34&quot;)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 12, 23, 34)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;1970,01,01,12:23:34&quot;)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 12, 23, 34)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;1970,001,12:23:34&quot;)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 12, 23, 34)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;20090701121212&quot;)</span>
+<span class="sd">        UTCDateTime(2009, 7, 1, 12, 12, 12)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;19700101&quot;)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 0)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;20110818_03:00:00&quot;)</span>
+<span class="sd">        UTCDateTime(2011, 8, 18, 3, 0)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(&quot;1970/01/17 12:23:34&quot;)</span>
+<span class="sd">        UTCDateTime(1970, 1, 17, 12, 23, 34)</span>
+
+<span class="sd">    (4) Using multiple arguments in the following order: `year, month,</span>
+<span class="sd">        day[, hour[, minute[, second[, microsecond]]]`. The year, month and day</span>
+<span class="sd">        arguments are required.</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1970, 1, 1)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 0)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1970, 1, 1, 12, 23, 34, 123456)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 12, 23, 34, 123456)</span>
+
+<span class="sd">    (5) Using the following keyword arguments: `year, month, day, julday, hour,</span>
+<span class="sd">        minute, second, microsecond`. Either the combination of year, month and</span>
+<span class="sd">        day, or year and Julian day are required. This is the only input mode</span>
+<span class="sd">        that supports using hour, minute, or second values above the natural</span>
+<span class="sd">        limits of 24, 60, 60, respectively.</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(year=1970, month=1, day=1, minute=15, microsecond=20)</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 15, 0, 20)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(year=2009, julday=234, hour=14, minute=13)</span>
+<span class="sd">        UTCDateTime(2009, 8, 22, 14, 13)</span>
+
+<span class="sd">    (6) Using a Python :class:`datetime.datetime` object.</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = datetime.datetime(2009, 5, 24, 8, 28, 12, 5001)</span>
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(dt)</span>
+<span class="sd">        UTCDateTime(2009, 5, 24, 8, 28, 12, 5001)</span>
+
+<span class="sd">    (7) Using strict=False the limits of hour, minute, and second become more</span>
+<span class="sd">        flexible:</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(year=1970, month=1, day=1, hour=48, strict=False)</span>
+<span class="sd">        UTCDateTime(1970, 1, 3, 0, 0)</span>
+
+<span class="sd">    .. rubric:: _`Precision`</span>
+
+<span class="sd">    The :class:`UTCDateTime` class works with a default precision of ``6``</span>
+<span class="sd">    digits which effects the comparison of date/time values, e.g.:</span>
+
+<span class="sd">    &gt;&gt;&gt; dt = UTCDateTime(0)</span>
+<span class="sd">    &gt;&gt;&gt; dt2 = UTCDateTime(0.00001)</span>
+<span class="sd">    &gt;&gt;&gt; dt3 = UTCDateTime(0.0000001)</span>
+<span class="sd">    &gt;&gt;&gt; print(dt.precision)</span>
+<span class="sd">    6</span>
+<span class="sd">    &gt;&gt;&gt; dt == dt2  # 5th digit is within current precision</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; dt == dt3  # 7th digit will be neglected</span>
+<span class="sd">    True</span>
+
+<span class="sd">    You may change that behavior either by,</span>
+
+<span class="sd">    (1) using the ``precision`` keyword during object initialization</span>
+<span class="sd">        (preferred):</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(0, precision=4)</span>
+<span class="sd">        &gt;&gt;&gt; dt2 = UTCDateTime(0.00001, precision=4)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.precision)</span>
+<span class="sd">        4</span>
+<span class="sd">        &gt;&gt;&gt; dt == dt2</span>
+<span class="sd">        True</span>
+
+<span class="sd">    (2) or by setting the class attribute ``DEFAULT_PRECISION`` to the desired</span>
+<span class="sd">        precision to affect all new :class:`UTCDateTime` objects</span>
+<span class="sd">        (not recommended):</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime.DEFAULT_PRECISION = 4</span>
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(0)</span>
+<span class="sd">        &gt;&gt;&gt; dt2 = UTCDateTime(0.00001)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.precision)</span>
+<span class="sd">        4</span>
+<span class="sd">        &gt;&gt;&gt; dt == dt2</span>
+<span class="sd">        True</span>
+
+<span class="sd">        Don&#39;t forget to reset ``DEFAULT_PRECISION`` if not needed anymore!</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime.DEFAULT_PRECISION = 6</span>
+
+<span class="sd">    .. _ISO8601:2004: https://en.wikipedia.org/wiki/ISO_8601</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DEFAULT_PRECISION</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_has_warned</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># this is a temporary, it will be removed soon</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new UTCDateTime object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set default precision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;precision&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_PRECISION</span><span class="p">)</span>
+        <span class="c1"># set directly to nanoseconds if given</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;ns&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">strict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">ns</span>
+            <span class="k">return</span>
+        <span class="c1"># iso8601 flag</span>
+        <span class="n">iso8601</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;iso8601&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># check parameter</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># use current date/time if no argument is given</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_from_timestamp</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">):</span>
+                <span class="c1"># ugly workaround to be able to unpickle UTCDateTime objects</span>
+                <span class="c1"># that were pickled on ObsPy &lt;1.1</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">_ns</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="c1"># work around floating point accuracy/rounding issue on</span>
+                    <span class="c1"># Py3.3, see</span>
+                    <span class="c1"># https://travis-ci.org/obspy/obspy/jobs/208941376#L751</span>
+                    <span class="c1"># timestamp is 1251073203.0399999618 so when converting to</span>
+                    <span class="c1"># integer nanosecond based UTCDateTime this should be</span>
+                    <span class="c1"># rounded to 1251073203040000 nanoseconds.. but on Py3.3 it</span>
+                    <span class="c1"># ends up as 1251073203039999, so we manually set</span>
+                    <span class="c1"># microseconds with correct rounding without artifacts from</span>
+                    <span class="c1"># floating point precision. see #1664</span>
+                    <span class="n">timestamp_seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">])</span>
+                    <span class="n">timestamp_microseconds</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">%</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">)</span>
+                    <span class="n">dt_</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">timestamp_seconds</span><span class="p">)</span>
+                    <span class="n">dt_</span> <span class="o">=</span> <span class="n">dt_</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="n">timestamp_microseconds</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt_</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="c1"># check types</span>
+            <span class="c1"># The string instance check is mainly needed to not convert</span>
+            <span class="c1"># numpy strings as these can be converted to floats on</span>
+            <span class="c1"># numpy &gt;= 1.14.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># got a timestamp</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_from_timestamp</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="fm">__float__</span><span class="p">())</span>
+                    <span class="k">return</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+                <span class="c1"># got a Python datetime.datetime object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+                <span class="c1"># got a Python datetime.date object</span>
+                <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">native_str</span><span class="p">)):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+                <span class="c1"># got a string instance</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="c1"># Raising in the case where the leading string is less than 4</span>
+                <span class="c1"># chars; linked to #2167</span>
+                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">_YEAR0REGEX</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; does not start with a 4 digit year&quot;</span> <span class="o">%</span> <span class="n">value</span><span class="p">)</span>
+
+                <span class="c1"># check for ISO8601 date string</span>
+                <span class="k">if</span> <span class="n">iso8601</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="p">(</span><span class="n">iso8601</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
+                                       <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">_ISO8601_REGEX</span><span class="p">,</span> <span class="n">value</span><span class="p">)):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_from_iso8601_string</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                        <span class="k">return</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="c1"># raise here if iso8601 is enforced otherwise fallback</span>
+                        <span class="c1"># to non iso8601 detection by continuing below</span>
+                        <span class="k">if</span> <span class="n">iso8601</span><span class="p">:</span>
+                            <span class="k">raise</span>
+
+                <span class="c1"># try to apply some standard patterns</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="c1"># check for ordinal date (julian date)</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="c1"># check for patterns</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                    <span class="c1"># looks like an compact ordinal date string</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%j&quot;</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> \
+                        <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                    <span class="c1"># looks like an ordinal date string</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%j%H%M%S&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%j&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># some parts should have 2 digits</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">),</span> <span class="mi">6</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">parts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;0&#39;</span> <span class="o">+</span> <span class="n">parts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+                    <span class="c1"># fill missing elements with zeros</span>
+                    <span class="n">value</span> <span class="o">+=</span> <span class="s1">&#39;0&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="mi">14</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">%H%M%S&quot;</span>
+                <span class="n">ms</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="n">parts</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                <span class="c1"># all parts should be digits now - here we filter unknown</span>
+                <span class="c1"># patterns and pass it directly to Python&#39;s  datetime.datetime</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                    <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+                <span class="n">dt</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">ms</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="c1"># check for ordinal/julian date kwargs</span>
+        <span class="k">if</span> <span class="s1">&#39;julday&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;julday&#39;</span><span class="p">])</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Failed to convert &#39;julday&#39; to int: </span><span class="si">{!s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;julday&#39;</span><span class="p">])</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;year&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="c1"># year given as kwargs</span>
+                <span class="n">year</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;year&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># year is first (and only) argument</span>
+                <span class="n">year</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">days_in_year</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">isleap</span><span class="p">(</span><span class="n">year</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">366</span> <span class="ow">or</span> <span class="mi">365</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;julday&#39;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">days_in_year</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&#39;julday&#39; out of bounds for year </span><span class="si">{!s}</span><span class="s2">: </span><span class="si">{!s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">year</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;julday&#39;</span><span class="p">])</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%4d%03d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">),</span>
+                                    <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;julday&#39;</span><span class="p">]))</span>
+                <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="s1">&#39;%Y%j&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">month</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;day&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">day</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;julday&#39;</span><span class="p">)</span>
+
+        <span class="c1"># check if seconds are given as float value</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">_frac</span><span class="p">,</span> <span class="n">_sec</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">modf</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="mi">6</span><span class="p">))</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;second&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">_sec</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;microsecond&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">_frac</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">))</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+
+        <span class="k">try</span><span class="p">:</span>  <span class="c1"># If a value Error is raised try to allow overflow (see #2222)</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">strict</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_overflow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_overflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                         <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handles setting date if an overflow of usual value limits is detected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Keep track of seconds due to hour, minute, second</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">seconds</span> <span class="o">+=</span> <span class="n">hour</span> <span class="o">*</span> <span class="mi">3600</span>
+        <span class="n">seconds</span> <span class="o">+=</span> <span class="n">minute</span> <span class="o">*</span> <span class="mi">60</span>
+        <span class="n">seconds</span> <span class="o">+=</span> <span class="n">second</span>
+        <span class="c1"># Init UTCDateTime based on year, month, day, add seconds</span>
+        <span class="n">utc_base</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="n">day</span><span class="p">)</span>
+        <span class="c1"># Add seconds and set nanoseconds on self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="p">(</span><span class="n">utc_base</span> <span class="o">+</span> <span class="n">seconds</span> <span class="o">+</span> <span class="n">microsecond</span> <span class="o">/</span> <span class="mi">1000000</span><span class="p">)</span><span class="o">.</span><span class="n">ns</span>
+
+    <span class="k">def</span> <span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets current timestamp using kwargs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+        <span class="n">month</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">month</span><span class="p">)</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+        <span class="n">hour</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span>
+        <span class="n">minute</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;minute&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;second&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+        <span class="n">microsecond</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;microsecond&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span>
+        <span class="n">julday</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;julday&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">julday</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">julday</span><span class="o">=</span><span class="n">julday</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="n">hour</span><span class="p">,</span>
+                                   <span class="n">minute</span><span class="o">=</span><span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="n">second</span><span class="p">,</span>
+                                   <span class="n">microsecond</span><span class="o">=</span><span class="n">microsecond</span><span class="p">)</span><span class="o">.</span><span class="n">_ns</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span>
+                                   <span class="n">second</span><span class="p">,</span> <span class="n">microsecond</span><span class="p">)</span><span class="o">.</span><span class="n">_ns</span>
+
+    <span class="k">def</span> <span class="nf">_get_ns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns POSIX timestamp as integer nanoseconds.</span>
+
+<span class="sd">        This is the internal representation of UTCDateTime objects.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :returns: POSIX timestamp as integer nanoseconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ns</span>
+
+    <span class="k">def</span> <span class="nf">_set_ns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set UTCDateTime object from POSIX timestamp as integer nanoseconds.</span>
+
+<span class="sd">        :type value: int</span>
+<span class="sd">        :param value: POSIX timestamp as integer nanoseconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># allow setting numpy integer types..</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+            <span class="n">value_</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="c1"># ..and be paranoid and check that it&#39;s still the same value after</span>
+            <span class="c1"># type casting</span>
+            <span class="k">if</span> <span class="n">value_</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Numpy integer value (</span><span class="si">{!s}</span><span class="s1">) changed during casting to &#39;</span>
+                       <span class="s1">&#39;Python builtin integer (</span><span class="si">{!s}</span><span class="s1">).&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">value_</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value_</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;nanoseconds must be set as int/long type&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__ns</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="c1"># flag that this instance has been initialized; any changes will warn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">_ns</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_ns</span><span class="p">,</span> <span class="n">_set_ns</span><span class="p">)</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_ns</span><span class="p">,</span> <span class="n">_set_ns</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_from_datetime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use Python datetime object to set current time.</span>
+
+<span class="sd">        :type dt: :class:`datetime.datetime`</span>
+<span class="sd">        :param dt: Python datetime object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="n">_datetime_to_ns</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_from_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use given timestamp to set current time.</span>
+
+<span class="sd">        :type value: int, float</span>
+<span class="sd">        :param value: Timestamp in seconds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_from_iso8601_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parses an ISO8601:2004 date time string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># remove trailing &#39;Z&#39;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># split between date and time</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="c1"># remove all hyphens in date</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># remove colons in time</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># guess date pattern</span>
+        <span class="n">length_date</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">date</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;W&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">length_date</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+            <span class="c1"># we got a week date: YYYYWwwD</span>
+            <span class="c1"># remove week indicator &#39;W&#39;</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">date_pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%W%w&quot;</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+            <span class="c1"># [Www] is the week number prefixed by the letter &#39;W&#39;, from W01</span>
+            <span class="c1"># through W53.</span>
+            <span class="c1"># strpftime %W == Week number of the year (Monday as the first day</span>
+            <span class="c1"># of the week) as a decimal number [00,53]. All days in a new year</span>
+            <span class="c1"># preceding the first Monday are considered to be in week 0.</span>
+            <span class="n">week</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="c1"># [D] is the weekday number, from 1 through 7, beginning with</span>
+            <span class="c1"># Monday and ending with Sunday.</span>
+            <span class="c1"># strpftime %w == Weekday as a decimal number [0(Sunday),6]</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">day</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+                <span class="n">day</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%04d%02d%1d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">week</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">length_date</span> <span class="o">==</span> <span class="mi">7</span> <span class="ow">and</span> <span class="n">date</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># we got a ordinal date: YYYYDDD</span>
+            <span class="n">date_pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%j&quot;</span>
+        <span class="k">elif</span> <span class="n">length_date</span> <span class="o">==</span> <span class="mi">8</span> <span class="ow">and</span> <span class="n">date</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="c1"># we got a calendar date: YYYYMMDD</span>
+            <span class="n">date_pattern</span> <span class="o">=</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Wrong or incomplete ISO8601:2004 date format&quot;</span><span class="p">)</span>
+        <span class="c1"># check for time zone information</span>
+        <span class="c1"># note that the zone designator is the actual offset from UTC and</span>
+        <span class="c1"># does not include any information on daylight saving time</span>
+        <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s1">&#39;+&#39;</span> <span class="ow">in</span> <span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:]:</span>
+            <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">tz</span><span class="p">)</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">)</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">time</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s1">&#39;-&#39;</span> <span class="ow">in</span> <span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:]:</span>
+            <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">tz</span><span class="p">)</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">delta</span><span class="p">:</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">tz</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">tz</span> <span class="o">+=</span> <span class="s1">&#39;0&#39;</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">*</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="c1"># split microseconds</span>
+        <span class="n">ms</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">time</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">ms</span><span class="p">)</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">ms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;0.&#39;</span> <span class="o">+</span> <span class="n">ms</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="c1"># guess time pattern</span>
+        <span class="n">length_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">length_time</span> <span class="o">==</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">time</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">time_pattern</span> <span class="o">=</span> <span class="s2">&quot;%H%M%S&quot;</span>
+        <span class="k">elif</span> <span class="n">length_time</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="n">time</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">time_pattern</span> <span class="o">=</span> <span class="s2">&quot;%H%M&quot;</span>
+        <span class="k">elif</span> <span class="n">length_time</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">time</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">time_pattern</span> <span class="o">=</span> <span class="s2">&quot;%H&quot;</span>
+        <span class="k">elif</span> <span class="n">length_time</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">time_pattern</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Wrong or incomplete ISO8601:2004 time format&quot;</span><span class="p">)</span>
+        <span class="c1"># parse patterns</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date</span> <span class="o">+</span> <span class="s1">&#39;T&#39;</span> <span class="o">+</span> <span class="n">time</span><span class="p">,</span>
+                                        <span class="n">date_pattern</span> <span class="o">+</span> <span class="s1">&#39;T&#39;</span> <span class="o">+</span> <span class="n">time_pattern</span><span class="p">)</span>
+        <span class="c1"># add microseconds and eventually correct time zone</span>
+        <span class="n">dt</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span> <span class="o">+</span> <span class="n">ms</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_from_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns UTC timestamp in seconds.</span>
+
+<span class="sd">        :rtype: float</span>
+<span class="sd">        :return: Timestamp in seconds.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 123456)</span>
+<span class="sd">        &gt;&gt;&gt; dt.timestamp</span>
+<span class="sd">        1222864235.123456</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">/</span> <span class="mf">1e9</span>
+
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_timestamp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__float__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns UTC timestamp in seconds.</span>
+
+<span class="sd">        :rtype: float</span>
+<span class="sd">        :return: Timestamp in seconds.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 123456)</span>
+<span class="sd">        &gt;&gt;&gt; float(dt)</span>
+<span class="sd">        1222864235.123456</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span>
+
+    <span class="k">def</span> <span class="nf">_get_datetime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Python datetime object.</span>
+
+<span class="sd">        :rtype: :class:`datetime.datetime`</span>
+<span class="sd">        :return: Python datetime object.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.datetime</span>
+<span class="sd">        datetime.datetime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># datetime.utcfromtimestamp will cut off but not round</span>
+        <span class="c1"># avoid through adding timedelta - also avoids the year 2038 problem</span>
+        <span class="n">rounded_ns</span> <span class="o">=</span> <span class="n">py3_round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">rounded_ns</span> <span class="o">//</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">,</span>
+                                <span class="n">microseconds</span><span class="o">=</span><span class="n">rounded_ns</span> <span class="o">%</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span> <span class="o">//</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TIMESTAMP0</span> <span class="o">+</span> <span class="n">dt</span>
+        <span class="k">except</span> <span class="ne">OverflowError</span><span class="p">:</span>
+            <span class="c1"># for very large future / past dates</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+
+    <span class="n">datetime</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_datetime</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Python date object..</span>
+
+<span class="sd">        :rtype: :class:`datetime.date`</span>
+<span class="sd">        :return: Python date object.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.date</span>
+<span class="sd">        datetime.date(2008, 10, 1)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+    <span class="n">date</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_date</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns year of the current UTCDateTime object.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns year as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11)</span>
+<span class="sd">        &gt;&gt;&gt; dt.year</span>
+<span class="sd">        2012</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">year</span>
+
+    <span class="k">def</span> <span class="nf">_set_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets year of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Year</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_year</span><span class="p">,</span> <span class="n">_set_year</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_month</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns month as an integer (January is 1, December is 12).</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns month as an integer, where January is 1 and December</span>
+<span class="sd">            is 12.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11)</span>
+<span class="sd">        &gt;&gt;&gt; dt.month</span>
+<span class="sd">        2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">month</span>
+
+    <span class="k">def</span> <span class="nf">_set_month</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets month of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Month</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">month</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">month</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_month</span><span class="p">,</span> <span class="n">_set_month</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_day</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns day as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns day as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11)</span>
+<span class="sd">        &gt;&gt;&gt; dt.day</span>
+<span class="sd">        11</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">day</span>
+
+    <span class="k">def</span> <span class="nf">_set_day</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets day of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Day</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">day</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">day</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_day</span><span class="p">,</span> <span class="n">_set_day</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_weekday</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the day of the week as an integer (Monday is 0, Sunday is 6).</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns day of the week as an integer, where Monday is 0 and</span>
+<span class="sd">            Sunday is 6.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.weekday</span>
+<span class="sd">        2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+
+    <span class="n">weekday</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_weekday</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Python time object.</span>
+
+<span class="sd">        :rtype: :class:`datetime.time`</span>
+<span class="sd">        :return: Python time object.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.time</span>
+<span class="sd">        datetime.time(12, 30, 35, 45020)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">time</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_hour</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns hour as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns hour as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11, 10, 11, 12)</span>
+<span class="sd">        &gt;&gt;&gt; dt.hour</span>
+<span class="sd">        10</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">hour</span>
+
+    <span class="k">def</span> <span class="nf">_set_hour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets hours of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Hours</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">hour</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_hour</span><span class="p">,</span> <span class="n">_set_hour</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_minute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns minute as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns minute as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11, 10, 11, 12)</span>
+<span class="sd">        &gt;&gt;&gt; dt.minute</span>
+<span class="sd">        11</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">minute</span>
+
+    <span class="k">def</span> <span class="nf">_set_minute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets minutes of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Minutes</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">minute</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">minute</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_minute</span><span class="p">,</span> <span class="n">_set_minute</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_second</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns seconds as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns seconds as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11, 10, 11, 12)</span>
+<span class="sd">        &gt;&gt;&gt; dt.second</span>
+<span class="sd">        12</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">second</span>
+
+    <span class="k">def</span> <span class="nf">_set_second</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets seconds of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Seconds</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">second</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">second</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_second</span><span class="p">,</span> <span class="n">_set_second</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_microsecond</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns microseconds as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns microseconds as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 2, 11, 10, 11, 12, 345234)</span>
+<span class="sd">        &gt;&gt;&gt; dt.microsecond</span>
+<span class="sd">        345234</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ms</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">py3_round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">%</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span> <span class="o">//</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ms</span> <span class="o">%</span> <span class="mi">1000000</span>
+
+    <span class="k">def</span> <span class="nf">_set_microsecond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets microseconds of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Microseconds</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">microsecond</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_microsecond</span><span class="p">,</span> <span class="n">_set_microsecond</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_julday</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns Julian day as an integer.</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Julian day as an integer.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.julday</span>
+<span class="sd">        275</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">()</span><span class="o">.</span><span class="n">tm_yday</span>
+
+    <span class="k">def</span> <span class="nf">_set_julday</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets Julian day of current UTCDateTime object.</span>
+
+<span class="sd">        :param value: Julian day</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">julday</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">julday</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_julday</span><span class="p">,</span> <span class="n">_set_julday</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">timetuple</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a time.struct_time such as returned by time.localtime().</span>
+
+<span class="sd">        :rtype: time.struct_time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">utctimetuple</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a time.struct_time of current UTCDateTime object.</span>
+
+<span class="sd">        :rtype: time.struct_time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utctimetuple</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds seconds and microseconds to current UTCDateTime object.</span>
+
+<span class="sd">        :type value: int, float</span>
+<span class="sd">        :param value: Seconds to add</span>
+<span class="sd">        :rtype: :class:`~obspy.core.utcdatetime.UTCDateTime`</span>
+<span class="sd">        :return: New UTCDateTime object.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(1970, 1, 1, 0, 0)</span>
+<span class="sd">        &gt;&gt;&gt; dt + 2</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 0, 2)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1970, 1, 1, 0, 0) + 1.123456</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 0, 0, 1, 123456)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">):</span>
+            <span class="c1"># see datetime.timedelta.total_seconds</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">microseconds</span> <span class="o">+</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">seconds</span> <span class="o">+</span> <span class="n">value</span><span class="o">.</span><span class="n">days</span> <span class="o">*</span>
+                     <span class="mi">86400</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">6</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;unsupported operand type(s) for +: &#39;UTCDateTime&#39; and &quot;</span>
+                   <span class="s2">&quot;&#39;UTCDateTime&#39;&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">ns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subtracts seconds and microseconds from current UTCDateTime object.</span>
+
+<span class="sd">        :type value: int, float or :class:`~obspy.core.utcdatetime.UTCDateTime`</span>
+<span class="sd">        :param value: Seconds or UTCDateTime object to subtract. Subtracting an</span>
+<span class="sd">            UTCDateTime objects results into a relative time span in seconds.</span>
+<span class="sd">        :rtype: :class:`~obspy.core.utcdatetime.UTCDateTime` or float</span>
+<span class="sd">        :return: New UTCDateTime object or relative time span in seconds.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(1970, 1, 2, 0, 0)</span>
+<span class="sd">        &gt;&gt;&gt; dt - 2</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 23, 59, 58)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1970, 1, 2, 0, 0) - 1.123456</span>
+<span class="sd">        UTCDateTime(1970, 1, 1, 23, 59, 58, 876544)</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(1970, 1, 2, 0, 0) - UTCDateTime(1970, 1, 1, 0, 0)</span>
+<span class="sd">        86400.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">round</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">-</span> <span class="n">value</span><span class="o">.</span><span class="n">_ns</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__precision</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">):</span>
+            <span class="c1"># see datetime.timedelta.total_seconds</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">microseconds</span> <span class="o">+</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">seconds</span> <span class="o">+</span> <span class="n">value</span><span class="o">.</span><span class="n">days</span> <span class="o">*</span>
+                     <span class="mi">86400</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">6</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e6</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">ns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="n">value</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))))</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns ISO8601 string representation from current UTCDateTime object.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; str(dt)</span>
+<span class="sd">        &#39;2008-10-01T12:30:35.045020Z&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span>
+        <span class="n">time_str</span> <span class="o">=</span> <span class="n">YMDHMS_FORMAT</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">YMDHMS</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="n">py3_round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">-</span> <span class="mi">9</span><span class="p">)</span>
+            <span class="n">ns_str</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%09d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ns</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">9</span><span class="p">))[:</span><span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">]</span>
+            <span class="n">time_str</span> <span class="o">+=</span> <span class="p">(</span><span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">ns_str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">time_str</span> <span class="o">+</span> <span class="s1">&#39;Z&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_repr_pretty_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">cycle</span><span class="p">):</span>  <span class="c1"># @UnusedVariable</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__unicode__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns ISO8601 unicode representation from current UTCDateTime object.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.__unicode__()</span>
+<span class="sd">        &#39;2008-10-01T12:30:35.045020Z&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_operate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">op_func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">UTCDateTime</span><span class="p">):</span>
+            <span class="n">ndigits</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">precision</span><span class="p">)</span> <span class="o">-</span> <span class="mi">9</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">precision</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Comparing UTCDateTime objects of different precision&#39;</span>
+                       <span class="s1">&#39; is not defined will raise an Exception in a future&#39;</span>
+                       <span class="s1">&#39; version of obspy&#39;</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ObsPyDeprecationWarning</span><span class="p">)</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">py3_round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="n">ndigits</span><span class="p">)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">py3_round</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="n">ndigits</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">op_func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">other</span><span class="p">),</span> <span class="n">op_func</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;==&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t1 == t2</span>
+<span class="sd">        True</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 == t2</span>
+<span class="sd">        False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;!=&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t1 == t2</span>
+<span class="sd">        True</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 == t2</span>
+<span class="sd">        False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;&lt;&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &lt; t2</span>
+<span class="sd">        False</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &lt; t2</span>
+<span class="sd">        True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;&lt;=&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &lt;= t2</span>
+<span class="sd">        True</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &lt;= t2</span>
+<span class="sd">        False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">le</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;&gt;&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &gt; t2</span>
+<span class="sd">        False</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &gt; t2</span>
+<span class="sd">        True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">gt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rich comparison operator &#39;&gt;=&#39;.</span>
+
+<span class="sd">        .. rubric: Example</span>
+
+<span class="sd">        Comparing two UTCDateTime objects will compare the nanoseconds integers</span>
+<span class="sd">        rounded to a number of significant digits determined by the precision</span>
+<span class="sd">        attribute.</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &gt;= t2</span>
+<span class="sd">        True</span>
+
+<span class="sd">        Defining a higher precision changes the behavior of the operator</span>
+
+<span class="sd">        &gt;&gt;&gt; t1 = UTCDateTime(123.000000012, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t2 = UTCDateTime(123.000000099, precision=9)</span>
+<span class="sd">        &gt;&gt;&gt; t1 &gt;= t2</span>
+<span class="sd">        False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operate</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">ge</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a representation of UTCDatetime object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;UTCDateTime&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()[</span><span class="mi">17</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="fm">__abs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns absolute timestamp value of the current UTCDateTime object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># needed for unittest.assertAlmostEqual tests on Linux</span>
+        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        An object is hashable if it has a hash value which never changes</span>
+<span class="sd">        during its lifetime. As an UTCDateTime object may change over time,</span>
+<span class="sd">        it&#39;s not hashable. Use the :meth:`~UTCDateTime.datetime()` method to</span>
+<span class="sd">        generate a :class:`datetime.datetime` object for hashing. But be aware:</span>
+<span class="sd">        once the UTCDateTime object changes, the hash is not valid anymore.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># explicitly flag it as unhashable</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># raise a warning if overwriting previous ns (see #2072)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_warned</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Setting attributes on UTCDateTime instances will raise an&#39;</span>
+                   <span class="s1">&#39; Exception in a future version of Obspy.&#39;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ObsPyDeprecationWarning</span><span class="p">)</span>
+            <span class="c1"># only issue the warning once per object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;_has_warned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">strftime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string representing the date and time, controlled by an</span>
+<span class="sd">        explicit format string.</span>
+
+<span class="sd">        :type format: str</span>
+<span class="sd">        :param format: Format string.</span>
+<span class="sd">        :return: Formatted string representing the date and time.</span>
+
+<span class="sd">        Format codes referring to hours, minutes or seconds will see 0 values.</span>
+<span class="sd">        See methods :meth:`~datetime.datetime.strftime()` and</span>
+<span class="sd">        :meth:`~datetime.datetime.strptime()` for more information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># See https://bugs.python.org/issue32195</span>
+        <span class="c1"># This is an attempt to get consistent behavior across platforms.</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;linux&quot;</span><span class="p">):</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="nb">format</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;%Y&quot;</span><span class="p">,</span> <span class="s2">&quot;%04Y&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+        <span class="c1"># this is trying to work around strftime refusing to work with years</span>
+        <span class="c1"># &lt;1900</span>
+        <span class="c1"># XXX this problem seems to be specific to Python &lt; 3.2</span>
+        <span class="c1"># XXX so this can be removed after dropping Python 2 support</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># some other error? just raise it..</span>
+            <span class="k">if</span> <span class="s1">&#39;the datetime strftime() methods require year&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                <span class="k">raise</span>
+            <span class="c1"># otherwise, try to do replace all strftime &#39;%&#39; commands with</span>
+            <span class="c1"># simple string formatting</span>
+            <span class="n">format_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strftime_replacement</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+            <span class="c1"># if there&#39;s still some strftime commands in there, we have a</span>
+            <span class="c1"># problem still (&#39;%%&#39; is a %-sign literal)</span>
+            <span class="k">if</span> <span class="s1">&#39;%&#39;</span> <span class="ow">in</span> <span class="n">format_</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%%</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+                <span class="k">raise</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">format_</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">_strftime_replacement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strftime_string</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Replace all simple, year-independent strftime commands</span>
+
+<span class="sd">        &gt;&gt;&gt; t = UTCDateTime(1813, 10, 30, 12, 34, 56, 789012)</span>
+<span class="sd">        &gt;&gt;&gt; print(t._strftime_replacement(&#39;&quot;%Y-%m-%dT%H:%M:%S.%f %y&quot;&#39;))</span>
+<span class="sd">        &quot;1813-10-30T12:34:56.789012 13&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">strftime_key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">,</span> <span class="n">property_name</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">STRFTIME_MAPPING</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">strftime_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">strftime_string</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">strftime_string</span> <span class="o">=</span> <span class="n">strftime_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                <span class="n">strftime_key</span><span class="p">,</span> <span class="s1">&#39;{</span><span class="si">%s</span><span class="s1">:</span><span class="si">%s</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">property_name</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">))</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">replacement</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">replacement</span><span class="p">)</span>
+            <span class="n">strftime_string</span> <span class="o">=</span> <span class="n">strftime_string</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="o">**</span><span class="p">{</span><span class="n">property_name</span><span class="p">:</span> <span class="n">replacement</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">strftime_string</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">strptime</span><span class="p">(</span><span class="n">date_string</span><span class="p">,</span> <span class="nb">format</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a UTCDateTime corresponding to date_string, parsed according to</span>
+<span class="sd">        given format.</span>
+
+<span class="sd">        :type date_string: str</span>
+<span class="sd">        :param date_string: Date and time string.</span>
+<span class="sd">        :type format: str</span>
+<span class="sd">        :param format: Format string.</span>
+<span class="sd">        :return: :class:`~obspy.core.utcdatetime.UTCDateTime`</span>
+
+<span class="sd">        See methods :meth:`~datetime.datetime.strftime()` and</span>
+<span class="sd">        :meth:`~datetime.datetime.strptime()` for more information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_string</span><span class="p">,</span> <span class="nb">format</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">timetz</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return time object with same hour, minute, second, microsecond, and</span>
+<span class="sd">        tzinfo attributes. See also method :meth:`datetime.datetime.time()`.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.timetz()</span>
+<span class="sd">        datetime.time(12, 30, 35, 45020)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">timetz</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">utcoffset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns None (to stay compatible with :class:`datetime.datetime`)</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.utcoffset()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns None (to stay compatible with :class:`datetime.datetime`)</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.dst()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">dst</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">tzname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns None (to stay compatible with :class:`datetime.datetime`)</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.tzname()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">tzname</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">ctime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string representing the date and time.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; UTCDateTime(2002, 12, 4, 20, 30, 40).ctime()</span>
+<span class="sd">        &#39;Wed Dec  4 20:30:40 2002&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">ctime</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">isoweekday</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the day of the week as an integer (Monday is 1, Sunday is 7).</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Returns day of the week as an integer, where Monday is 1 and</span>
+<span class="sd">            Sunday is 7.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.isoweekday()</span>
+<span class="sd">        3</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">isoweekday</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">isocalendar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a tuple containing (ISO year, ISO week number, ISO weekday).</span>
+
+<span class="sd">        :rtype: tuple of ints</span>
+<span class="sd">        :return: Returns a tuple containing ISO year, ISO week number and ISO</span>
+<span class="sd">            weekday.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.isocalendar()</span>
+<span class="sd">        (2008, 40, 3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">isocalendar</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">isoformat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;T&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string representing the date and time in ISO 8601 format.</span>
+
+<span class="sd">        :rtype: str</span>
+<span class="sd">        :return: String representing the date and time in ISO 8601 format like</span>
+<span class="sd">            YYYY-MM-DDTHH:MM:SS.mmmmmm or, if microsecond is 0,</span>
+<span class="sd">            YYYY-MM-DDTHH:MM:SS.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; dt.isoformat()</span>
+<span class="sd">        &#39;2008-10-01T12:30:35.045020&#39;</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1)</span>
+<span class="sd">        &gt;&gt;&gt; dt.isoformat()</span>
+<span class="sd">        &#39;2008-10-01T00:00:00&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">sep</span><span class="o">=</span><span class="n">native_str</span><span class="p">(</span><span class="n">sep</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">format_fissures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns string representation for the IRIS Fissures protocol.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_fissures())</span>
+<span class="sd">        2008275T123035.0450Z</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%04d%03d</span><span class="s2">T</span><span class="si">%02d%02d%02d</span><span class="s2">.</span><span class="si">%04d</span><span class="s2">Z&quot;</span> <span class="o">%</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">julday</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">//</span> <span class="mi">100</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">format_arclink</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns string representation for the ArcLink protocol.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_arclink())</span>
+<span class="sd">        2008,10,1,12,30,35,45020</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">format_seedlink</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns string representation for the SeedLink protocol.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35.45020)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_seedlink())</span>
+<span class="sd">        2008,10,1,12,30,35</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># round seconds down to integer</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">)</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.0e6</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">,</span><span class="si">%g</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="n">seconds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">format_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns string representation for a SEED volume.</span>
+
+<span class="sd">        :type compact: bool, optional</span>
+<span class="sd">        :param compact: Delivers a compact SEED date string if enabled. Default</span>
+<span class="sd">            value is set to False.</span>
+<span class="sd">        :rtype: string</span>
+<span class="sd">        :return: Datetime string in the SEED format.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_seed())</span>
+<span class="sd">        2008,275,12:30:35.0450</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 10, 1, 0, 30, 0, 0)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_seed(compact=True))</span>
+<span class="sd">        2008,275,00:30</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">compact</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%04d</span><span class="s2">,</span><span class="si">%03d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">julday</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%04d</span><span class="s2">,</span><span class="si">%03d</span><span class="s2">,</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">.</span><span class="si">%04d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">julday</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">//</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%04d</span><span class="s2">,</span><span class="si">%03d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">julday</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">temp</span>
+        <span class="n">temp</span> <span class="o">+=</span> <span class="s2">&quot;,</span><span class="si">%02d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">temp</span> <span class="o">+</span> <span class="s2">&quot;:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">.</span><span class="si">%04d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">//</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">temp</span> <span class="o">+</span> <span class="s2">&quot;:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">temp</span> <span class="o">+</span> <span class="s2">&quot;:</span><span class="si">%02d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">temp</span>
+
+    <span class="k">def</span> <span class="nf">format_iris_web_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns string representation usable for the IRIS Web services.</span>
+
+<span class="sd">        :return: string</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2008, 5, 27, 12, 30, 35, 45020)</span>
+<span class="sd">        &gt;&gt;&gt; print(dt.format_iris_web_service())</span>
+<span class="sd">        2008-05-27T12:30:35.045</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">T</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">.</span><span class="si">%03d</span><span class="s2">&quot;</span> <span class="o">%</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">second</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">//</span> <span class="mi">1000</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_precision</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns precision of current UTCDateTime object.</span>
+
+<span class="sd">        :return: int</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime()</span>
+<span class="sd">        &gt;&gt;&gt; dt.precision</span>
+<span class="sd">        6</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__precision</span>
+
+    <span class="k">def</span> <span class="nf">_set_precision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">6</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set precision of current UTCDateTime object.</span>
+
+<span class="sd">        :type value: int, optional</span>
+<span class="sd">        :param value: Precision value used by the rich comparison operators.</span>
+<span class="sd">            Defaults to ``6``.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        (1) Default precision</span>
+
+<span class="sd">            &gt;&gt;&gt; dt = UTCDateTime()</span>
+<span class="sd">            &gt;&gt;&gt; dt.precision</span>
+<span class="sd">            6</span>
+
+<span class="sd">        (2) Set precision during initialization of UTCDateTime object.</span>
+
+<span class="sd">            &gt;&gt;&gt; dt = UTCDateTime(precision=5)</span>
+<span class="sd">            &gt;&gt;&gt; dt.precision</span>
+<span class="sd">            5</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;UTCDateTime precision above 9 is not supported, using 9&#39;</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="mi">9</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__precision</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">precision</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_precision</span><span class="p">,</span> <span class="n">_set_precision</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a new UTCDateTime object with one or more parameters replaced.</span>
+
+<span class="sd">        Replace is useful for substituting parameters that depend on other</span>
+<span class="sd">        parameters (eg hour depends on the current day for meaning). In order</span>
+<span class="sd">        to replace independent parameters, such as timestamp, ns, or</span>
+<span class="sd">        precision, simply create a new UTCDateTime instance.</span>
+
+<span class="sd">        The following parameters are supported: year, month, day, julday,</span>
+<span class="sd">        hour, minute second, microsecond. Additionally, the keyword &#39;strict&#39;</span>
+<span class="sd">        can be set to False to allow hour, minute, and second to exceed normal</span>
+<span class="sd">        limits.</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        (1) Get time of the 15th day of the same month to which a timestamp</span>
+<span class="sd">            belongs.</span>
+
+<span class="sd">            &gt;&gt;&gt; dt = UTCDateTime(999999999)</span>
+<span class="sd">            &gt;&gt;&gt; dt2 = dt.replace(day=15)</span>
+<span class="sd">            &gt;&gt;&gt; print(dt2)</span>
+<span class="sd">            2001-09-15T01:46:39.000000Z</span>
+
+
+<span class="sd">        (2) Determine the day of the week 2 months before Guy Fawkes day.</span>
+
+<span class="sd">            &gt;&gt;&gt; dt = UTCDateTime(&#39;1605-11-05&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; dt.replace(month=9).weekday</span>
+<span class="sd">            0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check parameters, raise Value error if any are unsupported</span>
+        <span class="n">supported_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">YMDHMS</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">YJHMS</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="s1">&#39;microsecond&#39;</span><span class="p">,</span> <span class="s1">&#39;strict&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">supported_args</span><span class="p">):</span>
+            <span class="n">unsupported_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="n">supported_args</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> are not supported arguments for replace, supported &#39;</span>
+                   <span class="s1">&#39;arguments are </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">unsupported_args</span><span class="p">,</span> <span class="n">supported_args</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="c1"># ensure julday is used correctly if used</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;julday&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;month&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">or</span> <span class="s1">&#39;day&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;If julday is used month and day cannot be used.&#39;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">time_paramters</span> <span class="o">=</span> <span class="n">YJHMS</span>  <span class="c1"># use julday</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">time_paramters</span> <span class="o">=</span> <span class="n">YMDHMS</span>  <span class="c1"># use month and day</span>
+        <span class="c1"># get a dict of time parameters to pass to UTCDateTime constructor</span>
+        <span class="n">new_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">time_paramters</span><span class="p">}</span>
+        <span class="n">new_dict</span><span class="p">[</span><span class="s1">&#39;microsecond&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">microsecond</span>
+        <span class="n">new_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="o">**</span><span class="n">new_dict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">toordinal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return proleptic Gregorian ordinal. January 1 of year 1 is day 1.</span>
+
+<span class="sd">        See :meth:`datetime.datetime.toordinal()`.</span>
+
+<span class="sd">        :return: int</span>
+
+<span class="sd">        .. rubric:: Example</span>
+
+<span class="sd">        &gt;&gt;&gt; dt = UTCDateTime(2012, 1, 1)</span>
+<span class="sd">        &gt;&gt;&gt; dt.toordinal()</span>
+<span class="sd">        734503</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">now</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns current UTC datetime.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">utcnow</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns current UTC datetime.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_hours_after_midnight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate foating point hours after midnight.</span>
+
+<span class="sd">        &gt;&gt;&gt; t = UTCDateTime(&quot;2015-09-27T03:16:12.123456Z&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; t._get_hours_after_midnight()</span>
+<span class="sd">        3.270034293333333</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timedelta</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span> <span class="o">-</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">timedelta</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mf">3600.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">matplotlib_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Maplotlib date number representation.</span>
+
+<span class="sd">        Useful for plotting on matplotlib time-based axes, like created by e.g.</span>
+<span class="sd">        :meth:`obspy.core.stream.Stream.plot()`.</span>
+
+<span class="sd">        &gt;&gt;&gt; t = UTCDateTime(&quot;2009-08-24T00:20:07.700000Z&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; t.matplotlib_date</span>
+<span class="sd">        733643.0139780092</span>
+
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">matplotlib.dates</span> <span class="kn">import</span> <span class="n">date2num</span>
+        <span class="k">return</span> <span class="n">date2num</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_datetime_to_ns</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Use Python datetime object to return equivalent nanoseconds.</span>
+
+<span class="sd">    :type dt: :class:`datetime.datetime`</span>
+<span class="sd">    :param dt: Python datetime object.</span>
+<span class="sd">    :returns: nanoseconds as an int.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">td</span> <span class="o">=</span> <span class="p">(</span><span class="n">dt</span> <span class="o">-</span> <span class="n">TIMESTAMP0</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="n">td</span> <span class="o">=</span> <span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">())</span> <span class="o">-</span> <span class="n">TIMESTAMP0</span>
+    <span class="c1"># see datetime.timedelta.total_seconds</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">days</span> <span class="o">*</span> <span class="mi">86400</span> <span class="o">+</span> <span class="n">td</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span> <span class="o">+</span> <span class="n">td</span><span class="o">.</span><span class="n">microseconds</span> <span class="o">*</span> <span class="mi">1000</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">(</span><span class="n">exclude_empty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ v0.1.1+6.g3ae8213.dirty ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obspy.core.utcdatetime</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

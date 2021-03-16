@@ -1,0 +1,157 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.datasets.ta_test module &#8212; ObsPlus  [ v0.1.1+10.gac2e1d5.dirty ] v0.1.1+10.gac2e1d5.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+10.gac2e1d5.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.datasets.ta_test">
+<span id="obsplus-datasets-ta-test-module"></span><h1>obsplus.datasets.ta_test module<a class="headerlink" href="#module-obsplus.datasets.ta_test" title="Permalink to this headline">¶</a></h1>
+<p>The test TA dataset.</p>
+<dl class="py class">
+<dt id="obsplus.datasets.ta_test.TA">
+<em class="property">class </em><code class="sig-prename descclassname">obsplus.datasets.ta_test.</code><code class="sig-name descname">TA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.datasets.dataset.DataSet</span></code></a></p>
+<p>A small dataset from the TA with low sampling rate channels.</p>
+<p>Contains about 10 days of data from two stations: M11A and M14A.</p>
+<dl class="py method">
+<dt id="obsplus.datasets.ta_test.TA.build_archive">
+<code class="sig-name descname">build_archive</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">st</span></em>, <em class="sig-param"><span class="n">starttime</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">endtime</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.build_archive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.build_archive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build the archive.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.bulk">
+<code class="sig-name descname">bulk</code><em class="property"> = [('TA', 'M11A', '*', 'VH*', UTCDateTime(2007, 2, 15, 0, 0), UTCDateTime(2007, 2, 25, 0, 0)), ('TA', 'M14A', '*', 'VH*', UTCDateTime(2007, 2, 15, 0, 0), UTCDateTime(2007, 2, 25, 0, 0))]</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.bulk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.datasets.ta_test.TA.download_stations">
+<code class="sig-name descname">download_stations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.download_stations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.download_stations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download TA stations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.datasets.ta_test.TA.download_waveforms">
+<code class="sig-name descname">download_waveforms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.download_waveforms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.download_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download TA waveforms.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.endtime">
+<code class="sig-name descname">endtime</code><em class="property"> = UTCDateTime(2007, 2, 25, 0, 0)</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.endtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.level">
+<code class="sig-name descname">level</code><em class="property"> = 'response'</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.name">
+<code class="sig-name descname">name</code><em class="property"> = 'ta_test'</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.starttime">
+<code class="sig-name descname">starttime</code><em class="property"> = UTCDateTime(2007, 2, 15, 0, 0)</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.starttime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.datasets.ta_test.TA.version">
+<code class="sig-name descname">version</code><em class="property"> = '0.0.0'</em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.datasets.ta_test.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+10.gac2e1d5.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

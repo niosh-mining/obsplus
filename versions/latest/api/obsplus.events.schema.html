@@ -1,0 +1,1539 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.schema module &#8212; ObsPlus  [ v0.2.0+3.g4e9cb02.dirty ] v0.2.0+3.g4e9cb02.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.2.0+3.g4e9cb02.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.schema module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.events.schema">
+<span id="obsplus-events-schema-module"></span><h1>obsplus.events.schema module<a class="headerlink" href="#module-obsplus.events.schema" title="Permalink to this headline">¶</a></h1>
+<p>Pydantic schema for ObsPlus event model.</p>
+<p>ObsPlus Event Model is a superset of, and compatible with, ObsPy’s Event
+model.</p>
+<dl class="py class">
+<dt id="obsplus.events.schema.Amplitude">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Amplitude</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Amplitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Amplitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.category">
+<code class="sig-name descname"><span class="pre">category</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">point</span><span class="p"><span class="pre">,</span> </span><span class="pre">mean</span><span class="p"><span class="pre">,</span> </span><span class="pre">duration</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#obsplus.events.schema.Amplitude.period" title="obsplus.events.schema.Amplitude.period"><span class="pre">period</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">integral</span><span class="p"><span class="pre">,</span> </span><span class="pre">other</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.category" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.evaluation_mode">
+<code class="sig-name descname"><span class="pre">evaluation_mode</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">manual</span><span class="p"><span class="pre">,</span> </span><span class="pre">automatic</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.evaluation_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.evaluation_status">
+<code class="sig-name descname"><span class="pre">evaluation_status</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">preliminary</span><span class="p"><span class="pre">,</span> </span><span class="pre">confirmed</span><span class="p"><span class="pre">,</span> </span><span class="pre">reviewed</span><span class="p"><span class="pre">,</span> </span><span class="pre">final</span><span class="p"><span class="pre">,</span> </span><span class="pre">rejected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.evaluation_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.filter_id">
+<code class="sig-name descname"><span class="pre">filter_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.filter_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.generic_amplitude">
+<code class="sig-name descname"><span class="pre">generic_amplitude</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.generic_amplitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.generic_amplitude_errors">
+<code class="sig-name descname"><span class="pre">generic_amplitude_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.generic_amplitude_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.magnitude_hint">
+<code class="sig-name descname"><span class="pre">magnitude_hint</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.magnitude_hint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.period">
+<code class="sig-name descname"><span class="pre">period</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.period_errors">
+<code class="sig-name descname"><span class="pre">period_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.period_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.pick_id">
+<code class="sig-name descname"><span class="pre">pick_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.pick_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.scaling_time">
+<code class="sig-name descname"><span class="pre">scaling_time</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime.datetime</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.scaling_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.scaling_time_errors">
+<code class="sig-name descname"><span class="pre">scaling_time_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.scaling_time_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.snr">
+<code class="sig-name descname"><span class="pre">snr</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.snr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.time_window">
+<code class="sig-name descname"><span class="pre">time_window</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.TimeWindow" title="obsplus.events.schema.TimeWindow"><span class="pre">obsplus.events.schema.TimeWindow</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.time_window" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.type">
+<code class="sig-name descname"><span class="pre">type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.unit">
+<code class="sig-name descname"><span class="pre">unit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[m,</span> <span class="pre">s,</span> <span class="pre">m/s,</span> <span class="pre">m/(s*s),</span> <span class="pre">m*s,</span> <span class="pre">dimensionless,</span> <span class="pre">other]]</span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Amplitude.waveform_id">
+<code class="sig-name descname"><span class="pre">waveform_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.WaveformStreamID" title="obsplus.events.schema.WaveformStreamID"><span class="pre">obsplus.events.schema.WaveformStreamID</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Amplitude.waveform_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Arrival">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Arrival</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Arrival"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Arrival" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.azimuth">
+<code class="sig-name descname"><span class="pre">azimuth</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.azimuth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.backazimuth_residual">
+<code class="sig-name descname"><span class="pre">backazimuth_residual</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.backazimuth_residual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.backazimuth_weight">
+<code class="sig-name descname"><span class="pre">backazimuth_weight</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.backazimuth_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.distance">
+<code class="sig-name descname"><span class="pre">distance</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.distance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.earth_model_id">
+<code class="sig-name descname"><span class="pre">earth_model_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.earth_model_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.horizontal_slowness_residual">
+<code class="sig-name descname"><span class="pre">horizontal_slowness_residual</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.horizontal_slowness_residual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.horizontal_slowness_weight">
+<code class="sig-name descname"><span class="pre">horizontal_slowness_weight</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.horizontal_slowness_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.phase">
+<code class="sig-name descname"><span class="pre">phase</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.phase" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.pick_id">
+<code class="sig-name descname"><span class="pre">pick_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.pick_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.takeoff_angle">
+<code class="sig-name descname"><span class="pre">takeoff_angle</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.takeoff_angle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.takeoff_angle_errors">
+<code class="sig-name descname"><span class="pre">takeoff_angle_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.takeoff_angle_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.time_correction">
+<code class="sig-name descname"><span class="pre">time_correction</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.time_correction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.time_residual">
+<code class="sig-name descname"><span class="pre">time_residual</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.time_residual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Arrival.time_weight">
+<code class="sig-name descname"><span class="pre">time_weight</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Arrival.time_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Axis">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Axis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Axis.azimuth">
+<code class="sig-name descname"><span class="pre">azimuth</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Axis.azimuth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Axis.length">
+<code class="sig-name descname"><span class="pre">length</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Axis.length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Axis.plunge">
+<code class="sig-name descname"><span class="pre">plunge</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Axis.plunge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Catalog">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Catalog</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Catalog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<p>A collection of events.</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Catalog.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Catalog.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Catalog.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Catalog.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Catalog.description">
+<code class="sig-name descname"><span class="pre">description</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Catalog.description" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Catalog.events">
+<code class="sig-name descname"><span class="pre">events</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Event" title="obsplus.events.schema.Event"><span class="pre">obsplus.events.schema.Event</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Catalog.events" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Comment">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Comment</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Comment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Comment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Comment.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Comment.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Comment.text">
+<code class="sig-name descname"><span class="pre">text</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Comment.text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.CompositeTime">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">CompositeTime</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#CompositeTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.CompositeTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Composite Time</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.day">
+<code class="sig-name descname"><span class="pre">day</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.day" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.day_errors">
+<code class="sig-name descname"><span class="pre">day_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.day_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.hour">
+<code class="sig-name descname"><span class="pre">hour</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.hour" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.hour_errors">
+<code class="sig-name descname"><span class="pre">hour_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.hour_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.minute">
+<code class="sig-name descname"><span class="pre">minute</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.minute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.minute_errors">
+<code class="sig-name descname"><span class="pre">minute_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.minute_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.month">
+<code class="sig-name descname"><span class="pre">month</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.month" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.month_errors">
+<code class="sig-name descname"><span class="pre">month_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.month_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.second">
+<code class="sig-name descname"><span class="pre">second</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.second" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.second_errors">
+<code class="sig-name descname"><span class="pre">second_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.second_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.year">
+<code class="sig-name descname"><span class="pre">year</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.year" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CompositeTime.year_errors">
+<code class="sig-name descname"><span class="pre">year_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CompositeTime.year_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">ConfidenceEllipsoid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#ConfidenceEllipsoid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Confidence Ellipsoid</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.major_axis_azimuth">
+<code class="sig-name descname"><span class="pre">major_axis_azimuth</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.major_axis_azimuth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.major_axis_plunge">
+<code class="sig-name descname"><span class="pre">major_axis_plunge</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.major_axis_plunge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.major_axis_rotation">
+<code class="sig-name descname"><span class="pre">major_axis_rotation</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.major_axis_rotation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.semi_intermediate_axis_length">
+<code class="sig-name descname"><span class="pre">semi_intermediate_axis_length</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.semi_intermediate_axis_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.semi_major_axis_length">
+<code class="sig-name descname"><span class="pre">semi_major_axis_length</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.semi_major_axis_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ConfidenceEllipsoid.semi_minor_axis_length">
+<code class="sig-name descname"><span class="pre">semi_minor_axis_length</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ConfidenceEllipsoid.semi_minor_axis_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.CreationInfo">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">CreationInfo</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#CreationInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.CreationInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Creation info</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.agency_id">
+<code class="sig-name descname"><span class="pre">agency_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.agency_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.agency_uri">
+<code class="sig-name descname"><span class="pre">agency_uri</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.agency_uri" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.author">
+<code class="sig-name descname"><span class="pre">author</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.author" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.author_uri">
+<code class="sig-name descname"><span class="pre">author_uri</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.author_uri" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.creation_time">
+<code class="sig-name descname"><span class="pre">creation_time</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime.datetime</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.creation_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.CreationInfo.version">
+<code class="sig-name descname"><span class="pre">version</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.CreationInfo.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.DataUsed">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">DataUsed</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#DataUsed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.DataUsed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Data Used</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.DataUsed.component_count">
+<code class="sig-name descname"><span class="pre">component_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.DataUsed.component_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.DataUsed.longest_period">
+<code class="sig-name descname"><span class="pre">longest_period</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.DataUsed.longest_period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.DataUsed.shortest_period">
+<code class="sig-name descname"><span class="pre">shortest_period</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.DataUsed.shortest_period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.DataUsed.station_count">
+<code class="sig-name descname"><span class="pre">station_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.DataUsed.station_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.DataUsed.wave_type">
+<code class="sig-name descname"><span class="pre">wave_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[P</span> <span class="pre">waves,</span> <span class="pre">body</span> <span class="pre">waves,</span> <span class="pre">surface</span> <span class="pre">waves,</span> <span class="pre">mantle</span> <span class="pre">waves,</span> <span class="pre">combined,</span> <span class="pre">unknown]]</span></em><a class="headerlink" href="#obsplus.events.schema.DataUsed.wave_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Event">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Event</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.amplitudes">
+<code class="sig-name descname"><span class="pre">amplitudes</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Amplitude" title="obsplus.events.schema.Amplitude"><span class="pre">obsplus.events.schema.Amplitude</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.amplitudes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.event_descriptions">
+<code class="sig-name descname"><span class="pre">event_descriptions</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.EventDescription" title="obsplus.events.schema.EventDescription"><span class="pre">obsplus.events.schema.EventDescription</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.event_descriptions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.event_type">
+<code class="sig-name descname"><span class="pre">event_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[not</span> <span class="pre">existing,</span> <span class="pre">not</span> <span class="pre">reported,</span> <span class="pre">earthquake,</span> <span class="pre">anthropogenic</span> <span class="pre">event,</span> <span class="pre">collapse,</span> <span class="pre">cavity</span> <span class="pre">collapse,</span> <span class="pre">mine</span> <span class="pre">collapse,</span> <span class="pre">building</span> <span class="pre">collapse,</span> <span class="pre">explosion,</span> <span class="pre">accidental</span> <span class="pre">explosion,</span> <span class="pre">chemical</span> <span class="pre">explosion,</span> <span class="pre">controlled</span> <span class="pre">explosion,</span> <span class="pre">experimental</span> <span class="pre">explosion,</span> <span class="pre">industrial</span> <span class="pre">explosion,</span> <span class="pre">mining</span> <span class="pre">explosion,</span> <span class="pre">quarry</span> <span class="pre">blast,</span> <span class="pre">road</span> <span class="pre">cut,</span> <span class="pre">blasting</span> <span class="pre">levee,</span> <span class="pre">nuclear</span> <span class="pre">explosion,</span> <span class="pre">induced</span> <span class="pre">or</span> <span class="pre">triggered</span> <span class="pre">event,</span> <span class="pre">rock</span> <span class="pre">burst,</span> <span class="pre">reservoir</span> <span class="pre">loading,</span> <span class="pre">fluid</span> <span class="pre">injection,</span> <span class="pre">fluid</span> <span class="pre">extraction,</span> <span class="pre">crash,</span> <span class="pre">plane</span> <span class="pre">crash,</span> <span class="pre">train</span> <span class="pre">crash,</span> <span class="pre">boat</span> <span class="pre">crash,</span> <span class="pre">other</span> <span class="pre">event,</span> <span class="pre">atmospheric</span> <span class="pre">event,</span> <span class="pre">sonic</span> <span class="pre">boom,</span> <span class="pre">sonic</span> <span class="pre">blast,</span> <span class="pre">acoustic</span> <span class="pre">noise,</span> <span class="pre">thunder,</span> <span class="pre">avalanche,</span> <span class="pre">snow</span> <span class="pre">avalanche,</span> <span class="pre">debris</span> <span class="pre">avalanche,</span> <span class="pre">hydroacoustic</span> <span class="pre">event,</span> <span class="pre">ice</span> <span class="pre">quake,</span> <span class="pre">slide,</span> <span class="pre">landslide,</span> <span class="pre">rockslide,</span> <span class="pre">meteorite,</span> <span class="pre">volcanic</span> <span class="pre">eruption]]</span></em><a class="headerlink" href="#obsplus.events.schema.Event.event_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.event_type_certainty">
+<code class="sig-name descname"><span class="pre">event_type_certainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">known</span><span class="p"><span class="pre">,</span> </span><span class="pre">suspected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.event_type_certainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.focal_mechanisms">
+<code class="sig-name descname"><span class="pre">focal_mechanisms</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.FocalMechanism" title="obsplus.events.schema.FocalMechanism"><span class="pre">obsplus.events.schema.FocalMechanism</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.focal_mechanisms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.magnitudes">
+<code class="sig-name descname"><span class="pre">magnitudes</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Magnitude" title="obsplus.events.schema.Magnitude"><span class="pre">obsplus.events.schema.Magnitude</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.origins">
+<code class="sig-name descname"><span class="pre">origins</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Origin" title="obsplus.events.schema.Origin"><span class="pre">obsplus.events.schema.Origin</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.origins" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.picks">
+<code class="sig-name descname"><span class="pre">picks</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Pick" title="obsplus.events.schema.Pick"><span class="pre">obsplus.events.schema.Pick</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.picks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.preferred_focal_mechanism_id">
+<code class="sig-name descname"><span class="pre">preferred_focal_mechanism_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.preferred_focal_mechanism_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.preferred_magnitude_id">
+<code class="sig-name descname"><span class="pre">preferred_magnitude_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.preferred_magnitude_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.preferred_origin_id">
+<code class="sig-name descname"><span class="pre">preferred_origin_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.preferred_origin_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Event.station_magnitudes">
+<code class="sig-name descname"><span class="pre">station_magnitudes</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.StationMagnitude" title="obsplus.events.schema.StationMagnitude"><span class="pre">obsplus.events.schema.StationMagnitude</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Event.station_magnitudes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.events.schema.Event.to_obspy">
+<code class="sig-name descname"><span class="pre">to_obspy</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Event.to_obspy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Event.to_obspy" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert the catalog to obspy form</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.EventDescription">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">EventDescription</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#EventDescription"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.EventDescription" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Event Description</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.EventDescription.text">
+<code class="sig-name descname"><span class="pre">text</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.EventDescription.text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.EventDescription.type">
+<code class="sig-name descname"><span class="pre">type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[felt</span> <span class="pre">report,</span> <span class="pre">Flinn-Engdahl</span> <span class="pre">region,</span> <span class="pre">local</span> <span class="pre">time,</span> <span class="pre">tectonic</span> <span class="pre">summary,</span> <span class="pre">nearest</span> <span class="pre">cities,</span> <span class="pre">earthquake</span> <span class="pre">name,</span> <span class="pre">region</span> <span class="pre">name]]</span></em><a class="headerlink" href="#obsplus.events.schema.EventDescription.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.FocalMechanism">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">FocalMechanism</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#FocalMechanism"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.FocalMechanism" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<p>Focal Mechanism</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.azimuthal_gap">
+<code class="sig-name descname"><span class="pre">azimuthal_gap</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.azimuthal_gap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.evaluation_mode">
+<code class="sig-name descname"><span class="pre">evaluation_mode</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">manual</span><span class="p"><span class="pre">,</span> </span><span class="pre">automatic</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.evaluation_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.evaluation_status">
+<code class="sig-name descname"><span class="pre">evaluation_status</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">preliminary</span><span class="p"><span class="pre">,</span> </span><span class="pre">confirmed</span><span class="p"><span class="pre">,</span> </span><span class="pre">reviewed</span><span class="p"><span class="pre">,</span> </span><span class="pre">final</span><span class="p"><span class="pre">,</span> </span><span class="pre">rejected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.evaluation_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.misfit">
+<code class="sig-name descname"><span class="pre">misfit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.misfit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.moment_tensor">
+<code class="sig-name descname"><span class="pre">moment_tensor</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.MomentTensor" title="obsplus.events.schema.MomentTensor"><span class="pre">obsplus.events.schema.MomentTensor</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.moment_tensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.nodal_planes">
+<code class="sig-name descname"><span class="pre">nodal_planes</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.NodalPlanes" title="obsplus.events.schema.NodalPlanes"><span class="pre">obsplus.events.schema.NodalPlanes</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.nodal_planes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.principal_axes">
+<code class="sig-name descname"><span class="pre">principal_axes</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.PrincipalAxes" title="obsplus.events.schema.PrincipalAxes"><span class="pre">obsplus.events.schema.PrincipalAxes</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.principal_axes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.station_distribution_ratio">
+<code class="sig-name descname"><span class="pre">station_distribution_ratio</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.station_distribution_ratio" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.station_polarity_count">
+<code class="sig-name descname"><span class="pre">station_polarity_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.station_polarity_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.triggering_origin_id">
+<code class="sig-name descname"><span class="pre">triggering_origin_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.triggering_origin_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.FocalMechanism.waveform_id">
+<code class="sig-name descname"><span class="pre">waveform_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.WaveformStreamID" title="obsplus.events.schema.WaveformStreamID"><span class="pre">obsplus.events.schema.WaveformStreamID</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.FocalMechanism.waveform_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Magnitude">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Magnitude</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Magnitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.azimuthal_gap">
+<code class="sig-name descname"><span class="pre">azimuthal_gap</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.azimuthal_gap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.evaluation_mode">
+<code class="sig-name descname"><span class="pre">evaluation_mode</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">manual</span><span class="p"><span class="pre">,</span> </span><span class="pre">automatic</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.evaluation_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.evaluation_status">
+<code class="sig-name descname"><span class="pre">evaluation_status</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">preliminary</span><span class="p"><span class="pre">,</span> </span><span class="pre">confirmed</span><span class="p"><span class="pre">,</span> </span><span class="pre">reviewed</span><span class="p"><span class="pre">,</span> </span><span class="pre">final</span><span class="p"><span class="pre">,</span> </span><span class="pre">rejected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.evaluation_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.mag">
+<code class="sig-name descname"><span class="pre">mag</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.mag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.mag_errors">
+<code class="sig-name descname"><span class="pre">mag_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.mag_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.magnitude_type">
+<code class="sig-name descname"><span class="pre">magnitude_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.magnitude_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.origin_id">
+<code class="sig-name descname"><span class="pre">origin_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.origin_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.station_count">
+<code class="sig-name descname"><span class="pre">station_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.station_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Magnitude.station_magnitude_contributions">
+<code class="sig-name descname"><span class="pre">station_magnitude_contributions</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.StationMagnitudeContribution" title="obsplus.events.schema.StationMagnitudeContribution"><span class="pre">obsplus.events.schema.StationMagnitudeContribution</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Magnitude.station_magnitude_contributions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.MomentTensor">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">MomentTensor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#MomentTensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.MomentTensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<p>Moment Tensor</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.category">
+<code class="sig-name descname"><span class="pre">category</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">teleseismic</span><span class="p"><span class="pre">,</span> </span><span class="pre">regional</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.category" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.clvd">
+<code class="sig-name descname"><span class="pre">clvd</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.clvd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.data_used">
+<code class="sig-name descname"><span class="pre">data_used</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.DataUsed" title="obsplus.events.schema.DataUsed"><span class="pre">obsplus.events.schema.DataUsed</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.data_used" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.derived_origin_id">
+<code class="sig-name descname"><span class="pre">derived_origin_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.derived_origin_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.double_couple">
+<code class="sig-name descname"><span class="pre">double_couple</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.double_couple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.filter_id">
+<code class="sig-name descname"><span class="pre">filter_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.filter_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.greens_function_id">
+<code class="sig-name descname"><span class="pre">greens_function_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.greens_function_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.inversion_type">
+<code class="sig-name descname"><span class="pre">inversion_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[general,</span> <span class="pre">zero</span> <span class="pre">trace,</span> <span class="pre">double</span> <span class="pre">couple]]</span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.inversion_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.iso">
+<code class="sig-name descname"><span class="pre">iso</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.iso" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.moment_magnitude_id">
+<code class="sig-name descname"><span class="pre">moment_magnitude_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.moment_magnitude_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.scalar_moment">
+<code class="sig-name descname"><span class="pre">scalar_moment</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.scalar_moment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.scalar_moment_errors">
+<code class="sig-name descname"><span class="pre">scalar_moment_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.scalar_moment_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.source_time_function">
+<code class="sig-name descname"><span class="pre">source_time_function</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.SourceTimeFunction" title="obsplus.events.schema.SourceTimeFunction"><span class="pre">obsplus.events.schema.SourceTimeFunction</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.source_time_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.tensor">
+<code class="sig-name descname"><span class="pre">tensor</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Tensor" title="obsplus.events.schema.Tensor"><span class="pre">obsplus.events.schema.Tensor</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.tensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.variance">
+<code class="sig-name descname"><span class="pre">variance</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.variance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.MomentTensor.variance_reduction">
+<code class="sig-name descname"><span class="pre">variance_reduction</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.MomentTensor.variance_reduction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.NodalPlane">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">NodalPlane</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#NodalPlane"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.NodalPlane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Nodal Plane</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlane.dip">
+<code class="sig-name descname"><span class="pre">dip</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlane.dip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlane.rake">
+<code class="sig-name descname"><span class="pre">rake</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlane.rake" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlane.strike">
+<code class="sig-name descname"><span class="pre">strike</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlane.strike" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.NodalPlanes">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">NodalPlanes</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#NodalPlanes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.NodalPlanes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Nodal Planes</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlanes.nodal_plane_1">
+<code class="sig-name descname"><span class="pre">nodal_plane_1</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.NodalPlane" title="obsplus.events.schema.NodalPlane"><span class="pre">obsplus.events.schema.NodalPlane</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlanes.nodal_plane_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlanes.nodal_plane_2">
+<code class="sig-name descname"><span class="pre">nodal_plane_2</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.NodalPlane" title="obsplus.events.schema.NodalPlane"><span class="pre">obsplus.events.schema.NodalPlane</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlanes.nodal_plane_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.NodalPlanes.preferred_plane">
+<code class="sig-name descname"><span class="pre">preferred_plane</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.NodalPlanes.preferred_plane" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Origin">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Origin</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Origin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Origin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.arrivals">
+<code class="sig-name descname"><span class="pre">arrivals</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Arrival" title="obsplus.events.schema.Arrival"><span class="pre">obsplus.events.schema.Arrival</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.arrivals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.composite_times">
+<code class="sig-name descname"><span class="pre">composite_times</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CompositeTime" title="obsplus.events.schema.CompositeTime"><span class="pre">obsplus.events.schema.CompositeTime</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.composite_times" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.depth">
+<code class="sig-name descname"><span class="pre">depth</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.depth_errors">
+<code class="sig-name descname"><span class="pre">depth_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.depth_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.depth_type">
+<code class="sig-name descname"><span class="pre">depth_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[from</span> <span class="pre">location,</span> <span class="pre">from</span> <span class="pre">moment</span> <span class="pre">tensor</span> <span class="pre">inversion,</span> <span class="pre">from</span> <span class="pre">modeling</span> <span class="pre">of</span> <span class="pre">broad-band</span> <span class="pre">P</span> <span class="pre">waveforms,</span> <span class="pre">constrained</span> <span class="pre">by</span> <span class="pre">depth</span> <span class="pre">phases,</span> <span class="pre">constrained</span> <span class="pre">by</span> <span class="pre">direct</span> <span class="pre">phases,</span> <span class="pre">constrained</span> <span class="pre">by</span> <span class="pre">depth</span> <span class="pre">and</span> <span class="pre">direct</span> <span class="pre">phases,</span> <span class="pre">operator</span> <span class="pre">assigned,</span> <span class="pre">other]]</span></em><a class="headerlink" href="#obsplus.events.schema.Origin.depth_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.earth_model_id">
+<code class="sig-name descname"><span class="pre">earth_model_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.earth_model_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.epicenter_fixed">
+<code class="sig-name descname"><span class="pre">epicenter_fixed</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.epicenter_fixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.evaluation_mode">
+<code class="sig-name descname"><span class="pre">evaluation_mode</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">manual</span><span class="p"><span class="pre">,</span> </span><span class="pre">automatic</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.evaluation_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.evaluation_status">
+<code class="sig-name descname"><span class="pre">evaluation_status</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">preliminary</span><span class="p"><span class="pre">,</span> </span><span class="pre">confirmed</span><span class="p"><span class="pre">,</span> </span><span class="pre">reviewed</span><span class="p"><span class="pre">,</span> </span><span class="pre">final</span><span class="p"><span class="pre">,</span> </span><span class="pre">rejected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.evaluation_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.latitude">
+<code class="sig-name descname"><span class="pre">latitude</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.latitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.latitude_errors">
+<code class="sig-name descname"><span class="pre">latitude_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.latitude_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.longitude">
+<code class="sig-name descname"><span class="pre">longitude</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.longitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.longitude_errors">
+<code class="sig-name descname"><span class="pre">longitude_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.longitude_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.origin_type">
+<code class="sig-name descname"><span class="pre">origin_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[hypocenter,</span> <span class="pre">centroid,</span> <span class="pre">amplitude,</span> <span class="pre">macroseismic,</span> <span class="pre">rupture</span> <span class="pre">start,</span> <span class="pre">rupture</span> <span class="pre">end]]</span></em><a class="headerlink" href="#obsplus.events.schema.Origin.origin_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.origin_uncertainty">
+<code class="sig-name descname"><span class="pre">origin_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.OriginUncertainty" title="obsplus.events.schema.OriginUncertainty"><span class="pre">obsplus.events.schema.OriginUncertainty</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.origin_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.quality">
+<code class="sig-name descname"><span class="pre">quality</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.OriginQuality" title="obsplus.events.schema.OriginQuality"><span class="pre">obsplus.events.schema.OriginQuality</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.quality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.reference_system_id">
+<code class="sig-name descname"><span class="pre">reference_system_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.reference_system_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.region">
+<code class="sig-name descname"><span class="pre">region</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.region" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.time">
+<code class="sig-name descname"><span class="pre">time</span></code><em class="property"><span class="pre">:</span> <span class="pre">datetime.datetime</span></em><a class="headerlink" href="#obsplus.events.schema.Origin.time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.time_errors">
+<code class="sig-name descname"><span class="pre">time_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.time_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Origin.time_fixed">
+<code class="sig-name descname"><span class="pre">time_fixed</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Origin.time_fixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.OriginQuality">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">OriginQuality</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#OriginQuality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.OriginQuality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Origin Quality</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.associated_phase_count">
+<code class="sig-name descname"><span class="pre">associated_phase_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.associated_phase_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.associated_station_count">
+<code class="sig-name descname"><span class="pre">associated_station_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.associated_station_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.azimuthal_gap">
+<code class="sig-name descname"><span class="pre">azimuthal_gap</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.azimuthal_gap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.depth_phase_count">
+<code class="sig-name descname"><span class="pre">depth_phase_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.depth_phase_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.ground_truth_level">
+<code class="sig-name descname"><span class="pre">ground_truth_level</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.ground_truth_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.maximum_distance">
+<code class="sig-name descname"><span class="pre">maximum_distance</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.maximum_distance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.median_distance">
+<code class="sig-name descname"><span class="pre">median_distance</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.median_distance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.minimum_distance">
+<code class="sig-name descname"><span class="pre">minimum_distance</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.minimum_distance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.secondary_azimuthal_gap">
+<code class="sig-name descname"><span class="pre">secondary_azimuthal_gap</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.secondary_azimuthal_gap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.standard_error">
+<code class="sig-name descname"><span class="pre">standard_error</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.standard_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.used_phase_count">
+<code class="sig-name descname"><span class="pre">used_phase_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.used_phase_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginQuality.used_station_count">
+<code class="sig-name descname"><span class="pre">used_station_count</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginQuality.used_station_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.OriginUncertainty">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">OriginUncertainty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#OriginUncertainty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Origin Uncertainty</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.azimuth_max_horizontal_uncertainty">
+<code class="sig-name descname"><span class="pre">azimuth_max_horizontal_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.azimuth_max_horizontal_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.confidence_ellipsoid">
+<code class="sig-name descname"><span class="pre">confidence_ellipsoid</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ConfidenceEllipsoid" title="obsplus.events.schema.ConfidenceEllipsoid"><span class="pre">obsplus.events.schema.ConfidenceEllipsoid</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.confidence_ellipsoid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.confidence_level">
+<code class="sig-name descname"><span class="pre">confidence_level</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.confidence_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.horizontal_uncertainty">
+<code class="sig-name descname"><span class="pre">horizontal_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.horizontal_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.max_horizontal_uncertainty">
+<code class="sig-name descname"><span class="pre">max_horizontal_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.max_horizontal_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.min_horizontal_uncertainty">
+<code class="sig-name descname"><span class="pre">min_horizontal_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.min_horizontal_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.OriginUncertainty.preferred_description">
+<code class="sig-name descname"><span class="pre">preferred_description</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[horizontal</span> <span class="pre">uncertainty,</span> <span class="pre">uncertainty</span> <span class="pre">ellipse,</span> <span class="pre">confidence</span> <span class="pre">ellipsoid]]</span></em><a class="headerlink" href="#obsplus.events.schema.OriginUncertainty.preferred_description" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Pick">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Pick</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Pick"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Pick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.backazimuth">
+<code class="sig-name descname"><span class="pre">backazimuth</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.backazimuth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.backazimuth_errors">
+<code class="sig-name descname"><span class="pre">backazimuth_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.backazimuth_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.evaluation_mode">
+<code class="sig-name descname"><span class="pre">evaluation_mode</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">manual</span><span class="p"><span class="pre">,</span> </span><span class="pre">automatic</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.evaluation_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.evaluation_status">
+<code class="sig-name descname"><span class="pre">evaluation_status</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">preliminary</span><span class="p"><span class="pre">,</span> </span><span class="pre">confirmed</span><span class="p"><span class="pre">,</span> </span><span class="pre">reviewed</span><span class="p"><span class="pre">,</span> </span><span class="pre">final</span><span class="p"><span class="pre">,</span> </span><span class="pre">rejected</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.evaluation_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.filter_id">
+<code class="sig-name descname"><span class="pre">filter_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.filter_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.horizontal_slowness">
+<code class="sig-name descname"><span class="pre">horizontal_slowness</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.horizontal_slowness" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.horizontal_slowness_errors">
+<code class="sig-name descname"><span class="pre">horizontal_slowness_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.horizontal_slowness_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.onset">
+<code class="sig-name descname"><span class="pre">onset</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">emergent</span><span class="p"><span class="pre">,</span> </span><span class="pre">impulsive</span><span class="p"><span class="pre">,</span> </span><span class="pre">questionable</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.onset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.phase_hint">
+<code class="sig-name descname"><span class="pre">phase_hint</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.phase_hint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.polarity">
+<code class="sig-name descname"><span class="pre">polarity</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">positive</span><span class="p"><span class="pre">,</span> </span><span class="pre">negative</span><span class="p"><span class="pre">,</span> </span><span class="pre">undecidable</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.polarity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.slowness_method_id">
+<code class="sig-name descname"><span class="pre">slowness_method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.slowness_method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.time">
+<code class="sig-name descname"><span class="pre">time</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime.datetime</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.time_errors">
+<code class="sig-name descname"><span class="pre">time_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.time_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Pick.waveform_id">
+<code class="sig-name descname"><span class="pre">waveform_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.WaveformStreamID" title="obsplus.events.schema.WaveformStreamID"><span class="pre">obsplus.events.schema.WaveformStreamID</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Pick.waveform_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.PrincipalAxes">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">PrincipalAxes</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#PrincipalAxes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.PrincipalAxes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Principal Axes</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.PrincipalAxes.n_axis">
+<code class="sig-name descname"><span class="pre">n_axis</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Axis" title="obsplus.events.schema.Axis"><span class="pre">obsplus.events.schema.Axis</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.PrincipalAxes.n_axis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.PrincipalAxes.p_axis">
+<code class="sig-name descname"><span class="pre">p_axis</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Axis" title="obsplus.events.schema.Axis"><span class="pre">obsplus.events.schema.Axis</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.PrincipalAxes.p_axis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.PrincipalAxes.t_axis">
+<code class="sig-name descname"><span class="pre">t_axis</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Axis" title="obsplus.events.schema.Axis"><span class="pre">obsplus.events.schema.Axis</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.PrincipalAxes.t_axis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.QuantityError">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">QuantityError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#QuantityError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.QuantityError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Quantity Error</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.QuantityError.confidence_level">
+<code class="sig-name descname"><span class="pre">confidence_level</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.QuantityError.confidence_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.QuantityError.lower_uncertainty">
+<code class="sig-name descname"><span class="pre">lower_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.QuantityError.lower_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.QuantityError.uncertainty">
+<code class="sig-name descname"><span class="pre">uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.QuantityError.uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.QuantityError.upper_uncertainty">
+<code class="sig-name descname"><span class="pre">upper_uncertainty</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.QuantityError.upper_uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.ResourceIdentifier">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">ResourceIdentifier</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#ResourceIdentifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.ResourceIdentifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Resource ID</p>
+<dl class="py method">
+<dt id="obsplus.events.schema.ResourceIdentifier.get_id">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">get_id</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#ResourceIdentifier.get_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.ResourceIdentifier.get_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the id string from the resource id</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.ResourceIdentifier.id">
+<code class="sig-name descname"><span class="pre">id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.ResourceIdentifier.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.SourceTimeFunction">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">SourceTimeFunction</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#SourceTimeFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.SourceTimeFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Source Time Function</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.SourceTimeFunction.decay_time">
+<code class="sig-name descname"><span class="pre">decay_time</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.SourceTimeFunction.decay_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.SourceTimeFunction.duration">
+<code class="sig-name descname"><span class="pre">duration</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.SourceTimeFunction.duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.SourceTimeFunction.rise_time">
+<code class="sig-name descname"><span class="pre">rise_time</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.SourceTimeFunction.rise_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.SourceTimeFunction.type">
+<code class="sig-name descname"><span class="pre">type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional[typing_extensions.Literal[box</span> <span class="pre">car,</span> <span class="pre">triangle,</span> <span class="pre">trapezoid,</span> <span class="pre">unknown]]</span></em><a class="headerlink" href="#obsplus.events.schema.SourceTimeFunction.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.StationMagnitude">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">StationMagnitude</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#StationMagnitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.StationMagnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ModelWithResourceID</span></code></p>
+<p>Station Magnitude.</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.amplitude_id">
+<code class="sig-name descname"><span class="pre">amplitude_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.amplitude_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.comments">
+<code class="sig-name descname"><span class="pre">comments</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.Comment" title="obsplus.events.schema.Comment"><span class="pre">obsplus.events.schema.Comment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.creation_info">
+<code class="sig-name descname"><span class="pre">creation_info</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.CreationInfo" title="obsplus.events.schema.CreationInfo"><span class="pre">obsplus.events.schema.CreationInfo</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.creation_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.mag">
+<code class="sig-name descname"><span class="pre">mag</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.mag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.mag_errors">
+<code class="sig-name descname"><span class="pre">mag_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.mag_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.method_id">
+<code class="sig-name descname"><span class="pre">method_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.method_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.origin_id">
+<code class="sig-name descname"><span class="pre">origin_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.origin_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.station_magnitude_type">
+<code class="sig-name descname"><span class="pre">station_magnitude_type</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.station_magnitude_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitude.waveform_id">
+<code class="sig-name descname"><span class="pre">waveform_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.WaveformStreamID" title="obsplus.events.schema.WaveformStreamID"><span class="pre">obsplus.events.schema.WaveformStreamID</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitude.waveform_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.StationMagnitudeContribution">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">StationMagnitudeContribution</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#StationMagnitudeContribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.StationMagnitudeContribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Station Magnitude Contribution</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitudeContribution.residual">
+<code class="sig-name descname"><span class="pre">residual</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitudeContribution.residual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitudeContribution.station_magnitude_id">
+<code class="sig-name descname"><span class="pre">station_magnitude_id</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitudeContribution.station_magnitude_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.StationMagnitudeContribution.weight">
+<code class="sig-name descname"><span class="pre">weight</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.StationMagnitudeContribution.weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.Tensor">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">Tensor</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#Tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.Tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_pp">
+<code class="sig-name descname"><span class="pre">m_pp</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_pp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_pp_errors">
+<code class="sig-name descname"><span class="pre">m_pp_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_pp_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rp">
+<code class="sig-name descname"><span class="pre">m_rp</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rp_errors">
+<code class="sig-name descname"><span class="pre">m_rp_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rp_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rr">
+<code class="sig-name descname"><span class="pre">m_rr</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rr_errors">
+<code class="sig-name descname"><span class="pre">m_rr_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rr_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rt">
+<code class="sig-name descname"><span class="pre">m_rt</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_rt_errors">
+<code class="sig-name descname"><span class="pre">m_rt_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_rt_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_tp">
+<code class="sig-name descname"><span class="pre">m_tp</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_tp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_tp_errors">
+<code class="sig-name descname"><span class="pre">m_tp_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_tp_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_tt">
+<code class="sig-name descname"><span class="pre">m_tt</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_tt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.Tensor.m_tt_errors">
+<code class="sig-name descname"><span class="pre">m_tt_errors</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.QuantityError" title="obsplus.events.schema.QuantityError"><span class="pre">obsplus.events.schema.QuantityError</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.Tensor.m_tt_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.TimeWindow">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">TimeWindow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#TimeWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.TimeWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Time Window</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.TimeWindow.begin">
+<code class="sig-name descname"><span class="pre">begin</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.TimeWindow.begin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.TimeWindow.end">
+<code class="sig-name descname"><span class="pre">end</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.TimeWindow.end" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.TimeWindow.reference">
+<code class="sig-name descname"><span class="pre">reference</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime.datetime</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.TimeWindow.reference" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="obsplus.events.schema.WaveformStreamID">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">obsplus.events.schema.</span></code><code class="sig-name descname"><span class="pre">WaveformStreamID</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#WaveformStreamID"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">obsplus.events.schema._ObsPyModel</span></code></p>
+<p>Waveform stream ID</p>
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.channel_code">
+<code class="sig-name descname"><span class="pre">channel_code</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.channel_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.location_code">
+<code class="sig-name descname"><span class="pre">location_code</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.location_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.network_code">
+<code class="sig-name descname"><span class="pre">network_code</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.network_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="obsplus.events.schema.WaveformStreamID.parse_seed_id">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">parse_seed_id</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/schema.html#WaveformStreamID.parse_seed_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.parse_seed_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse seed IDs if needed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.resource_uri">
+<code class="sig-name descname"><span class="pre">resource_uri</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#obsplus.events.schema.ResourceIdentifier" title="obsplus.events.schema.ResourceIdentifier"><span class="pre">obsplus.events.schema.ResourceIdentifier</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.resource_uri" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.seed_string">
+<code class="sig-name descname"><span class="pre">seed_string</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.seed_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="obsplus.events.schema.WaveformStreamID.station_code">
+<code class="sig-name descname"><span class="pre">station_code</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.events.schema.WaveformStreamID.station_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.events.schema.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.2.0+3.g4e9cb02.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.schema module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.2.
+    </div>
+  </body>
+</html>

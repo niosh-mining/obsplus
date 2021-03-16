@@ -1,0 +1,6 @@
+obsplus.events\_to\_df
+======================
+
+.. currentmodule:: obsplus
+
+.. autodata:: events_to_df

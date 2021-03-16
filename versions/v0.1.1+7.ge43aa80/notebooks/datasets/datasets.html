@@ -1,0 +1,871 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datasets &#8212; ObsPlus  [ v0.1.1+7.ge43aa80.dirty ] v0.1.1+7.ge43aa80.dirty documentation</title>
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Datasets</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="section" id="Datasets">
+<h1>Datasets<a class="headerlink" href="#Datasets" title="Permalink to this headline">¶</a></h1>
+<p>ObsPlus includes a few interesting datasets which are used for testing purposes, but a <a class="reference external" href="https://github.com/niosh-mining/opsdata">template with instructions</a> is provided if you would like to create and distribute your own.</p>
+<p>The datasets are “lazy” in that all but the most essential information will be downloaded only when some code requests the dataset. This helps keep the size of ObsPlus small, but does mean you will need an network connection the first time you use each dataset. Here are a few examples of things you can do with datasets:</p>
+<div class="section" id="Dataset-basics">
+<h2>Dataset basics<a class="headerlink" href="#Dataset-basics" title="Permalink to this headline">¶</a></h2>
+<p>Loading a dataset only requires knowing its name (and having installed it, more on that later).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+downloading waveform data for crandall_test dataset ...
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2020-07-31 22:00:31,564] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:31,566] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:31,567] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:31,567] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:33,564] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.00 seconds)
+[2020-07-31 22:00:33,608] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:33,612] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:33,616] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:34,690] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:37,192] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-07-31 22:00:37,193] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:37,246] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.4 MB [123.60 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:37,247] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:37,247] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:37,389] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P16A.xml&#39;.
+[2020-07-31 22:00:37,391] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O18A.xml&#39;.
+[2020-07-31 22:00:37,397] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O15A.xml&#39;.
+[2020-07-31 22:00:37,535] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P17A.xml&#39;.
+[2020-07-31 22:00:37,539] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P15A.xml&#39;.
+[2020-07-31 22:00:37,539] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.O16A.xml&#39;.
+[2020-07-31 22:00:37,674] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.P18A.xml&#39;.
+[2020-07-31 22:00:37,681] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.R17A.xml&#39;.
+[2020-07-31 22:00:37,689] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q16A.xml&#39;.
+[2020-07-31 22:00:37,814] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.CTU.xml&#39;.
+[2020-07-31 22:00:37,814] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q15A.xml&#39;.
+[2020-07-31 22:00:37,831] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.Q18A.xml&#39;.
+[2020-07-31 22:00:37,955] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.MPU.xml&#39;.
+[2020-07-31 22:00:37,964] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.SRU.xml&#39;.
+[2020-07-31 22:00:38,099] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.NLU.xml&#39;.
+[2020-07-31 22:00:38,102] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/UU.TMU.xml&#39;.
+[2020-07-31 22:00:38,123] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 16 station files [0.4 MB] in 0.9 seconds [500.02 KB/sec].
+[2020-07-31 22:00:38,123] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:38,124] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:38,124] - obspy.clients.fdsn.mass_downloader - INFO: 0 StationXML files [0.0 MB] already existed.
+[2020-07-31 22:00:38,126] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.4 MB].
+[2020-07-31 22:00:38,126] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 16 StationXML files [0.4 MB].
+[2020-07-31 22:00:38,127] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.8 MB in total.
+[2020-07-31 22:00:38,311] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:38,313] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:38,314] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:38,314] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:40,338] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.02 seconds)
+[2020-07-31 22:00:40,394] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:40,401] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:40,405] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:41,341] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:43,168] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-07-31 22:00:43,169] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:43,227] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [108.76 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:43,228] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:43,229] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:43,390] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded &#39;/home/runner/opsdata/crandall_test/stations/TA.R16A.xml&#39;.
+[2020-07-31 22:00:43,393] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 1 station files [0.0 MB] in 0.1 seconds [162.37 KB/sec].
+[2020-07-31 22:00:43,394] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:43,395] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:43,396] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:43,397] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:43,398] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 1 StationXML files [0.0 MB].
+[2020-07-31 22:00:43,398] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:43,572] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:43,574] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:43,575] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:43,575] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:45,248] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.67 seconds)
+[2020-07-31 22:00:45,298] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:45,303] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:45,306] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:45,948] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:46,330] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-07-31 22:00:46,331] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:46,382] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [309.63 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:46,382] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:46,383] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:46,403] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:00:46,403] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:46,404] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:46,404] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:46,406] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:46,406] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:00:46,407] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:46,557] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:46,558] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:46,559] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:46,559] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:48,548] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.99 seconds)
+[2020-07-31 22:00:48,595] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:48,600] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:48,603] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:49,261] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:49,611] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-07-31 22:00:49,612] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:49,665] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [317.83 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:49,666] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:49,666] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:49,689] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:00:49,690] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:49,690] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:49,691] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:49,692] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:49,692] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:00:49,693] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:49,854] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:49,855] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:49,856] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:49,856] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:52,348] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.49 seconds)
+[2020-07-31 22:00:52,398] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:52,403] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:52,407] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:53,046] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:53,415] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-07-31 22:00:53,416] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:53,473] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [322.76 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:53,473] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:53,474] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:53,497] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:00:53,498] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:53,498] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:53,499] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:53,500] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:53,501] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:00:53,501] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:53,648] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:53,649] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:53,650] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:53,650] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:55,211] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.56 seconds)
+[2020-07-31 22:00:55,258] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:55,262] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:55,265] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:55,966] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:56,239] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-07-31 22:00:56,240] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:56,296] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [293.66 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:56,297] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:56,297] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:56,318] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:00:56,319] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:56,320] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:56,321] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:56,322] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:56,322] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:00:56,322] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:56,476] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:56,478] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:56,478] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:56,479] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:00:58,260] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.78 seconds)
+[2020-07-31 22:00:58,302] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:00:58,307] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:00:58,310] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:00:59,022] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:00:59,398] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 44 channels (of 50)
+[2020-07-31 22:00:59,399] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:00:59,450] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [294.61 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:00:59,451] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:00:59,452] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:00:59,472] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:00:59,473] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:00:59,473] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:00:59,475] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:00:59,476] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 51 MiniSEED files [0.3 MB].
+[2020-07-31 22:00:59,477] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:00:59,477] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+[2020-07-31 22:00:59,631] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:00:59,632] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:00:59,633] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:00:59,633] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:01,607] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.97 seconds)
+[2020-07-31 22:01:01,651] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:01,655] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:01,658] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 57 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:02,413] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 7 channels (of 7)
+[2020-07-31 22:01:03,445] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully downloaded 41 channels (of 50)
+[2020-07-31 22:01:03,446] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:03,494] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.3 MB [176.57 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:03,495] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:03,495] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: DOWNLOADED
+[2020-07-31 22:01:03,515] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:03,516] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:03,516] - obspy.clients.fdsn.mass_downloader - INFO: 0 MiniSEED files [0.0 MB] already existed.
+[2020-07-31 22:01:03,517] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:03,518] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 48 MiniSEED files [0.3 MB].
+[2020-07-31 22:01:03,519] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:03,519] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.3 MB in total.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+finished downloading waveform data for crandall_test
+downloading station data for crandall_test dataset ...
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2020-07-31 22:01:05,137] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:05,139] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:05,140] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:05,140] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:06,700] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.56 seconds)
+[2020-07-31 22:01:06,750] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:06,755] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:06,758] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:06,759] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:07,194] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:07,195] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:07,195] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:07,196] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:07,197] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:07,217] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:07,218] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:07,220] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.4 MB] already existed.
+[2020-07-31 22:01:07,220] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:07,221] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:07,221] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:07,222] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:07,304] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:07,306] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:07,306] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:07,307] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:08,838] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.53 seconds)
+[2020-07-31 22:01:08,887] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:08,893] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:08,896] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:08,897] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:09,335] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:09,336] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:09,337] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:09,338] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:09,339] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:09,360] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:09,361] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:09,362] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:09,363] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:09,363] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:09,364] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:09,365] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:09,447] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:09,449] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:09,449] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:09,450] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:11,104] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.65 seconds)
+[2020-07-31 22:01:11,152] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:11,157] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:11,159] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:11,160] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:11,600] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:11,601] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:11,602] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:11,602] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:11,603] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:11,626] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:11,627] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:11,628] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:11,629] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:11,629] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:11,630] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:11,630] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:11,710] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:11,712] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:11,713] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:11,713] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:13,842] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.13 seconds)
+[2020-07-31 22:01:13,889] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:13,893] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:13,896] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:13,896] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:14,328] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:14,329] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:14,329] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:14,330] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:14,331] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:14,350] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:14,351] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:14,352] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:14,354] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:14,354] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:14,355] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:14,355] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:14,429] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:14,430] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:14,431] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:14,431] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:16,150] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.72 seconds)
+[2020-07-31 22:01:16,205] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:16,210] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:16,214] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:16,214] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:16,651] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:16,652] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:16,653] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:16,654] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:16,654] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:16,676] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:16,676] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:16,677] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:16,678] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:16,678] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:16,679] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:16,679] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:16,758] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:16,759] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:16,760] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:16,761] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:18,966] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.20 seconds)
+[2020-07-31 22:01:19,010] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:19,015] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:19,018] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:19,019] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:19,460] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:19,461] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:19,462] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:19,462] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:19,463] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:19,483] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:19,484] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:19,485] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:19,486] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:19,486] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:19,487] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:19,487] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:19,563] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:19,564] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:19,565] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:19,565] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:20,913] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (1.35 seconds)
+[2020-07-31 22:01:20,962] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:20,966] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:20,969] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:20,969] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:21,350] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:21,352] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:21,353] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:21,353] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 6 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:21,354] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 51 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:21,380] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:21,381] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:21,382] - obspy.clients.fdsn.mass_downloader - INFO: 51 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:21,383] - obspy.clients.fdsn.mass_downloader - INFO: 17 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:21,383] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:21,384] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:21,384] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+[2020-07-31 22:01:21,467] - obspy.clients.fdsn.mass_downloader - INFO: Initializing FDSN client(s) for http://service.iris.edu.
+[2020-07-31 22:01:21,469] - obspy.clients.fdsn.mass_downloader - INFO: Successfully initialized 1 client(s): http://service.iris.edu.
+[2020-07-31 22:01:21,469] - obspy.clients.fdsn.mass_downloader - INFO: Total acquired or preexisting stations: 0
+[2020-07-31 22:01:21,470] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Requesting reliable availability.
+[2020-07-31 22:01:23,609] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Successfully requested availability (2.14 seconds)
+[2020-07-31 22:01:23,654] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Found 19 stations (57 channels).
+[2020-07-31 22:01:23,658] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Will attempt to download data from 19 stations.
+[2020-07-31 22:01:23,661] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels before downloading: EXISTS
+[2020-07-31 22:01:23,661] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels before downloading: NEEDS_DOWNLOADING
+[2020-07-31 22:01:24,052] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No data available for request.
+[2020-07-31 22:01:24,053] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Launching basic QC checks...
+[2020-07-31 22:01:24,054] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Downloaded 0.0 MB [0.00 KB/sec] of data, 0.0 MB of which were discarded afterwards.
+[2020-07-31 22:01:24,054] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 9 time intervals/channels after downloading: DOWNLOAD_FAILED
+[2020-07-31 22:01:24,055] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Status for 48 time intervals/channels after downloading: EXISTS
+[2020-07-31 22:01:24,077] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - No station information to download.
+[2020-07-31 22:01:24,077] - obspy.clients.fdsn.mass_downloader - INFO: ============================== Final report
+[2020-07-31 22:01:24,078] - obspy.clients.fdsn.mass_downloader - INFO: 48 MiniSEED files [0.3 MB] already existed.
+[2020-07-31 22:01:24,079] - obspy.clients.fdsn.mass_downloader - INFO: 16 StationXML files [0.4 MB] already existed.
+[2020-07-31 22:01:24,080] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 MiniSEED files [0.0 MB].
+[2020-07-31 22:01:24,080] - obspy.clients.fdsn.mass_downloader - INFO: Client &#39;http://service.iris.edu&#39; - Acquired 0 StationXML files [0.0 MB].
+[2020-07-31 22:01:24,081] - obspy.clients.fdsn.mass_downloader - INFO: Downloaded 0.0 MB in total.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+finished downloading station data for crandall_test
+downloading event data for crandall_test dataset ...
+finished downloading event data for crandall_test
+</pre></div></div>
+</div>
+<p>The best way to access the data in a dataset is by using the desired client:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">wave_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span>
+<span class="n">station_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">station_client</span>
+<span class="n">event_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">event_client</span>
+</pre></div>
+</div>
+</div>
+<p>which behave the same as any <code class="docutils literal notranslate"><span class="pre">Client</span></code> in ObsPy:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">st</span> <span class="o">=</span> <span class="n">wave_client</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+<span class="n">inv</span> <span class="o">=</span> <span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inv</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>You can also use a <code class="docutils literal notranslate"><span class="pre">Fetcher</span></code> for “dataset aware” querying.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Each dataset is a just a directory of files whose path is stored as the <code class="docutils literal notranslate"><span class="pre">data_path</span></code> attribute:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ds</span><span class="o">.</span><span class="n">data_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PosixPath(&#39;/home/runner/opsdata/crandall_test&#39;)
+</pre></div></div>
+</div>
+<p>And the <em>included</em> data files are found in the <code class="docutils literal notranslate"><span class="pre">source_path</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ds</span><span class="o">.</span><span class="n">source_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PosixPath(&#39;/home/runner/work/obsplus/obsplus/obsplus/datasets/crandall_test&#39;)
+</pre></div></div>
+</div>
+<p>If you plan to modify any data, Datasets can be copied with the <code class="docutils literal notranslate"><span class="pre">copy_dataset</span></code> function.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="s1">&#39;crandall_test&#39;</span>
+<span class="k">assert</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Data-path">
+<h2>Data path<a class="headerlink" href="#Data-path" title="Permalink to this headline">¶</a></h2>
+<p>By default, all datasets are stored in the user’s home directory in a directory called ‘opsdata’. Each dataset is contained by a subdirectory with the same name as the dataset. If you would prefer the datasets be stored somewhere else, the locations can be controlled by the environmental variable <code class="docutils literal notranslate"><span class="pre">OPSDATA_PATH</span></code>.</p>
+</div>
+<div class="section" id="Included-Test-Datasets">
+<h2>Included Test Datasets<a class="headerlink" href="#Included-Test-Datasets" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>TA_test: A small dataset with two stations from the TA with channels that have very low sampling rates.</p></li>
+<li><p>Crandall_test: Event waveforms for the <a class="reference external" href="https://en.wikipedia.org/wiki/Crandall_Canyon_Mine">Crandall Canyon Mine collapse</a> and associated aftershocks. The dataset also includes a catalog of the events and a station inventory.</p></li>
+<li><p>Bingham_test: Event waveforms associated with the <a class="reference external" href="https://en.wikipedia.org/wiki/Bingham_Canyon_Mine#Landslides">Bingham Canyon Landslide</a>, one of the largest anthropogenic landslides ever recorded. Luckily, the situation was well managed and no one was hurt. The dataset also includes a catalog of the events and a station inventory.</p></li>
+</ol>
+<p>Each of these data sets is accessed via <code class="docutils literal notranslate"><span class="pre">obsplus.load_dataset</span></code> function which takes the name of the dataset as the only argument. It then returns a <code class="docutils literal notranslate"><span class="pre">DataSet</span></code> instance. This will take a few minutes if the datasets have not yet been downloaded, otherwise it should be very quick.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># cleanup temporary directory</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Datasets</a><ul>
+<li><a class="reference internal" href="#Dataset-basics">Dataset basics</a></li>
+<li><a class="reference internal" href="#Data-path">Data path</a></li>
+<li><a class="reference internal" href="#Included-Test-Datasets">Included Test Datasets</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/datasets/datasets.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Datasets</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

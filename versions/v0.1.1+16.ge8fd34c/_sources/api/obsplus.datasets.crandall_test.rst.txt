@@ -1,0 +1,7 @@
+obsplus.datasets.crandall\_test module
+======================================
+
+.. automodule:: obsplus.datasets.crandall_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

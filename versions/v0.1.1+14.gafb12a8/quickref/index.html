@@ -1,0 +1,219 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick References &#8212; ObsPlus  [ v0.1.1+14.gafb12a8.dirty ] v0.1.1+14.gafb12a8.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+14.gafb12a8.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quick References</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quick-references">
+<span id="quickref"></span><h1>Quick References<a class="headerlink" href="#quick-references" title="Permalink to this headline">¶</a></h1>
+<p>A brief glance at ObsPlus’ main features.</p>
+<div class="section" id="events">
+<h2>Events<a class="headerlink" href="#events" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.get_event_client.html#obsplus.get_event_client" title="obsplus.get_event_client"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.get_event_client</span></code></a>()</p></td>
+<td><p>Extract an event client from various inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.EventBank.html#obsplus.EventBank" title="obsplus.EventBank"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.EventBank</span></code></a>([base_path, …])</p></td>
+<td><p>A class to interact with a directory of event files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.events_to_df.html#obsplus.events_to_df" title="obsplus.events_to_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.events_to_df</span></code></a></p></td>
+<td><p>A class to extract dataframes from nested object trees.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.picks_to_df.html#obsplus.picks_to_df" title="obsplus.picks_to_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.picks_to_df</span></code></a></p></td>
+<td><p>A class to extract dataframes from nested object trees.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.json_to_cat.html#obsplus.json_to_cat" title="obsplus.json_to_cat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.json_to_cat</span></code></a>(cjson)</p></td>
+<td><p>Load json str or dict into a catalog object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.cat_to_json.html#obsplus.cat_to_json" title="obsplus.cat_to_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.cat_to_json</span></code></a>(catalog)</p></td>
+<td><p>Return a json string of the catalog object</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="stations">
+<h2>Stations<a class="headerlink" href="#stations" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.get_station_client.html#obsplus.get_station_client" title="obsplus.get_station_client"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.get_station_client</span></code></a>()</p></td>
+<td><p>Extract a station client from various inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.stations_to_df.html#obsplus.stations_to_df" title="obsplus.stations_to_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.stations_to_df</span></code></a></p></td>
+<td><p>A class to extract dataframes from nested object trees.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="waveforms">
+<h2>Waveforms<a class="headerlink" href="#waveforms" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.get_waveform_client.html#obsplus.get_waveform_client" title="obsplus.get_waveform_client"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.get_waveform_client</span></code></a>()</p></td>
+<td><p>Extract a waveform client from various inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.WaveBank.html#obsplus.WaveBank" title="obsplus.WaveBank"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.WaveBank</span></code></a>([base_path, …])</p></td>
+<td><p>A class to interact with a directory of waveform files.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="datasets">
+<h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.datasets.dataset.DataSet</span></code></a>([base_path])</p></td>
+<td><p>Abstract Base Class for downloading and serving datasets.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.load_dataset.html#obsplus.load_dataset" title="obsplus.load_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.load_dataset</span></code></a>(name[, silent])</p></td>
+<td><p>Get a loaded dataset.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.Fetcher.html#obsplus.Fetcher" title="obsplus.Fetcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.Fetcher</span></code></a>(waveforms[, stations, …])</p></td>
+<td><p>A class for serving up data from various sources.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="utils">
+<h2>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.DataFrameExtractor.html#obsplus.DataFrameExtractor" title="obsplus.DataFrameExtractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.DataFrameExtractor</span></code></a>(cls[, …])</p></td>
+<td><p>A class to extract dataframes from nested object trees.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.utils.yield_obj_parent_attr.html#obsplus.utils.yield_obj_parent_attr" title="obsplus.utils.yield_obj_parent_attr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.utils.yield_obj_parent_attr</span></code></a>(obj[, …])</p></td>
+<td><p>Recurse an object, yield a tuple of object, parent, attr.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stubs/obsplus.utils.time.to_utc.html#obsplus.utils.time.to_utc" title="obsplus.utils.time.to_utc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.utils.time.to_utc</span></code></a>(value)</p></td>
+<td><p>Convert an object or sequence to a UTCDateTime object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/obsplus.utils.time.to_datetime64.html#obsplus.utils.time.to_datetime64" title="obsplus.utils.time.to_datetime64"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obsplus.utils.time.to_datetime64</span></code></a>()</p></td>
+<td><p>Convert time value to a numpy datetime64, or array of such.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quick References</a><ul>
+<li><a class="reference internal" href="#events">Events</a></li>
+<li><a class="reference internal" href="#stations">Stations</a></li>
+<li><a class="reference internal" href="#waveforms">Waveforms</a></li>
+<li><a class="reference internal" href="#datasets">Datasets</a></li>
+<li><a class="reference internal" href="#utils">Utils</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/quickref/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+14.gafb12a8.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quick References</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

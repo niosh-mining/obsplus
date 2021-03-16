@@ -1,0 +1,192 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>obsplus.events.validate module &#8212; ObsPlus  [ v0.1.1+7.ge43aa80.dirty ] v0.1.1+7.ge43aa80.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.validate module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-obsplus.events.validate">
+<span id="obsplus-events-validate-module"></span><h1>obsplus.events.validate module<a class="headerlink" href="#module-obsplus.events.validate" title="Permalink to this headline">¶</a></h1>
+<p>Functions for validating events according to the obsplus flavor.</p>
+<dl class="py function">
+<dt id="obsplus.events.validate.attach_all_resource_ids">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">attach_all_resource_ids</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#attach_all_resource_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.attach_all_resource_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>recurse all objects in a events and set referred objects</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_amp_filter_ids">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_amp_filter_ids</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">filter_ids</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_amp_filter_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_amp_filter_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that all amplitudes have codes in filter_ids.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_amp_lims">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_amp_lims</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">amp_lim</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_amp_lims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_amp_lims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for amplitudes that aren’t below amp_lim (if provided).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_amp_times_contain_pick_time">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_amp_times_contain_pick_time</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_amp_times_contain_pick_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_amp_times_contain_pick_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for amplitudes times that don’t match the referenced pick time</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_amps_on_z_component">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_amps_on_z_component</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">no_z_amps</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">phase_hints</span><span class="o">=</span><span class="default_value">'AML', 'IAML'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_amps_on_z_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_amps_on_z_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for amplitude picks on Z channels (if no_z_amps is True).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_arrivals_pick_id">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_arrivals_pick_id</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_arrivals_pick_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_arrivals_pick_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that all arrivals link to a pick object, if they are not
+attached set the referred object attr.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_duplicate_picks">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_duplicate_picks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_duplicate_picks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_duplicate_picks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure there are no picks with the same phases on the same channels.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_origins">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_origins</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_origins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_origins" title="Permalink to this definition">¶</a></dt>
+<dd><p>check the origins and types</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_p_lims">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_p_lims</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">p_lim</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_p_lims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_p_lims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for P picks that aren’t within p_lim of the median pick (if provided)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.check_pick_order">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">check_pick_order</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#check_pick_order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.check_pick_order" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Ensure:</dt><dd><ol class="arabic simple">
+<li><p>There are no S picks before P picks on any station</p></li>
+<li><p>There are no amplitude picks before P picks on any station</p></li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.set_preferred_values">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">set_preferred_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#set_preferred_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.set_preferred_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validator to set the preferred values to the last in the list if they are
+not defined.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="obsplus.events.validate.validate_catalog">
+<code class="sig-prename descclassname">obsplus.events.validate.</code><code class="sig-name descname">validate_catalog</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/validate.html#validate_catalog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.events.validate.validate_catalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform checks on a events or event object.</p>
+<p>This function will try to fix any issues but will raise if it cannot. It
+is a simple wrapper around obsplus.validate.validate for the obsplus
+namespace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>events</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]) – The events or event to check</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.events.validate.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ v0.1.1+7.ge43aa80.dirty ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.validate module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+obsplus.stations package
+========================
+
+.. automodule:: obsplus.stations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   obsplus.stations.get_stations
+   obsplus.stations.pd

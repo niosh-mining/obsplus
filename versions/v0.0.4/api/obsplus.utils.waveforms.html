@@ -1,0 +1,250 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.utils.waveforms module &#8212; ObsPlus v0.0.4+0.gdff59ab.dirty documentation</title>
+    <link rel="stylesheet" href="../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.waveforms.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <div class="section" id="module-obsplus.utils.waveforms">
+<span id="obsplus-utils-waveforms-module"></span><h1>obsplus.utils.waveforms module<a class="headerlink" href="#module-obsplus.utils.waveforms" title="Permalink to this headline">¶</a></h1>
+<p>Stream utilities</p>
+<dl class="function">
+<dt id="obsplus.utils.waveforms.archive_to_sds">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">archive_to_sds</code><span class="sig-paren">(</span><em class="sig-param">bank</em>, <em class="sig-param">sds_path</em>, <em class="sig-param">starttime=None</em>, <em class="sig-param">endtime=None</em>, <em class="sig-param">overlap=30</em>, <em class="sig-param">type_code='D'</em>, <em class="sig-param">stream_processor=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#archive_to_sds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.archive_to_sds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a seiscomp data structure archive from a waveform source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bank</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank" title="obsplus.bank.wavebank.WaveBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveBank</span></code></a>]) – A wavebank or path to such.</p></li>
+<li><p><strong>sds_path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The path for the new sds archive to be created.</p></li>
+<li><p><strong>starttime</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]) – If not None, the starttime to convert data from bank.</p></li>
+<li><p><strong>endtime</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>]) – If not None, the endtime to convert data from bank.</p></li>
+<li><p><strong>overlap</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The overlap to use for each file.</p></li>
+<li><p><strong>type_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The str indicating the datatype.</p></li>
+<li><p><strong>stream_processor</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">callable</span></code>]) – A callable that will take a single stream as input and return a
+a single stream. May return and empty stream to skip a stream.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>see: <a class="reference external" href="https://www.seiscomp3.org/doc/applications/slarchive/SDS.html">https://www.seiscomp3.org/doc/applications/slarchive/SDS.html</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.waveforms.get_waveform_client">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">get_waveform_client</code><span class="sig-paren">(</span><em class="sig-param">waveforms</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#get_waveform_client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.get_waveform_client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract a waveform client from various inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>waveforms</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveformClient</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Trace</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>]) – <dl class="simple">
+<dt>Any of the following:</dt><dd><ul class="simple">
+<li><p>A path to an obspy-readable waveform file</p></li>
+<li><p>A path to a directory of obspy-readable waveform files</p></li>
+<li><p>A <cite>obspy.Stream</cite> instance</p></li>
+<li><p>An instance of <a class="reference internal" href="../quickref/stubs/obsplus.WaveBank.html#obsplus.WaveBank" title="obsplus.WaveBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveBank</span></code></a></p></li>
+<li><p>Any other object that has a <cite>get_waveforms</cite> method</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If a waveform client cannot be determined from the input.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the output does not define a <cite>get_waveform_bulk</cite> method one will be added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaveformClient</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.waveforms.merge_traces">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">merge_traces</code><span class="sig-paren">(</span><em class="sig-param">st</em>, <em class="sig-param">inplace=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#merge_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.merge_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>An efficient function to merge overlapping data for a stream.</p>
+<p>This function is equivalent to calling merge(1) and split() then returning
+the resulting trace. This means only traces that have overlaps or adjacent
+times will be merged, otherwise they will remain separate traces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>st</strong> (<em>~trace_sequence</em>) – The input stream to merge.</p></li>
+<li><p><strong>inplace</strong> – If True st is modified in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A stream with merged traces.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.waveforms.stream2contiguous">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">stream2contiguous</code><span class="sig-paren">(</span><em class="sig-param">stream</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#stream2contiguous"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.stream2contiguous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yields trimmed streams for times which all traces have data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stream</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>) – The input stream</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">endtime</span><span class="o">=</span><span class="n">t2</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># remove data at end of one trace</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">stream2contiguous</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># stream2contiguous should now have trimmed all traces to match</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.waveforms.stream_bulk_split">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">stream_bulk_split</code><span class="sig-paren">(</span><em class="sig-param">st</em>, <em class="sig-param">bulk</em>, <em class="sig-param">fill_value=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#stream_bulk_split"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.stream_bulk_split" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split a stream into a list of streams that meet requirements in bulk.</p>
+<p>This is similar to the get_waveforms_bulk methods of waveform_client, but
+rather than merging any overlapping data it is returned in a list of traces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>st</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code>) – A stream object</p></li>
+<li><p><strong>bulk</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime64</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime64</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]]]) – A bulk request. Wildcards not currently supported on str params.</p></li>
+<li><p><strong>fill_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – If not None fill any missing data in time range with this value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List of traces, each meeting the corresponding request in bulk.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obsplus.utils.waveforms.trim_event_stream">
+<code class="sig-prename descclassname">obsplus.utils.waveforms.</code><code class="sig-name descname">trim_event_stream</code><span class="sig-paren">(</span><em class="sig-param">stream</em>, <em class="sig-param">merge=1</em>, <em class="sig-param">copy=True</em>, <em class="sig-param">trim_tolerance=None</em>, <em class="sig-param">required_len=0.95</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/waveforms.html#trim_event_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obsplus.utils.waveforms.trim_event_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trim the waveforms to a common start time and end time.</p>
+<p>Uses latest start and earliest end for each trace, unless an abnormally
+short trace is found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> (<em>obspy.Stream</em>) – The waveforms to trim</p></li>
+<li><p><strong>merge</strong> (<em>int</em><em>, </em><em>optional</em>) – If not None, merge the waveforms with this method before trimming. See
+obspy waveforms docs for merge options</p></li>
+<li><p><strong>copy</strong> (<em>bool</em>) – Copy the waveforms before altering it.</p></li>
+<li><p><strong>trim_tolerance</strong> – The number of seconds the trimmed starttime or endtime can vary from
+the starttime/endtime in the current traces.</p></li>
+<li><p><strong>required_len</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The fraction of the longest len a trace must have to be considered
+good. If any trace is shorter remove it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The merged waveforms</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>stream</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.2.
+    </div>
+  </body>
+</html>

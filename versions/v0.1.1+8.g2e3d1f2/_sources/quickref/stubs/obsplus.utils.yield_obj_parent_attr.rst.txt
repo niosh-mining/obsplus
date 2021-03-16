@@ -1,0 +1,6 @@
+obsplus.utils.yield\_obj\_parent\_attr
+======================================
+
+.. currentmodule:: obsplus.utils
+
+.. autofunction:: yield_obj_parent_attr

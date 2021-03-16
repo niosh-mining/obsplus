@@ -1,0 +1,296 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.utils.stations &#8212; ObsPlus v0.1.0+0.gae64b2d.dirty documentation</title>
+    <link rel="stylesheet" href="../../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <h1>Source code for obsplus.utils.stations</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utilities for working with inventories.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">singledispatch</span><span class="p">,</span> <span class="n">lru_cache</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">obspy.core.inventory</span> <span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">Station</span><span class="p">,</span> <span class="n">Network</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">import</span> <span class="nn">obsplus.utils.misc</span>
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="n">station_clientable_type</span><span class="p">,</span> <span class="n">SMALLDT64</span><span class="p">,</span> <span class="n">LARGEDT64</span><span class="p">,</span> <span class="n">NSLC</span>
+<span class="kn">from</span> <span class="nn">obsplus.interfaces</span> <span class="kn">import</span> <span class="n">StationClient</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">to_utc</span>
+
+<span class="n">LARGE_NUMBER</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;3000-01-01&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span>
+
+<span class="c1"># create key mappings for mapping keys (used to create inventory objects</span>
+<span class="c1"># from various columns in the stations dataframe).</span>
+<span class="n">mapping_keys</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">Channel</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="s2">&quot;location_code&quot;</span><span class="p">:</span> <span class="s2">&quot;location&quot;</span><span class="p">},</span>
+    <span class="n">Station</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;station&quot;</span><span class="p">},</span>
+    <span class="n">Network</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;network&quot;</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">type_mappings</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="n">to_utc</span><span class="p">,</span> <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="n">to_utc</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="df_to_inventory"><a class="viewcode-back" href="../../../api/obsplus.utils.stations.html#obsplus.utils.stations.df_to_inventory">[docs]</a><span class="k">def</span> <span class="nf">df_to_inventory</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a station inventory from a dataframe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        A dataframe which must have the same columns as the once produced by</span>
+<span class="sd">        :func:`obsplus.stations_to_df`.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The dataframe can also contain columns named &quot;sensor_keys&quot; and</span>
+<span class="sd">    &quot;datalogger_keys&quot; which will indicate the response information should</span>
+<span class="sd">    be fetched suing obspy&#39;s ability to interact with the nominal response</span>
+<span class="sd">    library. Each of these columns should either contain tuples or strings</span>
+<span class="sd">    where the keys are separated by double underscores (__).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_make_key_mappings</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create a mapping from columns in df to kwargs for cls. &quot;&quot;&quot;</span>
+        <span class="n">base_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">new_map</span> <span class="o">=</span> <span class="n">mapping_keys</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span>
+        <span class="n">base_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">base_params</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_map</span><span class="p">)}</span>
+        <span class="n">base_map</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_map</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">base_map</span>
+
+    <span class="k">def</span> <span class="nf">_groupby_if_exists</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Groupby columns if they exist on dataframe, else return empty. &quot;&quot;&quot;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obsplus</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">columns</span><span class="p">))</span>
+        <span class="c1"># copy df and set missing start/end times to reasonable values</span>
+        <span class="c1"># this is needed so they get included in a groupby</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">isnan</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span>
+        <span class="n">default_start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">SMALLDT64</span><span class="p">)</span>
+        <span class="n">default_end</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">LARGEDT64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;start_date&quot;</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">default_start</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;end_date&quot;</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">default_end</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">df_sub</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">cols</span><span class="p">):</span>
+            <span class="c1"># replace NaN values</span>
+            <span class="k">if</span> <span class="n">isnan</span><span class="o">.</span><span class="n">any</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">df_sub</span><span class="p">[</span><span class="n">isnan</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df_sub</span><span class="o">.</span><span class="n">index</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">yield</span> <span class="n">ind</span><span class="p">,</span> <span class="n">df_sub</span>
+
+    <span class="k">def</span> <span class="nf">_get_kwargs</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">key_mapping</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; create the kwargs from a series and key mapping. &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">key_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># skip if requested kwarg is not in the series</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="c1"># if the type needs to be cast to something else</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">type_mappings</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">type_mappings</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@lru_cache</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">get_nrl</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot; Initiate a nominal response library object. &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">obspy.clients.nrl</span> <span class="kn">import</span> <span class="n">NRL</span>
+
+        <span class="k">return</span> <span class="n">NRL</span><span class="p">()</span>
+
+    <span class="nd">@lru_cache</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">get_response</span><span class="p">(</span><span class="n">datalogger_keys</span><span class="p">,</span> <span class="n">sensor_keys</span><span class="p">):</span>
+        <span class="n">nrl</span> <span class="o">=</span> <span class="n">get_nrl</span><span class="p">()</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">datalogger_keys</span><span class="o">=</span><span class="n">datalogger_keys</span><span class="p">,</span> <span class="n">sensor_keys</span><span class="o">=</span><span class="n">sensor_keys</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nrl</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_resp_key</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get response keys from various types. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">key</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;__&quot;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_maybe_add_response</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">channel_kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Maybe add the response information if required columns exist. &quot;&quot;&quot;</span>
+        <span class="c1"># bail out of required columns do not exist</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">{</span><span class="s2">&quot;sensor_keys&quot;</span><span class="p">,</span> <span class="s2">&quot;datalogger_keys&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">index</span><span class="p">)):</span>
+            <span class="k">return</span>
+        <span class="c1"># determine if both required columns are populated, else bail out</span>
+        <span class="n">sensor</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="s2">&quot;sensor_keys&quot;</span><span class="p">]</span>
+        <span class="n">datalogger</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="s2">&quot;datalogger_keys&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">sensor</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">datalogger</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">sensor_keys</span> <span class="o">=</span> <span class="n">_get_resp_key</span><span class="p">(</span><span class="n">sensor</span><span class="p">)</span>
+        <span class="n">datalogger_keys</span> <span class="o">=</span> <span class="n">_get_resp_key</span><span class="p">(</span><span class="n">datalogger</span><span class="p">)</span>
+        <span class="c1"># at this point all the required info for resp lookup should be there</span>
+        <span class="n">channel_kwargs</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_response</span><span class="p">(</span><span class="n">datalogger_keys</span><span class="p">,</span> <span class="n">sensor_keys</span><span class="p">)</span>
+
+    <span class="c1"># make sure all seed_id codes are str</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.0&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="c1"># first get key_mappings</span>
+    <span class="n">net_map</span> <span class="o">=</span> <span class="n">_make_key_mappings</span><span class="p">(</span><span class="n">Network</span><span class="p">)</span>
+    <span class="n">sta_map</span> <span class="o">=</span> <span class="n">_make_key_mappings</span><span class="p">(</span><span class="n">Station</span><span class="p">)</span>
+    <span class="n">cha_map</span> <span class="o">=</span> <span class="n">_make_key_mappings</span><span class="p">(</span><span class="n">Channel</span><span class="p">)</span>
+    <span class="c1"># next define columns groupbys should be performed on</span>
+    <span class="n">net_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
+    <span class="n">sta_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;station&quot;</span><span class="p">,</span> <span class="s2">&quot;start_date&quot;</span><span class="p">,</span> <span class="s2">&quot;end_date&quot;</span><span class="p">]</span>
+    <span class="n">cha_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="s2">&quot;start_date&quot;</span><span class="p">,</span> <span class="s2">&quot;end_date&quot;</span><span class="p">]</span>
+    <span class="c1"># Ensure input is a dataframe</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">stations_to_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="c1"># Iterate networks and create stations</span>
+    <span class="n">networks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">net_code</span><span class="p">,</span> <span class="n">net_df</span> <span class="ow">in</span> <span class="n">_groupby_if_exists</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">net_columns</span><span class="p">):</span>
+        <span class="n">stations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">st_code</span><span class="p">,</span> <span class="n">sta_df</span> <span class="ow">in</span> <span class="n">_groupby_if_exists</span><span class="p">(</span><span class="n">net_df</span><span class="p">,</span> <span class="n">sta_columns</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">st_code</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">channels</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ch_code</span><span class="p">,</span> <span class="n">ch_df</span> <span class="ow">in</span> <span class="n">_groupby_if_exists</span><span class="p">(</span><span class="n">sta_df</span><span class="p">,</span> <span class="n">cha_columns</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ch_code</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>  <span class="c1"># skip empty channel lines</span>
+                    <span class="k">continue</span>
+                <span class="n">chan_series</span> <span class="o">=</span> <span class="n">ch_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_get_kwargs</span><span class="p">(</span><span class="n">chan_series</span><span class="p">,</span> <span class="n">cha_map</span><span class="p">)</span>
+                <span class="c1"># try to add the inventory</span>
+                <span class="n">_maybe_add_response</span><span class="p">(</span><span class="n">chan_series</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">channels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Channel</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_get_kwargs</span><span class="p">(</span><span class="n">sta_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sta_map</span><span class="p">)</span>
+            <span class="n">stations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Station</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">channels</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_get_kwargs</span><span class="p">(</span><span class="n">net_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">net_map</span><span class="p">)</span>
+        <span class="n">networks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Network</span><span class="p">(</span><span class="n">stations</span><span class="o">=</span><span class="n">stations</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">(</span><span class="n">networks</span><span class="o">=</span><span class="n">networks</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;ObsPlus_v</span><span class="si">{</span><span class="n">obsplus</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_station_client"><a class="viewcode-back" href="../../../quickref/stubs/obsplus.get_station_client.html#obsplus.utils.stations.get_station_client">[docs]</a><span class="nd">@singledispatch</span>
+<span class="k">def</span> <span class="nf">get_station_client</span><span class="p">(</span><span class="n">stations</span><span class="p">:</span> <span class="n">station_clientable_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StationClient</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract a station client from various inputs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stations</span>
+<span class="sd">        Any of the following:</span>
+<span class="sd">            * A path to an obspy-readable station file</span>
+<span class="sd">            * A path to a directory of obspy-readable station files</span>
+<span class="sd">            * An `obspy.Inventory` instance</span>
+<span class="sd">            * An instance of :class:`~obsplus.EventBank`</span>
+<span class="sd">            * Any other object that has a `get_stations` method</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If a station client cannot be determined from the input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;a station client could not be extracted from </span><span class="si">{</span><span class="n">stations</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stations</span></div>
+
+
+<span class="nd">@get_station_client</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="nd">@get_station_client</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_read_inventory</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StationClient</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">inv</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">inv_path</span> <span class="ow">in</span> <span class="n">path</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.xml&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">inv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">inv</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">inv_path</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inv</span> <span class="o">+=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">inv_path</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inv</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">get_station_client</span><span class="p">(</span><span class="n">inv</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

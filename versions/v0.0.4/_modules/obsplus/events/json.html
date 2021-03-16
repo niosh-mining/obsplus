@@ -1,0 +1,233 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>obsplus.events.json &#8212; ObsPlus v0.0.4+0.gdff59ab.dirty documentation</title>
+    <link rel="stylesheet" href="../../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+
+  <h1>Source code for obsplus.events.json</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for converting obspy object to json format</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">ResourceIdentifier</span><span class="p">,</span> <span class="n">QuantityError</span>
+
+<span class="kn">from</span> <span class="nn">obsplus.utils.events</span> <span class="kn">import</span> <span class="n">obj_to_dict</span><span class="p">,</span> <span class="n">make_class_map</span>
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="n">JSON_KEYS_TO_POP</span>
+
+<span class="n">JSON_SERIALIZER_VERSION</span> <span class="o">=</span> <span class="s2">&quot;0.0.0&quot;</span>  <span class="c1"># increment when serialization changes</span>
+
+
+<span class="c1"># -------------------- events to json functions</span>
+
+
+<div class="viewcode-block" id="cat_to_json"><a class="viewcode-back" href="../../../quickref/stubs/obsplus.cat_to_json.html#obsplus.events.json.cat_to_json">[docs]</a><span class="k">def</span> <span class="nf">cat_to_json</span><span class="p">(</span><span class="n">catalog</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a json string of the catalog object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out_dict</span> <span class="o">=</span> <span class="n">cat_to_dict</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">out_dict</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cat_to_dict"><a class="viewcode-back" href="../../../api/obsplus.events.json.html#obsplus.events.json.cat_to_dict">[docs]</a><span class="k">def</span> <span class="nf">cat_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively convert cat_name object to json.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj :</span>
+<span class="sd">        An object that will be recursed (obspy cat_name to start)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">):</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">json_serializer_version</span> <span class="o">=</span> <span class="n">JSON_SERIALIZER_VERSION</span>
+    <span class="c1"># if this is a non-recursible type (ie a leaf) return it</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span> <span class="ow">or</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>  <span class="c1"># if empty</span>
+            <span class="k">return</span> <span class="n">obj</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># else if list contains jsonable types</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">cat_to_dict</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>  <span class="c1"># if this is a dict recurse on each value</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">cat_to_dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># else if this is an obspy class recurse</span>
+        <span class="k">return</span> <span class="n">cat_to_dict</span><span class="p">(</span><span class="n">obj_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+
+
+<span class="c1"># ------------------- json to events functions</span>
+
+
+<div class="viewcode-block" id="json_to_cat"><a class="viewcode-back" href="../../../quickref/stubs/obsplus.json_to_cat.html#obsplus.events.json.json_to_cat">[docs]</a><span class="k">def</span> <span class="nf">json_to_cat</span><span class="p">(</span><span class="n">cjson</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load json str or dict into a catalog object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cjson</span>
+<span class="sd">        A str or dict produced by cat_to_dict or cat_to_json.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># load json to dict</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cjson</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">cjson</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cjson</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cjson</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">(</span><span class="o">**</span><span class="n">_parse_dict_class</span><span class="p">(</span><span class="n">cjson</span><span class="p">))</span></div>
+
+
+<span class="n">dict_to_cat</span> <span class="o">=</span> <span class="n">json_to_cat</span>  <span class="c1"># alias for just passing a dict</span>
+
+
+<span class="k">def</span> <span class="nf">_parse_dict_class</span><span class="p">(</span><span class="n">cdict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; parse a dictionary &quot;&quot;&quot;</span>
+    <span class="c1"># get intersection between cdict</span>
+    <span class="n">class_key</span> <span class="o">=</span> <span class="n">make_class_map</span><span class="p">()</span>
+    <span class="n">class_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">class_key</span><span class="p">)</span>
+    <span class="n">cdict_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cdict</span><span class="p">)</span>
+    <span class="c1"># get set of keys that are obspy classes in the current dict</span>
+    <span class="n">class_keys</span> <span class="o">=</span> <span class="n">class_set</span> <span class="o">&amp;</span> <span class="n">cdict_set</span>
+    <span class="c1"># iterate over keys that are also classes and recurse when needed</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">class_keys</span><span class="p">:</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">class_key</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># a blank list for storing outputs</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_init_update</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="bp">cls</span><span class="p">))</span>
+            <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_init_update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="c1"># see if any keys are resource IDs and init them (must not also be cls)</span>
+    <span class="c1"># note: if we rely on obspy internals and v 1.1.0 we can get rid of these</span>
+    <span class="n">other_keys</span> <span class="o">=</span> <span class="n">cdict_set</span> <span class="o">-</span> <span class="n">class_keys</span>
+    <span class="n">_get_resource_ids</span><span class="p">(</span><span class="n">cdict</span><span class="p">,</span> <span class="n">other_keys</span><span class="p">)</span>
+    <span class="n">_get_quality_errors</span><span class="p">(</span><span class="n">cdict</span><span class="p">,</span> <span class="n">other_keys</span><span class="p">)</span>
+    <span class="c1"># set of keys to remove (used by mobs) if we have an event dict</span>
+    <span class="k">if</span> <span class="s2">&quot;origins&quot;</span> <span class="ow">in</span> <span class="n">cdict</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">JSON_KEYS_TO_POP</span><span class="p">:</span>
+            <span class="n">cdict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cdict</span>
+
+
+<span class="k">def</span> <span class="nf">_get_resource_ids</span><span class="p">(</span><span class="n">cdict</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find any resource_ids and instantiate.&quot;&quot;&quot;</span>
+    <span class="n">resource_id_keys</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_uri&quot;</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">resource_id_keys</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>  <span class="c1"># some _id likes are str</span>
+            <span class="k">continue</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_init_update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_quality_errors</span><span class="p">(</span><span class="n">cdict</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; find any quality errors and instantiate &quot;&quot;&quot;</span>
+    <span class="n">quality_keys</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">quality_keys</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_init_update</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">QuantityError</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_init_update</span><span class="p">(</span><span class="n">indict</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; init an object from cls and update its dict with indict &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">indict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">indict</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">_parse_dict_class</span><span class="p">(</span><span class="n">indict</span><span class="p">))</span>
+    <span class="c1"># some objects instantiate even with None param, fix this</span>
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">indict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">indict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span>
+
+
+<span class="c1"># ---------------- monkey patch json methods to events</span>
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">to_json</span> <span class="o">=</span> <span class="n">cat_to_json</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Derrick Chambers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.2.
+    </div>
+  </body>
+</html>

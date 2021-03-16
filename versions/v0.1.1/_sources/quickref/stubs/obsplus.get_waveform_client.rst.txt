@@ -1,0 +1,6 @@
+obsplus.get\_waveform\_client
+=============================
+
+.. currentmodule:: obsplus
+
+.. autosingledispatch_function:: get_waveform_client
