@@ -2,6 +2,7 @@
 Stream utilities
 """
 import copy
+
 import warnings
 from functools import singledispatch
 from pathlib import Path
@@ -15,16 +16,20 @@ from obspy import Stream, UTCDateTime
 import obsplus
 from obsplus.constants import (
     waveform_clientable_type,
+    wave_type,
     NSLC,
     trace_sequence,
     NUMPY_FLOAT_TYPES,
     NUMPY_INT_TYPES,
     waveform_request_type,
+    WAVEFORM_REQUEST_DTYPES,
 )
+from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
 from obsplus.utils.pd import filter_index
-from obsplus.utils.pd import get_seed_id_series
-from obsplus.utils.time import to_utc
+from obsplus.utils.pd import get_seed_id_series, cast_dtypes, _column_contains
+from obsplus.utils.time import to_utc, to_timedelta64, to_datetime64
+from obsplus.utils.misc import ObjectWrapper
 
 
 # ---------- trim functions
@@ -118,25 +123,30 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
     return stream.trim(starttime=t1, endtime=t2)
 
 
-def _stream_data_to_df(stream: Stream) -> pd.DataFrame:
+def _get_waveform_df(stream: wave_type) -> pd.DataFrame:
     """
-    Collect queryable params from stream, return dataframe.
+    Convert a stream of sequence of traces into a datframe.
 
     Parameters
     ----------
     stream
+        The streams to index
 
-    Returns
-    -------
+    Notes
+    -----
+    This is private because it is probably not quite polished enough to include
+    in the public API. More thought is needed how to do this properly.
     """
-    dtypes = {"starttime": "datetime64[ns]", "endtime": "datetime64[ns]"}
-    st_contents = [
-        tr.id.split(".") + [tr.stats.starttime._ns, tr.stats.endtime._ns]
-        for tr in stream
-    ]
-    columns = ["network", "station", "location", "channel", "starttime", "endtime"]
-    df = pd.DataFrame(st_contents, columns=columns)
-    return df.astype(dtypes)
+    stats_columns = list(NSLC) + ["starttime", "endtime", "sampling_rate"]
+    trace_contents = [{i: tr.stats[i] for i in stats_columns} for tr in stream]
+    df = pd.DataFrame(trace_contents, columns=stats_columns)
+    # ensure time(y) columns have proper
+    df["starttime"] = to_datetime64(df["starttime"])
+    df["endtime"] = to_datetime64(df["endtime"])
+    df["sampling_period"] = to_timedelta64(1 / df["sampling_rate"])
+    df["seed_id"] = get_seed_id_series(df)
+    df["trace"] = [ObjectWrapper(tr) for tr in stream]
+    return df
 
 
 def _get_bulk(bulk):
@@ -181,7 +191,7 @@ def stream_bulk_split(
         return []
 
     # # get dataframe of stream contents
-    sdf = _stream_data_to_df(st)
+    sdf = _get_waveform_df(st)
     # iterate stream, return output
     out = []
     for barg in bulk:
@@ -226,55 +236,46 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
         """ Create a dataframe form a sequence of traces. """
         # create dataframe of traces and stats (use ns for all time values)
-        data = [
-            {
-                "trace": x,
-                "nslc": x.id,
-                "sr": np.int64(
-                    np.round(1.0 / x.stats.sampling_rate, 9) * 1_000_000_000
-                ),
-                "start": x.stats.starttime._ns,
-                "end": x.stats.endtime._ns,  # TODO switch to .ns for obspy 1.2
-            }
-            for x in traces
-        ]
-        sortby = ["nslc", "sr", "start", "end"]
-        df = pd.DataFrame(data).sort_values(sortby)
+        sortby = ["seed_id", "sampling_rate", "starttime", "endtime"]
+        index = _get_waveform_df(traces).sort_values(sortby).reset_index(drop=True)
         # create column if trace should be merged into previous trace
-        dfs = df.shift(1)  # shift all value forward one column
-        con1 = (dfs.nslc == df.nslc) & (dfs.sr == df.sr)  # traces are compatible
-        con2 = ~(dfs.end < df.start - df.sr)  # traces have some overlap
-        df["merge_group"] = (~(con1 & con2)).cumsum()
-        return df
+        shifted_index = index.shift(1)  # shift all value forward one column
+        seed_ids_match = index["seed_id"] == shifted_index["seed_id"]
+        index_samp = index["sampling_period"]
+        samps_match = index_samp == shifted_index["sampling_period"]
+        # not sure why ~ is used rather than flipping comparison, maybe something
+        # with NaNs?
+        overlap = ~(shifted_index["endtime"] < (index["starttime"] - index_samp))
+        index["merge_group"] = (~(seed_ids_match & samps_match & overlap)).cumsum()
+        return index
 
     # checks for early bail out, no merging if one trace or all unique ids
     if len(st) < 2 or len({tr.id for tr in st}) == len(st):
         return st
-
-    traces = st.traces if isinstance(st, obspy.Stream) else st
-
     if not inplace:
-        traces = copy.deepcopy(traces)
-    df = _make_trace_df(traces)
+        st = copy.deepcopy(st)
+    df = _make_trace_df(st)
     # get a series of properties by group
     group = df.groupby("merge_group")
-    t1, t2 = group["start"].min(), group["end"].max()
-    sr = group["sr"].max()
+    t1, t2 = group["starttime"].min(), group["endtime"].max()
+    sampling_periods = group["sampling_period"].max()
     gsize = group.size()  # number of traces in each group
     gnum_one = gsize[gsize == 1].index  # groups with 1 trace
     gnum_gt_one = gsize[gsize > 1].index  # group num with > 1 trace
     # use this to avoid pandas groupbys
-    merged_traces = df[df["merge_group"].isin(gnum_one)]["trace"].tolist()
+    merged_traces = [x.data for x in df[df["merge_group"].isin(gnum_one)]["trace"]]
     for gnum in gnum_gt_one:  # any groups w/ more than one trace
         ind = df.merge_group == gnum
-        gtraces = list(df.trace[ind])
+        gtraces = [x.data for x in df.trace[ind]]  # unpack traces
         dtype = _get_dtype(gtraces)
         # create list of time, y values, and marker for when values are filled
-        t = np.arange(t1[gnum], stop=t2[gnum] + sr[gnum], step=sr[gnum])
+        sampling_period = sampling_periods[gnum].to_numpy()
+        start, stop = t1[gnum].to_numpy(), t2[gnum].to_numpy()
+        t = np.arange(start=start, stop=stop + sampling_period, step=sampling_period)
         y = np.empty(np.shape(t), dtype=dtype)
-        has_filled = np.zeros_like(t)
+        has_filled = np.zeros(len(t), dtype=np.int32)
         for tr in gtraces:
-            start_ind = np.searchsorted(t, tr.stats.starttime._ns)
+            start_ind = np.searchsorted(t, to_datetime64(tr.stats.starttime))
             y[start_ind : start_ind + len(tr.data)] = tr.data
             has_filled[start_ind : start_ind + len(tr.data)] = 1
         gtraces[0].data = y
@@ -517,3 +518,87 @@ def _get_waveclient_from_path(path):
         return get_waveform_client(obsplus.WaveBank(path))
     else:
         return get_waveform_client(obspy.read(str(path)))
+
+
+@singledispatch
+def get_waveform_bulk_df(
+    bulk,
+    # bulk: Union[Sequence[waveform_request_type], pd.DataFrame]
+) -> pd.DataFrame:
+    """
+    Create a bulk request dataframe from a variety of inputs.
+
+    Parameters
+    ----------
+    bulk
+        A sequence of
+            [network, station, location, channel, starttime, endtime]
+        or a dataframe with columns named the same.
+
+    Returns
+    -------
+    A dataframe with waveform bulk columns.
+    """
+    df = pd.DataFrame(bulk, columns=list(WAVEFORM_REQUEST_DTYPES))
+    return _df_to_waveform_bulk(df)
+
+
+@get_waveform_bulk_df.register(pd.DataFrame)
+def _df_to_waveform_bulk(df):
+    """Ensure the dataframe has appropriate columns and return."""
+    current_columns = set(df.columns)
+    required_columns = list(WAVEFORM_REQUEST_DTYPES)
+    # ensure columns exist
+    if not current_columns.issuperset(required_columns):
+        missing = set(required_columns) - set(current_columns)
+        msg = (
+            f"Dataframe is missing the following columns to be valid input"
+            f" for bulk waveform request {missing}"
+        )
+        raise ValidationError(msg)
+    out = df[list(required_columns)]
+    return cast_dtypes(out, dtype=WAVEFORM_REQUEST_DTYPES)[required_columns]
+
+
+def _filter_index_to_bulk(time, index_df, bulk_df) -> pd.DataFrame:
+    """
+    Using an index_df, apply conditions in request_df and return array indicating
+    if values in index meet requested conditions.
+
+    Parameters
+    ----------
+    time
+        A tuple of mintime, maxtime
+    index_df
+        A dataframe indexing a waveform resource. Can be an index of traces
+        in a stream or an index from a wavebank.
+    bulk_df
+        The dataframe containing bulk requests.
+    """
+    match_chars = {"*", "?", "[", "]"}
+    # filter out any index times not in current time pair
+    too_late = index_df["starttime"] > time[1]
+    too_early = index_df["endtime"] < time[0]
+    index_df = index_df[~(too_early | too_late)]
+    ar = np.ones(len(index_df))  # indices of ind to use to load data
+    # filter out any request times which are not for the current time pair
+    is_starttime = bulk_df["starttime"] == time[0]
+    is_endtime = bulk_df["endtime"] == time[1]
+    bulk_df = bulk_df[is_starttime & is_endtime]
+    # determine which columns use matching. These must be handled separately.
+    uses_matches = [_column_contains(bulk_df[x], match_chars) for x in NSLC]
+    match_ar = np.array(uses_matches).any(axis=0)
+    df_match = bulk_df[match_ar]
+    df_no_match = bulk_df[~match_ar]
+    # handle columns that need matches (more expensive)
+    if not df_match.empty:
+        match_bulk = df_match.to_records(index=False)
+        mar = np.array([filter_index(index_df, *tuple(b)[:4]) for b in match_bulk])
+        ar = np.logical_and(ar, mar.any(axis=0))
+    # handle columns that do not need matches
+    if not df_no_match.empty:
+        nslc1 = set(get_seed_id_series(df_no_match))
+        nslc2 = get_seed_id_series(index_df)
+        ar = np.logical_and(ar, nslc2.isin(nslc1))
+    # get a list of used traces, combine and trim
+    return index_df[ar]

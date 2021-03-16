@@ -73,16 +73,14 @@ class TestGetWaveforms:
 class TestGetWaveformsBulk:
     """Tests for bulk waveform requests."""
 
-    @pytest.fixture(scope="class")
-    def bingham_st(self, bingham_dataset):
-        """ Return a stream with all data from bingham_test. """
-        return bingham_dataset.waveform_client.get_waveforms()
-
-    @pytest.fixture(scope="class")
-    def bingham_bulk_args(self, bingham_st):
-        """ Return bulk arguments which encompass all of the bingham_test dataset """
+    @pytest.fixture()
+    def bingham_bulk_args(self, bingham_stream):
+        """
+        Return bulk arguments which encompass all of the bingham_test dataset.
+        There is one bulk arg for each trace in bingham_st.
+        """
         bulk = []
-        for tr in bingham_st:
+        for tr in bingham_stream:
             bulk.append(tr.id.split(".") + [tr.stats.starttime, tr.stats.endtime])
         return bulk
 
@@ -104,19 +102,18 @@ class TestGetWaveformsBulk:
         assert isinstance(st, obspy.Stream)
         assert len(st) == 0
 
-    def test_doesnt_modify_original(self, bingham_st, bingham_bulk_args):
+    def test_doesnt_modify_original(self, bingham_stream, bingham_bulk_args):
         """ Ensure the method doesn't modify the original stream or bulk args """
-        st1 = copy.deepcopy(bingham_st)
+        st1 = copy.deepcopy(bingham_stream)
         bulk1 = copy.deepcopy(bingham_bulk_args)
         _ = st1.get_waveforms_bulk(bulk1)
-        assert st1 == bingham_st
+        assert st1 == bingham_stream
         assert bulk1 == bingham_bulk_args
 
-    def test_waveform_bulk(self, bingham_st, bingham_bulk_args):
+    def test_waveform_bulk(self, bingham_stream, bingham_bulk_args):
         """ Test that waveform bulk works on Bingham st """
-        # make a long bulk arg
-        st = bingham_st.get_waveforms_bulk(bingham_bulk_args)
-        assert len(st) == len(bingham_st)
+        st = bingham_stream.get_waveforms_bulk(bingham_bulk_args)
+        assert len(st) == len(bingham_stream)
 
     def test_no_matches(self):
         """ Test waveform bulk when no params meet req. """

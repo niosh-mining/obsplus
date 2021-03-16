@@ -594,3 +594,17 @@ def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
         if out.startswith(prefix):
             out = out[len(prefix) :]
     return out
+
+
+class ObjectWrapper:
+    """
+    A class for wrapping objects.
+
+    This is useful so array-like things can be packaged into numpy arrays
+    and pandas dataframes.
+    """
+
+    __slots__ = ("data",)  # this speeds up class creation/memory usage
+
+    def __init__(self, data):
+        self.data = data

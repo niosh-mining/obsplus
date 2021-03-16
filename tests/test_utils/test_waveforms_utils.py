@@ -2,15 +2,19 @@
 Tests for waveform utilities.
 """
 import copy
+
 import inspect
 from pathlib import Path
 
 import numpy as np
 import obspy
+import pandas as pd
 import pytest
+from obspy import UTCDateTime
 
 import obsplus
-from obsplus.constants import NSLC
+from obsplus.constants import NSLC, WAVEFORM_REQUEST_DTYPES
+from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
 from obsplus.utils.time import to_timedelta64
 from obsplus.utils.waveforms import (
@@ -20,6 +24,7 @@ from obsplus.utils.waveforms import (
     merge_traces,
     stream_bulk_split,
     get_waveform_client,
+    get_waveform_bulk_df,
 )
 from obsplus.utils.testing import assert_streams_almost_equal
 
@@ -109,6 +114,41 @@ class TestTrimEventStream:
 class TestMergeStream:
     """ Tests for obsplus' style for merging streams together. """
 
+    @pytest.fixture()
+    def gapped_high_sample_stream(self):
+        """
+        Create a stream which has two overlapping traces with high sampling
+        rates.
+        """
+        # first trace
+        stats1 = {
+            "sampling_rate": 6000.0,
+            "starttime": UTCDateTime(2017, 9, 23, 18, 50, 29, 715100),
+            "endtime": UTCDateTime(2017, 9, 23, 18, 50, 31, 818933),
+            "network": "XI",
+            "station": "00037",
+            "location": "00",
+            "channel": "FL1",
+        }
+        data1 = np.random.rand(12624)
+        tr1 = obspy.Trace(data=data1, header=stats1)
+        # second trace
+        stat2 = {
+            "sampling_rate": 6000.0,
+            "delta": 0.00016666666666666666,
+            "starttime": UTCDateTime(2017, 9, 23, 18, 50, 31, 819100),
+            "endtime": UTCDateTime(2017, 9, 23, 18, 50, 31, 973933),
+            "npts": 930,
+            "calib": 1.0,
+            "network": "XI",
+            "station": "00037",
+            "location": "00",
+            "channel": "FL1",
+        }
+        data2 = np.random.rand(930)
+        tr2 = obspy.Trace(data=data2, header=stat2)
+        return obspy.Stream(traces=[tr1, tr2])
+
     def convert_stream_dtype(self, st, dtype):
         """ Convert datatypes on each trace in the stream. """
         st = st.copy()
@@ -179,6 +219,19 @@ class TestMergeStream:
         st_out4 = merge_traces(st3 + st1)
         for tr in st_out4:
             assert tr.data.dtype == np.float64
+
+    def test_merge_bingham_st(self, bingham_stream):
+        """Ensure the bingham stream can be merged"""
+        out = merge_traces(bingham_stream, inplace=False)
+        cols = list(NSLC) + ["starttime", "endtime", "gap_time", "gap_samps"]
+        gaps_df = pd.DataFrame(out.get_gaps(), columns=cols)
+        # overlaps are indicated by negative gap times
+        assert (gaps_df["gap_time"] > 0).all()
+
+    def test_merge_high_sampling_rate(self, gapped_high_sample_stream):
+        """Ensure high sampling rate overlapped data still work."""
+        # if this runs the test passes due to unmerged assert in function
+        merge_traces(gapped_high_sample_stream)
 
 
 class TestStream2Contiguous:
@@ -457,3 +510,67 @@ class TestStreamBulkSplit:
         assert len(out) == 1
         # without fill value this would only be 10 sec long
         assert abs(abs(out[0].stats.endtime - out[0].stats.starttime) - 20) < 0.1
+
+
+class TestGetWaveformBulk:
+    """Tests for getting the waveform bulk dataframe."""
+
+    times = (
+        "2010-01-01",
+        np.datetime64("2010-01-02"),
+        obspy.UTCDateTime("2010-11-20"),
+        obspy.UTCDateTime("2010-12-20").timestamp,
+    )
+
+    bulk1 = [
+        ("UU", "TMU", "01", "HHZ", times[0], times[1]),
+        ("UU", "NOQ", "01", "ENZ", times[2], times[3]),
+    ]
+
+    @pytest.fixture()
+    def bulk_df(self):
+        """Create a dataframe from bulk."""
+        df = pd.DataFrame(self.bulk1, columns=list(WAVEFORM_REQUEST_DTYPES))
+        out = get_waveform_bulk_df(df)
+        return out
+
+    def test_tuple(self):
+        """Ensure standard tuples produce bulk df."""
+        out = get_waveform_bulk_df(self.bulk1)
+        assert isinstance(out, pd.DataFrame)
+        assert len(out) == len(self.bulk1)
+
+    def test_dict(self):
+        """Ensure a list of dicts also works."""
+        bulk_dict = []
+        for bulk in self.bulk1:
+            req_dict = {i: v for i, v in zip(WAVEFORM_REQUEST_DTYPES, bulk)}
+            bulk_dict.append(req_dict)
+        df = pd.DataFrame(bulk_dict)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == len(self.bulk1)
+
+    def test_dataframe(self, bulk_df):
+        """Ensure a datframe with no extra columns works."""
+        out = get_waveform_bulk_df(bulk_df)
+        assert isinstance(out, pd.DataFrame)
+        assert len(out) == len(self.bulk1) == len(bulk_df)
+
+    def test_dataframe_extra_column(self, bulk_df):
+        """The dataframe should work even with out of order/extra columns."""
+        df = bulk_df.copy()
+        df["bob"] = "lightening"
+        # reverse column order
+        df = df[reversed(list(df.columns))]
+        out = get_waveform_bulk_df(df)
+        assert isinstance(out, pd.DataFrame)
+        assert len(out) == len(self.bulk1) == len(bulk_df)
+        # the new columns should have been dropped
+        cols = list(WAVEFORM_REQUEST_DTYPES)
+        assert list(out.columns) == cols
+
+    def test_missing_column_raises(self, bulk_df):
+        """A missing column should raise."""
+        df = bulk_df.drop(columns=["network"])
+        with pytest.raises(ValidationError, match="network"):
+            get_waveform_bulk_df(df)

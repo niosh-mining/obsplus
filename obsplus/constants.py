@@ -12,6 +12,7 @@ from typing import (
     TypeVar,
     MutableSequence,
     Iterable,
+    Sequence,
 )
 
 
@@ -309,6 +310,16 @@ WAVEFORM_DTYPES = OrderedDict(
     sampling_period="timedelta64[ns]",
 )
 
+# dtypes for requesting waveforms
+WAVEFORM_REQUEST_DTYPES = {
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "starttime": "ops_datetime",
+    "endtime": "ops_datetime",
+}
+
 # The datatypes needed for putting waveform info into HDF5
 WAVEFORM_DTYPES_INPUT = MapProxy(
     {i: _DATETIME_TYPE_MAP.get(v, v) for i, v in WAVEFORM_DTYPES.items()}
@@ -382,7 +393,9 @@ wave_type = Union[Stream, Trace]
 utc_able_type = Union[str, UTCDateTime, float, np.datetime64, pd.Timestamp]
 
 # waveform request type (args for get_waveforms)
-waveform_request_type = Tuple[str, str, str, str, utc_able_type, utc_able_type]
+waveform_request_type = Sequence[
+    Tuple[str, str, str, str, utc_able_type, utc_able_type]
+]
 
 # the signature of obspy fdsn client
 wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
@@ -431,7 +444,7 @@ column_function_map_type = Mapping[str, series_func_type]
 bank_subpaths_type = Union[path_types, Iterable[path_types]]
 
 # types for bulk waveform requests
-bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
+bulk_waveform_arg_type = Union[waveform_request_type, pd.DataFrame]
 
 # types which can be used to slice a numpy array
 slice_types = Union[int, slice, List[int], Tuple[int, ...]]
