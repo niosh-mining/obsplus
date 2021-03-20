@@ -105,6 +105,18 @@ def _get_ids(df, kwargs) -> set:
             filt &= radius < circular_kwargs["maxradius"]
         df = df[filt]
     else:  # No circular kwargs are being used; normal query
+        # Cope with longitudes over date-line
+        if "minlongitude" in kwargs.keys() and "maxlongitude" in kwargs.keys():
+            min_longitude, max_longitude = (
+                kwargs["minlongitude"],
+                kwargs["maxlongitude"],
+            )
+            if min_longitude > 0.0 and max_longitude % 360 > 180.0:
+                # Remove and filter
+                max_longitude = kwargs.pop("maxlongitude") % 360
+                min_longitude = kwargs.pop("minlongitude")
+                filt &= df.longitude % 360 < max_longitude
+                filt &= df.longitude % 360 > min_longitude
         for item, value in kwargs.items():
             if value is None:
                 continue
