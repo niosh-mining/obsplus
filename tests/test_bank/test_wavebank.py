@@ -812,7 +812,7 @@ class TestBankCacheWithKwargs:
         assert "path" in inds.columns
 
 
-class TestPutWaveForm:
+class TestPutWaveforms:
     """ test that waveforms can be put into the bank """
 
     # fixtures
@@ -828,6 +828,18 @@ class TestPutWaveForm:
     def default_stations(self):
         """ return the default stations on the default waveforms as a set """
         return set([x.stats.station for x in obspy.read()])
+
+    @pytest.fixture(scope="class")
+    def gappy_default_stream(self):
+        """Create a gappy stream from default stream. """
+        st = obspy.read()
+        start, end = st[0].stats.starttime, st[0].stats.endtime
+        duration = end - start
+        mid = start + duration / 2.0
+        tr1 = st[0].slice(starttime=start, endtime=mid - 1 / 100.0)
+        tr2 = st[0].slice(starttime=mid + 1 / 100.0, endtime=end)
+        st[0] = tr1 + tr2
+        return st
 
     # tests
     def test_deposited_waveform(self, add_stream, default_stations):
@@ -859,6 +871,11 @@ class TestPutWaveForm:
         df = bank.read_index(station="RJOB")
         assert len(df) == len(st)
         assert set(df.station) == {"RJOB"}
+
+    def test_put_gappy_data(self, default_wbank, gappy_default_stream):
+        """Tests for putting a stream with gaps into a wavebank."""
+        # test succeeds if this doesn't fail
+        default_wbank.put_waveforms(gappy_default_stream)
 
 
 class TestPutMultipleTracesOneFile:
