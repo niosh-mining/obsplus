@@ -28,6 +28,10 @@ Over the past decade, ``ObsPy``, a python framework for seismology [@Krischer:20
 
 ``ObsPlus`` significantly expands ``ObsPy``’s functionality by providing simple data management abstractions and conversions between ``ObsPy`` classes and the ubiquitous ``pandas`` ``DataFrame`` [@mckinney-proc-scipy-2010].
 
+# Statement of Need
+
+ObsPlus benefits researchers by 1) simplifying seismological data access patterns and management of local data, 2) providing means to extract facets of seismic catalog hierarchies to tabular forms, and 3) enabling the packaging and distribution of complete seismological datasets.
+
 # Functionality and Features
 
 1. **A data retrieval interface**

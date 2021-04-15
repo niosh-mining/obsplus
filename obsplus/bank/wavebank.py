@@ -645,13 +645,13 @@ class WaveBank(_Bank):
         for path, tr_list in st_dic.items():
             # make the parent directories if they dont exist
             path.parent.mkdir(exist_ok=True, parents=True)
-            stream = obspy.Stream(traces=tr_list)
+            stream = obspy.Stream(traces=tr_list).split()
             # load the waveforms if the file already exists
             if path.exists():
                 st_existing = obspy.read(str(path))
                 stream += st_existing
             # polish streams and write
-            stream.merge(method=1)
+            stream = merge_traces(stream, inplace=True)
             stream.write(str(path), format="mseed")
             paths.append(path)
         # update the index as the contents have changed
