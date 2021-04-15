@@ -2,7 +2,7 @@
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Coverage| |Supported Versions| |PyPI| |Conda| |Licence| |DOI|
+|Coverage| |Supported Versions| |PyPI| |Conda| |DOI| |Licence|
 
 Documentation_
 
