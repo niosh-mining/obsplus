@@ -2,7 +2,7 @@
 
 "A Pandas-Centric ObsPy_ Expansion Pack"
 
-|Coverage| |Supported Versions| |PyPI| |Conda| |Licence|
+|Coverage| |Supported Versions| |PyPI| |Conda| |DOI| |Licence|
 
 Documentation_
 
@@ -45,3 +45,6 @@ Code_of_Conduct_
 
 .. |Conda| image:: https://img.shields.io/conda/dn/conda-forge/obsplus?label=conda%20downloads
    :target: https://github.com/conda-forge/obsplus-feedstock
+
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4544008.svg
+   :target: https://doi.org/10.5281/zenodo.4544008
