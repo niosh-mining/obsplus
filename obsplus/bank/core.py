@@ -5,6 +5,7 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
+from inspect import isclass
 from types import MappingProxyType as MapProxy
 from typing import Optional, TypeVar, Mapping, Iterable, Union
 
@@ -233,7 +234,8 @@ class _Bank(ABC):
         # conditions to bail out early
         if bar is False:  # False indicates no bar is to be used
             return None
-        elif isinstance(bar, ProgressBar):  # bar is already instantiated
+        # bar is already instantiated
+        elif isinstance(bar, ProgressBar) and not isclass(bar):
             return bar
         # next, count number of files
         num_files = sum([1 for _ in self._unindexed_iterator()])
