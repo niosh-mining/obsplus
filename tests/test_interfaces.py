@@ -35,18 +35,16 @@ def iris_client():
 class TestEventClient:
     """Tests for event client interface."""
 
-    not_event_client_instances = ["a", 1, EventBank]
+    not_event_client_instances = ["a", 1]
 
     def test_fdsn_isinstance(self, iris_client):
         """ ensure the client is an instance of EventClient """
         assert isinstance(iris_client, EventClient)
-        assert not isinstance(10, EventClient)
 
     def test_fdsn_issubclass(self):
         """ Test client FDSN client meets EventClient interface. """
         issubclass(str, EventClient)
         assert issubclass(Client, EventClient)
-        assert not issubclass(str, EventClient)
 
     def test_catalog(self):
         """ ensure a events is also an EventClient """
@@ -147,11 +145,6 @@ class TestBar:
 
         assert issubclass(MyBar, ProgressBar)
         assert isinstance(MyBar(), ProgressBar)
-        # the class should not be an instance
-        isinstance(MyBar, ProgressBar)
-        assert not isinstance(MyBar, ProgressBar)
-        # the instance should not be a subclass
-        assert not issubclass(MyBar(), ProgressBar)
 
     def test_malformed_progress_bar(self):
         """
