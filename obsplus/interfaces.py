@@ -25,7 +25,6 @@ class EventClient(Protocol):
     >>> import obspy
     >>> # EventBank is a subclass of EventClient
     >>> assert issubclass(obsplus.EventBank, EventClient)
-    >>> assert issubclass(obspy.Catalog, EventClient)
     >>> # A string has no `get_events` so it is not a subclass/instance
     >>> assert not issubclass(str, EventClient)
     >>> assert not isinstance('string', EventClient)
@@ -55,7 +54,6 @@ class WaveformClient(Protocol):
     >>> import obspy
     >>> # WaveBank/Stream are subclasses of WaveformClient
     >>> assert issubclass(obsplus.WaveBank, WaveformClient)
-    >>> assert issubclass(obspy.Stream, WaveformClient)
     >>> # A string has no `get_waveforms` so it is not a subclass/instance
     >>> assert not issubclass(str, WaveformClient)
     >>> assert not isinstance('string', WaveformClient)
