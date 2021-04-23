@@ -20,6 +20,12 @@ About_
 
 Code_of_Conduct_
 
+If you find ObsPlus useful consider citing it:
+
+Chambers, D. J., Boltz, M. S., & Chamberlain, C. J. (2021).
+ObsPlus: A Pandas-centric ObsPy expansion pack.
+Journal of Open Source Software, 6(60), 2696.
+
 
 .. _About: https://github.com/niosh-mining/about
 .. _ObsPy: https://github.com/obspy/obspy
