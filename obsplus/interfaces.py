@@ -26,8 +26,6 @@ class EventClient(Protocol):
     >>> # EventBank is a subclass of EventClient
     >>> assert issubclass(obsplus.EventBank, EventClient)
     >>> assert issubclass(obspy.Catalog, EventClient)
-    >>> # a catalog is an instance of EventClient
-    >>> assert isinstance(obspy.read_events(), EventClient)
     >>> # A string has no `get_events` so it is not a subclass/instance
     >>> assert not issubclass(str, EventClient)
     >>> assert not isinstance('string', EventClient)
@@ -61,8 +59,6 @@ class WaveformClient(Protocol):
     >>> # A string has no `get_waveforms` so it is not a subclass/instance
     >>> assert not issubclass(str, WaveformClient)
     >>> assert not isinstance('string', WaveformClient)
-    >>> # A stream is a subclass of WaveformClient
-    >>> assert isinstance(obspy.read(), WaveformClient)
     >>> # this works on any class with a get_waveforms method
     >>> class NewWaveformClientThing:
     ...     def get_waveforms(self, *args, **kwargs):
@@ -131,7 +127,7 @@ class ProgressBar(Protocol):
         """ Puts the progress bar in the finished state. """
 
 
-# register virtual subclasses
-# WaveformClient.register(obspy.Stream)
-# EventClient.register(obspy.Catalog)
-# StationClient.register(obspy.Inventory)
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()
