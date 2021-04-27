@@ -16,34 +16,47 @@ from obspy.geodetics import gps2dist_azimuth
 
 @pytest.fixture
 def catalog():
-    """ return a copy of the default events """
+    """return a copy of the default events"""
     return obspy.read_events()
+
+
+@pytest.fixture
+def antipodean_catalog():
+    """Get a catalog near the dateline."""
+    cat = obspy.read_events()
+    # This catalog contains three events - we need some on either side
+    # of Longitude=180
+    longitudes = [175, 181, -179]
+    for ev, lon in zip(cat, longitudes):
+        ori = ev.preferred_origin() or ev.origins[-1]
+        ori.longitude = lon
+    return cat
 
 
 # --------------------- tests
 
 
 class TestGetEvents:
-    """ tests the get events interface of the events object """
+    """tests the get events interface of the events object"""
 
     # tests
     def test_catalog_monkey_patched(self, catalog):
-        """ ensure the get_events method was monkey patched to events """
+        """ensure the get_events method was monkey patched to events"""
         assert hasattr(catalog, "get_events")
 
     def test_filter_doesnt_modify_original(self, catalog):
-        """ ensure calling get_events doesn't modify original """
+        """ensure calling get_events doesn't modify original"""
         cat_before = copy.deepcopy(catalog)
         catalog.get_events()
         assert cat_before == catalog
 
     def test_return_type(self, catalog):
-        """ ensure a events is returned """
+        """ensure a events is returned"""
         cat = catalog.get_events()
         assert isinstance(cat, obspy.Catalog)
 
     def test_unsupported_param_raises(self, catalog):
-        """ ensure query params that are not supported raise error """
+        """ensure query params that are not supported raise error"""
         from obsplus.events.get_events import UNSUPPORTED_PARAMS
 
         for bad_param in UNSUPPORTED_PARAMS:
@@ -51,19 +64,19 @@ class TestGetEvents:
                 catalog.get_events(**{bad_param: 1})
 
     def test_filter_lat_lon(self, catalog):
-        """ test that the events can be filtered """
+        """test that the events can be filtered"""
         cat_out = catalog.get_events(maxlatitude=39, maxlongitude=41)
         assert len(cat_out) == 1
 
     def test_filter_event_id(self, catalog):
-        """ test that ids can be used to filter """
+        """test that ids can be used to filter"""
         eveid = catalog[0].resource_id
         out = catalog.get_events(eventid=eveid)
         assert len(out) == 1
         assert out[0] == catalog[0]
 
     def test_update_after(self, catalog):
-        """ test that ids can be used to filter """
+        """test that ids can be used to filter"""
         eve = catalog[0]
         time = obspy.UTCDateTime("2017-05-04")
         eve.creation_info = CreationInfo(creation_time=time)
@@ -72,14 +85,14 @@ class TestGetEvents:
         assert out[0] == catalog[0]
 
     def test_none_doesnt_effect_output(self, catalog):
-        """ ensure parameters passed None dont get applied as filters """
+        """ensure parameters passed None dont get applied as filters"""
         cat1 = catalog.get_events()
         cat2 = catalog.get_events(minlatitude=None, maxlatitude=None)
         assert len(cat1) == len(cat2)
         assert cat1 == cat2
 
     def test_radius_degrees(self, catalog):
-        """ ensure the max_radius works with degrees specified. """
+        """ensure the max_radius works with degrees specified."""
         lat, lon = 39.342, 41.044
         with suppress_warnings():
             cat = catalog.get_events(latitude=lat, longitude=lon, maxradius=8)
@@ -87,14 +100,14 @@ class TestGetEvents:
         assert len(cat) == 2
 
     def test_circular_search_no_events(self, catalog):
-        """ Ensure no errors if no events within rectangular region. #177 """
+        """Ensure no errors if no events within rectangular region. #177"""
         lat, lon = 31.0, 30.0
         with suppress_warnings():
             cat = catalog.get_events(latitude=lat, longitude=lon, maxradius=1)
         assert len(cat) == 0
 
     def test_max_min_radius_m(self, catalog):
-        """ Ensure max and min radius work in m (ie when degrees=False). """
+        """Ensure max and min radius work in m (ie when degrees=False)."""
         minrad = 10000
         maxrad = 800_000
         lat, lon = 39.342, 41.044
@@ -114,12 +127,29 @@ class TestGetEvents:
             dist, _, _ = gps2dist_azimuth(*args)
             assert minrad < dist < maxrad
 
+    def test_across_dateline(self, antipodean_catalog):
+        """Ensure that search doesn't care about the Dateline #230."""
+        cat_before = copy.deepcopy(antipodean_catalog)
+        cat_back = cat_before.get_events(minlongitude=172, maxlongitude=182)
+        print(cat_before)
+        print()
+        print(cat_back)
+        assert cat_back == cat_before
+
+    def test_radius_across_dateline(self, antipodean_catalog):
+        cat_before = copy.deepcopy(antipodean_catalog)
+        cat_back = cat_before.get_events(latitude=39.5, longitude=179, maxradius=5.0)
+        print(cat_before)
+        print()
+        print(cat_back)
+        assert cat_back == cat_before
+
 
 class TestGetEventSummary:
-    """ tests for returning and event summary dataframe """
+    """tests for returning and event summary dataframe"""
 
     def test_is_dataframe(self, catalog):
-        """ ensure an non-empty events is returned """
+        """ensure an non-empty events is returned"""
         df = catalog.get_event_summary()
         assert isinstance(df, pd.DataFrame)
         assert len(df)

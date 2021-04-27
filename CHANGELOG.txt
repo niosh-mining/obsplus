@@ -11,6 +11,9 @@ obsplus master
   - obsplus.events.pd
     * Made sure that the pre-defined extractors (`*_to_df`) still return all of
       the expected columns if there are no valid objects.
+  - obsplus.events.get_events
+    * Ensure that geographic searches across the date-line work 
+      correctly (#230).
 
 obsplus 0.1.1
   - obsplus.events
