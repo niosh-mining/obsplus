@@ -49,10 +49,7 @@ class _InventoryConstructor:
     _client_col = "get_station_kwargs"
     _nrl_response_cols = frozenset({"datalogger_keys", "sensor_keys"})
     # define expected kwargs for inventory class constructors
-    net_map = {
-        "code": "network",
-        "operator": "operator",
-    }
+    net_map = {"code": "network", "operator": "operator"}
     sta_map = {
         "code": "station",
         "equipment": "equipment",
@@ -279,9 +276,6 @@ class _InventoryConstructor:
         """
         # get dataframe with correct columns/conditioning from input
         df = obsplus.stations_to_df(df).copy()
-        # make sure all seed_id codes are str
-        for col in set(NSLC) & set(df.columns):
-            df[col] = df[col].astype(str).str.replace("\.0", "")
         # add responses (if requested) and drop response cols
         df["response"] = self._get_responses(df)
         df = df.drop(columns=self._drop_cols, errors="ignore")

@@ -305,7 +305,7 @@ def crandall_bank(crandall_dataset):
 @pytest.fixture(scope="session", params=cat_dict.values())
 def test_catalog(request):
     """
-    Return a list of test events (as catalogs) from quakeml saved on disk.
+    Parametrized fixture to return test events.
     """
     cat = request.param
     return cat

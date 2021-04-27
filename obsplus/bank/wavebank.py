@@ -3,11 +3,10 @@ A local database for waveform formats.
 """
 import time
 from collections import defaultdict
-from contextlib import suppress
 from concurrent.futures import Executor
-from functools import partial, reduce
+from contextlib import suppress
+from functools import partial
 from itertools import chain
-from operator import add
 from pathlib import Path
 from typing import Optional, Union
 
@@ -17,7 +16,6 @@ import pandas as pd
 import tables
 from obspy import UTCDateTime, Stream
 
-import obsplus
 from obsplus.bank.core import _Bank
 from obsplus.constants import (
     NSLC,
@@ -46,9 +44,13 @@ from obsplus.utils.bank import (
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import replace_null_nlsc_codes
 from obsplus.utils.pd import get_seed_id_series, cast_dtypes, convert_bytestrings
-from obsplus.utils.pd import order_columns, filter_index, _column_contains
+from obsplus.utils.pd import order_columns, filter_index
 from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
-from obsplus.utils.waveforms import merge_traces
+from obsplus.utils.waveforms import (
+    merge_traces,
+    get_waveform_bulk_df,
+    _filter_index_to_bulk,
+)
 
 # No idea why but this needs to be here to avoid problems with pandas
 assert tables.get_hdf5_version()
@@ -325,10 +327,6 @@ class WaveBank(_Bank):
             kwargs are passed to pandas.read_hdf function
         """
         self.ensure_bank_path_exists()
-        if starttime is not None and endtime is not None:
-            if starttime > endtime:
-                msg = "starttime cannot be greater than endtime."
-                raise ValueError(msg)
         if not self.index_path.exists():
             self.update_index()
         # if no file was created (dealing with empty bank) return empty index
@@ -503,54 +501,22 @@ class WaveBank(_Bank):
             A dataframe returned by read_index. Enables calling code to only
             read the index from disk once for repetitive calls.
         """
-        if not bulk:  # return emtpy waveforms if empty list or None
+        df = get_waveform_bulk_df(bulk)
+        if not len(df):
             return obspy.Stream()
-
-        def _func(time, ind, df):
-            """ return waveforms from df of bulk parameters """
-            match_chars = {"*", "?", "[", "]"}
-            t1, t2 = time[0], time[1]
-            # filter index based on start/end times
-            in_time = ~((ind["starttime"] > t2) | (ind["endtime"] < t1))
-            ind = ind[in_time]
-            # create indices used to load data
-            ar = np.ones(len(ind))  # indices of ind to use to load data
-            df = df[(df.t1 == time[0]) & (df.t2 == time[1])]
-            # determine which columns use any matching or other select features
-            uses_matches = [_column_contains(df[x], match_chars) for x in NSLC]
-            match_ar = np.array(uses_matches).any(axis=0)
-            df_match = df[match_ar]
-            df_no_match = df[~match_ar]
-            # handle columns that need matches (more expensive)
-            if not df_match.empty:
-                match_bulk = df_match.to_records(index=False)
-                mar = np.array([filter_index(ind, *tuple(b)[:4]) for b in match_bulk])
-                ar = np.logical_and(ar, mar.any(axis=0))
-            # handle columns that do not need matches
-            if not df_no_match.empty:
-                nslc1 = set(get_seed_id_series(df_no_match))
-                nslc2 = get_seed_id_series(ind)
-                ar = np.logical_and(ar, nslc2.isin(nslc1))
-            return self._index2stream(ind[ar], t1, t2)
-
-        # get a dataframe of the bulk arguments, convert time to float
-        df = pd.DataFrame(bulk, columns=list(NSLC) + ["utc1", "utc2"])
-        # df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
-        # df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
-
-        df["t1"] = df["utc1"].apply(to_datetime64).astype("datetime64[ns]")
-        df["t2"] = df["utc2"].apply(to_datetime64).astype("datetime64[ns]")
-        # read index that contains any times that might be used, or filter
-        # provided index
-        t1, t2 = df["t1"].min(), df["t2"].max()
+        # get index and filter to temporal extents of request.
+        t_min, t_max = df["starttime"].min(), df["endtime"].max()
         if index is not None:
-            ind = index[~((index.starttime > t2) | (index.endtime < t1))]
+            ind = index[~((index.starttime > t_max) | (index.endtime < t_min))]
         else:
-            ind = self.read_index(starttime=t1, endtime=t2)
-        # groupby.apply calls two times for each time set, avoid this.
-        unique_times = np.unique(df[["t1", "t2"]].values, axis=0)
-        streams = [_func(t, df=df, ind=ind) for t in unique_times]
-        return reduce(add, streams)
+            ind = self.read_index(starttime=t_min, endtime=t_max)
+        # for each unique time, apply other filtering conditions and get traces
+        unique_times = np.unique(df[["starttime", "endtime"]].values, axis=0)
+        traces = []
+        for utime in unique_times:
+            sub = _filter_index_to_bulk(utime, ind, df)
+            traces += self._index2stream(sub, utime[0], utime[1], merge=False).traces
+        return merge_traces(obspy.Stream(traces=traces), inplace=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(
@@ -679,13 +645,13 @@ class WaveBank(_Bank):
         for path, tr_list in st_dic.items():
             # make the parent directories if they dont exist
             path.parent.mkdir(exist_ok=True, parents=True)
-            stream = obspy.Stream(traces=tr_list)
+            stream = obspy.Stream(traces=tr_list).split()
             # load the waveforms if the file already exists
             if path.exists():
                 st_existing = obspy.read(str(path))
                 stream += st_existing
             # polish streams and write
-            stream.merge(method=1)
+            stream = merge_traces(stream, inplace=True)
             stream.write(str(path), format="mseed")
             paths.append(path)
         # update the index as the contents have changed
@@ -694,7 +660,7 @@ class WaveBank(_Bank):
 
     # ------------------------ misc methods
 
-    def _index2stream(self, index, starttime=None, endtime=None) -> Stream:
+    def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
         """ return the waveforms in the index """
         # get abs path to each datafame
         files: pd.Series = (str(self.bank_path) + index.path).unique()
@@ -716,22 +682,22 @@ class WaveBank(_Bank):
         nslc = set(get_seed_id_series(index))
         stt.traces = [x for x in stt if x.id in nslc]
         # trim, merge, attach response
-        stt = self._prep_output_stream(stt, starttime, endtime)
+        stt = self._prep_output_stream(stt, starttime, endtime, merge=merge)
         return stt
 
-    def _prep_output_stream(self, st, starttime=None, endtime=None) -> obspy.Stream:
+    def _prep_output_stream(
+        self, st, starttime=None, endtime=None, merge=True
+    ) -> obspy.Stream:
         """
         Prepare waveforms object for output by trimming to desired times,
         merging channels, and attaching responses.
         """
         if not len(st):
             return st
-        starttime = starttime or min([x.stats.starttime for x in st])
-        endtime = endtime or max([x.stats.endtime for x in st])
-        # trim
-        st.trim(starttime=to_utc(starttime), endtime=to_utc(endtime))
-        return merge_traces(st, inplace=True).sort()
-
-    def get_service_version(self):
-        """ Return the last version of obsplus """
-        return obsplus.__last_version__
+        if starttime is not None or endtime is not None:
+            starttime = starttime or min([x.stats.starttime for x in st])
+            endtime = endtime or max([x.stats.endtime for x in st])
+            st.trim(starttime=to_utc(starttime), endtime=to_utc(endtime))
+        if merge:
+            st = merge_traces(st, inplace=True)
+        return st.sort()

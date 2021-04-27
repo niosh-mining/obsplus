@@ -559,6 +559,10 @@ def _get_uncertainty(errors):
 def _get_seed_id(obj):
     """ Strip nslc info for an extractor """
     seed_id = get_seed_id(obj)
+    split = seed_id.split(".")
+    if len(split) != 4:
+        msg = f"The seed_id: {seed_id} is not valid. It was found on {obj}"
+        raise ValueError(msg)
     dd = {x: y for x, y in zip(NSLC, seed_id.split("."))}
     return {"seed_id": seed_id, **dd}
 

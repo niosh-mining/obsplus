@@ -6,7 +6,7 @@ import time
 from concurrent.futures import Executor
 from functools import reduce, partial
 from operator import add
-from os.path import exists, getmtime
+from os.path import getmtime
 from pathlib import Path
 from typing import Optional, Union, Sequence, Set
 
@@ -19,7 +19,6 @@ import obsplus
 import obsplus.events.pd
 from obsplus.bank.core import _Bank
 from obsplus.utils.bank import (
-    _IndexCache,
     sql_connection,
     _read_table,
     _get_tables,
@@ -44,7 +43,11 @@ from obsplus.constants import (
     bank_subpaths_type,
     paths_description,
 )
-from obsplus.events.get_events import _sanitize_circular_search, _get_ids
+from obsplus.events.get_events import (
+    _sanitize_circular_search,
+    _get_ids,
+    _validate_get_event_kwargs,
+)
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar, EventClient
 from obsplus.utils import iterate
@@ -63,6 +66,9 @@ STR_COLUMNS = {
     if inspect.isclass(v) and issubclass(v, str)
 }
 INT_COLUMNS = {i for i, v in EVENT_TYPES_OUTPUT.items() if v is int}
+
+# kwargs supported by get_index
+SUPPORTED_KWARGS = set(EVENT_TYPES_OUTPUT) | {"columns", "_allow_update"}
 
 
 class EventBank(_Bank):
@@ -101,10 +107,6 @@ class EventBank(_Bank):
     ext
         The extension on the files. Can be used to avoid parsing non-event
         files.
-    cache_size
-        The number of queries to store. Avoids having to read the index of
-        the database multiple times for queries involving the same start and
-        end times.
     executor
         An executor with the same interface as
         :py:class:`concurrent.futures.Executor, the map method of the executor
@@ -112,7 +114,9 @@ class EventBank(_Bank):
 
     Attributes
     ----------
-    name_structure
+    allow_update_timestamp
+        If True, allow the bank to update its index timestamp. The default value
+        of True is appropriate for all but some very complicated setups.
 
     Examples
     --------
@@ -144,6 +148,7 @@ class EventBank(_Bank):
 
     namespace = "/events"
     index_name = ".index.db"  # name of index file
+    allow_update_timestamp = True
     _min_files_for_bar = 50
     _dtypes_output = EVENT_TYPES_OUTPUT
     _dtypes_input = EVENT_TYPES_INPUT
@@ -154,7 +159,6 @@ class EventBank(_Bank):
         base_path: Union[str, Path, "EventBank"] = ".",
         path_structure: Optional[str] = None,
         name_structure: Optional[str] = None,
-        cache_size: int = 5,
         format="quakeml",
         ext=".xml",
         executor: Optional[Executor] = None,
@@ -177,8 +181,6 @@ class EventBank(_Bank):
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns
         self.executor = executor
-        # initialize cache
-        self._index_cache = _IndexCache(self, cache_size=cache_size)
         # enforce min version and warn on newer
         self._enforce_min_version()
         self._warn_on_newer_version()
@@ -220,10 +222,12 @@ class EventBank(_Bank):
         {get_events_params}
         """
         self.ensure_bank_path_exists()
-        # Make sure all times are numpy datetime64
+        # make sure all times are numpy datetime64
         kwargs = _dict_times_to_npdatetimes(kwargs)
         # a simple switch to prevent infinite recursion
         allow_update = kwargs.pop("_allow_update", True)
+        # validate kwargs
+        _validate_get_event_kwargs(kwargs, extra=SUPPORTED_KWARGS)
         # Circular search requires work to be done on the dataframe - we need
         # to get the whole dataframe then calculate the distances and search in
         # that
@@ -362,9 +366,10 @@ class EventBank(_Bank):
                 meta.to_sql(self._meta_node, con, if_exists="replace")
             # update timestamp
             with suppress_warnings():  # ignore pandas collection warning
-                timestamp = update_time or time.time()
-                dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
-                dft.to_sql(self._time_node, con, if_exists="replace", index=False)
+                if self.allow_update_timestamp:
+                    timestamp = update_time or time.time()
+                    dft = pd.DataFrame(timestamp, index=[0], columns=["time"])
+                    dft.to_sql(self._time_node, con, if_exists="replace", index=False)
         self._metadata = meta
         self._index = None
 
@@ -400,11 +405,13 @@ class EventBank(_Bank):
         map_kwargs = dict(chunksize=chunksize)
         try:
             mapped_values = self._map(read_func, paths.values, **map_kwargs)
-            cat = reduce(add, mapped_values)
+            non_none_values = (x for x in mapped_values if x is not None)
+            cat = reduce(add, non_none_values)
         except TypeError:  # empty events
             cat = obspy.Catalog()
         # Make sure only the events of interest are included
-        return obspy.Catalog([eve for eve in cat if eve.resource_id.id in eids.values])
+        events = [eve for eve in cat if eve.resource_id.id in eids.values]
+        return obspy.Catalog(events=events)
 
     def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
         """
@@ -504,7 +511,6 @@ class EventBank(_Bank):
         if rid in df.index:  # event needs to be updated
             path = df.loc[rid, "path"]
             save_path = bank_path + path
-            assert exists(save_path)
             if not overwrite_existing:  # dont update existing
                 return
         else:  # event file does not yet exist

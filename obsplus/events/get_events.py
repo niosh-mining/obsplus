@@ -14,16 +14,37 @@ from obspy.geodetics import kilometers2degrees
 import obsplus
 import obsplus.utils.geodetics
 import obsplus.utils.misc
-from obsplus.constants import get_events_parameters
+from obsplus.constants import (
+    get_events_parameters,
+    CIRCULAR_PARAMS,
+    UNSUPPORTED_PARAMS,
+    NONCIRCULAR_PARAMS,
+)
+from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.docs import compose_docstring
+from obsplus.utils.misc import strip_prefix
 from obsplus.utils.time import _dict_times_to_npdatetimes
 
-CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
-NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
 
-UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
 CLIENT_SUPPORTED = set(inspect.signature(Client.get_events).parameters)
 SUPPORTED_PARAMS = (CLIENT_SUPPORTED | CIRCULAR_PARAMS) - UNSUPPORTED_PARAMS
+
+
+def _validate_get_event_kwargs(kwargs, extra=frozenset()):
+    """Raise UnsupportedKeyword if any kwargs arent supported by get_events."""
+    supported = set(SUPPORTED_PARAMS) | set(extra)
+    bad_kwargs = set(kwargs) - supported
+    if bad_kwargs:
+        # make sure there aren't any max/min of supported params.
+        really_bad = []
+        for bad_kwarg in bad_kwargs:
+            stripped = strip_prefix(bad_kwarg, ["min", "max"])
+            if stripped not in supported:
+                really_bad.append(stripped)
+        # there there are still bad kwargs raise
+        if really_bad:
+            msg = f"{really_bad} are not supported kwargs by get_events."
+            raise UnsupportedKeyword(msg)
 
 
 def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:

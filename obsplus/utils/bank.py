@@ -2,7 +2,6 @@
 Utils for banks
 """
 import contextlib
-import itertools
 import os
 import re
 import sqlite3
@@ -21,7 +20,9 @@ from obsplus.constants import (
     WAVEFORM_NAME_STRUCTURE,
     SMALLDT64,
     LARGEDT64,
+    READ_HDF5_KWARGS,
 )
+from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.misc import READ_DICT, _get_path
 from obsplus.utils.mseed import summarize_mseed
 from obsplus.utils.time import to_datetime64, _dict_times_to_ns
@@ -159,15 +160,13 @@ class _IndexCache:
         self.cache = pd.DataFrame(
             index=range(cache_size), columns="t1 t2 kwargs cindex".split()
         )
-        self.next_index = itertools.cycle(self.cache.index)
+        self._current_index = 0
+        # self.next_index = itertools.cycle(self.cache.index)
 
     def __call__(self, starttime, endtime, buffer, **kwargs):
         """ get start and end times, perform in kernel lookup """
-        # get defaults if starttime or endtime is none
-        starttime = None if pd.isnull(starttime) else starttime
-        endtime = None if pd.isnull(endtime) else endtime
-        starttime = to_datetime64(starttime or SMALLDT64)
-        endtime = to_datetime64(endtime or LARGEDT64)
+        starttime, endtime = self._get_times(starttime, endtime)
+        self._validate_kwargs(kwargs)
         # find out if the query falls within one cached times
         con1 = self.cache.t1 <= starttime
         con2 = self.cache.t2 >= endtime
@@ -191,8 +190,30 @@ class _IndexCache:
         con2 = index["endtime"] <= (starttime - buffer)
         return index[~(con1 | con2)]
 
+    @staticmethod
+    def _get_times(starttime, endtime):
+        """Return starttimes and endtimes."""
+        # get defaults if starttime or endtime is none
+        starttime = None if pd.isnull(starttime) else starttime
+        endtime = None if pd.isnull(endtime) else endtime
+        starttime = to_datetime64(starttime or SMALLDT64)
+        endtime = to_datetime64(endtime or LARGEDT64)
+        if starttime is not None and endtime is not None:
+            if starttime > endtime:
+                msg = "starttime cannot be greater than endtime."
+                raise ValueError(msg)
+        return starttime, endtime
+
+    def _validate_kwargs(self, kwargs):
+        """Ensure kwargs are supported."""
+        kwarg_set = set(kwargs)
+        if not kwarg_set.issubset(READ_HDF5_KWARGS):
+            bad_kwargs = kwarg_set - set(READ_HDF5_KWARGS)
+            msg = f"The following kwargs are not supported: {bad_kwargs}. "
+            raise UnsupportedKeyword(msg)
+
     def _set_cache(self, index, starttime, endtime, kwargs):
-        """ cache the current index """
+        """Cache the current index """
         ser = pd.Series(
             {
                 "t1": starttime,
@@ -201,7 +222,7 @@ class _IndexCache:
                 "kwargs": self._kwargs_to_str(kwargs),
             }
         )
-        self.cache.loc[next(self.next_index)] = ser
+        self.cache.loc[self._get_next_index()] = ser
 
     def _kwargs_to_str(self, kwargs):
         """ convert kwargs to a string """
@@ -229,6 +250,18 @@ class _IndexCache:
         self.cache = pd.DataFrame(
             index=range(self.max_size), columns="t1 t2 kwargs cindex".split()
         )
+
+    def _get_next_index(self):
+        """
+        Get the next index value on cache.
+
+        Note we can't use itertools.cycle here because it cant be pickled.
+        """
+        if self._current_index == len(self.cache.index) - 1:
+            self._current_index = 0
+        else:
+            self._current_index += 1
+        return self.cache.index[self._current_index]
 
 
 @contextlib.contextmanager

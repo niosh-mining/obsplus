@@ -16,11 +16,12 @@ from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 import obsplus
 import obsplus.utils.misc
-from obsplus.constants import EVENT_DTYPES
 from obsplus import EventBank, copy_dataset
+from obsplus.constants import EVENT_DTYPES
+from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.events import get_preferred
 from obsplus.utils.testing import instrument_methods
-from obsplus.utils.misc import suppress_warnings
+from obsplus.utils.misc import suppress_warnings, get_progressbar
 
 
 def try_permission_sleep(callable, *args, _count=0, **kwargs):
@@ -474,6 +475,11 @@ class TestReadIndexQueries:
         sub = df.select_dtypes([np.datetime64])
         assert {"time", "creation_time", "updated"}.issubset(sub.columns)
 
+    def test_unsupported_params_raise(self, ebank):
+        """Ensure unsupported kwargs raise."""
+        with pytest.raises(UnsupportedKeyword, match="not_a_kwarg"):
+            ebank.read_index(not_a_kwarg=10)
+
 
 class TestGetEvents:
     """ tests for pulling events out of the bank """
@@ -485,6 +491,16 @@ class TestGetEvents:
         cat_name = path / "event_bank.xml"
         crandall_dataset.event_client.write(cat_name, "QuakeML")
         return EventBank(path)
+
+    @pytest.fixture
+    def ebank_with_deleted_files(self, ebank):
+        """Create an event bank and delete all but 1 qml."""
+        df = ebank.read_index()
+        for path in df["path"][:-1]:
+            file_path = Path(str(ebank.bank_path) + path)
+            assert file_path.exists()
+            file_path.unlink()
+        return ebank
 
     def test_no_params(self, bing_ebank, bingham_catalog):
         """ ensure a basic query can get an event """
@@ -534,6 +550,19 @@ class TestGetEvents:
         minmag = 2.0
         # Get the events; add a query for good measure
         assert len(multiple_event_file.get_events(minmagnitude=minmag)) == 3
+
+    def test_deleted_file(self, ebank_with_deleted_files):
+        """Ensure trying to read a non-existent file returns empty catalog."""
+        ebank = ebank_with_deleted_files
+        df = ebank.read_index()
+        eid = df["event_id"].iloc[0]
+        with pytest.warns(UserWarning):
+            cat = ebank.get_events(event_id=eid)
+        assert len(cat) == 0
+        # But any files that still exist should be loadable
+        with pytest.warns(UserWarning):
+            cat = ebank.get_events()
+        assert len(cat)
 
 
 class TestPutEvents:
@@ -643,6 +672,20 @@ class TestPutEvents:
         mtimes_2 = [x.stat().st_mtime for x in files]
         assert mtimes_1 == mtimes_2
 
+    def test_put_events_no_update_index_timestamp(self, ebank, monkeypatch):
+        """
+        Ensure events can be put into the bank without updating the index
+        timestamp.
+        """
+        monkeypatch.setattr(ebank, "allow_update_timestamp", False)
+        last_update = ebank.last_updated
+        cat = obspy.read_events()
+        ebank.put_events(cat)
+        time.sleep(0.001)
+        new_update_time = ebank.last_updated
+        # The last updated timestamp should not have changed.
+        assert last_update == new_update_time
+
 
 class TestProgressBar:
     """ Tests for the progress bar functionality of banks. """
@@ -714,7 +757,7 @@ class TestProgressBar:
 
         def new_get_bar(*args, **kwargs):
             state["called"] = True
-            obsplus.utils.misc.get_progressbar(*args, **kwargs)
+            get_progressbar(*args, **kwargs)
 
         monkeypatch.setattr(obsplus.utils.misc, "get_progressbar", new_get_bar)
 

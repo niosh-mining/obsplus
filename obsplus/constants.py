@@ -12,6 +12,7 @@ from typing import (
     TypeVar,
     MutableSequence,
     Iterable,
+    Sequence,
 )
 
 
@@ -49,10 +50,10 @@ _DATETIME_TYPE_MAP = {"datetime64[ns]": np.int64, "timedelta64[ns]": np.int64}
 
 # columns required for station data
 STATION_DTYPES = OrderedDict(
-    network=str,
-    station=str,
-    location=str,
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     seed_id=str,
     latitude=float,
     longitude=float,
@@ -68,10 +69,10 @@ STATION_DTYPES = OrderedDict(
 STATION_COLUMNS = tuple(STATION_DTYPES)
 
 DF_TO_INV_DTYPES = OrderedDict(
-    network=str,
-    station=str,
-    location="location_code",
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     latitude=float,
     longitude=float,
     elevation=float,
@@ -145,10 +146,10 @@ PICK_DTYPES = OrderedDict(
     author=str,
     agency_id=str,
     event_id=str,
-    network=str,
-    station=str,
-    location="location_code",
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     uncertainty=float,
     lower_uncertainty=float,
     upper_uncertainty=float,
@@ -170,6 +171,8 @@ DISTANCE_COLUMN_DTYPES = OrderedDict(
 DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
     latitude=float, longitude=float, elevation=float
 )
+
+ALT_DISTANCE_COLUMN_DTYPES = OrderedDict(latitude=float, longitude=float, depth=float)
 
 # DISTANCE_COLUMNS = tuple(DISTANCE_COLUMN_DTYPES)
 # DISTANCE_INPUT_COLUMNS = tuple(DISTANCE_COLUMN_INPUT_DTYPES)
@@ -199,10 +202,10 @@ AMPLITUDE_DTYPES = OrderedDict(
     agency_id=str,
     event_time="datetime64[ns]",
     event_id=str,
-    network=str,
-    station=str,
-    location="location_code",
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     uncertainty=float,
     lower_uncertainty=float,
     upper_uncertainty=float,
@@ -226,10 +229,10 @@ STATION_MAGNITUDE_DTYPES = OrderedDict(
     agency_id=str,
     event_id=str,
     event_time="datetime64[ns]",
-    network=str,
-    station=str,
-    location="location_code",
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     uncertainty=float,
     lower_uncertainty=float,
     upper_uncertainty=float,
@@ -286,10 +289,10 @@ ARRIVAL_DTYPES = OrderedDict(
     creation_time="datetime64[ns]",
     author=str,
     agency_id=str,
-    network=str,
-    station=str,
-    location="location_code",
-    channel=str,
+    network="nslc_code",
+    station="nslc_code",
+    location="nslc_code",
+    channel="nslc_code",
     origin_id=str,
     origin_time="datetime64[ns]",
 )
@@ -306,6 +309,16 @@ WAVEFORM_DTYPES = OrderedDict(
     endtime="datetime64[ns]",
     sampling_period="timedelta64[ns]",
 )
+
+# dtypes for requesting waveforms
+WAVEFORM_REQUEST_DTYPES = {
+    "network": str,
+    "station": str,
+    "location": str,
+    "channel": str,
+    "starttime": "ops_datetime",
+    "endtime": "ops_datetime",
+}
 
 # The datatypes needed for putting waveform info into HDF5
 WAVEFORM_DTYPES_INPUT = MapProxy(
@@ -348,7 +361,18 @@ EMPTYTD64 = np.timedelta64(0, "s")
 OPSDATA_PATH = Path().home() / "opsdata"
 
 # Number of cores
-CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
+CPU_COUNT = cpu_count() or 4  # fallback to four if None is returned
+
+# supported read_hdf5 kwargs
+READ_HDF5_KWARGS = frozenset(
+    {"columns", "where", "mode", "errors", "start", "stop", "key", "chunksize"}
+)
+
+# keywords associated with get_events
+CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
+NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
+UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
+
 
 # ------------------- type aliases (aliai?)
 
@@ -356,7 +380,8 @@ CPU_COUNT = cpu_count() or 4  # fallback to four is None is returned
 path_types = Union[str, Path]
 
 # number types
-number_type = Union[float, int, np.float, np.int, np.complex]
+# number_type = Union[float, int, np.float, np.int, np.complex]  # deprecated
+number_type = Union[float, int]
 
 # The waveforms processor type
 stream_proc_type = Callable[[Stream], Stream]
@@ -368,7 +393,9 @@ wave_type = Union[Stream, Trace]
 utc_able_type = Union[str, UTCDateTime, float, np.datetime64, pd.Timestamp]
 
 # waveform request type (args for get_waveforms)
-waveform_request_type = Tuple[str, str, str, str, utc_able_type, utc_able_type]
+waveform_request_type = Sequence[
+    Tuple[str, str, str, str, utc_able_type, utc_able_type]
+]
 
 # the signature of obspy fdsn client
 wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
@@ -417,7 +444,7 @@ column_function_map_type = Mapping[str, series_func_type]
 bank_subpaths_type = Union[path_types, Iterable[path_types]]
 
 # types for bulk waveform requests
-bulk_waveform_arg_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
+bulk_waveform_arg_type = Union[waveform_request_type, pd.DataFrame]
 
 # types which can be used to slice a numpy array
 slice_types = Union[int, slice, List[int], Tuple[int, ...]]
@@ -513,7 +540,7 @@ GET_STATIONS_UTC_KWARGS = (
 
 # Numpy int types
 NUMPY_INT_TYPES = {
-    np.int,
+    # np.int,  # This is deprecated in numpy 1.20
     np.int32,
     np.int64,
     np.uint,

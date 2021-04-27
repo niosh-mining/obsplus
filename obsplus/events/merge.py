@@ -4,19 +4,21 @@ functions for merging catalogs together
 
 import warnings
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Union
 
+import numpy as np
 from obspy.core.event import Catalog, Origin, Event
 
+import obsplus
 from obsplus import validate_catalog
 from obsplus.utils.events import bump_creation_version
 
 
-def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
+def merge_events(eve1: Event, eve2: Event, reject_old: bool = True) -> Event:
     """
     Merge picks and amplitudes of two events together.
 
-    This function attempts to merge pciks and amplitudes of two events
+    This function attempts to merge picks and amplitudes of two events
     together that may have different resource_ids in some attributes. The
     second event is imposed on the first which is modified in place.
 
@@ -26,16 +28,16 @@ def merge_events(eve1: Event, eve2: Event, delete_old: bool = True) -> Event:
         The first (former) event
     eve2 : Catalog
         The second (new) event
-    delete_old : bool
-        If True delete from eve1 anything not in eve2
+    reject_old : bool
+        If True, reject anything in eve1 not in eve2
 
     Returns
     -------
     Event
         The merged events
     """
-    _merge_picks(eve1, eve2, delete_old=delete_old)
-    _merge_amplitudes(eve1, eve2, delete_old=delete_old)
+    _merge_picks(eve1, eve2, reject_old=reject_old)
+    _merge_amplitudes(eve1, eve2, reject_old=reject_old)
     return eve1
 
 
@@ -58,7 +60,7 @@ def _generate_pick_phase_maps(eve1, eve2):
     return maps
 
 
-def _merge_picks(eve1, eve2, delete_old=False):
+def _merge_picks(eve1, eve2, reject_old=False):
     """
     Merge a list of objects that have waveform ids (arrivals, picks,
     amplitudes)
@@ -80,12 +82,13 @@ def _merge_picks(eve1, eve2, delete_old=False):
     for key in set(widp_p2) - set(widp_p1):
         eve1.picks.append(widp_p2[key])
 
-    # delete old
-    if delete_old:
-        eve1.picks = [x for x in eve1.picks if _hash_wid(x, "phase_hint") in widp_p2]
+    # reject old
+    if reject_old:
+        _reject_old(eve1.picks, "phase_hint", widp_p2)
+        # eve1.picks = [x for x in eve1.picks if _hash_wid(x, "phase_hint") in widp_p2]
 
 
-def _merge_amplitudes(eve1, eve2, delete_old=False):
+def _merge_amplitudes(eve1, eve2, reject_old=False):
     """Merge the amplitudes together."""
     attrs_no_update = {"pick_id", "resource_id", "force_resource_id"}
     maps = _generate_pick_phase_maps(eve1, eve2)
@@ -109,9 +112,23 @@ def _merge_amplitudes(eve1, eve2, delete_old=False):
     # for new amplitudes append
     for key in set(pid1_a2) - set(pid1_a1):
         eve1.amplitudes.append(pid1_a2[key])
-    # delete old
-    if delete_old:
-        eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
+    # reject old
+    if reject_old:
+        _reject_old(eve1.amplitudes, "magnitude_hint", pid1_a2)
+        # eve1.amplitudes = [x for x in eve1.amplitudes if x.pick_id.id in pid1_a2]
+
+
+def _reject_old(objs, hash_attr, checklist):
+    """ Set the evaluation status of outdated objects to 'rejected' """
+    for x in objs:
+        try:
+            wid = _hash_wid(x, hash_attr)
+        except AttributeError:
+            # It is not a valid Amplitude... reject it
+            x.evaluation_status = "rejected"
+        else:
+            if wid not in checklist:
+                x.evaluation_status = "rejected"
 
 
 def attach_new_origin(
@@ -145,7 +162,7 @@ def attach_new_origin(
         modifies old_cat in-place, returns old_catalog
     """
     # make sure all the picks/amplitudes in new_event are also in old_event
-    merge_events(old_event, new_event, delete_old=False)
+    merge_events(old_event, new_event, reject_old=False)
     # point the arrivals in the new origin at the old picks
     _associate_picks(old_event, new_event, new_origin)
     # append the origin
@@ -188,6 +205,64 @@ def _associate_picks(old_eve, new_event, new_origin):
         # get corresponding old pick and swap resource id of arrival
         old_pick = old_pick_dict[new_pick_hash]
         arrival.pick_id = old_pick.resource_id
+
+
+def associate_merge(
+    event: Event,
+    new_catalog: Union[Catalog, Event],
+    median_tolerance: float = 1.0,
+    reject_old: bool = False,
+) -> Event:
+    """
+    Merge the "closest" event in a catalog into an existing event.
+
+    Finds the closest event in new_catalog to event using median pick
+    times, then calls :func:`obsplus.events.merge.merge_events` to merge
+    the events together.
+
+    Parameters
+    ----------
+    event
+        The base event which will be modified in place.
+    new_catalog
+        A new catalog or event which contains picks.
+    median_tolerance
+        The tolerance, in seconds, of the median pick for associating
+        events in new_catalog into event.
+    reject_old
+        Reject any picks/amplitudes in old event if not found in new
+        event.
+    """
+
+    def _get_pick_median(time_ser):
+        """
+        Return a (close enough) approximation of the median for datetimes in ns.
+        """
+        int_median = int(time_ser.astype(np.int64).median())
+        return int_median
+
+    def _get_associated_event_id(new_picks, old_picks):
+        """Return the associated event id"""
+        new_med = new_picks.groupby("event_id")["time"].apply(_get_pick_median)
+        old_med = _get_pick_median(old_picks["time"])
+        diffs = abs(new_med - old_med)
+        # check on min tolerance, if exceeded return empty
+        if diffs.min() / 1_000_000_000 > median_tolerance:
+            return None
+        return diffs.idxmin()
+
+    # Get list-like of events from new_catalog
+    new_cat = new_catalog if isinstance(new_catalog, Catalog) else [new_catalog]
+    assert len(new_catalog) > 0
+    # Get dataframes of event info
+    new_pick_df = obsplus.picks_to_df(new_cat)
+    old_pick_df = obsplus.picks_to_df(event)
+    eid = _get_associated_event_id(new_pick_df, old_pick_df)
+    new_event = {str(x.resource_id): x for x in new_catalog}.get(eid)
+    # The association failed, just return original event
+    if new_event is None:
+        return event
+    return merge_events(event, new_event, reject_old=reject_old)
 
 
 # ---------- silly hash functions for getting around resource_ids (sorta)

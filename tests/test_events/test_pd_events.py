@@ -612,7 +612,7 @@ class TestReadPicks:
         assert isinstance(df, pd.DataFrame)
 
     def test_from_event_directory(self, event_directory):
-        """Test extacting info from an event directory."""
+        """Test extracting info from an event directory."""
         df = picks_to_df(event_directory)
         assert len(df)
         assert isinstance(df, pd.DataFrame)
@@ -634,13 +634,25 @@ class TestReadPicks:
 
     def test_picks_one_digit_location(self):
         """
-        Ensure 1 digit location codes get padded to comply with seed convention.
+        Ensure 1 digit location codes get preserved
         """
         picks = pick_generator(["UU.TMU.1.HHZ", "UU.TMU.01.HHZ"])
         df = picks_to_df(picks)
-        # there should be only one unique location code and seed_id.
+        # there should be two unique location code and seed_ids.
         assert len(set(df["location"])) == 2
         assert len(set(df["seed_id"])) == 2
+
+    def test_dot_in_location_code(self):
+        """Ensure a dot in the location code causes a ValueError. """
+        waveform_id = ev.WaveformStreamID(
+            network_code="UU",
+            station_code="TMU",
+            location_code="1.0",
+            channel_code="HHZ",
+        )
+        pick = ev.Pick(time=obspy.UTCDateTime("2020-01-01"), waveform_id=waveform_id)
+        with pytest.raises(ValueError):
+            _ = obsplus.picks_to_df([pick])
 
     def test_gather(self, catalog_output, dataframe_output):
         """ Simply gather aggregated fixtures so they are marked as used. """
@@ -726,7 +738,7 @@ class TestReadArrivals:
         assert floatify_dict(ser_dict) == floatify_dict(arr_dict)
 
     # empty catalog tests
-    def test_empty_catalog(self,):
+    def test_empty_catalog(self):
         """ ensure returns empty df with required columns """
         empty_cat = ev.Catalog()
         df = arrivals_to_dataframe(empty_cat)
@@ -856,7 +868,7 @@ class TestReadAmplitudes:
         assert amp_series["author"] == amplitude.creation_info.author
         assert amp_series["agency_id"] == amplitude.creation_info.agency_id
 
-    def test_empty_catalog(self,):
+    def test_empty_catalog(self):
         """ ensure returns empty df with required columns """
         df = amplitudes_to_dataframe(ev.Catalog())
         assert isinstance(df, pd.DataFrame)
@@ -975,7 +987,7 @@ class TestReadStationMagnitudes:
         assert sm.magnitude_id == dummy_mag.resource_id.id
 
     # empty catalog tests
-    def test_empty_catalog(self,):
+    def test_empty_catalog(self):
         """ ensure returns empty df with required columns """
         empty_cat = ev.Catalog()
         df = station_magnitudes_to_dataframe(empty_cat)

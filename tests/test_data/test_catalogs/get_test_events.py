@@ -177,15 +177,15 @@ class MegaCatalog(object):
     def _get_composite_times(self):
         return self.ev.CompositeTime(
             year=2016,
-            year_errors={"uncertainty": 0},
+            # year_errors={"uncertainty": 0},
             month=5,
-            month_errors={"uncertainty": 0},
+            # month_errors={"uncertainty": 0},
             day=4,
-            day_errors={"uncertainty": 0},
+            # day_errors={"uncertainty": 0},
             hour=0,
-            hour_errors={"uncertainty": 0},
+            # hour_errors={"uncertainty": 0},
             minute=0,
-            minute_errors={"uncertainty": 0},
+            # minute_errors={"uncertainty": 0},
             second=0,
             second_errors={"uncertainty": 0.01},
         )
@@ -231,7 +231,7 @@ class MegaCatalog(object):
         )
 
     def _get_station_mag(self):
-        station_mag = self.ev.StationMagnitude(mag=2.24)
+        station_mag = self.ev.StationMagnitude(mag=2.24, origin_id=self.origin_id)
         self.station_mag_id = station_mag.resource_id
         return station_mag
 

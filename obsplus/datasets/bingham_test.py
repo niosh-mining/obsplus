@@ -29,7 +29,7 @@ class Bingham(DataSet):
     """
 
     name = "bingham_test"
-    version = "0.0.0"
+    version = "0.1.0"
     time_before = np.timedelta64(10, "s")
     time_after = np.timedelta64(60, "s")
     # define spatial extents variables (center of pit)

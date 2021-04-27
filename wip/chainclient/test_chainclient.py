@@ -65,8 +65,8 @@ class TestChainClientBasic:
         assert isinstance(bing_stream, obspy.Stream)
 
     def test_backup_stream(self, backup_stream):
-        """ ask for data only found in clients attr to make when it is not
-        found in other clients the backup is used """
+        """ask for data only found in clients attr to make when it is not
+        found in other clients the backup is used"""
         assert len(backup_stream)
         assert isinstance(backup_stream, obspy.Stream)
 

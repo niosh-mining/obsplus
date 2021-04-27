@@ -2,7 +2,7 @@ name: validate
 on: [push]
 
 jobs:
-  # Simply applies flake8 to the codebase
+  # Simply applies flake8 to code using pre-commit
   lint_code:
     runs-on: ubuntu-latest
 
@@ -15,10 +15,10 @@ jobs:
           python-version: 3.7
 
       - name: install linting packages
-        run: pip install -r tests/requirements.txt
+        run: pip install pre-commit
 
-      - name: flake8
-        run: flake8 .
+      - name: run all precommits
+        run: pre-commit run flake8 --files obsplus/**/*
 
   # Runs the tests on combinations of the supported python/os matrix.
   test_code:
@@ -26,13 +26,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
       - uses: actions/checkout@v1
 
       - name: Setup conda
-        uses: goanpeca/setup-miniconda@v1
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
@@ -44,6 +44,11 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -e .[dev]
+
+      - name: fix pywin
+        if: matrix.os == 'windows-latest'
+        shell: bash -l {0}
+        run: pip install pywin32==225
 
       - name: print package info
         shell: bash -l {0}
@@ -88,6 +93,12 @@ jobs:
 
 
 # This is a very useful step for debugging, it allows you to ssh into the CI
-# machine (https://github.com/marketplace/actions/debugging-with-tmate)
+# machine (https://github.com/marketplace/actions/debugging-with-tmate).
+# Make sure to open the log before the job starts else you cant see the tmate
+# url. See https://github.com/mxschmitt/action-tmate/issues/1.
+# Also, the CI machine will close on a non-zero exit code (annoying). This can
+# be overcome by coalescing the null command like so:
+# $ some-command-that-can-fail || :
+#
 #- name: Setup tmate session
-#  uses: mxschmitt/action-tmate@v1
+#  uses: mxschmitt/action-tmate@v3

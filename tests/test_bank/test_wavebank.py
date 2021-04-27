@@ -1,8 +1,10 @@
 """ test for core functionality of wavebank """
+import copy
 import functools
 import glob
 import os
 import pathlib
+import pickle
 import shutil
 import tempfile
 import time
@@ -27,7 +29,7 @@ import obsplus.utils.misc
 import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
-from obsplus.exceptions import BankDoesNotExistError
+from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeyword
 from obsplus.utils.misc import iter_files
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obsplus.utils.bank import _natify_paths
@@ -99,6 +101,24 @@ def ta_index(ta_bank_index):
 def empty_bank(tmp_path):
     """ init a bank with an empty directory, return """
     return WaveBank(tmp_path)
+
+
+@pytest.fixture
+def duplicate_bank(tmp_path):
+    """ init a bank with duplicate waveforms. """
+    # create two overlapping traces for each stream
+    st1 = obspy.read()
+    st1.trim(endtime=st1[0].stats.endtime - 10)
+    st2 = obspy.read()
+    for tr in st2:
+        tr.stats.starttime = st1[0].stats.endtime - 10
+    # get bank and save streams
+    wbank = WaveBank(tmp_path)
+    st1.write(str(tmp_path / "first.mseed"), "mseed")
+    st2.write(str(tmp_path / "second.mseed"), "mseed")
+    df = wbank.update_index().read_index()
+    assert len(df) == 6, "there should be 6 files"
+    return wbank
 
 
 # ------------------------------ Tests
@@ -425,6 +445,11 @@ class TestReadIndex:
         df = default_wbank.read_index()
         assert not df.empty
 
+    def test_read_index_raises_on_bad_param(self, default_wbank):
+        """Ensure an unsupported kwarg raises. See #207."""
+        with pytest.raises(UnsupportedKeyword, match="startime"):
+            default_wbank.read_index(startime="2012-01-01")
+
 
 class TestYieldStreams:
     """ tests for yielding streams from the bank """
@@ -626,6 +651,16 @@ class TestGetWaveforms:
         st = bank.get_waveforms()
         assert len(st) == 3
 
+    def test_de_duplicate_stream(self, duplicate_bank):
+        """get_waveforms should de-dup/merge when calling get_waveforms."""
+        std = obspy.read()  # default
+        st = duplicate_bank.get_waveforms()
+        assert len(st) == 3, "traces were not merged!"
+        starttime = min([tr.stats.starttime for tr in st])
+        endtime = max([tr.stats.endtime for tr in st])
+        default_duration = std[0].stats.endtime - std[0].stats.starttime
+        assert (endtime - starttime) > default_duration
+
 
 class TestGetBulkWaveforms:
     """ tests for pulling multiple waveforms using get_bulk_waveforms """
@@ -711,6 +746,22 @@ class TestGetBulkWaveforms:
         stt = ta_bank.get_waveforms_bulk(bulk)
         assert isinstance(stt, obspy.Stream)
 
+    def test_no_duplicate_traces(self, duplicate_bank):
+        """Ensure overlap in bulk args doesn't result in overlapping traces."""
+        st = duplicate_bank.get_waveforms()
+        args = list(NSLC) + ["starttime", "endtime"]
+        bulk = [{i: tr.stats[i] for i in args} for tr in st]
+        # create overlaps
+        new = copy.deepcopy(bulk)
+        for new_b in new:
+            new_b["starttime"] += 5
+            new_b["endtime"] -= 5
+        # and duplicates
+        bulky_bulk = bulk + bulk + new
+
+        st = duplicate_bank.get_waveforms_bulk(bulky_bulk)
+        assert len(st) == 3
+
 
 class TestBankCache:
     """ test that the time cache avoids repetitive queries to the h5 index """
@@ -720,7 +771,7 @@ class TestBankCache:
     # fixtures
     @pytest.fixture(scope="class")
     def mp_ta_bank(self, ta_bank):
-        """ monkey patch the ta_bank instance to count how many times the .h5
+        """monkey patch the ta_bank instance to count how many times the .h5
         index is accessed, store it on the accessed_times in the ._cache.times
         """
         func = count_calls(ta_bank, ta_bank._index_cache._get_index, "index_calls")
@@ -761,7 +812,7 @@ class TestBankCacheWithKwargs:
         assert "path" in inds.columns
 
 
-class TestPutWaveForm:
+class TestPutWaveforms:
     """ test that waveforms can be put into the bank """
 
     # fixtures
@@ -777,6 +828,18 @@ class TestPutWaveForm:
     def default_stations(self):
         """ return the default stations on the default waveforms as a set """
         return set([x.stats.station for x in obspy.read()])
+
+    @pytest.fixture(scope="class")
+    def gappy_default_stream(self):
+        """Create a gappy stream from default stream. """
+        st = obspy.read()
+        start, end = st[0].stats.starttime, st[0].stats.endtime
+        duration = end - start
+        mid = start + duration / 2.0
+        tr1 = st[0].slice(starttime=start, endtime=mid - 1 / 100.0)
+        tr2 = st[0].slice(starttime=mid + 1 / 100.0, endtime=end)
+        st[0] = tr1 + tr2
+        return st
 
     # tests
     def test_deposited_waveform(self, add_stream, default_stations):
@@ -808,6 +871,11 @@ class TestPutWaveForm:
         df = bank.read_index(station="RJOB")
         assert len(df) == len(st)
         assert set(df.station) == {"RJOB"}
+
+    def test_put_gappy_data(self, default_wbank, gappy_default_stream):
+        """Tests for putting a stream with gaps into a wavebank."""
+        # test succeeds if this doesn't fail
+        default_wbank.put_waveforms(gappy_default_stream)
 
 
 class TestPutMultipleTracesOneFile:
@@ -1229,6 +1297,12 @@ class TestGetGaps:
         gap_df = small_overlap_gaps.get_gaps_df()
         assert len(gap_df) == 0
 
+    def test_min_gap_param(self, gappy_bank):
+        """Ensure the min gap parameter works."""
+        no_gap = gappy_bank.get_gaps_df(min_gap=10000000)
+        with_gap = gappy_bank.get_gaps_df()
+        assert len(no_gap) < len(with_gap)
+
 
 class TestBadInputs:
     """ ensure wavebank handles bad inputs correctly """
@@ -1266,9 +1340,10 @@ class TestConcurrentReads:
         assert counter.get("map", 0) > 0
 
 
-class TestConcurrentUpdateIndex:
+class TestConcurrentBank:
     """
-    Tests to make sure running update index in different threads/processes.
+    Concurrency tests for bank operations which can be run in multiple
+    threads/processes.
     """
 
     worker_count = 3
@@ -1276,7 +1351,6 @@ class TestConcurrentUpdateIndex:
 
     def func(self, wbank):
         """ add new files to the wavebank then update index, return index. """
-        # first write some new files
         try:
             wbank.read_index()
         except Exception as e:
@@ -1326,6 +1400,13 @@ class TestConcurrentUpdateIndex:
         return list(as_completed(out))
 
     # tests
+    def test_pickle_bank(self, concurrent_bank):
+        """Ensure the bank can be pickled."""
+        pkl = pickle.dumps(concurrent_bank)
+        new_bank = pickle.loads(pkl)
+        assert isinstance(new_bank, WaveBank)
+        assert new_bank.bank_path == concurrent_bank.bank_path
+
     def test_index_read_thread(self, thread_read):
         """
         Ensure the index updated and the threads didn't kill each other.
@@ -1352,7 +1433,7 @@ class TestConcurrentUpdateIndex:
 
 
 class TestSelectDoesntReturnSuperset:
-    """ make sure selecting on an attribute doesnt return a superset of that
+    """make sure selecting on an attribute doesnt return a superset of that
     attribute. EG, selecting station '2' should not also return station '22'
     """
 

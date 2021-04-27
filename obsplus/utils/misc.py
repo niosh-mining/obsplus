@@ -17,7 +17,6 @@ from typing import (
     Optional,
     Callable,
     Union,
-    Sequence,
     TypeVar,
     Collection,
     Dict,
@@ -32,6 +31,7 @@ from obspy.core.inventory import Station, Channel
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 
+import obsplus
 from obsplus.constants import NULL_SEED_CODES, NSLC
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
@@ -288,7 +288,7 @@ def iterate(obj):
         return ()
     if isinstance(obj, str):
         return (obj,)
-    return obj if isinstance(obj, Sequence) else (obj,)
+    return obj if isinstance(obj, Iterable) else (obj,)
 
 
 class DummyFile(object):
@@ -585,3 +585,26 @@ def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
     validate_version_str(version_str)
     split = version_str.split(".")
     return int(split[0]), int(split[1]), int(split[2])
+
+
+def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
+    """Strip a prefix of a string."""
+    out = some_str
+    for prefix in obsplus.utils.iterate(prefixes):
+        if out.startswith(prefix):
+            out = out[len(prefix) :]
+    return out
+
+
+class ObjectWrapper:
+    """
+    A class for wrapping objects.
+
+    This is useful so array-like things can be packaged into numpy arrays
+    and pandas dataframes.
+    """
+
+    __slots__ = ("data",)  # this speeds up class creation/memory usage
+
+    def __init__(self, data):
+        self.data = data

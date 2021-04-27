@@ -26,9 +26,9 @@ class TestCatalogInterface:
     """ The big events should look and feel like a normal events. """
 
     def prune_catalog(self, catalog):
-        """ recurse a events and set all attrs that eval to False to None.
+        """recurse a events and set all attrs that eval to False to None.
         This is needed to overcome some Catalog oddities to fairly compare two
-        catalogs. """
+        catalogs."""
         skips = (obspy.UTCDateTime, ev.ResourceIdentifier)
         cat = catalog.copy()
         for obj, parent, attr in yield_obj_parent_attr(cat):

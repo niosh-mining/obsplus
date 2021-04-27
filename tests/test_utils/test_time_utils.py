@@ -66,12 +66,33 @@ class TestToNumpyDateTime:
         expected_out = (ts.to_datetime64(),)
         assert out == expected_out
 
-    def test_utc_to_large(self):
+    def test_utc_too_large(self):
         """Test a time larger than can fit into int64."""
         too_big = obspy.UTCDateTime("2600-01-01")
         with pytest.warns(UserWarning):
             out = to_datetime64(too_big)
         assert pd.Timestamp(out).year == 2262
+
+    def test_npdatetime64_too_large(self):
+        """ Test np.datetime64s larger than can fit into int64 """
+        too_big = np.array(
+            [
+                np.datetime64("2300-01-01"),
+                np.datetime64("2020-01-01"),
+                np.datetime64("2500-01-01"),
+            ]
+        )
+        with pytest.warns(UserWarning):
+            out = to_datetime64(too_big)
+        years = out.astype("M8[Y]")
+        assert np.array_equal(
+            years,
+            [
+                np.datetime64("2262", "Y"),
+                np.datetime64("2020", "Y"),
+                np.datetime64("2262", "Y"),
+            ],
+        )
 
     def test_series_to_datetimes(self):
         """Series should be convertible to datetimes, return series """

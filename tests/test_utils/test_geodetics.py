@@ -137,9 +137,24 @@ class TestCalculateDistance:
             spatial_calc(cat, (45, -111, 0))
         assert "multiple coordinates for" in e.value.args[0]
 
-    def test_invalid_df(self, spatial_calc):
+    def test_invalid_df(self, spatial_calc, cat, inv):
         """ Ensure dfs with missing columns raise. """
-        df = obsplus.events_to_df(obspy.read_events())
-        df2 = df.drop(columns="latitude")
-        with pytest.raises(DataFrameContentError):
-            spatial_calc(df, df2)
+        df1 = cat.to_df().drop(columns="latitude")
+        df2 = inv.to_df().drop(columns="latitude")
+        with pytest.raises(
+            DataFrameContentError,
+            match="SpatialCalculator input dataframe must have the following",
+        ):
+            spatial_calc(df1, inv)
+        with pytest.raises(
+            DataFrameContentError,
+            match="SpatialCalculator input dataframe must have the following",
+        ):
+            spatial_calc(cat, df2)
+
+    def test_invalid_lat_lon(self, spatial_calc, cat, inv):
+        """ Ensure invalid latitudes or longitudes get flagged """
+        df = inv.to_df()
+        df["latitude"] = 200
+        with pytest.raises(DataFrameContentError, match="invalid lat/lon"):
+            spatial_calc(cat, df)

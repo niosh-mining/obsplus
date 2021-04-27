@@ -158,6 +158,14 @@ def to_datetime64(
     >>> assert pd.isnull(out[1])
 
     """
+
+    def _warn_too_large():
+        msg = (
+            f"time is too large to represent with a int64 with ns precision,"
+            f" downgrading to {new}"
+        )
+        warnings.warn(msg, category=TimeOverflowWarning)
+
     # null values return default (usually NaT)
     if pd.isnull(value):
         if not pd.isnull(default):
@@ -166,7 +174,19 @@ def to_datetime64(
     elif isinstance(value, np.datetime64):
         # The '.astype('datetime64[ns]') is necessary to make sure it really
         # does get converted to nanoseconds
-        return value.astype("datetime64[ns]")
+        new = value.astype("datetime64[ns]")
+        # NOTE: This should get removed after numpy fixes their datetime issue
+        # (See #224), but this makes sure that casting to a higher precision
+        # datetime didn't cause an int64 overflow
+        if not value.dtype == np.dtype("M8[ns]"):
+            if new.astype("M8[Y]") < value.astype("M8[Y]"):
+                # The year changed, so it has this problem
+                _warn_too_large()
+                return LARGEDT64
+            else:
+                return new
+        else:
+            return new
     elif isinstance(value, pd.Timestamp):
         # The '.astype('datetime64[ns]') is necessary to make sure it really
         # does get converted to nanoseconds
@@ -177,11 +197,7 @@ def to_datetime64(
     # the UTCDateTime is too big or small, use biggest/smallest values instead
     except (SystemError, OverflowError):
         new = LARGEDT64 if np.sign(utc._ns) > 0 else SMALLDT64
-        msg = (
-            f"time is too large to represent with a int64 with ns precision,"
-            f" downgrading to {new}"
-        )
-        warnings.warn(msg, category=TimeOverflowWarning)
+        _warn_too_large()
         return new
 
 
