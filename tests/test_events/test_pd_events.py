@@ -379,7 +379,9 @@ class TestCat2Df:
 
     def test_column_datatypes(self, df):
         """ Ensure the expected columns are numpy datetime objects. """
-        expected = df.astype(EVENT_DTYPES).dtypes
+        dtypes = dict(EVENT_DTYPES)
+        dtypes.pop("longitude")
+        expected = df.astype(dtypes).dtypes
         assert (expected == df.dtypes).all()
 
     def test_basics(self, read_events_output):
@@ -430,6 +432,27 @@ class TestCat2Df:
         This test simply gathers up all the aggregated fixtures so they
         are properly marked as used.
         """
+
+
+class TestLongitude:
+    """
+    Tests for ensuring longitudes get mapped to a domain of -180 to 180
+    as expected.
+    """
+
+    def test_catalog(self):
+        """Tests for (modified) default catalog."""
+        import obspy
+        import obsplus
+
+        obsplus._debug = True
+
+        cat = obspy.read_events()
+        cat[0].origins[0].longitude = 799
+        cat[1].origins[0].longitude = -181
+        df = obsplus.events_to_df(cat)
+        longitudes = df["longitude"]
+        assert np.all(np.abs(longitudes) <= 180)
 
 
 class TestCat2DfPreferredThings:

@@ -218,3 +218,34 @@ class SpatialCalculator:
         out = self._get_spatial_relations(array)
         index = pd.MultiIndex.from_arrays([ind1, ind2], names=["id1", "id2"])
         return pd.DataFrame(out, columns=list(DISTANCE_COLUMN_DTYPES), index=index)
+
+
+def map_longitudes(angle_array: Union[np.ndarray, pd.Series]) -> pd.Series:
+    """
+    Map longitudes to -180 to 180 domain.
+
+    Parameters
+    ----------
+    angle_array
+        An array or series with real numeric values representing angles in
+        degrees.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> angles = np.array([35, -45, 340, -721])
+    >>> out = map_longitudes(angles)
+    >>> expected = np.array([35, -45, -20, -1])
+    >>> assert np.allclose(out, expected)
+    """
+    out = angle_array.astype(float) % 360
+    gt_180 = out > 180
+    out[gt_180] = out[gt_180] - 360
+    return out
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()

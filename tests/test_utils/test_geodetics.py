@@ -10,7 +10,7 @@ import pytest
 
 import obsplus
 from obsplus.constants import DISTANCE_COLUMN_DTYPES
-from obsplus.utils.geodetics import SpatialCalculator
+from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.misc import suppress_warnings
 
@@ -158,3 +158,21 @@ class TestCalculateDistance:
         df["latitude"] = 200
         with pytest.raises(DataFrameContentError, match="invalid lat/lon"):
             spatial_calc(cat, df)
+
+
+class TestMapLongitudes:
+    """
+    Tests for mapping angles to a specific domain.
+    """
+
+    def test_in_domain(self):
+        """Ensure angles already in the domain don't get mapped."""
+        ar = np.array([10, 100, -70])
+        out = map_longitudes(ar)
+        assert np.allclose(ar, out)
+
+    def test_mapped_angles(self):
+        """Ensure angles outside the domain get mapped into it."""
+        ar = np.array([190, 271, 361, -719.25, 10, -10])
+        expected = np.array([-170, -89, 1, 0.75, 10, -10])
+        assert np.allclose(map_longitudes(ar), expected)

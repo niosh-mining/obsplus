@@ -24,6 +24,7 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obsplus.utils.geodetics import map_longitudes
 
 
 def _int_column_to_str(ser, width=2, fillchar="0"):
@@ -42,6 +43,7 @@ OPS_DTYPE_FUNCS = {
     "ops_timedelta": to_timedelta64,
     "utcdatetime": to_utc,
     "nslc_code": _int_column_to_str,
+    "longitude": map_longitudes,
 }
 
 # the dtype of the columns
@@ -50,7 +52,13 @@ OPS_DTYPES = {
     "ops_timedelta": "timedelta64",
     "utcdatetime": obspy.UTCDateTime,
     "nslc_code": str,
+    "longitude": float,
 }
+
+
+def _astype(ser, dtype):
+    """Dummy function for converting a series to a specific dtype."""
+    return ser.astype(dtype)
 
 
 def convert_bytestrings(df, columns, inplace=False):
@@ -147,8 +155,10 @@ def cast_dtypes(
         'ops_datetime' - call :func:`obsplus.utils.time.to_datetime64` on column
         'ops_timedelta` - call :func:`obsplus.utils.time.to_timedelta64` on column
 
-    Note: this is different from pd.astype because it skips columns which
-    don't exist.
+    Notes
+    -----
+    This function is different from pd.astype because it skips columns which
+    don't exist and handles custom obsplus dtypes.
 
     Parameters
     ----------
@@ -159,19 +169,33 @@ def cast_dtypes(
     inplace
         If true perform operation in place.
     """
-    # get overlapping columns and dtypes
+    df = df if not inplace else df.copy()
+    # get overlapping columns, custom dtypes, and pandas support dtypes
     overlap = set(dtype) & set(df.columns)
-    dtype_codes = {i: dtype[i] for i in overlap}
-    # if the dataframe is empty and has columns use simple astype
-    if df.empty and len(df.columns):
-        dtypes = {i: OPS_DTYPES.get(v, v) for i, v in dtype_codes.items()}
-        return df.astype(dtypes)
-    # else create functions and apply to each column
-    funcs = {
-        i: OPS_DTYPE_FUNCS.get(v, lambda x, y=v: x.astype(y))
-        for i, v in dtype_codes.items()
-    }
-    return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
+    cust_funcs = {i: OPS_DTYPE_FUNCS[i] for i in overlap if i in OPS_DTYPE_FUNCS}
+    dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
+    # apply functions defined with custom dtypes
+    if cust_funcs:
+        df = apply_funcs_to_columns(df, cust_funcs)
+    return df.astype(dtypes)
+
+    #
+    # cust_funcs =
+
+    #
+    # # dtype_codes = {i: OPS_DTYPES.get(i, dtype[i]) for i in overlap}
+    #
+    #
+    # # if the dataframe is empty and has columns use simple astype
+    # if df.empty and len(df.columns):
+    #     dtypes = {i: OPS_DTYPES.get(v, v) for i, v in dtype_codes.items()}
+    #     return df.astype(dtypes)
+    # # else create functions and apply to each column
+    # funcs = {
+    #     i: OPS_DTYPE_FUNCS.get(i, partial(_astype, dtype=v))
+    #     for i, v in dtype_codes.items()
+    # }
+    # return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
 
 
 def order_columns(
