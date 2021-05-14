@@ -222,14 +222,14 @@ def _get_update_time(eve):
     return {"updated": max(timestamps) if timestamps else np.NaN}
 
 
-origin_dtypes = {x: float for x in ["latitude", "longitude", "depth"]}
+loc_dtypes = {x: EVENT_DTYPES[x] for x in ("latitude", "longitude", "depth")}
 
 
-@events_to_df.extractor(dtypes=origin_dtypes)
+@events_to_df.extractor(dtypes=loc_dtypes)
 def _get_origin_basic(eve):
     """ extract basic info from origin. """
     ori = get_preferred(eve, "origin", init_empty=True)
-    return getattrs(ori, set(origin_dtypes))
+    return getattrs(ori, set(loc_dtypes))
 
 
 @events_to_df.extractor

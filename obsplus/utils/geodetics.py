@@ -15,7 +15,7 @@ from obsplus.constants import (
     event_type,
     inventory_type,
     DISTANCE_COLUMN_DTYPES,
-    DISTANCE_COLUMN_INPUT_DTYPES,
+    LOCATION_DTYPE,
     ALT_DISTANCE_COLUMN_DTYPES,
 )
 from obsplus.utils.docs import compose_docstring
@@ -65,7 +65,7 @@ class SpatialCalculator:
         """
         Return a dataframe with latitude, longitude, elevation, and id.
         """
-        cols = list(DISTANCE_COLUMN_INPUT_DTYPES)
+        cols = list(LOCATION_DTYPE)
         cols1 = list(ALT_DISTANCE_COLUMN_DTYPES)
         # if a dataframe is used
         if isinstance(obj, pd.DataFrame):
@@ -108,7 +108,7 @@ class SpatialCalculator:
         else:
             msg = "A sequence must have either 3 or 4 elements."
             raise ValueError(msg)
-        cols = list(DISTANCE_COLUMN_INPUT_DTYPES)
+        cols = list(LOCATION_DTYPE)
         df = pd.DataFrame(ar, index=id, columns=cols)
         return df
 
@@ -119,7 +119,7 @@ class SpatialCalculator:
         """
         # determine if there are any duplicates with different coords
         duplicate_indices = df.index.duplicated()
-        duplicated_data = df.duplicated(list(DISTANCE_COLUMN_INPUT_DTYPES))
+        duplicated_data = df.duplicated(list(LOCATION_DTYPE))
         # if so raise an exception as this will not produced desired result.
         if (duplicate_indices & (~duplicated_data)).any():
             dup_ids = set(df.index[(duplicate_indices & (~duplicated_data))])
@@ -143,8 +143,8 @@ class SpatialCalculator:
             self._de_duplicate_df_index(out)
         else:
             out = (
-                df[list(DISTANCE_COLUMN_INPUT_DTYPES)]
-                .astype(DISTANCE_COLUMN_INPUT_DTYPES)
+                df[list(LOCATION_DTYPE)]
+                .astype(LOCATION_DTYPE)
                 .pipe(self._de_duplicate_df_index)
             )
         # sanity checks on lat/lon
@@ -176,7 +176,7 @@ class SpatialCalculator:
 
     @compose_docstring(
         out_columns=str(tuple(DISTANCE_COLUMN_DTYPES)),
-        in_columns=str(tuple(DISTANCE_COLUMN_INPUT_DTYPES)),
+        in_columns=str(tuple(LOCATION_DTYPE)),
     )
     def __call__(
         self,

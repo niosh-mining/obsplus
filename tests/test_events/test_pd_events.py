@@ -445,11 +445,10 @@ class TestLongitude:
         import obspy
         import obsplus
 
-        obsplus._debug = True
-
         cat = obspy.read_events()
         cat[0].origins[0].longitude = 799
         cat[1].origins[0].longitude = -181
+
         df = obsplus.events_to_df(cat)
         longitudes = df["longitude"]
         assert np.all(np.abs(longitudes) <= 180)
@@ -505,8 +504,8 @@ class TestCat2DfPreferredThings:
         """ ensure the origins are correct """
         for ind, row in df.iterrows():
             origin = preferred_origins[ind]
-            assert origin.latitude == row.latitude
-            assert origin.longitude == row.longitude
+            assert np.allclose(origin.latitude, row.latitude)
+            assert np.allclose(origin.longitude, row.longitude)
             assert origin.time == obspy.UTCDateTime(row.time)
 
     def test_magnitudes(self, df, preferred_magnitudes, test_catalog):

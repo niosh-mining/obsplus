@@ -56,11 +56,6 @@ OPS_DTYPES = {
 }
 
 
-def _astype(ser, dtype):
-    """Dummy function for converting a series to a specific dtype."""
-    return ser.astype(dtype)
-
-
 def convert_bytestrings(df, columns, inplace=False):
     """
     Convert byte strings columns to strings.
@@ -170,32 +165,16 @@ def cast_dtypes(
         If true perform operation in place.
     """
     df = df if not inplace else df.copy()
-    # get overlapping columns, custom dtypes, and pandas support dtypes
+    # get overlapping columns, column functions, and pandas support dtypes
     overlap = set(dtype) & set(df.columns)
-    cust_funcs = {i: OPS_DTYPE_FUNCS[i] for i in overlap if i in OPS_DTYPE_FUNCS}
-    dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
+    column_funcs = {
+        i: OPS_DTYPE_FUNCS[dtype[i]] for i in overlap if dtype[i] in OPS_DTYPE_FUNCS
+    }
+    supported_dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
     # apply functions defined with custom dtypes
-    if cust_funcs:
-        df = apply_funcs_to_columns(df, cust_funcs)
-    return df.astype(dtypes)
-
-    #
-    # cust_funcs =
-
-    #
-    # # dtype_codes = {i: OPS_DTYPES.get(i, dtype[i]) for i in overlap}
-    #
-    #
-    # # if the dataframe is empty and has columns use simple astype
-    # if df.empty and len(df.columns):
-    #     dtypes = {i: OPS_DTYPES.get(v, v) for i, v in dtype_codes.items()}
-    #     return df.astype(dtypes)
-    # # else create functions and apply to each column
-    # funcs = {
-    #     i: OPS_DTYPE_FUNCS.get(i, partial(_astype, dtype=v))
-    #     for i, v in dtype_codes.items()
-    # }
-    # return apply_funcs_to_columns(df, funcs=funcs, inplace=inplace)
+    if column_funcs:
+        df = apply_funcs_to_columns(df, column_funcs)
+    return df.astype(supported_dtypes)
 
 
 def order_columns(

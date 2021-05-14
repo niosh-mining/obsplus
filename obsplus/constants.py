@@ -168,9 +168,7 @@ DISTANCE_COLUMN_DTYPES = OrderedDict(
 )
 
 # Columns for dataframe inputs
-DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
-    latitude=float, longitude=float, elevation=float
-)
+LOCATION_DTYPE = OrderedDict(latitude=float, longitude=float, elevation=float)
 
 ALT_DISTANCE_COLUMN_DTYPES = OrderedDict(latitude=float, longitude=float, depth=float)
 

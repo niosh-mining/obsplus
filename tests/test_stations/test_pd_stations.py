@@ -77,8 +77,10 @@ class TestInv2Df:
             invdf.loc[invdf["station"] == "RJOB", "location"] = input
         # breakpoint()
         invdf = stations_to_df(invdf)
-        assert (invdf.loc[invdf["station"] == "RJOB"]["location"] == expected).all()
-        assert (invdf.loc[invdf["station"] != "RJOB"]["location"] == "").all()
+        rjob = invdf.loc[invdf["station"] == "RJOB"]
+        not_rjob = invdf.loc[invdf["station"] != "RJOB"]
+        assert (rjob["location"] == expected).all()
+        assert (not_rjob["location"] == "").all()
         assert (
             invdf["location"] == invdf["seed_id"].str.split(".", expand=True)[2]
         ).all()  # This one will be a little bit tougher
