@@ -8,7 +8,6 @@ from functools import lru_cache, reduce
 from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
 
 import numpy as np
-import obspy
 import pandas as pd
 from pandas.api.types import is_string_dtype
 
@@ -48,9 +47,9 @@ OPS_DTYPE_FUNCS = {
 
 # the dtype of the columns
 OPS_DTYPES = {
-    "ops_datetime": "datetime64",
-    "ops_timedelta": "timedelta64",
-    "utcdatetime": obspy.UTCDateTime,
+    "ops_datetime": "datetime64[ns]",
+    "ops_timedelta": "timedelta64[ns]",
+    "utcdatetime": object,
     "nslc_code": str,
     "longitude": float,
 }
@@ -173,8 +172,8 @@ def cast_dtypes(
     supported_dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
     # apply functions defined with custom dtypes
     if column_funcs:
-        df = apply_funcs_to_columns(df, column_funcs)
-    return df.astype(supported_dtypes)
+        df = apply_funcs_to_columns(df, column_funcs, inplace=inplace)
+    return df.astype(supported_dtypes, copy=False)
 
 
 def order_columns(

@@ -82,13 +82,6 @@ class TestCastDtypes:
         out = upd.cast_dtypes(simple_df, {"time": str})
         assert all([isinstance(x, str) for x in out["time"]])
 
-    def test_inplace(self, simple_df):
-        """Ensure the changes can be made inplace."""
-        out = upd.cast_dtypes(simple_df, {"latitude": int}, inplace=True)
-        assert out is simple_df
-        out2 = upd.cast_dtypes(simple_df, {"longitude": int})
-        assert out2 is not simple_df
-
     def test_time_dtype(self, time_df):
         """ Test time dtype. """
         out1 = upd.cast_dtypes(time_df, {"time": "ops_datetime"})["time"]
