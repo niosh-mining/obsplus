@@ -31,7 +31,7 @@ stations_to_df = DataFrameExtractor(
 
 @stations_to_df.extractor()
 def _extract_from_channels(channel):
-    """ extract info from channels. """
+    """extract info from channels."""
     out = {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
     return out
 
@@ -61,7 +61,7 @@ def _extract_channel(inventory: obspy.Inventory):
 @stations_to_df.register(str)
 @stations_to_df.register(Path)
 def _str_inv_to_df(path):
-    """ read stations object from file or directory structure """
+    """read stations object from file or directory structure"""
     path = str(path)
     # if applied to directory, recurse
     if os.path.isdir(path):
@@ -97,7 +97,7 @@ def _event_to_inv_df(event):
 
 @stations_to_df.register(BankType)
 def _bank_to_df(bank):
-    """ Convert the various bank types to station dataframes. """
+    """Convert the various bank types to station dataframes."""
     if isinstance(bank, EventClient):
         return stations_to_df(bank.get_events())
     if isinstance(bank, obsplus.WaveBank):

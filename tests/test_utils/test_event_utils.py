@@ -35,12 +35,12 @@ class TestDuplicateEvent:
 
     @pytest.fixture
     def catalog(self):
-        """ return default events """
+        """return default events"""
         return obspy.read_events()
 
     @pytest.fixture
     def duplicated_catalog(self, catalog):
-        """ return an event duplicated from first """
+        """return an event duplicated from first"""
         return duplicate_events(catalog)
 
     @pytest.fixture
@@ -49,11 +49,11 @@ class TestDuplicateEvent:
         return obsplus.duplicate_events(catalog_cache["cat6"])
 
     def test_return_type(self, duplicated_catalog):
-        """ ensure a events was returned """
+        """ensure a events was returned"""
         assert isinstance(duplicated_catalog, obspy.Catalog)
 
     def test_unique_resource_ids(self, catalog, duplicated_catalog):
-        """ ensure all resource ids are unique in duplicated event """
+        """ensure all resource ids are unique in duplicated event"""
         ev1, ev2 = catalog, duplicated_catalog
         rids1 = {x for x in get_instances_from_tree(ev1, cls=ResourceIdentifier)}
         rids2 = {x for x in get_instances_from_tree(ev2, cls=ResourceIdentifier)}
@@ -63,7 +63,7 @@ class TestDuplicateEvent:
         assert all(x.get_referred_object() is None for x in commons)
 
     def test_duplicated(self, catalog, duplicated_catalog):
-        """ ensure duplicated is equal on all aspects except resource id """
+        """ensure duplicated is equal on all aspects except resource id"""
         cat1, cat2 = catalog, duplicated_catalog
         origin_attrs = ("latitude", "longitude", "depth", "time")
 
@@ -75,7 +75,7 @@ class TestDuplicateEvent:
                 assert getattr(or1, origin_attr) == getattr(or2, origin_attr)
 
     def test_duplicated_catalog_valid(self, duplicated_big_catalog):
-        """ ensure the duplicated events is valid """
+        """ensure the duplicated events is valid"""
         obsplus.validate_catalog(duplicated_big_catalog)
 
     def test_interconnected_rids(self, catalog_cache):
@@ -96,11 +96,11 @@ class TestDuplicateEvent:
 
 
 class TestPruneEvents:
-    """ Tests for removing unused and rejected objects from events. """
+    """Tests for removing unused and rejected objects from events."""
 
     @pytest.fixture
     def event_rejected_pick(self):
-        """ Create an event with a rejected pick. """
+        """Create an event with a rejected pick."""
         wid = ev.WaveformStreamID(seed_string="UU.TMU.01.ENZ")
         time = obspy.UTCDateTime("2019-01-01")
         pick1 = ev.Pick(
@@ -111,7 +111,7 @@ class TestPruneEvents:
 
     @pytest.fixture
     def event_non_orphaned_rejected_pick(self, event_rejected_pick):
-        """ Change both picks to rejected but reference one from arrival. """
+        """Change both picks to rejected but reference one from arrival."""
         eve = event_rejected_pick.copy()
         picks = eve.picks
         for pick in picks:
@@ -127,7 +127,7 @@ class TestPruneEvents:
 
     @pytest.fixture
     def catalog_rejected_orphan_origin(self):
-        """ Create a catalog with an orphaned rejected origin. """
+        """Create a catalog with an orphaned rejected origin."""
         cat = obspy.read_events()
         origin = cat[0].origins[0]
         origin.arrivals.clear()
@@ -136,17 +136,17 @@ class TestPruneEvents:
         return cat
 
     def test_copy_made(self):
-        """ Prune events should make a copy, not modify the original. """
+        """Prune events should make a copy, not modify the original."""
         cat = obspy.read_events()
         assert prune_events(cat) is not cat
 
     def test_pick_gone(self, event_rejected_pick):
-        """ Ensure the pick was removed. """
+        """Ensure the pick was removed."""
         picks = prune_events(event_rejected_pick)[0].picks
         assert all([x.evaluation_status != "rejected" for x in picks])
 
     def test_non_orphan_rejected_kept(self, event_non_orphaned_rejected_pick):
-        """ Ensure rejected things are kept if their parents are not rejected. """
+        """Ensure rejected things are kept if their parents are not rejected."""
         ev = prune_events(event_non_orphaned_rejected_pick)[0]
         # One pick gets removed, the other is kept
         assert len(ev.picks) == 1
@@ -155,7 +155,7 @@ class TestPruneEvents:
         assert len(por.arrivals) == 1
 
     def test_one_rejected_origin(self, catalog_rejected_orphan_origin):
-        """ ensure a rejected origin, with no other references, is removed. """
+        """ensure a rejected origin, with no other references, is removed."""
         event = catalog_rejected_orphan_origin[0]
         origin_count_before = len(event.origins)
         out = obsplus.utils.events.prune_events(event)
@@ -163,24 +163,24 @@ class TestPruneEvents:
 
 
 class TestStripEvents:
-    """ Tests for stripping off derivative and non-reviewed data """
+    """Tests for stripping off derivative and non-reviewed data"""
 
     # Fixtures
     @pytest.fixture
     def empty_cat(self):
-        """ Return an empty catalog """
+        """Return an empty catalog"""
         return ev.Catalog()
 
     @pytest.fixture
     def cat_w_two_events(self, empty_cat):
-        """ Return a catalog with two empty events """
+        """Return a catalog with two empty events"""
         empty_cat.append(ev.Event())
         empty_cat.append(ev.Event())
         return empty_cat
 
     @pytest.fixture
     def cat_picks(self, cat_w_two_events):
-        """ Add some picks to the events, including rejected picks """
+        """Add some picks to the events, including rejected picks"""
         eve = cat_w_two_events[0]
         wid = ev.WaveformStreamID(seed_string="UU.TMU.01.ENZ")
         time = obspy.UTCDateTime()
@@ -220,7 +220,7 @@ class TestStripEvents:
 
     @pytest.fixture
     def event_amplitudes(self, cat_picks):
-        """ Return an event with some amplitudes """
+        """Return an event with some amplitudes"""
         eve = cat_picks[0]
         eve.amplitudes.append(
             ev.Amplitude(generic_amplitude=1, evaluation_status="reviewed")
@@ -232,21 +232,21 @@ class TestStripEvents:
 
     @pytest.fixture
     def event_linked_amplitudes(self, event_amplitudes):
-        """ Link all of the amplitudes to a rejected pick """
+        """Link all of the amplitudes to a rejected pick"""
         for amp in event_amplitudes.amplitudes:
             amp.pick_id = event_amplitudes.picks[1].resource_id
         return event_amplitudes
 
     @pytest.fixture
     def event_description(self, event_amplitudes):
-        """ Add some event descriptions to the event """
+        """Add some event descriptions to the event"""
         event_amplitudes.event_descriptions.append(ev.EventDescription(text="Keep Me"))
         event_amplitudes.event_descriptions.append(ev.EventDescription(text="Toss Me"))
         return event_amplitudes
 
     @pytest.fixture
     def event_origins(self, event_description):
-        """ Add an origin to the event """
+        """Add an origin to the event"""
         event_description.origins.append(
             ev.Origin(time=obspy.UTCDateTime(), longitude=-111, latitude=37)
         )
@@ -254,34 +254,34 @@ class TestStripEvents:
 
     @pytest.fixture
     def event_focal_mech(self, event_origins):
-        """ Add a focal mechanism to the event """
+        """Add a focal mechanism to the event"""
         event_origins.focal_mechanisms.append(ev.FocalMechanism())
         return event_origins
 
     @pytest.fixture
     def event_station_mags(self, event_focal_mech):
-        """ Add a focal mechanism to the event """
+        """Add a focal mechanism to the event"""
         event_focal_mech.station_magnitudes.append(ev.StationMagnitude())
         return event_focal_mech
 
     @pytest.fixture
     def event_magnitudes(self, event_station_mags):
-        """ Add a focal mechanism to the event """
+        """Add a focal mechanism to the event"""
         event_station_mags.magnitudes.append(ev.Magnitude())
         return event_station_mags
 
     # Tests
     def test_empty(self, empty_cat):
-        """ Make sure an empty catalog can pass through """
+        """Make sure an empty catalog can pass through"""
         strip_events(empty_cat)
 
     def test_empty_events(self, cat_w_two_events):
-        """ Make sure empty events can pass through """
+        """Make sure empty events can pass through"""
         out = strip_events(cat_w_two_events)
         assert len(out) == 2
 
     def test_copy_made(self):
-        """ Prune events should make a copy, not modify the original. """
+        """Prune events should make a copy, not modify the original."""
         cat = obspy.read_events()
         assert strip_events(cat) is not cat
 
@@ -305,7 +305,7 @@ class TestStripEvents:
         assert len(out[1].picks) == 1
 
     def test_only_reviewed_amplitudes(self, event_amplitudes):
-        """ Make sure only non-rejected amplitudes make it through """
+        """Make sure only non-rejected amplitudes make it through"""
         out = strip_events(event_amplitudes)
         assert len(out.amplitudes) == 1
 
@@ -318,7 +318,7 @@ class TestStripEvents:
         assert len(out.amplitudes) == 0
 
     def test_only_first_event_description(self, event_description):
-        """ Make sure only the first event description survives """
+        """Make sure only the first event description survives"""
         text = event_description.event_descriptions[0].text
         out = strip_events(event_description)
         assert len(out.event_descriptions) == 1
@@ -360,17 +360,17 @@ class TestStripEvents:
 
 
 class TestBumpCreationVersion:
-    """ tests for the bump_creation_version function """
+    """tests for the bump_creation_version function"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def cat(self):
-        """ A basic obspy cat_name """
+        """A basic obspy cat_name"""
         return CAT.copy()
 
     @pytest.fixture(scope="class")
     def eve_cis(self, cat):
-        """ return the original version and the bumped version """
+        """return the original version and the bumped version"""
         ev1 = cat[0].origins[0]
         cl1 = copy.deepcopy(ev1.creation_info)
         ev2 = cat[0].origins[0].copy()
@@ -404,7 +404,7 @@ class TestBumpCreationVersion:
 
     # tests
     def test_bump_version(self, eve_cis):
-        """ test that the version gets bumped once on default cat_name """
+        """test that the version gets bumped once on default cat_name"""
         ci1, ci2 = eve_cis
         ct1, ct2 = ci1.creation_time, ci2.creation_time
         assert isinstance(ct2, obspy.UTCDateTime)
@@ -413,7 +413,7 @@ class TestBumpCreationVersion:
         assert ci2.version is not None
 
     def test_bump_twice(self, multi_version):
-        """ test that the version can be bumped twice """
+        """test that the version can be bumped twice"""
         ci1, ci2 = multi_version
         ct1, ct2 = ci1.creation_time, ci2.creation_time
         v1, v2 = ci1.version, ci2.version
@@ -425,7 +425,7 @@ class TestBumpCreationVersion:
         assert v2 > v1
 
     def test_bump_int_version(self, int_version):
-        """ ensure bumping an integer version can happen """
+        """ensure bumping an integer version can happen"""
         assert int_version.version == "1"
 
     def test_bump_version_on_bad_object(self):
@@ -444,7 +444,7 @@ class TestGetPreferred:
     """
 
     def test_events_no_preferred(self):
-        """ Test that the last origin gets returned. """
+        """Test that the last origin gets returned."""
         event = obspy.read_events()[0]
         event.preferred_origin_id = None  # clear origin_id
         assert event.origins[-1] == get_preferred(event, "origin")
@@ -468,7 +468,7 @@ class TestGetPreferred:
         assert isinstance(ori, ev.Origin)
 
     def test_bad_preferred_origin(self):
-        """ ensure the bad preferred just returns last in list """
+        """ensure the bad preferred just returns last in list"""
         eve = obspy.read_events()[0]
         eve.preferred_origin_id = "bob"
         with pytest.warns(UserWarning) as w:
@@ -478,7 +478,7 @@ class TestGetPreferred:
 
 
 class TestMakeOrigins:
-    """ Tests for the ensure origin function. """
+    """Tests for the ensure origin function."""
 
     @pytest.fixture(scope="class")
     def inv(self):
@@ -488,7 +488,7 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def cat_only_picks(self, crandall_dataset):
-        """ Return a catalog with only picks, no origins or magnitudes """
+        """Return a catalog with only picks, no origins or magnitudes"""
         cat = crandall_dataset.event_client.get_events().copy()
         for event in cat:
             event.preferred_origin_id = None
@@ -499,7 +499,7 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def cat_bad_first_picks(self, cat_only_picks):
-        """ Return a catalog with only picks, no origins or magnitudes """
+        """Return a catalog with only picks, no origins or magnitudes"""
         # change the first picks to a station not in the inventory
         cat = cat_only_picks.copy()
         bad_wid = ev.WaveformStreamID(seed_string="SM.RDD..HHZ")
@@ -511,13 +511,13 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def cat_added_origins(self, cat_only_picks, inv):
-        """ run make_origins on the catalog with only picks and return """
+        """run make_origins on the catalog with only picks and return"""
         # get corresponding inventory
         return make_origins(events=cat_only_picks, inventory=inv)
 
     @pytest.fixture(scope="class")
     def strange_picks_added_origins(self, inv):
-        """ make sure "rejected" picks and oddball phase hints get skipped """
+        """make sure "rejected" picks and oddball phase hints get skipped"""
         # Pick w/ good phase hint but bad evaluation status
         pick1 = ev.Pick(
             time=obspy.UTCDateTime(),
@@ -543,12 +543,12 @@ class TestMakeOrigins:
         return make_origins(events=eve, inventory=inv, phase_hints=["P", "S"]), pick3
 
     def test_all_events_have_origins(self, cat_added_origins):
-        """ ensure all the events do indeed have origins """
+        """ensure all the events do indeed have origins"""
         for event in cat_added_origins:
             assert event.origins, f"{event} has no origins"
 
     def test_origins_have_time_and_location(self, cat_added_origins):
-        """ all added origins should have both times and locations. """
+        """all added origins should have both times and locations."""
         for event in cat_added_origins:
             for origin in event.origins:
                 assert isinstance(origin.time, obspy.UTCDateTime)
@@ -566,12 +566,12 @@ class TestMakeOrigins:
         assert np.isclose(t1, t2)
 
     def test_bad_first_not_in_inventory(self, cat_bad_first_picks, inv):
-        """ ensure function raises when bad first picks are found. """
+        """ensure function raises when bad first picks are found."""
         with pytest.raises(ValidationError):
             make_origins(cat_bad_first_picks, inv)
 
     def test_no_picks(self, inv):
-        """ Should raise if no picks are found. """
+        """Should raise if no picks are found."""
         cat = obspy.read_events()
         for event in cat:
             event.origins.clear()
@@ -639,7 +639,7 @@ class TestGetEventClient:
         assert isinstance(out, obspy.Catalog)
 
     def test_from_event(self):
-        """ An event should be converted to a catalog. """
+        """An event should be converted to a catalog."""
         event = obspy.read_events()[0]
         out = get_event_client(event)
         assert isinstance(out, EventClient)

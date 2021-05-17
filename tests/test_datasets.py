@@ -25,14 +25,14 @@ from obsplus.interfaces import WaveformClient, EventClient, StationClient
 
 
 class BasicDataset(DataSet):
-    """ A minimal dataset for testing default behaviors."""
+    """A minimal dataset for testing default behaviors."""
 
     name = "basic_test_dataset"
     version = "0.1.0"
 
 
 def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
-    """ Create a dummy dataset and return cls definition. """
+    """Create a dummy dataset and return cls definition."""
 
     class DummyDataset(DataSet):
         name = cls_name
@@ -65,7 +65,7 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
 
         @classmethod
         def cleanup(cls):
-            """ Remove dataset source files, data files, and unregister."""
+            """Remove dataset source files, data files, and unregister."""
             self = cls()
             for path in [self.data_path, self.source_path]:
                 with suppress(FileNotFoundError):
@@ -77,7 +77,7 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
 
 @pytest.fixture(scope="session", params=list(DataSet._datasets))
 def dataset(request):
-    """ laod in the datasets """
+    """laod in the datasets"""
     return DataSet._datasets[request.param]
 
 
@@ -103,29 +103,29 @@ class TestDatasets:
 
     @pytest.fixture(scope="class")
     def datafetcher(self, new_dataset):
-        """ call the dataset (forces download) and return fetcher. """
+        """call the dataset (forces download) and return fetcher."""
         return new_dataset.get_fetcher()
 
     def test_clients(self, datafetcher):
-        """ Each dataset should have waveform, event, and station clients """
+        """Each dataset should have waveform, event, and station clients"""
         for name, ctype in self.client_types.items():
             obj = getattr(datafetcher, name + "_client", None)
             assert isinstance(obj, ctype) or obj is None
 
     def test_directory_created(self, new_dataset):
-        """ ensure the new directory was created. """
+        """ensure the new directory was created."""
         for name in DATA_TYPES:
             path = getattr(new_dataset, name + "_path")
             assert path.exists()
             assert path.is_dir()
 
     def test_readme_created(self, new_dataset):
-        """ ensure the readme was created. """
+        """ensure the readme was created."""
         path = new_dataset.data_path / "readme.txt"
         assert path.exists()
 
     def test_new_dataset(self, tmpdir):
-        """ ensure a new dataset can be created and creates default paths """
+        """ensure a new dataset can be created and creates default paths"""
         path = Path(tmpdir)
         inv = obspy.read_inventory()
 
@@ -148,7 +148,7 @@ class TestDatasets:
 
 
 class TestBasic:
-    """ Basic misc. tests for dataset. """
+    """Basic misc. tests for dataset."""
 
     def test_all_files_copied(self, tmp_path):
         """
@@ -162,12 +162,12 @@ class TestBasic:
             assert expected.exists()
 
     def test_get_fetcher(self, ta_dataset):
-        """ ensure a datafetcher can be created. """
+        """ensure a datafetcher can be created."""
         fetcher = ta_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
 
     def test_can_copy_twice(self, ta_dataset, tmp_path):
-        """ copying a dataset to the same location twice should work. """
+        """copying a dataset to the same location twice should work."""
         ta_dataset.copy_to(tmp_path)
         ta_dataset.copy_to(tmp_path)
         assert Path(tmp_path).exists()
@@ -212,7 +212,7 @@ class TestDatasetDownloadMemory:
         assert newdata1.data_path == newdata2.data_path
 
     def test_default_used_when_old_deleted(self, tmp_path, dummy_dataset_class):
-        """ Ensure the default is used if the saved datapath is deleted. """
+        """Ensure the default is used if the saved datapath is deleted."""
         newdata1 = dummy_dataset_class(base_path=tmp_path)
         newdata2 = dummy_dataset_class()
         # these should be the same data path
@@ -237,7 +237,7 @@ class TestDatasetDownloadMemory:
 
 
 class TestCopyDataset:
-    """ tests for copying datasets. """
+    """tests for copying datasets."""
 
     def test_no_new_data_downloaded(self, monkeypatch):
         """
@@ -261,7 +261,7 @@ class TestCopyDataset:
         assert isinstance(new_ds, DataSet)
 
     def test_copy_dataset_with_dataset(self):
-        """ ensure a dataset can be the first argument to copy_dataset """
+        """ensure a dataset can be the first argument to copy_dataset"""
         ds = obsplus.load_dataset("bingham_test")
         out = obsplus.utils.dataset.copy_dataset(ds)
         assert isinstance(out, DataSet)
@@ -269,12 +269,12 @@ class TestCopyDataset:
         assert out.data_path != ds.data_path
 
     def test_copy_unknown_dataset(self):
-        """ ensure copying a dataset that doesn't exit raises. """
+        """ensure copying a dataset that doesn't exit raises."""
         with pytest.raises(ValueError):
             obsplus.load_dataset("probably_not_a_real_dataset")
 
     def test_str_and_repr(self):
-        """ ensure str is returned from str and repr """
+        """ensure str is returned from str and repr"""
         ds = obsplus.load_dataset("bingham_test")
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
@@ -296,7 +296,7 @@ class TestFileHashing:
 
     @pytest.fixture
     def crandall_deleted_file(self, copied_crandall):
-        """ Delete a file """
+        """Delete a file"""
         path = copied_crandall.data_path
         for mseed in path.rglob("*.mseed"):
             os.remove(mseed)
@@ -305,7 +305,7 @@ class TestFileHashing:
 
     @pytest.fixture
     def crandall_changed_file(self, copied_crandall):
-        """ Change a file (after hash has already run) """
+        """Change a file (after hash has already run)"""
         path = copied_crandall.data_path
         for mseed in path.rglob("*.mseed"):
             st = obspy.read(str(mseed))
@@ -316,17 +316,17 @@ class TestFileHashing:
         return copied_crandall
 
     def test_good_hash(self, copied_crandall):
-        """ Test hashing the file contents. """
+        """Test hashing the file contents."""
         # when nothing has changed check hash should work silently
         copied_crandall.check_hashes()
 
     def test_missing_file_found(self, crandall_deleted_file):
-        """ Ensure a missing file is found. """
+        """Ensure a missing file is found."""
         with pytest.raises(MissingDataFileError):
             crandall_deleted_file.check_hashes()
 
     def test_bad_hash(self, crandall_changed_file):
-        """ Test that when a file was changed the hash function raises. """
+        """Test that when a file was changed the hash function raises."""
         # should not raise if the file has changed
         crandall_changed_file.check_hashes()
         # raise an error if checking for it
@@ -335,7 +335,7 @@ class TestFileHashing:
 
 
 class TestVersioning:
-    """ Verify logic for checking dataset versions works """
+    """Verify logic for checking dataset versions works"""
 
     # Helper Functions
     def check_dataset(self, ds, redownloaded=True):
@@ -442,41 +442,41 @@ class TestVersioning:
         self.check_dataset(proper_version, redownloaded=False)
 
     def test_version_greater(self, high_version, dataset):
-        """ Make sure a warning is issued if the version number is too high """
+        """Make sure a warning is issued if the version number is too high"""
         with pytest.warns(UserWarning):
             dataset(base_path=high_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(high_version, redownloaded=False)
 
     def test_version_less(self, low_version, dataset):
-        """ Make sure an exception gets raised if the version number is too low """
+        """Make sure an exception gets raised if the version number is too low"""
         with pytest.raises(DataVersionError):
             dataset(base_path=low_version.data_path.parent)
         # Make sure the data were not re-downloaded
         self.check_dataset(low_version, redownloaded=False)
 
     def test_no_version(self, no_version, dataset):
-        """ Make sure a missing version file will trigger a re-download """
+        """Make sure a missing version file will trigger a re-download"""
         with pytest.warns(UserWarning):
             dataset(base_path=no_version.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(no_version, redownloaded=True)
 
     def test_deleted_files(self, re_download, dataset):
-        """ Make sure the dataset can be re-downloaded if proper files were deleted """
+        """Make sure the dataset can be re-downloaded if proper files were deleted"""
         dataset(base_path=re_download.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(re_download, redownloaded=True)
 
     def test_corrupt_version_file(self, corrupt_version, dataset):
-        """ Make sure a bogus version file will trigger a re-download """
+        """Make sure a bogus version file will trigger a re-download"""
         with pytest.warns(UserWarning):
             dataset(base_path=corrupt_version.data_path.parent)
         # Make sure the data were re-downloaded
         self.check_dataset(corrupt_version, redownloaded=True)
 
     def test_listed_files(self, low_version, dataset):
-        """ Make sure the download directory is listed in exception. """
+        """Make sure the download directory is listed in exception."""
         expected = str(low_version.data_path)
         with pytest.raises(DataVersionError) as e:
             dataset(base_path=low_version.data_path.parent)
@@ -500,16 +500,16 @@ class TestVersioning:
 
 
 class TestBasicDataset:
-    """ Tests for default dataset implementations. """
+    """Tests for default dataset implementations."""
 
     def test_version_tuple(self):
-        """ Dataset should have means to convert version str to tuple. """
+        """Dataset should have means to convert version str to tuple."""
         ds = BasicDataset()
         version_tuple = ds.version_tuple
         assert isinstance(version_tuple, tuple) and len(version_tuple) == 3
 
     def test_creates_datapaths(self, tmp_path):
-        """Ensure the datapaths are created. """
+        """Ensure the datapaths are created."""
         ds = BasicDataset(base_path=tmp_path)
         # each of the required paths should have been created.
         for name in {"station", "waveform", "event"}:
@@ -540,7 +540,7 @@ class TestBasicDataset:
         assert ds.data_path.exists()
 
     def test_load_failure_warns(self, tmp_path):
-        """Ensure when a load functions raises it issues a warning. """
+        """Ensure when a load functions raises it issues a warning."""
 
         def _func(*args, **kwargs):
             raise TypeError("simulated failure")

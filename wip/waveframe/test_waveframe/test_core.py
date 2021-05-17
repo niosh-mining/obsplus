@@ -15,7 +15,7 @@ class TestGetFiniteSegments:
     """
 
     def test_no_nan(self):
-        """ very simple test with No Nans """
+        """very simple test with No Nans"""
         ar = np.arange(100).reshape(10, 10)
         nns = get_finite_segments(ar)
         # no Nans so flat should be the same size
@@ -27,7 +27,7 @@ class TestGetFiniteSegments:
             assert ind[1][1] - ind[1][0] == 10
 
     def test_with_nan(self):
-        """ test with one NaN. """
+        """test with one NaN."""
         # get test data with one NaN in first row
         ar = np.arange(100).reshape(10, 10).astype(float)
         ar[0, 5] = np.NaN
@@ -45,7 +45,7 @@ class TestGetFiniteSegments:
         assert last[1][1] - last[1][0] == 9
 
     def test_all_nan(self):
-        """ ensure all NaN raises. """
+        """ensure all NaN raises."""
         ar = np.empty(100).reshape(10, 10) * np.NaN
         with pytest.raises(ValueError):
             get_finite_segments(ar)

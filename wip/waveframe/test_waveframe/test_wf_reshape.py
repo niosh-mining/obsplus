@@ -11,32 +11,32 @@ from obsplus.utils.time import to_datetime64
 
 
 class TestStride:
-    """ Tests for stridding data. """
+    """Tests for stridding data."""
 
     window_len = 1_500
 
     def test_overlap_gt_window_len_raises(self, stream_wf):
-        """ Stride should rasie if the overlap is greater than window len. """
+        """Stride should rasie if the overlap is greater than window len."""
         wf = stream_wf
         with pytest.raises(ValueError):
             wf.stride(10, 100)
 
     def test_empty(self, stream_wf):
-        """ Ensure striding works. """
+        """Ensure striding works."""
         # Stridding with now input params should return a copy of waveframe.
         out = stream_wf.stride()
         assert isinstance(out, WaveFrame)
         assert out == stream_wf
 
     def test_overlap_default_window_len(self, stream_wf):
-        """ Ensure strides can be overlapped. """
+        """Ensure strides can be overlapped."""
         wf = stream_wf
         # An overlap with the default window_len should also return a copy.
         wf2 = wf.stride(overlap=10)
         assert wf == wf2
 
     def test_no_overlap_half_len(self, stream_wf):
-        """ ensure the stride when len is half creates a waveframe with 2x rows."""
+        """ensure the stride when len is half creates a waveframe with 2x rows."""
         window_len = stream_wf.shape[-1] // 2
         wf = stream_wf
         out = wf.stride(window_len=window_len).validate()
@@ -52,7 +52,7 @@ class TestStride:
         assert endtimes[0] + data_len * delta[0] == endtimes[1]
 
     def test_overlap_half_len(self, stream_wf):
-        """ ensure half len """
+        """ensure half len"""
         wf = stream_wf
         window_len = wf.shape[-1] // 2
         overlap = window_len // 2
@@ -65,10 +65,10 @@ class TestStride:
 
 
 class TestDropNa:
-    """ tests for dropping null values. """
+    """tests for dropping null values."""
 
     def test_drop_nan_column_all(self, stream_wf):
-        """ Tests for dropping a column with all NaN. """
+        """Tests for dropping a column with all NaN."""
         wf = make_wf_with_nan(stream_wf, x_inds=0)
         # first test drops based on rows, this should drop all rows
         wf2 = wf.dropna(1, how="any")
@@ -83,7 +83,7 @@ class TestDropNa:
         assert wf.dropna(1, how="all") == wf2
 
     def test_drop_nan_column_any(self, stream_wf):
-        """ Tests for dropping a column with one NaN. """
+        """Tests for dropping a column with one NaN."""
         wf = make_wf_with_nan(stream_wf, 0, 0)
         # since only one value is NaN using how==all does nothing
         assert wf == wf.dropna(1, how="all")
@@ -94,7 +94,7 @@ class TestDropNa:
         assert wf2.data.columns[0] == 0
 
     def test_drop_nan_row_all(self, stream_wf):
-        """ tests for dropping a row with all NaN"""
+        """tests for dropping a row with all NaN"""
         wf = make_wf_with_nan(stream_wf, y_inds=0)
         wf2 = wf.dropna(0, how="all")
         assert wf2 == wf.dropna(0, how="any")
@@ -102,20 +102,20 @@ class TestDropNa:
         assert (wf["starttime"][1:] == wf2["starttime"]).all()
 
     def test_drop_nan_row_any(self, stream_wf):
-        """ test for dropping a row with one NaN. """
+        """test for dropping a row with one NaN."""
         wf = make_wf_with_nan(stream_wf, y_inds=0, x_inds=0)
         wf2 = wf.dropna(0, how="any")
         wf3 = wf.dropna(0, how="all")
         assert len(wf3) > len(wf2)
 
     def test_drop_all(self, stream_wf):
-        """ tests for when all rows are dropped. """
+        """tests for when all rows are dropped."""
         wf = make_wf_with_nan(stream_wf, x_inds=0)
         wf2 = wf.dropna(0, how="any")
         assert len(wf2) == 0
 
     def test_drop_start_and_end(self, stream_wf):
-        """ Drop a few samples from start and end, ensure times update."""
+        """Drop a few samples from start and end, ensure times update."""
         wf = make_wf_with_nan(stream_wf, x_inds=(0, 1, -2, -1))
         delta = wf["delta"][0]
         start, end = wf["starttime"], wf["endtime"]
@@ -126,20 +126,20 @@ class TestDropNa:
 
 
 class TestFillNaN:
-    """ tests for filling NaN values. """
+    """tests for filling NaN values."""
 
     def test_basic(self, stream_wf):
-        """ Simple test for filling on NaN value. """
+        """Simple test for filling on NaN value."""
         wf = make_wf_with_nan(stream_wf, x_inds=0, y_inds=0)
         out = wf.fillna(2019)
         assert out.data.loc[0, 0] == 2019
 
 
 class TestTrim:
-    """ tests for trimming waveframes. """
+    """tests for trimming waveframes."""
 
     def test_trim_single_value(self, stream_wf):
-        """ tests for trimming to a scalar value. """
+        """tests for trimming to a scalar value."""
         starttime = stream_wf["starttime"].iloc[0] + np.timedelta64(10, "s")
         endtime = stream_wf["endtime"].iloc[0] - np.timedelta64(10, "s")
         out = stream_wf.trim(starttime=starttime, endtime=endtime)
@@ -149,7 +149,7 @@ class TestTrim:
         assert (new_endtime <= endtime).all()
 
     def test_trim_out_of_existence(self, stream_wf):
-        """ Tests for trimming out all data. """
+        """Tests for trimming out all data."""
         far_out = to_datetime64("2200-01-01")
         wf = stream_wf.trim(starttime=far_out)
         assert len(wf) == 0
@@ -157,7 +157,7 @@ class TestTrim:
         assert len(data) == len(stats) == 0
 
     def test_trim_with_deltas(self, stream_wf):
-        """ Tests for applying delta to stream_wf. """
+        """Tests for applying delta to stream_wf."""
         wf = stream_wf
         delta = np.timedelta64(5_000_001_000, "ns")
         start, end = wf["starttime"] + delta, wf["endtime"] - delta
@@ -168,7 +168,7 @@ class TestTrim:
         assert out == stream_wf.trim(starttime=start, endtime=end)
 
     def test_trim_different_times(self, stream_wf):
-        """ tests for different times on different chanenls. """
+        """tests for different times on different chanenls."""
         wf = stream_wf
         deltas = wf["delta"] * np.arange(1, len(wf) + 1) * 10
         out = wf.trim(starttime=deltas, endtime=-deltas)
@@ -179,7 +179,7 @@ class TestTrim:
         assert (out["starttime"] == (wf["starttime"] + out["delta"] * 10)).all()
 
     def test_trim_no_start(self, stream_wf):
-        """ tests for trimming with no starttime. """
+        """tests for trimming with no starttime."""
         center = stream_wf["starttime"] + np.timedelta64(15, "s")
         out = stream_wf.trim(endtime=center)
         assert (out["endtime"] <= center).all()
@@ -187,7 +187,7 @@ class TestTrim:
         assert (abs(out["endtime"] - center) < out["delta"]).all()
 
     def test_trim_no_end(self, stream_wf):
-        """ tests for trimming with no endtime. """
+        """tests for trimming with no endtime."""
         center = stream_wf["starttime"] + np.timedelta64(15, "s")
         out = stream_wf.trim(starttime=center)
         assert (out["starttime"] >= center).all()
@@ -196,7 +196,7 @@ class TestTrim:
 
 
 class TestCutOut:
-    """ tests for cutting out data from waveframe. """
+    """tests for cutting out data from waveframe."""
 
     def test_basic(self, stream_wf):
         data, stats = stream_wf.data, stream_wf.stats
@@ -216,16 +216,16 @@ class TestCutOut:
 
 
 class TestMerge:
-    """ Tests for merging overlapping data together. """
+    """Tests for merging overlapping data together."""
 
 
 class TestSplit:
-    """ Tests for splitting out contiguous chunks of data. """
+    """Tests for splitting out contiguous chunks of data."""
 
 
 class TestResetIndex:
-    """ tests for resetting index of waveframe. """
+    """tests for resetting index of waveframe."""
 
 
 class TestSetIndex:
-    """ Tests for setting index """
+    """Tests for setting index"""

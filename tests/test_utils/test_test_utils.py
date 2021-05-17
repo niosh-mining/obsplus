@@ -10,7 +10,7 @@ from obsplus.utils.testing import assert_streams_almost_equal
 
 
 class TestAssertStreamsAlmostEqual:
-    """ Tests for asserting waveforms are equal. """
+    """Tests for asserting waveforms are equal."""
 
     @pytest.fixture
     def streams(self):
@@ -36,7 +36,7 @@ class TestAssertStreamsAlmostEqual:
             assert_streams_almost_equal(st1, st2, basic_stats=False)
 
     def test_basic_stats_different(self, streams):
-        """ Ensure when basic stats are different streams are not almost equal. """
+        """Ensure when basic stats are different streams are not almost equal."""
         st1, st2 = streams
         for tr in st1:
             tr.stats.station = "bob"
@@ -46,14 +46,14 @@ class TestAssertStreamsAlmostEqual:
             assert_streams_almost_equal(st1, st2, basic_stats=False)
 
     def test_off_arrays(self, streams):
-        """ If the arrays are slightly perturbed they should still be equal. """
+        """If the arrays are slightly perturbed they should still be equal."""
         st1, st2 = streams
         for tr in st1:
             norm = np.max(abs(tr.data) * 100)
             tr.data += np.random.random(len(tr.data)) / norm
 
     def test_off_by_one(self):
-        """ Tests for allowing off by one errors """
+        """Tests for allowing off by one errors"""
         st1 = obspy.read()
         # shorten each stream by 1
         st2 = obspy.read()
@@ -66,7 +66,7 @@ class TestAssertStreamsAlmostEqual:
             assert_streams_almost_equal(st1, st2, allow_off_by_one=False)
 
     def test_off_by_one_case1(self, bingham_dataset, bingham_stream):
-        """ coincidental off by one test case """
+        """coincidental off by one test case"""
         bank = bingham_dataset.waveform_client
         # get query parameters (these were found by accident)
         t1 = obspy.UTCDateTime(2013, 4, 11, 4, 58, 50, 259000)

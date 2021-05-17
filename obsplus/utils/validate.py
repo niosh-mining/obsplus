@@ -26,7 +26,7 @@ _VALIDATOR_STATE = dict(validators=defaultdict(lambda: defaultdict(dict)))
 
 
 def _create_decompose_func():
-    """ Create a single dispatch function for decomposing objects. """
+    """Create a single dispatch function for decomposing objects."""
 
     @singledispatch
     def _decompose(obj):
@@ -113,7 +113,7 @@ def validator(namespace: str, cls: type):
 
 
 def _get_validators(namespace):
-    """ Get validators for a specified namespace if sound else raise. """
+    """Get validators for a specified namespace if sound else raise."""
     validator_namespaces = _VALIDATOR_STATE["validators"]
     if namespace not in validator_namespaces:
         msg = f"{namespace} has no registered validators"
@@ -122,12 +122,12 @@ def _get_validators(namespace):
 
 
 def _get_decomposer():
-    """ Get the current decomposer. """
+    """Get the current decomposer."""
     return _VALIDATOR_STATE["decomposer"]
 
 
 def _get_validate_obj_intersection(validators, obj_tree):
-    """ get the intersection between validators and obj_tree. """
+    """get the intersection between validators and obj_tree."""
     validators_to_run = defaultdict(dict)
     for cls1, cls2 in product(obj_tree, validators):
         if issubclass(cls1, cls2):
@@ -136,7 +136,7 @@ def _get_validate_obj_intersection(validators, obj_tree):
 
 
 def _make_validator_report(validator, obj, kwargs):
-    """ run a validator against an object and make a report. """
+    """run a validator against an object and make a report."""
     val_name = getattr(validator, "__name__", validator)
     out = {"validator": val_name, "object": obj, "message": ""}
     try:
@@ -156,7 +156,7 @@ def _make_validator_report(validator, obj, kwargs):
 
 
 def _run_validator(validator, obj, kwargs):
-    """ Run the validator. """
+    """Run the validator."""
     if kwargs:
         validator(obj, **kwargs)
     else:
@@ -223,7 +223,7 @@ def decompose(obj) -> Dict[type, object]:
 # default decomposer for obspy stuff
 @decomposer((Catalog, AttribDict, BaseNode, Inventory, Stream, Trace))
 def _decompose_generic(events):
-    """ Decompose an event or a catalog. """
+    """Decompose an event or a catalog."""
     out = defaultdict(list)
     for obj, parent, attr in yield_obj_parent_attr(events):
         out[type(obj)].append(obj)

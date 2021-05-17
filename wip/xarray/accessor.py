@@ -24,12 +24,12 @@ def ops_method(attr_name):
 
 
 def _add_wrapped_methods(cls):
-    """ add the methods marked with the ops decorator to class def """
+    """add the methods marked with the ops decorator to class def"""
 
     for name, func in OPS_METHODS.items():
 
         def deco(func):
-            """ This is needed to bind the correct function to scope """
+            """This is needed to bind the correct function to scope"""
 
             @functools.wraps(func)
             def _func(self, *args, **kwargs):

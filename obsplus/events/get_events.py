@@ -102,7 +102,7 @@ def _get_bounding_box(circular_kwargs: dict) -> dict:
 
 
 def _get_ids(df, kwargs) -> set:
-    """ return a set of event_ids that meet filter requirements """
+    """return a set of event_ids that meet filter requirements"""
     filt = np.ones(len(df)).astype(bool)
     # Separate kwargs used in circular searches.
     circular_kwargs, kwargs = _sanitize_circular_search(**kwargs)

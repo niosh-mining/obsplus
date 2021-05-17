@@ -24,7 +24,7 @@ WAVEFETCHERS = []
 
 
 def processor(st):
-    """ simple processor to apply bandpass filter """
+    """simple processor to apply bandpass filter"""
     # mark that the processor ran
     for tr in st:
         tr.stats["processor_ran"] = True
@@ -34,7 +34,7 @@ def processor(st):
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def bing_fetcher():
-    """ init a waveform fetcher passing a path to a directory as the arg """
+    """init a waveform fetcher passing a path to a directory as the arg"""
     return obsplus.load_dataset("bingham_test").get_fetcher()
 
 
@@ -50,7 +50,7 @@ def ta_fetcher(ta_dataset):
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def subbing_fetcher_with_processor(bingham_dataset):
-    """ A fetcher with a stream_processor, only use last event of bingham_test. """
+    """A fetcher with a stream_processor, only use last event of bingham_test."""
     dataset = bingham_dataset
     events = dataset.event_client.get_events()[-1]
     fetcher = Fetcher(
@@ -65,7 +65,7 @@ def subbing_fetcher_with_processor(bingham_dataset):
 @pytest.fixture(scope="session")
 @register_func(WAVEFETCHERS)
 def ta_fetcher_with_processor(ta_dataset):
-    """ The ta_test fetcher with a stream_processor """
+    """The ta_test fetcher with a stream_processor"""
     fetcher = Fetcher(
         waveforms=ta_dataset.waveform_client.get_waveforms(),
         events=ta_dataset.event_client.get_events(),
@@ -77,14 +77,14 @@ def ta_fetcher_with_processor(ta_dataset):
 
 @pytest.fixture(scope="class")
 def bing_first_time(bingham_dataset):
-    """ Get a new time based on the first event in bingham_test event + 1"""
+    """Get a new time based on the first event in bingham_test event + 1"""
     df = obsplus.events_to_df(bingham_dataset.event_client.get_events())
     return to_utc(df.iloc[0]["time"])
 
 
 @pytest.fixture(scope="session")
 def ta_time_range(ta_wavebank):
-    """ return a tuple of time from ta_test bank. """
+    """return a tuple of time from ta_test bank."""
     df = ta_wavebank.read_index()
     t1 = to_utc(df["starttime"].min()) + 3600
     # move to nearest hour
@@ -94,14 +94,14 @@ def ta_time_range(ta_wavebank):
 
 
 def test_gather(bing_fetcher, ta_fetcher, subbing_fetcher_with_processor):
-    """ Simply gather aggregated fixtures so they are marked as used. """
+    """Simply gather aggregated fixtures so they are marked as used."""
 
 
 # ---------------------------------- tests
 
 
 class TestGeneric:
-    """ generic tests for wavefetchers, mostly just to make sure they run """
+    """generic tests for wavefetchers, mostly just to make sure they run"""
 
     important_attrs = ["yield"]
     other_attrs = ["time_before", "time_after"]
@@ -114,16 +114,16 @@ class TestGeneric:
 
     @pytest.fixture(scope="session")
     def copied_fetcher(self, wavefetcher):
-        """ init a wavefetcher from a wavefetcher, return tuple of both """
+        """init a wavefetcher from a wavefetcher, return tuple of both"""
         return (wavefetcher, Fetcher(wavefetcher))
 
     # general tests
     def test_has_attrs(self, wavefetcher):
-        """ test that streams for each event can be yielded  """
+        """test that streams for each event can be yielded"""
         assert hasattr(wavefetcher, "yield_event_waveforms")
 
     def test_copied_wavefetchers_get_same_data(self, copied_fetcher):
-        """ ensure the two wavefetchers are equal """
+        """ensure the two wavefetchers are equal"""
         wf1, wf2 = copied_fetcher
         inv_df = wf1.station_df
         start = inv_df.start_date.min()
@@ -134,7 +134,7 @@ class TestGeneric:
         assert ew1 == ew2
 
     def test_init_with_banks(self, bingham_dataset):
-        """ Ensure the fetcher can be init'ed with all bank inputs. """
+        """Ensure the fetcher can be init'ed with all bank inputs."""
         wbank = obsplus.WaveBank(bingham_dataset.waveform_path).update_index()
         ebank = obsplus.EventBank(bingham_dataset.event_path).update_index()
         sbank = bingham_dataset.station_client
@@ -166,7 +166,7 @@ class TestGeneric:
 
 
 class TestGetWaveforms:
-    """ tests for getting streams from the fetcher """
+    """tests for getting streams from the fetcher"""
 
     duration = 10
     generic_streams = []
@@ -197,7 +197,7 @@ class TestGetWaveforms:
     @pytest.fixture(scope="session")
     @register_func(generic_streams)
     def ta_stream(self, ta_fetcher):
-        """ using the ta_fetcher and get_waveforms, return a data waveforms """
+        """using the ta_fetcher and get_waveforms, return a data waveforms"""
         starttime = obspy.UTCDateTime("2007-02-20")
         kwargs = dict(starttime=starttime, endtime=starttime + self.duration)
         try:
@@ -214,10 +214,10 @@ class TestGetWaveforms:
 
     # general waveforms tests tests
     def test_gather(self, bing_stream, bing_stream_processed, ta_stream):
-        """ Simply gather aggregated fixtures so they are marked as used. """
+        """Simply gather aggregated fixtures so they are marked as used."""
 
     def test_streams_basics(self, stream):
-        """ ensure a non-empty waveforms was returned """
+        """ensure a non-empty waveforms was returned"""
         assert isinstance(stream, obspy.Stream)
         assert len(stream)
 
@@ -252,7 +252,7 @@ class TestGetWaveforms:
         assert isinstance(st, obspy.Stream)
 
     def test_nslc_filter(self, bingham_dataset):
-        """ ensure the usual getwaveforms codes can be used to filter """
+        """ensure the usual getwaveforms codes can be used to filter"""
         fetcher = bingham_dataset.get_fetcher()
         st = fetcher.get_waveforms(network="UU", channel="*Z")
         for tr in st:
@@ -269,7 +269,7 @@ class TestGetWaveforms:
             assert isinstance(eid, str)
 
     def test_timebefore_time_after(self, bingham_dataset):
-        """Ensure using time_before and time_after as ints works. see #168. """
+        """Ensure using time_before and time_after as ints works. see #168."""
         fetcher = bingham_dataset.get_fetcher(time_before=1, time_after=10)
         for eid, st in fetcher.yield_event_waveforms():
             assert len(st)
@@ -277,7 +277,7 @@ class TestGetWaveforms:
 
 
 class TestYieldWaveforms:
-    """ tests for yielding chunks of data between a time range """
+    """tests for yielding chunks of data between a time range"""
 
     duration = 10.0
     overlap = 2.0
@@ -286,7 +286,7 @@ class TestYieldWaveforms:
 
     # helper functions
     def check_duration(self, st):
-        """ ensure the durations are approximately correct """
+        """ensure the durations are approximately correct"""
         for tr in st:
             duration = abs(tr.stats.endtime - tr.stats.starttime)
             tolerance = 1.5 / tr.stats.sampling_rate
@@ -295,7 +295,7 @@ class TestYieldWaveforms:
         return True
 
     def check_stream_processor_ran(self, st):
-        """ Helper function to verify the function has run."""
+        """Helper function to verify the function has run."""
         for tr in st:
             try:
                 if not tr.stats["processor_ran"]:
@@ -307,7 +307,7 @@ class TestYieldWaveforms:
     # fixtures
     @pytest.fixture(scope="session")
     def ta_stream(self, subbing_fetcher_with_processor):
-        """ return a list of streams yielded from ta_test fetcher """
+        """return a list of streams yielded from ta_test fetcher"""
         fet = subbing_fetcher_with_processor
         kwargs = dict(
             starttime=self.starttime,
@@ -319,19 +319,19 @@ class TestYieldWaveforms:
 
     # tests
     def test_durations(self, ta_stream):
-        """ensure the duration are as expected """
+        """ensure the duration are as expected"""
         for st in ta_stream:
             assert self.check_duration(st)
 
     def test_stream_processor_ran(self, ta_stream):
-        """ ensure the waveforms processor ran on each waveforms """
+        """ensure the waveforms processor ran on each waveforms"""
         for st in ta_stream:
             for tr in st:
                 assert tr.stats["processor_ran"]
 
 
 class TestYieldEventWaveforms:
-    """ tests for getting waveforms that correspond to events """
+    """tests for getting waveforms that correspond to events"""
 
     time_before = 1
     time_after = 10
@@ -344,7 +344,7 @@ class TestYieldEventWaveforms:
     check_stream_processor_ran = TestYieldWaveforms.check_stream_processor_ran
 
     def check_stream_dict(self, st_dict):
-        """ test waveforms dict """
+        """test waveforms dict"""
         assert isinstance(st_dict, dict) and st_dict
         for name, st in st_dict.items():
             assert isinstance(st, obspy.Stream) and len(st)
@@ -374,17 +374,17 @@ class TestYieldEventWaveforms:
 
     @pytest.fixture(scope="session", params=commons)
     def stream_dict(self, request):
-        """ collect all waveforms lists to apply general tests on """
+        """collect all waveforms lists to apply general tests on"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture(scope="session")
     def stream_dict_zero_starttime(self, bing_fetcher):
-        """ yield waveforms into a dict using 0 for starttimes """
+        """yield waveforms into a dict using 0 for starttimes"""
         return dict(bing_fetcher.yield_event_waveforms(0, self.time_after))
 
     @pytest.fixture(scope="class")
     def fetcher_no_inv(self, bingham_dataset):
-        """ init wavefetcher with inv_df zeroed """
+        """init wavefetcher with inv_df zeroed"""
         kwargs = dict(
             waveforms=bingham_dataset.waveform_client,
             events=bingham_dataset.event_client,
@@ -393,7 +393,7 @@ class TestYieldEventWaveforms:
 
     @pytest.fixture(scope="class")
     def fetcher_missing_events(self, bingham_dataset):
-        """ Create a fetcher which has an event for which there is not data."""
+        """Create a fetcher which has an event for which there is not data."""
         ds: obsplus.Fetcher = bingham_dataset.copy()
         almost_last_event = ds.event_client[-2]
         last_event = ds.event_client[-1]
@@ -406,7 +406,7 @@ class TestYieldEventWaveforms:
 
     @pytest.fixture()
     def fetcher_one_event(self, bingham_dataset, tmp_path):
-        """Make a fetcher with only one event. """
+        """Make a fetcher with only one event."""
         fetcher = bingham_dataset.get_fetcher()
         inv = bingham_dataset.station_client.get_stations()
         # get stream and event
@@ -425,19 +425,19 @@ class TestYieldEventWaveforms:
     # general test
 
     def test_duration(self, stream_dict):
-        """ ensure the duration of the streams is correct """
+        """ensure the duration of the streams is correct"""
         for _, st in stream_dict.items():
             assert self.check_duration(st)
 
     def test_stream_processor(self, stream_dict):
-        """ ensure the waveforms processor ran """
+        """ensure the waveforms processor ran"""
         assert len(stream_dict)
         for _, st in stream_dict.items():
             assert self.check_stream_processor_ran(st)
 
     # phase tests
     def test_only_p_phases(self, event_dict_p, subbing_fetcher_with_processor):
-        """ make sure only stations that have p picks are returned """
+        """make sure only stations that have p picks are returned"""
         stream = subbing_fetcher_with_processor.waveform_client.get_waveforms()
         df = subbing_fetcher_with_processor.picks_df
         for eve_id, st in event_dict_p.items():
@@ -457,7 +457,7 @@ class TestYieldEventWaveforms:
                 assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
     def test_s_phases(self, bingham_dataset):
-        """ make sure only stations that have s picks are returned """
+        """make sure only stations that have s picks are returned"""
         fetcher = bingham_dataset.get_fetcher()
         picks = obsplus.picks_to_df(fetcher.event_client.get_events())
         # There should be some s picks
@@ -469,7 +469,7 @@ class TestYieldEventWaveforms:
 
     # zero starttime test
     def test_zero_starttime(self, stream_dict_zero_starttime):
-        """ test that zero starttimes doesnt throw an error """
+        """test that zero starttimes doesnt throw an error"""
         for eve_id, stream in stream_dict_zero_starttime.items():
             if not len(stream):
                 continue
@@ -485,7 +485,7 @@ class TestYieldEventWaveforms:
         assert all(has_data)
 
     def test_event_streams(self, bingham_dataset, bingham_stream_dict):
-        """ Ensure the correct streams are given for ids. """
+        """Ensure the correct streams are given for ids."""
         cat = bingham_dataset.event_client.get_events()
         evs = {str(ev.resource_id): ev for ev in cat}
         for eve_id, st in bingham_stream_dict.items():
@@ -530,19 +530,19 @@ class TestYieldEventWaveforms:
             list(fetcher.yield_event_waveforms(1, 2, reference="not supported"))
 
     def test_raises_with_no_time_before_time_after(self, bing_fetcher):
-        """ Not using time_before or time_after should raise ValueError"""
+        """Not using time_before or time_after should raise ValueError"""
         with pytest.raises(ValueError):
             list(bing_fetcher.yield_event_waveforms())
 
     def test_doesnt_raise_on_missing_waveform(self, fetcher_missing_events):
-        """ Ensure yield waveform doesnt raise on missing event. """
+        """Ensure yield waveform doesnt raise on missing event."""
         iterable = fetcher_missing_events.yield_event_waveforms(1, 10)
         ev_wfs = list(iterable)
         for event_id, stream in ev_wfs:
             assert isinstance(stream, obspy.Stream)
 
     def test_raise_on_missing_waveform(self, fetcher_missing_events, monkeypatch):
-        """ Ensure yield waveform raises on missing event when specified. """
+        """Ensure yield waveform raises on missing event when specified."""
 
         def _func(*args, **kwargs):
             raise ValueError("Something went wrong!")
@@ -569,20 +569,20 @@ class TestYieldEventWaveforms:
         assert len(st)
 
     def test_gather(self, event_list_origin, event_dict_p):
-        """ Simply gather aggregated fixtures so they are marked as used. """
+        """Simply gather aggregated fixtures so they are marked as used."""
 
 
 class TestStreamProcessor:
-    """ ensure the waveforms processors get called """
+    """ensure the waveforms processors get called"""
 
     # fixtures
     @pytest.fixture(scope="session")
     def fetcher(self, bing_fetcher):
-        """ return the waveform fetcher and overwrite the stream_processor """
+        """return the waveform fetcher and overwrite the stream_processor"""
         new_fetcher = copy.deepcopy(bing_fetcher)
 
         def stream_processor(st: obspy.Stream) -> obspy.Stream:
-            """ select the z component, detrend, and filter a waveforms """
+            """select the z component, detrend, and filter a waveforms"""
             st = st.select(component="Z")
             st.detrend("linear")
             st.filter("bandpass", freqmin=1, freqmax=10)
@@ -594,7 +594,7 @@ class TestStreamProcessor:
 
     @pytest.fixture(scope="session")
     def stream_list(self, fetcher):
-        """ Return a list of streams from yield waveforms. """
+        """Return a list of streams from yield waveforms."""
         t1 = obspy.UTCDateTime("2009-04-01T00-00-00")
         t2 = obspy.UTCDateTime("2009-04-01T03-59-59")
         duration = 7200
@@ -614,7 +614,7 @@ class TestStreamProcessor:
 
 
 class TestSwapAttrs:
-    """ ensure events, stations, and picks objects can be temporarily swapped out """
+    """ensure events, stations, and picks objects can be temporarily swapped out"""
 
     tb = 1
     ta = 3
@@ -623,7 +623,7 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def new_time(self, bing_first_time):
-        """ Get a new time based on the first event in bingham_test event + 1"""
+        """Get a new time based on the first event in bingham_test event + 1"""
         return to_utc(bing_first_time + 1)
 
     @pytest.fixture(scope="class")
@@ -649,7 +649,7 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def yield_event_streams(self, bingham_dataset):
-        """ yield a subset of the events in the bingham_test dataset """
+        """yield a subset of the events in the bingham_test dataset"""
         event_df = bingham_dataset.event_client.get_events().to_df()
         fetcher = bingham_dataset.get_fetcher()
         tb = 1
@@ -659,12 +659,12 @@ class TestSwapAttrs:
 
     @pytest.fixture(scope="class")
     def new_inventory_df(self, bing_fetcher):
-        """ return a new stations dataframe with only the first row """
+        """return a new stations dataframe with only the first row"""
         return bing_fetcher.station_df.iloc[0:1]
 
     @pytest.fixture(scope="class")
     def new_inventory_stream(self, bing_fetcher, new_inventory_df, new_time):
-        """ swap out the stations to only return a subset of the channels """
+        """swap out the stations to only return a subset of the channels"""
         t1, t2 = new_time - self.tb, new_time + self.ta
         return bing_fetcher.get_waveforms(
             starttime=t1, endtime=t2, stations=new_inventory_df
@@ -672,20 +672,20 @@ class TestSwapAttrs:
 
     # tests for events swaps
     def test_time(self, new_event_stream, new_time):
-        """ ensure the new time was returned """
+        """ensure the new time was returned"""
         assert len(new_event_stream)
         t1 = to_utc(new_event_stream[0].stats.starttime.timestamp)
         t2 = to_utc(new_event_stream[0].stats.endtime.timestamp)
         assert t1 < new_time < t2
 
     def test_iter(self, yield_event_streams):
-        """ ensure the yield events worked """
+        """ensure the yield events worked"""
         for event_id, stream in yield_event_streams:
             assert isinstance(stream, obspy.Stream)
 
     # tests for stations swaps
     def test_streams(self, new_inventory_stream, new_inventory_df):
-        """ ensure only the channel in the new_inventory df was returned """
+        """ensure only the channel in the new_inventory df was returned"""
         assert len(new_inventory_stream) == 1
         assert new_inventory_stream[0].id == new_inventory_df["seed_id"].iloc[0]
 
@@ -703,34 +703,34 @@ class TestCallWaveFetcher:
     # fixtures
     @pytest.fixture(scope="class")
     def stream(self, bing_fetcher, bing_first_time):
-        """ return a waveforms from calling the fetcher """
+        """return a waveforms from calling the fetcher"""
         time = bing_first_time
         return bing_fetcher(time, time_before=self.tb, time_after=self.ta)
 
     # tests
     def test_callable(self, bing_fetcher):
-        """ ensure the fetcher is callable """
+        """ensure the fetcher is callable"""
         assert callable(bing_fetcher)
 
     def test_is_stream(self, stream):
-        """ ensure the waveforms is an instance of waveforms """
+        """ensure the waveforms is an instance of waveforms"""
         assert isinstance(stream, obspy.Stream)
 
     def test_channels(self, stream, bing_fetcher):
-        """ ensure all channels are present """
+        """ensure all channels are present"""
         stream_channels = {tr.id for tr in stream}
         sta_channels = set(bing_fetcher.station_df.seed_id)
         assert stream_channels == sta_channels
 
     def test_stream_duration(self, stream):
-        """ ensure the waveforms is of proper duration """
+        """ensure the waveforms is of proper duration"""
         stats = stream[0].stats
         duration = stats.endtime - stats.starttime
         sr = stats.sampling_rate
         assert abs(duration - self.duration) < 2 * sr
 
     def test_zero_in_time_before(self, bing_fetcher):
-        """ ensure setting time_before parameter to 0 doesn't raise """
+        """ensure setting time_before parameter to 0 doesn't raise"""
         starttime = obspy.UTCDateTime("2009-04-01")
         try:
             bing_fetcher(starttime, time_before=0, time_after=1)
@@ -738,7 +738,7 @@ class TestCallWaveFetcher:
             pytest.fail("should not raise")
 
     def test_zero_in_time_after(self, bing_fetcher):
-        """ ensure setting time_after parameter to 0 doesn't raise """
+        """ensure setting time_after parameter to 0 doesn't raise"""
         starttime = obspy.UTCDateTime("2009-04-01")
         try:
             bing_fetcher(starttime, time_before=1, time_after=0)
@@ -755,14 +755,14 @@ class TestClientNoGetBulkWaveForms:
     # fixtures
     @pytest.fixture
     def ta_bank_no_bulk(self, ta_dataset, monkeypatch):
-        """ remove the get_waveforms_bulk from WaveBank class """
+        """remove the get_waveforms_bulk from WaveBank class"""
         monkeypatch.delattr(WaveBank, "get_waveforms_bulk")
         # return a bank
         yield WaveBank(ta_dataset.waveform_path)
 
     @pytest.fixture
     def wavefetcher_no_bulk(self, ta_bank_no_bulk, ta_dataset):
-        """ return a wavefetcher from the bank """
+        """return a wavefetcher from the bank"""
         inv = ta_dataset.station_client.get_stations()
         return Fetcher(waveforms=ta_bank_no_bulk, stations=inv)
 
@@ -796,7 +796,7 @@ class TestFilterInventoryByAvailability:
     # fixtures
     @pytest.fixture
     def altered_inv(self):
-        """ return an stations with one enddate changed to a later date """
+        """return an stations with one enddate changed to a later date"""
         df = stations_to_df(obspy.read_inventory())
         df.loc[:, "start_date"] = self.t0
         df.loc[:, "end_date"] = self.t1
@@ -805,7 +805,7 @@ class TestFilterInventoryByAvailability:
 
     @pytest.fixture
     def inv_with_none(self):
-        """ return an stations with one enddate changed to None """
+        """return an stations with one enddate changed to None"""
         df = stations_to_df(obspy.read_inventory())
         df.loc[:, "start_date"] = self.t0
         df.loc[:, "end_date"] = self.t1
@@ -820,13 +820,13 @@ class TestFilterInventoryByAvailability:
 
     @pytest.fixture
     def bulk_arg_none_end_date(self, inv_with_none):
-        """ return the bulk args from an inv with None endate """
+        """return the bulk args from an inv with None endate"""
         fetcher = Fetcher(None, stations=inv_with_none)
         return fetcher._get_bulk_args(starttime=self.t0, endtime=self.t1)
 
     @pytest.fixture
     def fetcher(self, altered_inv, bing_fetcher):
-        """ return a fetcher with the modified times """
+        """return a fetcher with the modified times"""
         return Fetcher(bing_fetcher.waveform_client, stations=altered_inv)
 
     # tests
@@ -843,7 +843,7 @@ class TestFilterInventoryByAvailability:
         assert ba[3] == ser.channel
 
     def test_none_endtimes_are_used(self, bulk_arg_none_end_date, inv_with_none):
-        """ ensure any channels with enddates of None are not filtered out """
+        """ensure any channels with enddates of None are not filtered out"""
         assert len(bulk_arg_none_end_date) == len(inv_with_none)
 
     def test_empty_stream_from_before_start(self, fetcher):
@@ -857,7 +857,7 @@ class TestFilterInventoryByAvailability:
 
 
 class TestFetchersFromDatasets:
-    """ Tests for the fetchers returned from the datasets. """
+    """Tests for the fetchers returned from the datasets."""
 
     @pytest.fixture(scope="class", params=DataSet._datasets)
     def data_fetcher(self, request):
@@ -870,7 +870,7 @@ class TestFetchersFromDatasets:
         assert isinstance(data_fetcher, Fetcher)
 
     def test_event_df(self, data_fetcher):
-        """ ensure the event df has the event_id column. """
+        """ensure the event df has the event_id column."""
         df = data_fetcher.event_df
         assert "event_id" in df.columns
 

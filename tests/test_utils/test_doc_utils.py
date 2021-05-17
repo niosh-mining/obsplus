@@ -7,14 +7,14 @@ from obsplus.utils.docs import compose_docstring, format_dtypes
 
 
 class TestDocsting:
-    """ tests for obsplus' simple docstring substitution function. """
+    """tests for obsplus' simple docstring substitution function."""
 
     def count_white_space(self, some_str):
         """count the number of whitespace chars in a str"""
         return len(some_str) - len(some_str.lstrip(" "))
 
     def test_docstring(self):
-        """ Ensure docstrings can be composed with the docstring decorator. """
+        """Ensure docstrings can be composed with the docstring decorator."""
         params = textwrap.dedent(
             """
         Parameters

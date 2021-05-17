@@ -120,7 +120,7 @@ def _prepare_trim_output(dar, out, remove_nan):
 
 
 def _overwrite_group_values(dar: xr.DataArray, func: Callable):
-    """ apply function on a data array, set all values to func output """
+    """apply function on a data array, set all values to func output"""
     # a mean of an empty slice can raise a runtime warning here, just ignore
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -148,7 +148,7 @@ def _get_trim_data_array(dar, trim, is_timestamp):
 
 def _trim_array(dar: xr.DataArray):  # , trim_coord: str,
     # reference_starttime: bool, conglomerate_func=None):
-    """ apply the trim function to array """
+    """apply the trim function to array"""
     trim_value = -float(dar.coords["_trim"])  # reverse sign for pad_zero func
     if pd.isnull(trim_value) or not trim_value:  # skip nan and 0s (no effect)
         out = dar

@@ -43,7 +43,7 @@ def array_irfft(dar: xr.DataArray, old_dim: str = "frequency", new_dim: str = "t
 
 
 def _get_times(dar, dim, dim_len=None):
-    """ get a list of times returned by the ifft """
+    """get a list of times returned by the ifft"""
     try:  # if metadata are still attached (they come off easy)
         sr = 1.0 / dar.attrs["sampling_rate"]
     except (KeyError, TypeError):

@@ -73,7 +73,7 @@ def get_attr_recursive(obj, attrs):
 
 @lru_cache()
 def _get_dtypes(cls):
-    """ return a dict of attributes and datatypes for properties. """
+    """return a dict of attributes and datatypes for properties."""
     # handle special cases
     if cls in COMPLEX_TYPES:
         return COMPLEX_TYPES[cls]
@@ -103,7 +103,7 @@ def _get_dtypes(cls):
 
 
 def _get_values(obj, parent_id=None, event_id=None):
-    """ wrangle outputs into a dictionary """
+    """wrangle outputs into a dictionary"""
     # get expected datatypes and init dict with values for sequences
     cls = type(obj) if not isinstance(obj, type) else obj
     dtypes = _get_dtypes(cls)
@@ -130,12 +130,12 @@ def _get_values(obj, parent_id=None, event_id=None):
 def _events_to_tables(
     event_iterable: Union[obspy.Catalog, Sequence[ev.Event]]
 ) -> Dict[str, pd.DataFrame]:
-    """ Create tables from an event iterable """
+    """Create tables from an event iterable"""
     obj_dict = defaultdict(list)
     seen_ids = set()
 
     def _obj_to_dict(obj, parent_id=None, event_id=None):
-        """ convert objects to flat dicts for conversion to pandas tables. """
+        """convert objects to flat dicts for conversion to pandas tables."""
         # dont process anything twice, only obj with resource_ids go in tables
         if id(obj) in seen_ids or not hasattr(obj, "resource_id"):
             return
@@ -157,7 +157,7 @@ def _events_to_tables(
 
 
 def _create_resource_id_tables(tables):
-    """ Iterate a dict of df and create a table containing """
+    """Iterate a dict of df and create a table containing"""
     out = []
     for name, df in tables.items():
         dff = df[["_event_id_"]]
@@ -170,7 +170,7 @@ def _create_resource_id_tables(tables):
 
 
 def _inflate_flattened(ser):
-    """ create an object tree from flat tables. """
+    """create an object tree from flat tables."""
     # TODO make this more elegant
     out = {}
     # iterate each value, create parent objects and set attribute
@@ -256,7 +256,7 @@ def _construct_object(
 
 
 def _tables_to_catalog(df_dict: Dict[str, pd.DataFrame]) -> obspy.Catalog:
-    """ convert a dict of dataframes back to an obspy events """
+    """convert a dict of dataframes back to an obspy events"""
     try:
         events = df_dict["Event"]
     except KeyError:  # empty events
@@ -305,7 +305,7 @@ _ENGINES = []
 
 
 class CatalogEngine(abc.ABC):
-    """ The basic interface for a bigcatalog engine. """
+    """The basic interface for a bigcatalog engine."""
 
     # @abc.abstractmethod
     # def id_to_events(self, event_ids: [Union[str, Sequence[str]]]
@@ -358,7 +358,7 @@ class CatalogEngine(abc.ABC):
         """
 
     def __init_subclass__(cls, **kwargs):
-        """ Set docstring to abstract method on derived subclasses. """
+        """Set docstring to abstract method on derived subclasses."""
         for name, attr in cls.__dict__.items():
             if callable(attr) and name in CatalogEngine.__dict__:
                 if not getattr(cls.__dict__[name], "__doc__", None):
@@ -367,7 +367,7 @@ class CatalogEngine(abc.ABC):
 
 
 class PandasEngine(CatalogEngine):
-    """ A bigcatalog engine that uses 'interconnected' pandas dataframes. """
+    """A bigcatalog engine that uses 'interconnected' pandas dataframes."""
 
     def __init__(self, events=None):
         self._dfs = _events_to_tables(events or [])
@@ -376,7 +376,7 @@ class PandasEngine(CatalogEngine):
     def _get_sub_tables(
         self, resource_ids: Union[str, Sequence[str]]
     ) -> Dict[str, pd.DataFrame]:
-        """ return a dict of all  """
+        """return a dict of all"""
         ids = list(iterate(resource_ids))
         import pdb
 
@@ -398,7 +398,7 @@ class PandasEngine(CatalogEngine):
         pass
 
     def index_to_event(self, indicies: Sequence[int]):
-        """ Return events based on index. """
+        """Return events based on index."""
         event_ids = list(self._dfs["Event"].index[indicies])
         return [self.load_object_by_id(x) for x in event_ids]
 
@@ -474,13 +474,13 @@ class BigCatalog:
 
     @classmethod
     def from_catalog(cls, catalog, **kwargs):
-        """ Construct a BigCatalog from a standard events. """
+        """Construct a BigCatalog from a standard events."""
         return cls(copy.deepcopy(catalog.events), **kwargs)
 
     # --- normal event interface
 
     def __getitem__(self, item):
-        """ get catalogs from list_like structure. """
+        """get catalogs from list_like structure."""
         return self._engine.index_to_event([item])[0]
 
     # --- dataframe methods

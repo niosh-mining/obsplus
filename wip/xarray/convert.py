@@ -149,7 +149,7 @@ def obspy_to_array(
 
 
 def _trim_data_array(dar, array_dict, required_len=0.95):
-    """ trim data array to remove short channels and such """
+    """trim data array to remove short channels and such"""
     # determine if there are any channels that are not all NaN or all not
     isvalid = ~dar.isnull()
     all_nan = (~isvalid).all(dim="time")
@@ -221,7 +221,7 @@ def _stream_to_data_array(
 
 
 def _trace_to_datarray(trace: obspy.Trace) -> xr.DataArray:
-    """ convert an obspy trace to a data array oject """
+    """convert an obspy trace to a data array oject"""
     sr = np.round(trace.stats.sampling_rate, TIME_PRECISION)
     time_stamps = np.arange(0, len(trace.data)) * (1.0 / sr)
     coords = {"time": np.round(time_stamps, TIME_PRECISION)}
@@ -265,7 +265,7 @@ def array_to_obspy(dar: xr.DataArray) -> Dict[str, obspy.Stream]:
 
 
 def _array_to_stream(dar, sid):
-    """ convert the data array to a waveforms """
+    """convert the data array to a waveforms"""
     assert {"time", "seed_id"}.issubset(dar.dims)
     traces = []
     stats = dar.attrs["stats"]
@@ -325,7 +325,7 @@ def attach_events(
 
 
 def _attach_events(dar, event_df):
-    """ attach the interesting info from events onto dataframe """
+    """attach the interesting info from events onto dataframe"""
     # convert stream_ids to pandas, join in origin_times
     df_stream = dar.stream_id.to_pandas().to_frame(name="event_id")
     df_merged = df_stream.merge(
@@ -339,7 +339,7 @@ def _attach_events(dar, event_df):
 
 
 def _attach_picks(dar, pick_df: pd.DataFrame):
-    """ join the pick_df to the stream_df """
+    """join the pick_df to the stream_df"""
     phases = ["P", "S"]  # these will be made into coords on dar
     # add seed_id to pick_df
     df = pick_df.copy()

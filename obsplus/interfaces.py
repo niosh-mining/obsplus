@@ -37,7 +37,7 @@ class EventClient(Protocol):
 
     @abstractmethod
     def get_events(self, *args, **kwargs) -> obspy.Catalog:
-        """ A method which must return events as obspy.Catalog object. """
+        """A method which must return events as obspy.Catalog object."""
 
 
 @runtime_checkable
@@ -68,7 +68,7 @@ class WaveformClient(Protocol):
     def get_waveforms(
         self, network, station, location, channel, starttime, endtime
     ) -> obspy.Stream:
-        """ A method which must return waveforms as an obspy.Stream. """
+        """A method which must return waveforms as an obspy.Stream."""
 
 
 @runtime_checkable
@@ -98,16 +98,16 @@ class StationClient(Protocol):
 
     @abstractmethod
     def get_stations(self, *args, **kwargs) -> obspy.Inventory:
-        """ A method which must return an inventory object. """
+        """A method which must return an inventory object."""
 
 
 @runtime_checkable
 class BankType(Protocol):
-    """ an object that looks like a bank """
+    """an object that looks like a bank"""
 
     @abstractmethod
     def read_index(self, *args, **kwargs) -> pd.DataFrame:
-        """ A method which must return a dataframe of index contents. """
+        """A method which must return a dataframe of index contents."""
 
 
 @runtime_checkable
@@ -118,11 +118,11 @@ class ProgressBar(Protocol):
 
     @abstractmethod
     def update(self, value=None, force=False, **kwargs):
-        """ Called when updating the progress bar. """
+        """Called when updating the progress bar."""
 
     @abstractmethod
     def finish(self, **kwargs):
-        """ Puts the progress bar in the finished state. """
+        """Puts the progress bar in the finished state."""
 
 
 if __name__ == "__main__":

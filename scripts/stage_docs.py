@@ -33,7 +33,7 @@ INDEX_TEMPLATE = """
 
 @contextmanager
 def change_directory(new_path):
-    """ Temporarily change directories. """
+    """Temporarily change directories."""
     here = Path(".")
     os.chdir(new_path)
     yield
@@ -89,7 +89,7 @@ def _build_index(pages_path, remove_dirty=False):
         return kwargs
 
     def _create_latest(pages_path, kwargs):
-        """ Create the 'latest' version directory. """
+        """Create the 'latest' version directory."""
         latest_version = VERSION
         latest_path = pages_path / "versions" / "latest"
         if latest_path.is_dir():

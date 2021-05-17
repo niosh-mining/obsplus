@@ -140,7 +140,7 @@ class _ObsPyModel(BaseModel):
 
     @staticmethod
     def _convert_to_obspy(value):
-        """Convert an object to obspy or return value. """
+        """Convert an object to obspy or return value."""
         if hasattr(value, "to_obspy"):
             return value.to_obspy()
         return value
@@ -185,7 +185,7 @@ class _ModelWithResourceID(_ObsPyModel):
 
     @validator("resource_id", always=True)
     def get_resource_id(cls, value):
-        """Ensure a valid str is returned. """
+        """Ensure a valid str is returned."""
         if value is None:
             return str(uuid4())
         return value
@@ -281,7 +281,7 @@ class ConfidenceEllipsoid(_ObsPyModel):
 
 
 class DataUsed(_ObsPyModel):
-    """ Data Used"""
+    """Data Used"""
 
     wave_type: Optional[DataUsedWaveType] = None
     station_count: Optional[int] = None
@@ -294,7 +294,7 @@ class DataUsed(_ObsPyModel):
 
 
 class StationMagnitude(_ModelWithResourceID):
-    """ Station Magnitude."""
+    """Station Magnitude."""
 
     origin_id: Optional[ResourceIdentifier] = None
     mag: Optional[float] = None
@@ -308,7 +308,7 @@ class StationMagnitude(_ModelWithResourceID):
 
 
 class StationMagnitudeContribution(_ObsPyModel):
-    """ Station Magnitude Contribution"""
+    """Station Magnitude Contribution"""
 
     station_magnitude_id: Optional[ResourceIdentifier] = None
     residual: Optional[float] = None
@@ -316,7 +316,7 @@ class StationMagnitudeContribution(_ObsPyModel):
 
 
 class Amplitude(_ModelWithResourceID):
-    """ Amplitude """
+    """Amplitude"""
 
     generic_amplitude: Optional[float] = None
     generic_amplitude_errors: Optional[QuantityError] = None
@@ -500,7 +500,7 @@ class PrincipalAxes(_ObsPyModel):
 
 
 class Tensor(_ObsPyModel):
-    """Tensor """
+    """Tensor"""
 
     m_rr: Optional[float] = None
     m_rr_errors: Optional[QuantityError] = None
@@ -579,7 +579,7 @@ class EventDescription(_ObsPyModel):
 
 
 class Event(_ModelWithResourceID):
-    """Event """
+    """Event"""
 
     event_type: Optional[EventType] = None
     event_type_certainty: Optional[EventTypeCertainty] = None

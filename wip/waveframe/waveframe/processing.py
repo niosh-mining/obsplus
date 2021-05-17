@@ -24,7 +24,7 @@ class _WFDetrender(DFTransformer):
     # --- Supported methods
 
     def simple(self, df):
-        """ detrending using a line drawn through the first and last point. """
+        """detrending using a line drawn through the first and last point."""
         data, stats = df["data"], df["stats"]
         delta = stats["delta"]
         # get coefficients for forming line
@@ -37,7 +37,7 @@ class _WFDetrender(DFTransformer):
         return _new_waveframe_df(df, data=new)
 
     def constant(self, df):
-        """ A simple demeaning on the data via mean subtraction """
+        """A simple demeaning on the data via mean subtraction"""
         data = df.data.values
         means = np.nanmean(data, axis=1)
         out = data - means[:, np.newaxis]
@@ -64,7 +64,7 @@ class _WFDetrender(DFTransformer):
     # --- Helper functions
 
     def _linear_detrend_with_nan(self, values, finite, method):
-        """ Apply linear detrend to data which have NaNs. """
+        """Apply linear detrend to data which have NaNs."""
         # init array for output
         out = values.copy()
         # get finite segments
@@ -79,11 +79,11 @@ class _WFDetrender(DFTransformer):
         return out
 
     def _make_linear_coefs(self, times: np.ndarray, vals: np.ndarray):
-        """ return an array of x_0 and x_1 for each row in times"""
+        """return an array of x_0 and x_1 for each row in times"""
         assert times.shape == vals.shape
 
     def _make_first_last_time_values(self, df, data, stats):
-        """ Get arrays of first and last non_NaN times and their values. """
+        """Get arrays of first and last non_NaN times and their values."""
         # get the last valid index
         data, stats = df["data"], df["stats"]
         first_ind = data.apply(axis=1, func=lambda x: x.first_valid_index())

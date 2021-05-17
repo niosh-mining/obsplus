@@ -4,7 +4,7 @@ from obsplus import WaveFrame
 
 
 class TestToFromStream:
-    """ Tests for converting a stream to a WaveFrame. """
+    """Tests for converting a stream to a WaveFrame."""
 
     def test_type(self, stream_wf):
         assert isinstance(stream_wf, WaveFrame)

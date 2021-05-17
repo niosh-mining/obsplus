@@ -22,12 +22,12 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def spatial_calc(self):
-        """ return the default instance of the spatial calculator. """
+        """return the default instance of the spatial calculator."""
         return SpatialCalculator()
 
     @pytest.fixture(scope="class")
     def cat(self):
-        """ return the first 3 events from the crandall_test dataset. """
+        """return the first 3 events from the crandall_test dataset."""
         return obspy.read_events()
 
     @pytest.fixture(scope="class")
@@ -37,17 +37,17 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def distance_df(self, cat, inv, spatial_calc):
-        """ Return a dataframe from all the crandall_test events and stations. """
+        """Return a dataframe from all the crandall_test events and stations."""
         with suppress_warnings():
             return spatial_calc(entity_1=cat, entity_2=inv)
 
     def test_type(self, distance_df):
-        """ ensure a dataframe was returned. """
+        """ensure a dataframe was returned."""
         assert isinstance(distance_df, pd.DataFrame)
         assert set(distance_df.columns) == set(DISTANCE_COLUMN_DTYPES)
 
     def test_all_events_in_df(self, distance_df, cat):
-        """ Ensure all the events are in the distance dataframe. """
+        """Ensure all the events are in the distance dataframe."""
         event_ids_df = set(distance_df.index.to_frame()["id1"])
         event_ids_cat = {str(x.resource_id) for x in cat}
         assert event_ids_cat == event_ids_df
@@ -59,7 +59,7 @@ class TestCalculateDistance:
         assert seed_id_df == seed_id_stations
 
     def test_cat_cat(self, cat, spatial_calc):
-        """ ensure it works with two catalogs """
+        """ensure it works with two catalogs"""
         with suppress_warnings():
             df = spatial_calc(cat, cat)
         event_ids = {str(x.resource_id) for x in cat}
@@ -81,7 +81,7 @@ class TestCalculateDistance:
         assert "some_id" in set(id1)
 
     def test_with_tuple_no_id(self, spatial_calc):
-        """ Test getting relations with tuple and catalog. """
+        """Test getting relations with tuple and catalog."""
         cat = obspy.read_events()
         df = obsplus.events_to_df(cat)
         ser = df.iloc[0]
@@ -95,7 +95,7 @@ class TestCalculateDistance:
         assert len(out1) == 3
 
     def test_tuple_with_id(self, spatial_calc):
-        """ Ensure if a 4th column is given the id works. """
+        """Ensure if a 4th column is given the id works."""
         tuple1 = (45, -111, 0, "bob")
         tuple2 = (45, -111, 0)
         with suppress_warnings():
@@ -112,7 +112,7 @@ class TestCalculateDistance:
         assert set(out.index.to_list()) == {("bob", 0)}
 
     def test_short_sequence(self, spatial_calc):
-        """ A sequence which is too short should raise. """
+        """A sequence which is too short should raise."""
         input1 = [(45, -111, 0), (46, -111, 0), (49, -112, 0)]
         input2 = (45, -111)
         with pytest.raises(ValueError):
@@ -128,7 +128,7 @@ class TestCalculateDistance:
         assert not out.isnull().any().any()
 
     def test_duplicated_id_different_coords_raises(self, spatial_calc):
-        """ Duplicated indices and with different coords should raise. """
+        """Duplicated indices and with different coords should raise."""
         cat = obspy.read_events() + obspy.read_events()
         # change preferred origin on a duplicated id
         origin = cat[0].preferred_origin()
@@ -138,7 +138,7 @@ class TestCalculateDistance:
         assert "multiple coordinates for" in e.value.args[0]
 
     def test_invalid_df(self, spatial_calc, cat, inv):
-        """ Ensure dfs with missing columns raise. """
+        """Ensure dfs with missing columns raise."""
         df1 = cat.to_df().drop(columns="latitude")
         df2 = inv.to_df().drop(columns="latitude")
         with pytest.raises(
@@ -153,7 +153,7 @@ class TestCalculateDistance:
             spatial_calc(cat, df2)
 
     def test_invalid_lat_lon(self, spatial_calc, cat, inv):
-        """ Ensure invalid latitudes or longitudes get flagged """
+        """Ensure invalid latitudes or longitudes get flagged"""
         df = inv.to_df()
         df["latitude"] = 200
         with pytest.raises(DataFrameContentError, match="invalid lat/lon"):

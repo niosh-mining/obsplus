@@ -13,7 +13,7 @@ from obsplus.utils.testing import make_wf_with_nan
 
 @pytest.fixture()
 def wf_with_offset(stream_wf):
-    """ Create a waveframe with an offset. """
+    """Create a waveframe with an offset."""
     # get waveframe with offset
     data = stream_wf.data
     index = data.columns.values.astype(int)
@@ -24,13 +24,13 @@ def wf_with_offset(stream_wf):
 
 
 class TestDetrend:
-    """ Tests for applying detrend to waveframe. """
+    """Tests for applying detrend to waveframe."""
 
     nan_x_inds = (0, 100, 250, -1)
 
     @staticmethod
     def get_relative_offset(wf):
-        """ Calculate mean / max of each trace, return np array. """
+        """Calculate mean / max of each trace, return np array."""
         data = wf.data
         vals = data.values
         mean = np.nanmean(vals, axis=1)
@@ -50,11 +50,11 @@ class TestDetrend:
 
     @pytest.fixture
     def wf_offset_nan(self, wf_with_offset):
-        """ Add some NaN to offsets, just for fun. """
+        """Add some NaN to offsets, just for fun."""
         return make_wf_with_nan(wf_with_offset, x_inds=self.nan_x_inds)
 
     def test_simple(self, wf_with_offset):
-        """ ensure the simplest case works. """
+        """ensure the simplest case works."""
         # get waveframe with offset
         out = wf_with_offset.detrend("simple")
         # calculate the mean, it can be slightly off 0 compared to max
@@ -70,7 +70,7 @@ class TestDetrend:
         assert np.all([percent_offset < 0.1])
 
     def test_demean(self, wf_with_offset):
-        """ tests for demean """
+        """tests for demean"""
         out = wf_with_offset.detrend("demean")
         mean = out.data.mean(axis=1)
         assert np.allclose(mean, 0)
@@ -78,13 +78,13 @@ class TestDetrend:
         assert wf_with_offset.detrend("constant") == out
 
     def test_demean_with_nan(self, wf_offset_nan):
-        """ Make sure it still works with NaN. """
+        """Make sure it still works with NaN."""
         out = wf_offset_nan.detrend("constant")
         mean = out.data.mean(axis=1)
         assert np.allclose(mean, 0)
 
     def test_detrend_linear(self, wf_with_offset):
-        """ tests for linear detrending. """
+        """tests for linear detrending."""
         original_data = wf_with_offset.data.values.copy()
         out = wf_with_offset.detrend("linear")
         # the relative offsets should now be very close to 0
@@ -98,7 +98,7 @@ class TestDetrend:
         self.assert_zeroish_mean_per_segment(out)
 
     def test_detrend_linear_with_nan(self, wf_offset_nan):
-        """ test for linear detrending with NaN values. """
+        """test for linear detrending with NaN values."""
         original_data = wf_offset_nan.data.values
         original_copy = original_data.copy()
         out = wf_offset_nan.detrend("linear")

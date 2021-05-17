@@ -29,23 +29,23 @@ def _remove_empty_quantity_errors(catalog):
 
 
 class TestCat2Json:
-    """ class to test json """
+    """class to test json"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def json_from_cat(self, test_catalog):
-        """ Call the to_json method to return json string """
+        """Call the to_json method to return json string"""
         return cat_to_json(test_catalog)
 
     @pytest.fixture(scope="class")
     def cat_from_json(self, json_from_cat):
-        """ load the json into a cat_name object """
+        """load the json into a cat_name object"""
         cat = json_to_cat(json_from_cat)
         return cat
 
     @pytest.fixture(scope="class")
     def json_cat_from_disk(self, cat_from_json):
-        """ save the json events to disk and read it again into memory """
+        """save the json events to disk and read it again into memory"""
         tf = tempfile.mkstemp()
         new_cat_from_json = cat_from_json
         new_cat_from_json.write(tf[1], "quakeml")
@@ -54,11 +54,11 @@ class TestCat2Json:
 
     # tests
     def test_to_json(self, json_from_cat):
-        """ test that the returned json is a string """
+        """test that the returned json is a string"""
         assert isinstance(json_from_cat, str)
 
     def test_load_json(self, cat_from_json, test_catalog):
-        """ test that the json can be loaded into a cat_name """
+        """test that the json can be loaded into a cat_name"""
         # ensure a events was returned
         assert isinstance(cat_from_json, obspy.Catalog)
         # catalogs should be equal after accounting for QunatityErrors
@@ -120,16 +120,16 @@ class TestSerializeUTCDateTime:
     # fixtures
     @pytest.fixture(params=times)
     def cat(self, request):
-        """ create a events using value from time in the creation info """
+        """create a events using value from time in the creation info"""
         return self.create_catalog(request.param)
 
     @pytest.fixture
     def cat2(self, cat):
-        """ serialize events, then load in in again and return """
+        """serialize events, then load in in again and return"""
         json = cat_to_dict(cat)
         return json_to_cat(json)
 
     # tests
     def test_equal(self, cat, cat2):
-        """ ensure the catalogs are equal before and after serialization """
+        """ensure the catalogs are equal before and after serialization"""
         assert cat == cat2

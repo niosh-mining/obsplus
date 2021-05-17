@@ -36,7 +36,7 @@ doc_req_path = here / "docs" / "requirements.txt"
 
 
 def find_packages(base_dir="."):
-    """ setuptools.find_packages wasn't working so I rolled this """
+    """setuptools.find_packages wasn't working so I rolled this"""
     out = []
     for fi in glob.iglob(join(base_dir, "**", "*"), recursive=True):
         if isdir(fi) and exists(join(fi, "__init__.py")):
@@ -64,7 +64,7 @@ def get_package_data_files():
 
 
 def read_requirements(path, skip_if_missing=False):
-    """ Read a requirements.txt file, return a list. """
+    """Read a requirements.txt file, return a list."""
     path = Path(path)
     if not path.exists() and skip_if_missing:
         return []
@@ -75,7 +75,7 @@ def read_requirements(path, skip_if_missing=False):
 
 
 def load_file(path):
-    """ Load a file into memory. """
+    """Load a file into memory."""
     with Path(path).open() as w:
         contents = w.read()
     return contents

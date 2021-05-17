@@ -72,7 +72,7 @@ def get_reference_time(
 
 @get_reference_time.register(ev.Event)
 def _get_event_origin_time(event):
-    """ get the time from preferred origin from the event """
+    """get the time from preferred origin from the event"""
     # try to get origin
     try:
         por = event.preferred_origin() or event.origins[-1]
@@ -111,20 +111,20 @@ def _from_list(input_list):
 
 @get_reference_time.register(obspy.Catalog)
 def _get_first_event(catalog):
-    """ ensure the events is length one, return event """
+    """ensure the events is length one, return event"""
     assert len(catalog) == 1, f"{catalog} has more than one event"
     return _get_event_origin_time(catalog[0])
 
 
 @get_reference_time.register(obspy.Stream)
 def _get_stream_time(st):
-    """ return the earliest start time for stream. """
+    """return the earliest start time for stream."""
     return min([get_reference_time(tr) for tr in st])
 
 
 @get_reference_time.register(obspy.Trace)
 def _get_trace_time(tr):
-    """ return starttime of trace. """
+    """return starttime of trace."""
     return tr.stats.starttime
 
 
@@ -203,7 +203,7 @@ def to_datetime64(
 
 @to_datetime64.register(str)
 def _from_string(time_str: str, default=DEFAULT_TIME):
-    """ Convert to a string. """
+    """Convert to a string."""
     if not time_str:
         return default
     return to_datetime64(obspy.UTCDateTime(time_str))
@@ -211,13 +211,13 @@ def _from_string(time_str: str, default=DEFAULT_TIME):
 
 @to_datetime64.register(pd.Series)
 def _series_to_datetime(value, default=DEFAULT_TIME):
-    """ Convert a series to datetimes """
+    """Convert a series to datetimes"""
     return value.apply(to_datetime64, default=default)
 
 
 @to_datetime64.register(np.ndarray)
 def _ndarray_to_datetime64(value, default=DEFAULT_TIME):
-    """ Convert an array to datetimes. """
+    """Convert an array to datetimes."""
     ns = np.array([to_datetime64(x, default=default) for x in value])
     return pd.to_datetime(ns, unit="ns").values
 
@@ -306,20 +306,20 @@ def to_timedelta64(
 @to_timedelta64.register(tuple)
 @to_timedelta64.register(list)
 def _list_tuple_to_timedelta(value, default=None):
-    """ Convert sequences to timedeltas. """
+    """Convert sequences to timedeltas."""
     out = [to_datetime64(x, default=default) for x in value]
     return np.array(out)
 
 
 @to_timedelta64.register(pd.Series)
 def _series_to_timedelta(ser) -> pd.Series:
-    """ Convert a series to a timedelta. """
+    """Convert a series to a timedelta."""
     return ser.apply(to_timedelta64)
 
 
 @to_timedelta64.register(np.ndarray)
 def _array_to_timedelta(obj):
-    """ Convert a series to a timedelta. """
+    """Convert a series to a timedelta."""
     if np.issubdtype(obj.dtype, np.timedelta64):
         return obj
     return np.array([to_timedelta64(x) for x in obj])

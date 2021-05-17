@@ -40,7 +40,7 @@ def try_permission_sleep(callable, *args, _count=0, **kwargs):
 
 @pytest.fixture
 def cat_with_descs():
-    """ Create a catalog with some simple descriptions added. """
+    """Create a catalog with some simple descriptions added."""
     cat = obspy.read_events()
     descs = ["LR", "LR", "SomeSillyEvent"]
     for event, desc_txt in zip(cat, descs):
@@ -51,7 +51,7 @@ def cat_with_descs():
 
 @pytest.fixture
 def ebank(tmpdir, cat_with_descs):
-    """ Create a bank from the default catalog. """
+    """Create a bank from the default catalog."""
     cat = cat_with_descs
     path = Path(tmpdir) / "events"
     return EventBank(path).put_events(cat, update_index=True)
@@ -59,7 +59,7 @@ def ebank(tmpdir, cat_with_descs):
 
 @pytest.fixture
 def ebank_no_index(ebank):
-    """ return an event bank with no index file. """
+    """return an event bank with no index file."""
     with suppress((FileNotFoundError, PermissionError)):
         Path(ebank.index_path).unlink()
     return ebank
@@ -117,7 +117,7 @@ class TestBankBasics:
 
     @pytest.fixture
     def ebank_low_version(self, tmpdir, monkeypatch):
-        """ return the default bank with a negative version number. """
+        """return the default bank with a negative version number."""
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         cat = obspy.read_events()
@@ -132,7 +132,7 @@ class TestBankBasics:
 
     @pytest.fixture(scope="class")
     def ebank_with_event_no_time(self, tmp_path_factory):
-        """ Create an event bank which has one file with no time. """
+        """Create an event bank which has one file with no time."""
         tmp_path = Path(tmp_path_factory.mktemp("basic"))
         cat = obspy.read_events()
         # clear origin from first event and add an empty one
@@ -148,7 +148,7 @@ class TestBankBasics:
         return obsplus.EventBank(tmp_path).update_index()
 
     def test_has_attrs(self, bing_ebank):
-        """ ensure all the required attrs exist """
+        """ensure all the required attrs exist"""
         for attr in self.expected_attrs:
             assert hasattr(bing_ebank, attr)
 
@@ -162,29 +162,29 @@ class TestBankBasics:
         assert len(bingham_catalog) == len(df)
 
     def test_read_timestamp(self, bing_ebank):
-        """ read the current timestamp (after index has been updated)"""
+        """read the current timestamp (after index has been updated)"""
         bing_ebank.update_index()
         ts = bing_ebank.last_updated_timestamp
         assert isinstance(ts, float)
         assert ts > 0
 
     def test_init_bank_with_bank(self, bing_ebank):
-        """ ensure an EventBank can be init'ed with an event bank. """
+        """ensure an EventBank can be init'ed with an event bank."""
         ebank2 = EventBank(bing_ebank)
         assert isinstance(ebank2, EventBank)
 
     def test_bank_issubclass(self):
-        """ ensure events is not a subclass of EventBank. """
+        """ensure events is not a subclass of EventBank."""
         assert not issubclass(obspy.Catalog, EventBank)
 
     def test_bad_files_skipped(self, ebank_with_bad_files):
-        """ make sure the index is still returnable and of the expected size. """
+        """make sure the index is still returnable and of the expected size."""
         cat = obspy.read_events()
         df = ebank_with_bad_files.read_index()
         assert len(cat) == len(df)
 
     def test_service_version(self, bing_ebank):
-        """ The get_service_version method should return obsplus version """
+        """The get_service_version method should return obsplus version"""
         # first delete the old index and re-index, in case it is leftover
         # from a previous version.
         os.remove(bing_ebank.index_path)
@@ -192,7 +192,7 @@ class TestBankBasics:
         assert bing_ebank.get_service_version() == obsplus.__last_version__
 
     def test_get_events_unindexed_bank(self, ebank_no_index, cat_with_descs):
-        """ Calling get_waveforms on an empty bank should update index. """
+        """Calling get_waveforms on an empty bank should update index."""
         bank = ebank_no_index
         cat1_dict = {str(x.resource_id): x for x in cat_with_descs}
         # now get events and assert equal to input (although order can change)
@@ -233,7 +233,7 @@ class TestBankBasics:
         assert ebank2._index_version == obsplus.__last_version__
 
     def test_limit_keyword(self, ebank):
-        """ Test that the limit keyword limits results (see #19) """
+        """Test that the limit keyword limits results (see #19)"""
         limit = 2
         cat = ebank.get_events()
         assert len(cat) > limit
@@ -264,7 +264,7 @@ class TestBankBasics:
         assert out is ebank
 
     def test_events_no_time(self, ebank_with_event_no_time):
-        """Tests for events which have no event time. """
+        """Tests for events which have no event time."""
         bank = ebank_with_event_no_time
         # not starttime/endtime should return all row, one has NaT
         ind = bank.read_index()
@@ -282,7 +282,7 @@ class TestBankBasics:
         assert not ind["time"].isnull().sum()
 
     def test_limit_index(self, tmpdir):
-        """ Test to run the logic for limiting index memory usage. """
+        """Test to run the logic for limiting index memory usage."""
         # This tests is a bit invasive but I cant think of a better way
         cat = obspy.read_events()
         # create temporary directory of event files
@@ -299,7 +299,7 @@ class TestBankBasics:
         assert counter["_write_update"] == 3
 
     def test_index_subpaths_directories(self, ebank_no_index):
-        """ Ensure using subpaths only indexes certain files. """
+        """Ensure using subpaths only indexes certain files."""
         bank_path = Path(ebank_no_index.bank_path)
         # make new subdirectories
         for year in {"2019", "2018"}:
@@ -318,7 +318,7 @@ class TestBankBasics:
         assert set(df["time"].dt.year.unique()) == {2019, 2018}
 
     def test_index_subpaths_files(self, ebank_no_index):
-        """ Ensure a file (not just directory) can be used. """
+        """Ensure a file (not just directory) can be used."""
         paths = [f"file_{x}.xml" for x in range(1, 4)]
         base_path = Path(ebank_no_index.bank_path)
         # save a single new file in bank
@@ -359,7 +359,7 @@ class TestBankBasics:
 
 
 class TestEventIdInBank:
-    """ Tests for determining if ids are in the bank. """
+    """Tests for determining if ids are in the bank."""
 
     def test_event_id_in_bank(self, ebank):
         """Ensure multiple IDs can be used to query the bank."""
@@ -382,22 +382,22 @@ class TestEventIdInBank:
 
 
 class TestReadIndexQueries:
-    """ tests for index querying """
+    """tests for index querying"""
 
     def test_query_min_magnitude(self, bing_ebank):
-        """ test min mag query """
+        """test min mag query"""
         min_mag = 1.1
         df = bing_ebank.read_index(minmagnitude=min_mag)
         assert (df["magnitude"] >= min_mag).all()
 
     def test_query_max_magnitude(self, bing_ebank):
-        """ test min mag query """
+        """test min mag query"""
         max_mag = 1.1
         df = bing_ebank.read_index(maxmagnitude=max_mag)
         assert (df["magnitude"] <= max_mag).all()
 
     def test_query_magnitudes_with_nan(self, bing_ebank):
-        """ test querying a column with NaNs (local_mag) """
+        """test querying a column with NaNs (local_mag)"""
         minmag, maxmag = 1.0, 1.5
         df = bing_ebank.read_index(minlocal_magnitude=minmag, maxlocal_magnitude=maxmag)
         con1 = df.local_magnitude > minmag
@@ -405,14 +405,14 @@ class TestReadIndexQueries:
         assert (con1 & con2).all()
 
     def test_query_event_id(self, bing_ebank, bingham_catalog):
-        """ test query on an event id """
+        """test query on an event id"""
         eve_id = str(bingham_catalog[0].resource_id)
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
         assert eve_id in set(df["event_id"])
 
     def test_query_resource_id(self, bing_ebank, bingham_catalog):
-        """ test query on a resource id """
+        """test query on a resource id"""
         eve_id = bingham_catalog[0].resource_id
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
@@ -429,7 +429,7 @@ class TestReadIndexQueries:
         assert df["event_id"].isin(eve_ids).all()
 
     def test_bad_param_raises(self, bing_ebank):
-        """ assert bad query param will raise """
+        """assert bad query param will raise"""
         with pytest.raises(ValueError):
             bing_ebank.read_index(minradius=20)
 
@@ -477,7 +477,7 @@ class TestReadIndexQueries:
             assert df1.reset_index(drop=True).equals(df2.reset_index(drop=True))
 
     def test_index_time_columns(self, ebank):
-        """ Ensure the time columns are pandas datetimes.  """
+        """Ensure the time columns are pandas datetimes."""
         df = ebank.read_index()
         # now select on datetime
         sub = df.select_dtypes([np.datetime64])
@@ -508,11 +508,11 @@ class TestReadIndexQueries:
 
 
 class TestGetEvents:
-    """ tests for pulling events out of the bank """
+    """tests for pulling events out of the bank"""
 
     @pytest.fixture
     def multiple_event_file(self, tmp_path_factory, crandall_dataset):
-        """ Create a bank from a single file with multiple events """
+        """Create a bank from a single file with multiple events"""
         path = tmp_path_factory.mktemp("crandall_bank")
         cat_name = path / "event_bank.xml"
         crandall_dataset.event_client.write(cat_name, "QuakeML")
@@ -529,21 +529,21 @@ class TestGetEvents:
         return ebank
 
     def test_no_params(self, bing_ebank, bingham_catalog):
-        """ ensure a basic query can get an event """
+        """ensure a basic query can get an event"""
         cat = bing_ebank.get_events()
         ev1 = sorted(cat.events, key=lambda x: str(x.resource_id))
         ev2 = sorted(bingham_catalog.events, key=lambda x: str(x.resource_id))
         assert ev1 == ev2
 
     def test_query(self, bing_ebank, bingham_catalog):
-        """ test a query """
+        """test a query"""
         t2 = obspy.UTCDateTime("2013-04-10")
         t1 = obspy.UTCDateTime("2010-01-01")
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
         assert cat == bingham_catalog.get_events(starttime=t1, endtime=t2)
 
     def test_query_circular(self, bing_ebank, bingham_catalog):
-        """ The bank query should return the same as get_events on catalog. """
+        """The bank query should return the same as get_events on catalog."""
         latitude, longitude, minradius, maxradius = (40.5, -112.12, 0.035, 0.05)
         with suppress_warnings():
             cat1 = bing_ebank.get_events(
@@ -561,7 +561,7 @@ class TestGetEvents:
         assert cat1 == cat2
 
     def test_issue_30(self, crandall_dataset):
-        """ ensure eventid can accept a numpy array. see #30. """
+        """ensure eventid can accept a numpy array. see #30."""
         ds = crandall_dataset
         ebank = obsplus.EventBank(ds.event_path)
         # get first two event_ids
@@ -592,10 +592,10 @@ class TestGetEvents:
 
 
 class TestPutEvents:
-    """ tests for putting events into the bank """
+    """tests for putting events into the bank"""
 
     def test_put_new_events(self, bing_ebank):
-        """ ensure a new event can be put into the bank """
+        """ensure a new event can be put into the bank"""
         ori = ev.Origin(time=obspy.UTCDateTime("2016-01-01"))
         event = ev.Event(origins=[ori])
         event.origins[0].depth_errors = None  # see obspy 2173
@@ -605,7 +605,7 @@ class TestPutEvents:
         assert event_out[0] == event
 
     def test_update_event(self, bing_ebank, bingham_catalog):
-        """ modify and event and ensure index is updated """
+        """modify and event and ensure index is updated"""
         index1 = bing_ebank.read_index()
         eve = bingham_catalog[0]
         rid = str(eve.resource_id)
@@ -714,11 +714,11 @@ class TestPutEvents:
 
 
 class TestProgressBar:
-    """ Tests for the progress bar functionality of banks. """
+    """Tests for the progress bar functionality of banks."""
 
     @pytest.fixture
     def custom_bar(self):
-        """ return a custom bar implementation. """
+        """return a custom bar implementation."""
 
         class Bar:
             called = False
@@ -737,7 +737,7 @@ class TestProgressBar:
 
     @pytest.fixture()
     def bar_ebank(self, tmpdir, monkeypatch):
-        """ return an event bank specifically for testing ProgressBar. """
+        """return an event bank specifically for testing ProgressBar."""
         # set the interval and min files to 1 to ensure bar gets called
         cat = obspy.read_events()
         path = Path(tmpdir)
@@ -753,31 +753,31 @@ class TestProgressBar:
 
     @pytest.fixture()
     def bar_ebank_bad_file(self, bar_ebank):
-        """ Add a waveform file to ensure ProgressBar doesnt choke. """
+        """Add a waveform file to ensure ProgressBar doesnt choke."""
         path = Path(bar_ebank.bank_path)
         st = obspy.read()
         st.write(str(path / "waveform.xml"), "mseed")
         return bar_ebank
 
     def test_custom_bar_class(self, bar_ebank, custom_bar):
-        """ Ensure a custom update bar function works. """
+        """Ensure a custom update bar function works."""
         bar_ebank.update_index(bar=custom_bar)
         assert custom_bar.called
 
     def test_custom_bar_instances(self, bar_ebank, custom_bar):
-        """ Ensure passing an instance to bar will simply use instance. """
+        """Ensure passing an instance to bar will simply use instance."""
         bar = custom_bar()
         assert not bar.finished
         bar_ebank.update_index(bar=bar)
         assert bar.finished
 
     def test_bad_file_raises_warning(self, bar_ebank_bad_file, custom_bar):
-        """ Ensure a bad files raises warning but doesn't kill progress. """
+        """Ensure a bad files raises warning but doesn't kill progress."""
         with pytest.warns(UserWarning):
             bar_ebank_bad_file.update_index(custom_bar)
 
     def test_false_disables_bar(self, bar_ebank, monkeypatch):
-        """ Passing False for bar argument should disable it. """
+        """Passing False for bar argument should disable it."""
         # we ensure the default bar isnt by monkey patching the util to get it
         state = {"called": False}
 
@@ -791,13 +791,13 @@ class TestProgressBar:
         assert state["called"] is False
 
     def test_bad_value_raises(self, bar_ebank):
-        """ Passing an unsupported value to bar should raise. """
+        """Passing an unsupported value to bar should raise."""
         with pytest.raises(ValueError):
             bar_ebank.update_index(bar="unsupported")
 
 
 class TestConcurrency:
-    """ Tests for using an executor for concurrency. """
+    """Tests for using an executor for concurrency."""
 
     @pytest.fixture
     def ebank_executor(self, ebank, instrumented_executor, monkeypatch):
@@ -814,14 +814,14 @@ class TestConcurrency:
         return cat
 
     def test_executor_get_events(self, ebank_executor):
-        """ Ensure the threadpool map function is used for reading events. """
+        """Ensure the threadpool map function is used for reading events."""
         # get events, ensure map is used
         _ = ebank_executor.get_events()
         counter = getattr(ebank_executor.executor, "_counter", {})
         assert counter.get("map", 0) > 0
 
     def test_executor_index_events(self, ebank_executor):
-        """ Ensure threadpool map is used for updating the index. """
+        """Ensure threadpool map is used for updating the index."""
         try:
             os.remove(ebank_executor.index_path)
         except FileNotFoundError:

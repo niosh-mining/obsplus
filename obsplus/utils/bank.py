@@ -40,7 +40,7 @@ STATION_EXT = ".xml"
 
 
 def _get_time_values(time1, time2=None):
-    """ get the time values from a UTCDateTime object or two """
+    """get the time values from a UTCDateTime object or two"""
     tvals = "year month day hour minute second microsecond".split()
     utc1 = time1
     split = re.split("-|:|T|[.]", str(utc1).replace("Z", ""))
@@ -152,7 +152,7 @@ def _natify_paths(series: pd.Series) -> pd.Series:
 
 
 class _IndexCache:
-    """ A simple class for caching indexes """
+    """A simple class for caching indexes"""
 
     def __init__(self, bank, cache_size=5):
         self.max_size = cache_size
@@ -164,7 +164,7 @@ class _IndexCache:
         # self.next_index = itertools.cycle(self.cache.index)
 
     def __call__(self, starttime, endtime, buffer, **kwargs):
-        """ get start and end times, perform in kernel lookup """
+        """get start and end times, perform in kernel lookup"""
         starttime, endtime = self._get_times(starttime, endtime)
         self._validate_kwargs(kwargs)
         # find out if the query falls within one cached times
@@ -213,7 +213,7 @@ class _IndexCache:
             raise UnsupportedKeyword(msg)
 
     def _set_cache(self, index, starttime, endtime, kwargs):
-        """Cache the current index """
+        """Cache the current index"""
         ser = pd.Series(
             {
                 "t1": starttime,
@@ -225,13 +225,13 @@ class _IndexCache:
         self.cache.loc[self._get_next_index()] = ser
 
     def _kwargs_to_str(self, kwargs):
-        """ convert kwargs to a string """
+        """convert kwargs to a string"""
         keys = sorted(list(kwargs.keys()))
         ou = str([(item, kwargs[item]) for item in keys])
         return ou
 
     def _get_index(self, where, fail_counts=0, **kwargs):
-        """ read the hdf5 file """
+        """read the hdf5 file"""
         try:
             return pd.read_hdf(
                 self.bank.index_path, self.bank._index_node, where=where, **kwargs
@@ -246,7 +246,7 @@ class _IndexCache:
             return self._get_index(where, fail_counts=fail_counts + 1, **kwargs)
 
     def clear_cache(self):
-        """ removes all cached dataframes. """
+        """removes all cached dataframes."""
         self.cache = pd.DataFrame(
             index=range(self.max_size), columns="t1 t2 kwargs cindex".split()
         )
@@ -319,10 +319,10 @@ def _str_of_params(value):
 
 
 def _make_wheres(queries):
-    """ Create the where queries, join with AND clauses """
+    """Create the where queries, join with AND clauses"""
 
     def _rename_keys(kwargs):
-        """ re-word some keys to make automatic sql generation easier"""
+        """re-word some keys to make automatic sql generation easier"""
         if "eventid" in kwargs:
             kwargs["event_id"] = kwargs.pop("eventid")
         if "event_id" in kwargs:
@@ -336,7 +336,7 @@ def _make_wheres(queries):
         return kwargs
 
     def _handle_nat(kwargs):
-        """ add a mintime that will exclude NaT values if endtime is used """
+        """add a mintime that will exclude NaT values if endtime is used"""
         if "maxtime" in kwargs and "mintime" not in kwargs:
             kwargs["mintime"] = SMALLDT64.astype(np.int64) + 1
         return kwargs
@@ -357,7 +357,7 @@ def _make_wheres(queries):
         return kwargs, out
 
     def _build_query(kwargs):
-        """ iterate each key/value and build query """
+        """iterate each key/value and build query"""
         out = []
         kwargs, out = _handle_dateline_transversal(kwargs, out)
         for key, val in kwargs.items():
@@ -383,7 +383,7 @@ def _make_wheres(queries):
 
 
 def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
-    """ build a sql command """
+    """build a sql command"""
     # get columns
     if columns:
         col = [columns] if isinstance(columns, str) else columns
@@ -424,13 +424,13 @@ def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
 
 
 def _get_tables(con):
-    """ Return a list of table in sqlite database """
+    """Return a list of table in sqlite database"""
     out = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
     return set(out)
 
 
 def _drop_rows(table_name, con, columns=None, **kwargs):
-    """ Drop indicies in table """
+    """Drop indicies in table"""
     sql = _make_sql_command("delete", table_name, columns=columns, **kwargs)
     con.execute(sql)
 

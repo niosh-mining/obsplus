@@ -15,7 +15,7 @@ from obsplus.utils.time import to_datetime64, to_timedelta64
 
 @pytest.fixture
 def simple_df():
-    """ Return a simple dataframe. """
+    """Return a simple dataframe."""
     cat = obsplus.load_dataset("bingham_test").event_client.get_events()
     df = obsplus.events_to_df(cat)
     return df
@@ -23,7 +23,7 @@ def simple_df():
 
 @pytest.fixture
 def waveform_df():
-    """ Create a dataframe with the basic required columns. """
+    """Create a dataframe with the basic required columns."""
     st = obspy.read()
     cols = list(NSLC) + ["starttime", "endtime"]
     df = pd.DataFrame([tr.stats for tr in st])[cols]
@@ -33,10 +33,10 @@ def waveform_df():
 
 
 class TestApplyFuncsToColumns:
-    """ Test applying functions to various columns. """
+    """Test applying functions to various columns."""
 
     def test_basic(self, simple_df):
-        """ Ensure the functions are applied to the dataframe """
+        """Ensure the functions are applied to the dataframe"""
         df = simple_df
         td = np.timedelta64(1, "s")
         funcs = {"time": lambda x: x + td, "latitude": lambda x: x + 1}
@@ -48,24 +48,24 @@ class TestApplyFuncsToColumns:
         assert (out["latitude"] == df["latitude"] + 1).all()
 
     def test_skips_missing_column(self, simple_df):
-        """ A function should not be called on a non-existent column. """
+        """A function should not be called on a non-existent column."""
         funcs = {"bob": lambda x: x / 0}
         out = upd.apply_funcs_to_columns(simple_df, funcs)
         assert "bob" not in out.columns
 
     def test_inplace(self, simple_df):
-        """ Inplace should be, well, inplace. """
+        """Inplace should be, well, inplace."""
         funcs = {"latitude": lambda x: x + 1}
         out = upd.apply_funcs_to_columns(simple_df, funcs, inplace=True)
         assert out is simple_df
 
 
 class TestCastDtypes:
-    """ tests for apply different datatypes to columns. """
+    """tests for apply different datatypes to columns."""
 
     @pytest.fixture
     def time_df(self):
-        """ Create a simple dataframe for converting to time/time delta"""
+        """Create a simple dataframe for converting to time/time delta"""
         df = pd.DataFrame(index=range(3), columns=["time", "delta"])
         # populate various time formats
         df.loc[0, "time"] = "2012-01-12T10:10:02"
@@ -78,29 +78,29 @@ class TestCastDtypes:
         return df
 
     def test_basic(self, simple_df):
-        """ simple test for casting datatypes. """
+        """simple test for casting datatypes."""
         out = upd.cast_dtypes(simple_df, {"time": str})
         assert all([isinstance(x, str) for x in out["time"]])
 
     def test_time_dtype(self, time_df):
-        """ Test time dtype. """
+        """Test time dtype."""
         out1 = upd.cast_dtypes(time_df, {"time": "ops_datetime"})["time"]
         out2 = to_datetime64(time_df["time"])
         assert (out1 == out2).all()
 
     def test_time_delta(self, time_df):
-        """ Test that timedelta dtype. """
+        """Test that timedelta dtype."""
         out1 = upd.cast_dtypes(time_df, {"delta": "ops_timedelta"})["delta"]
         out2 = to_timedelta64(time_df["delta"])
         assert (out1 == out2).all()
 
     def test_utc_datetime(self, time_df):
-        """ Tests for converting to UTCDateTime. """
+        """Tests for converting to UTCDateTime."""
         out = upd.cast_dtypes(time_df, {"time": "utcdatetime"})
         assert all([isinstance(x, obspy.UTCDateTime) for x in out["time"]])
 
     def test_empty_with_columns(self):
-        """ An empty dataframe should still have the datatypes cast. """
+        """An empty dataframe should still have the datatypes cast."""
         # get columns and dtypes
         columns = ["time", "space"]
         dtypes = {"time": "ops_datetime", "space": float}
@@ -113,7 +113,7 @@ class TestCastDtypes:
         assert (out_empty == out_full).all()
 
     def test_empty_no_columns(self):
-        """ Ensure empty dataframes with no columns just returns. """
+        """Ensure empty dataframes with no columns just returns."""
         df = pd.DataFrame()
         out = upd.cast_dtypes(df, dtype={"bob": int})
         assert isinstance(out, pd.DataFrame)
@@ -127,7 +127,7 @@ class TestGetWaveformsBulkArgs:
     """
 
     def assert_wellformed_bulk_args(self, bulk_args):
-        """ Assert the bulk args are as expected. """
+        """Assert the bulk args are as expected."""
         for bulk_arg in bulk_args:
             assert len(bulk_arg) == 6
             for str_thing in bulk_arg[:4]:
@@ -136,30 +136,30 @@ class TestGetWaveformsBulkArgs:
                 assert isinstance(date_thing, obspy.UTCDateTime)
 
     def test_basic_get_nslc(self, waveform_df):
-        """ Test bulk args with no only required columns. """
+        """Test bulk args with no only required columns."""
         bulk_args = upd.get_waveforms_bulk_args(waveform_df)
         self.assert_wellformed_bulk_args(bulk_args)
 
     def test_missing_column_raises(self, waveform_df):
-        """ Test that a missing required column raises. """
+        """Test that a missing required column raises."""
         df = waveform_df.drop(columns="starttime")
         with pytest.raises(DataFrameContentError):
             upd.get_waveforms_bulk_args(df)
 
     def test_missing_value_raises(self, waveform_df):
-        """ Ensure any NaN values raises. """
+        """Ensure any NaN values raises."""
         waveform_df.loc[0, "starttime"] = np.NaN
         with pytest.raises(DataFrameContentError):
             upd.get_waveforms_bulk_args(waveform_df)
 
     def test_extractra_columns_work(self, waveform_df):
-        """ Extra columns shouldn't effect anything. """
+        """Extra columns shouldn't effect anything."""
         waveform_df["bob"] = 10
         bulk = upd.get_waveforms_bulk_args(waveform_df)
         self.assert_wellformed_bulk_args(bulk)
 
     def test_bad_start_endtime_raises(self, waveform_df):
-        """ If any starttime is before endtime it should raise. """
+        """If any starttime is before endtime it should raise."""
         td = np.timedelta64(10, "s")
         df = waveform_df.copy()
         df["starttime"] = df["endtime"] + td
@@ -167,7 +167,7 @@ class TestGetWaveformsBulkArgs:
             upd.get_waveforms_bulk_args(df)
 
     def test_bad_seed_id_raises(self, waveform_df):
-        """ Seed ids cannot (currently) have wildcards """
+        """Seed ids cannot (currently) have wildcards"""
         waveform_df.loc[0, "network"] = "B?"
         with pytest.raises(DataFrameContentError):
             upd.get_waveforms_bulk_args(waveform_df)
@@ -203,7 +203,7 @@ class TestGetSeedIdSeries:
         assert (seed == pick_df["seed_id"]).all()
 
     def test_bad_subset(self, pick_df):
-        """ Bad subset should raise valuerror."""
+        """Bad subset should raise valuerror."""
         with pytest.raises(ValueError):
             upd.get_seed_id_series(pick_df, subset=["network", "monkey"])
 
@@ -226,7 +226,7 @@ class TestGetSeedIdSeries:
 
 
 class TestMisc:
-    """ Misc. small tests. """
+    """Misc. small tests."""
 
     def test_replace_or_shallow_none(self, waveform_df):
         """Test when replace is non the dataframe is simply returned."""

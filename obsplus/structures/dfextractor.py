@@ -27,12 +27,12 @@ def _pass_through_dataframe(df: pd.DataFrame):
 
 
 def _merge_dicts(dict1: Mapping, dict2: Mapping) -> Mapping:
-    """ Merge two mappings (dict-likes) together. """
+    """Merge two mappings (dict-likes) together."""
     return {**dict1, **dict2}
 
 
 def _get_output_dict(obj, name, func):
-    """ return an output dict.  """
+    """return an output dict."""
     out = func(obj)
     # a dict was returned, each key, value maps to a column, value
     if isinstance(out, dict):
@@ -145,7 +145,7 @@ class DataFrameExtractor(UserDict):
         return register_single_dispatch
 
     def _get_name(self, func):
-        """ get the name of a callable. """
+        """get the name of a callable."""
         try:
             return func.__name__
         except AttributeError:  # if this is an instance
@@ -229,9 +229,9 @@ class DataFrameExtractor(UserDict):
         return msg
 
     class SkipRow(StopIteration):
-        """ exception to raise to skip a row. """
+        """exception to raise to skip a row."""
 
     @property
     def dtypes(self):
-        """ return a dictionary of datatypes. """
+        """return a dictionary of datatypes."""
         return reduce(_merge_dicts, self._dtypes)

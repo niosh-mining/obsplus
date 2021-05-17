@@ -30,10 +30,10 @@ from obsplus.utils.testing import assert_streams_almost_equal
 
 
 class TestGetWaveformClient:
-    """ tests for getting a waveform client from various objects. """
+    """tests for getting a waveform client from various objects."""
 
     def test_from_mseed_file(self, tmpdir):
-        """ A path to a file should return a stream from that file. """
+        """A path to a file should return a stream from that file."""
         st = obspy.read()
         new_path = Path(tmpdir) / "stream.mseed"
         st.write(str(new_path), "mseed")
@@ -41,13 +41,13 @@ class TestGetWaveformClient:
         assert isinstance(client, WaveformClient)
 
     def test_from_bank(self, default_wbank):
-        """ A waveform client should just return itself. """
+        """A waveform client should just return itself."""
         client = get_waveform_client(default_wbank)
         assert isinstance(client, WaveformClient)
 
 
 class TestTrimEventStream:
-    """ ensure the trim_event waveforms function works """
+    """ensure the trim_event waveforms function works"""
 
     # fixtures
     @pytest.fixture(scope="class")
@@ -90,7 +90,7 @@ class TestTrimEventStream:
         assert "trim tolerance" in str(e.value.args[0])
 
     def test_fragmented_stream(self, fragmented_stream):
-        """ test with streams that are fragmented """
+        """test with streams that are fragmented"""
         with pytest.warns(UserWarning) as w:
             st = trim_event_stream(fragmented_stream)
         assert "seconds long" in str(w[0].message)
@@ -98,21 +98,21 @@ class TestTrimEventStream:
         assert "BOB" not in stations
 
     def test_empty_stream(self):
-        """ Ensure an empty stream returns an empty stream. """
+        """Ensure an empty stream returns an empty stream."""
         st = obspy.Stream()
         out = trim_event_stream(st)
         assert isinstance(out, obspy.Stream)
         assert len(out) == 0
 
     def test_stream_with_duplicates_merged(self):
-        """ Duplicate streams should be merged. """
+        """Duplicate streams should be merged."""
         st = obspy.read() + obspy.read()
         out = trim_event_stream(st, merge=None)
         assert len(out) == 3
 
 
 class TestMergeStream:
-    """ Tests for obsplus' style for merging streams together. """
+    """Tests for obsplus' style for merging streams together."""
 
     @pytest.fixture()
     def gapped_high_sample_stream(self):
@@ -150,7 +150,7 @@ class TestMergeStream:
         return obspy.Stream(traces=[tr1, tr2])
 
     def convert_stream_dtype(self, st, dtype):
-        """ Convert datatypes on each trace in the stream. """
+        """Convert datatypes on each trace in the stream."""
         st = st.copy()
         for tr in st:
             tr.data = tr.data.astype(dtype)
@@ -158,14 +158,14 @@ class TestMergeStream:
         return st
 
     def test_identical_streams(self):
-        """ ensure passing identical streams performs de-duplication. """
+        """ensure passing identical streams performs de-duplication."""
         st = obspy.read()
         st2 = obspy.read() + st + obspy.read()
         st_out = merge_traces(st2)
         assert st_out == st
 
     def test_adjacent_traces(self):
-        """ Traces that are one sample away in time should be merged together. """
+        """Traces that are one sample away in time should be merged together."""
         # create stream with traces adjacent in time and merge together
         st1 = obspy.read()
         st2 = obspy.read()
@@ -178,7 +178,7 @@ class TestMergeStream:
         assert out == st_in.merge(1).split()
 
     def test_traces_with_overlap(self):
-        """ Trace with overlap should be merged together. """
+        """Trace with overlap should be merged together."""
         st1 = obspy.read()
         st2 = obspy.read()
         for tr1, tr2 in zip(st1, st2):
@@ -188,7 +188,7 @@ class TestMergeStream:
         assert out == st_in.merge(1).split()
 
     def test_traces_with_different_sampling_rates(self):
-        """ traces with different sampling_rates should be left alone. """
+        """traces with different sampling_rates should be left alone."""
         st1 = obspy.read()
         st2 = obspy.read()
         for tr in st2:
@@ -198,7 +198,7 @@ class TestMergeStream:
         assert st_out == st_in
 
     def test_array_data_type(self):
-        """ The array datatype should not change. """
+        """The array datatype should not change."""
         # test floats
         st1 = obspy.read()
         st2 = obspy.read()
@@ -235,7 +235,7 @@ class TestMergeStream:
 
 
 class TestStream2Contiguous:
-    """ test the stream2contiguous function works """
+    """test the stream2contiguous function works"""
 
     # helper functions
     @staticmethod
@@ -316,7 +316,7 @@ class TestStream2Contiguous:
 
 
 class TestArchiveToSDS:
-    """ Tests for converting archives to SDS. """
+    """Tests for converting archives to SDS."""
 
     stream_process_count = 0
 
@@ -327,7 +327,7 @@ class TestArchiveToSDS:
 
     @pytest.fixture(scope="class")
     def converted_archive(self, tmpdir_factory, ta_dataset):
-        """ Convert a dataset archive to a SDS archive. """
+        """Convert a dataset archive to a SDS archive."""
         out = tmpdir_factory.mktemp("new_sds")
         ds = ta_dataset
         wf_path = ds.waveform_path
@@ -339,25 +339,25 @@ class TestArchiveToSDS:
 
     @pytest.fixture(scope="class")
     def sds_wavebank(self, converted_archive):
-        """ Create a new WaveBank on the converted archive. """
+        """Create a new WaveBank on the converted archive."""
         wb = obsplus.WaveBank(converted_archive)
         wb.update_index()
         return wb
 
     @pytest.fixture(scope="class")
     def old_wavebank(self, ta_dataset):
-        """ get the wavebank of the archive before converting to sds """
+        """get the wavebank of the archive before converting to sds"""
         bank = ta_dataset.waveform_client
         assert isinstance(bank, obsplus.WaveBank)
         return bank
 
     def test_path_exists(self, converted_archive):
-        """ ensure the path to the new SDS exists """
+        """ensure the path to the new SDS exists"""
         path = Path(converted_archive)
         assert path.exists()
 
     def test_directory_not_empty(self, sds_wavebank, old_wavebank):
-        """ ensure the same date range is found in the new archive """
+        """ensure the same date range is found in the new archive"""
         sds_index = sds_wavebank.read_index()
         old_index = old_wavebank.read_index()
         # start times and endtimes for old and new should be the same
@@ -373,7 +373,7 @@ class TestArchiveToSDS:
         assert np.allclose(old_end.astype(np.int64), sds_end.astype(np.int64))
 
     def test_each_file_one_trace(self, sds_wavebank):
-        """ ensure each file in the sds has exactly one channel """
+        """ensure each file in the sds has exactly one channel"""
         index = sds_wavebank.read_index()
         for fi in index.path.unique():
             base = Path(sds_wavebank.bank_path) / fi[1:]
@@ -382,11 +382,11 @@ class TestArchiveToSDS:
 
 
 class TestStreamBulkSplit:
-    """ Tests for converting a trace to a list of Streams. """
+    """Tests for converting a trace to a list of Streams."""
 
     @pytest.fixture
     def bing_pick_bulk(self, bingham_catalog):
-        """ Create a dataframe from the bingham_test picks. """
+        """Create a dataframe from the bingham_test picks."""
         picks = obsplus.picks_to_df(bingham_catalog)
         df = picks[list(NSLC)]
         df["starttime"] = picks["time"] - to_timedelta64(1.011)
@@ -408,7 +408,7 @@ class TestStreamBulkSplit:
         return out
 
     def test_stream_bulk_split(self):
-        """ Ensure the basic stream to trace works. """
+        """Ensure the basic stream to trace works."""
         # get bulk params
         st = obspy.read()
         t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
@@ -422,7 +422,7 @@ class TestStreamBulkSplit:
         assert t_expected == streams[0]
 
     def test_empty_query_returns_empty(self):
-        """ An empty query should return an emtpy Stream """
+        """An empty query should return an emtpy Stream"""
         st = obspy.read()
         out = stream_bulk_split(st, [])
         assert len(out) == 0
@@ -430,7 +430,7 @@ class TestStreamBulkSplit:
         assert len(out2) == 0
 
     def test_empty_stream_returns_empty(self):
-        """ An empty stream should also return an empty stream """
+        """An empty stream should also return an empty stream"""
         st = obspy.read()
         t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
         nslc = st[0].id.split(".")
@@ -439,7 +439,7 @@ class TestStreamBulkSplit:
         assert len(out) == 0
 
     def test_no_bulk_matches(self):
-        """ Test when multiple bulk parameters don't match any traces. """
+        """Test when multiple bulk parameters don't match any traces."""
         st = obspy.read()
         bulk = []
         for tr in st:
@@ -469,7 +469,7 @@ class TestStreamBulkSplit:
             assert np.isclose(duration - out_duration, 5)
 
     def test_two_inter(self):
-        """ Tests for getting data completely contained in available range.  """
+        """Tests for getting data completely contained in available range."""
         # setup stream and bulk args
         st = obspy.read()
         duration = st[0].stats.endtime - st[0].stats.starttime
@@ -483,7 +483,7 @@ class TestStreamBulkSplit:
             assert np.isclose(duration - out_duration, 10)
 
     def test_two_intervals_same_stream(self):
-        """ Tests for returning two intervals in the same stream. """
+        """Tests for returning two intervals in the same stream."""
         st = obspy.read()
         bulk = self.get_bulk_from_stream(st, [0, 0], [[0, -15], [15, 0]])
         out = stream_bulk_split(st, bulk)
@@ -495,7 +495,7 @@ class TestStreamBulkSplit:
             assert abs(out_duration - 15) <= stats.sampling_rate * 2
 
     def test_input_from_df(self, bing_pick_bulk, bingham_stream, bingham_dataset):
-        """ Ensure bulk can be formed from a dataframe. """
+        """Ensure bulk can be formed from a dataframe."""
         st_client = bingham_dataset.waveform_client
         st_list = stream_bulk_split(bingham_stream, bing_pick_bulk)
         for st1, (_, ser) in zip(st_list, bing_pick_bulk.iterrows()):
@@ -503,7 +503,7 @@ class TestStreamBulkSplit:
             assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
     def test_fill_value(self):
-        """ test for filling values. """
+        """test for filling values."""
         st_client = obspy.read()
         bulk = self.get_bulk_from_stream(st_client, [0], [[-10, -20]])
         out = stream_bulk_split(st_client, bulk, fill_value=0)[0]

@@ -124,7 +124,7 @@ def collect_catalogs():
 
 
 def internet_available():
-    """ Test if internet resources are available. """
+    """Test if internet resources are available."""
     import socket
 
     address = "8.8.8.8"
@@ -164,7 +164,7 @@ has_internet = internet_available()
 
 
 class StreamTester:
-    """ A collection of methods for testing waveforms. """
+    """A collection of methods for testing waveforms."""
 
     @staticmethod
     def streams_almost_equal(st1, st2):
@@ -204,7 +204,7 @@ class StreamTester:
 
 
 class DataSet(typing.NamedTuple):
-    """ A data class for storing info about test cases """
+    """A data class for storing info about test cases"""
 
     base = None
     quakeml = None
@@ -217,14 +217,14 @@ class DataSet(typing.NamedTuple):
 
 @pytest.fixture(scope="class")
 def thread_executor():
-    """ return a thread pool """
+    """return a thread pool"""
     with ThreadPoolExecutor(CPU_COUNT) as executor:
         yield executor
 
 
 @pytest.fixture(scope="class")
 def process_executor():
-    """ return a process pool """
+    """return a process pool"""
     # in order to avoid sapping too many resources, just use 1/2 CPU count
     with ProcessPoolExecutor((CPU_COUNT // 2)) as executor:
         yield executor
@@ -252,26 +252,26 @@ def instrumented_executor(executor):
 
 @pytest.fixture(scope="session")
 def ta_dataset():
-    """ Load the small ta_test test case into a dataset """
+    """Load the small ta_test test case into a dataset"""
     return load_and_update_dataset("ta_test")
 
 
 @pytest.fixture(scope="session")
 def ta_wavebank(ta_dataset):
-    """ Return a wavebank from ta_test dataset. """
+    """Return a wavebank from ta_test dataset."""
     return ta_dataset.waveform_client
 
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
-    """ load the bingham_test dataset """
+    """load the bingham_test dataset"""
     ds = load_and_update_dataset("bingham_test")
     return ds
 
 
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
-    """ load the bingham_test tests case """
+    """load the bingham_test tests case"""
     cat = bingham_dataset.event_client.get_events()
     assert len(cat), "catalog is empty"
     return cat
@@ -279,13 +279,13 @@ def bingham_catalog(bingham_dataset):
 
 @pytest.fixture()
 def bingham_stream(bingham_dataset):
-    """ load the bingham_test tests case """
+    """load the bingham_test tests case"""
     return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
 @pytest.fixture(scope="session")
 def bingham_stream_dict(bingham_dataset):
-    """ return a dict where keys are event_id, vals are streams """
+    """return a dict where keys are event_id, vals are streams"""
     fetcher = bingham_dataset.get_fetcher()
     return dict(fetcher.yield_event_waveforms(10, 50))
 
@@ -384,7 +384,7 @@ def event_cache():
 
 @pytest.fixture(scope="session")
 def catalog_cache():
-    """ Return a cache from the test_catalogs. """
+    """Return a cache from the test_catalogs."""
     return test_catalog_cache_obj
 
 
@@ -410,14 +410,14 @@ def qml_to_merge_paths(request):
 
 @pytest.fixture(scope="class")
 def qml_to_merge_basic():
-    """ Return a path to the basic merge qml dataset. """
+    """Return a path to the basic merge qml dataset."""
     out = glob.glob(join(TEST_DATA_PATH, "qml2merge", "*2017-01-06T16-15-14"))
     return out[0]
 
 
 @pytest.fixture(scope="session", params=station_cache_obj.keys)
 def station_cache_inventory(request):
-    """ Return the test inventories. """
+    """Return the test inventories."""
     return station_cache_obj[request.param]
 
 
@@ -449,7 +449,7 @@ def basic_stream_with_gap(waveform_cache):
 
 @pytest.fixture(scope="class")
 def disjointed_stream():
-    """ return a waveforms that has parts with no overlaps """
+    """return a waveforms that has parts with no overlaps"""
     st = obspy.read()
     st[0].stats.starttime += 3600
     return st
@@ -457,7 +457,7 @@ def disjointed_stream():
 
 @pytest.fixture
 def fragmented_stream():
-    """ create a waveforms that has been fragemented """
+    """create a waveforms that has been fragemented"""
     st = obspy.read()
     # make streams with new stations that are disjointed
     st2 = st.copy()
@@ -474,7 +474,7 @@ def fragmented_stream():
 
 @pytest.fixture(scope="class")
 def default_wbank(tmp_path_factory):
-    """ create a  directory out of the traces in default waveforms, init bank """
+    """create a  directory out of the traces in default waveforms, init bank"""
     base = Path(tmp_path_factory.mktemp("default_wbank"))
     st = obspy.read()
     for num, tr in enumerate(st):

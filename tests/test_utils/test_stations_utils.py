@@ -18,11 +18,11 @@ from obsplus.exceptions import AmbiguousResponseError
 
 
 class TestDfToInventory:
-    """ Tests for converting a dataframe to an obspy Inventory. """
+    """Tests for converting a dataframe to an obspy Inventory."""
 
     @staticmethod
     def _assert_dates_are_utc_or_none(obj):
-        """ assert the start_date and end_date are UTC instances or None """
+        """assert the start_date and end_date are UTC instances or None"""
         start = getattr(obj, "start_date", None)
         end = getattr(obj, "end_date", None)
         for attr in [start, end]:
@@ -30,13 +30,13 @@ class TestDfToInventory:
 
     @pytest.fixture
     def df_from_inv(self):
-        """ convert the default inventory to a df and return. """
+        """convert the default inventory to a df and return."""
         inv = obspy.read_inventory()
         return obsplus.stations_to_df(inv)
 
     @pytest.fixture
     def inv_from_df(self, df_from_inv):
-        """ convert the station df back into an inventory. """
+        """convert the station df back into an inventory."""
         return df_to_inventory(df_from_inv)
 
     @pytest.fixture
@@ -92,11 +92,11 @@ class TestDfToInventory:
         return new_df
 
     def test_type(self, inv_from_df):
-        """ An inv should have been returned. """
+        """An inv should have been returned."""
         assert isinstance(inv_from_df, obspy.Inventory)
 
     def test_nslc_variations_float(self, nslc_dtype_variation):
-        """ Make sure data types get set (particularly for NSLC columns) """
+        """Make sure data types get set (particularly for NSLC columns)"""
         inp = nslc_dtype_variation[0]
         expect = nslc_dtype_variation[1]
         inv = df_to_inventory(inp)
@@ -109,12 +109,12 @@ class TestDfToInventory:
                     assert channel.location_code == expect
 
     def test_invalid_nslc(self, invalid_nslc):
-        """ Make sure data types get set (particularly for NSLC columns) """
+        """Make sure data types get set (particularly for NSLC columns)"""
         with pytest.raises(TypeError, match="cannot contain '.'"):
             df_to_inventory(invalid_nslc)
 
     def test_new(self, df_from_inv, df_from_inv_from_df):
-        """ Ensure the transformation is lossless from df side. """
+        """Ensure the transformation is lossless from df side."""
         df1, df2 = df_from_inv, df_from_inv_from_df
         assert len(df1) == len(df2)
         assert set(df1.columns) == set(df2.columns)
@@ -154,7 +154,7 @@ class TestDfToInventory:
         assert inv_sub[0][0][0].azimuth is None
 
     def test_make_station_level_inventory(self, df_from_inv):
-        """ Ensure station level invs can be constructed. """
+        """Ensure station level invs can be constructed."""
         df = df_from_inv.drop(columns="channel")
         inv = df_to_inventory(df)
         for net in inv:
@@ -162,7 +162,7 @@ class TestDfToInventory:
                 assert not sta.channels, "there should be no channels"
 
     def test_make_network_level_inventory(self, df_from_inv):
-        """ Ensure station level invs can be constructed. """
+        """Ensure station level invs can be constructed."""
         df = df_from_inv.drop(columns=["channel", "station"])
         inv = df_to_inventory(df)
         for net in inv:
@@ -294,7 +294,7 @@ class TestDfToInventoryGetResponses:
 
     @pytest.fixture
     def df_with_partial_responses(self, df_with_nrl_response):
-        """ test creating inv with partial responses. """
+        """test creating inv with partial responses."""
         # set one row to None
         df_with_nrl_response.loc[0, "sensor_keys"] = None
         return df_with_nrl_response
@@ -324,13 +324,13 @@ class TestDfToInventoryGetResponses:
         return df
 
     def test_nrl_responses(self, df_with_nrl_response):
-        """ Ensure the NRL is used to pull responses. """
+        """Ensure the NRL is used to pull responses."""
         with suppress_warnings():
             inv = df_to_inventory(df_with_nrl_response)
         assert self.has_valid_response(inv)
 
     def test_response_one_missing(self, df_with_partial_responses):
-        """ Ensure responses which can be got are fetched. """
+        """Ensure responses which can be got are fetched."""
         df = df_with_partial_responses
         with suppress_warnings():
             inv = df_to_inventory(df)

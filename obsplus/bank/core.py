@@ -197,7 +197,7 @@ class _Bank(ABC):
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 
     def _make_meta_table(self):
-        """ get a dataframe of meta info """
+        """get a dataframe of meta info"""
         meta = dict(
             path_structure=self.path_structure,
             name_structure=self.name_structure,
@@ -206,7 +206,7 @@ class _Bank(ABC):
         return pd.DataFrame(meta, index=[0])
 
     def get_service_version(self):
-        """ Return the version of obsplus used to create index. """
+        """Return the version of obsplus used to create index."""
         return self._index_version
 
     def ensure_bank_path_exists(self, create=False):

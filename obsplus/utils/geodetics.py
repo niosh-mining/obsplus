@@ -88,18 +88,18 @@ class SpatialCalculator:
         return self._validate_dataframe(df)
 
     def _df_from_events(self, obj):
-        """ Get the needed dataframe from some objects with event data. """
+        """Get the needed dataframe from some objects with event data."""
         df = obsplus.events_to_df(obj).set_index("event_id")
         df["elevation"] = -df["depth"]
         return df
 
     def _df_from_stations(self, obj):
-        """ Get the needed dataframe from some object with station data. """
+        """Get the needed dataframe from some object with station data."""
         df = obsplus.stations_to_df(obj).set_index("seed_id")
         return df
 
     def _df_from_sequences(self, obj):
-        """ Get the dataframe from generic sequences. """
+        """Get the dataframe from generic sequences."""
         ar = np.atleast_2d(obj)
         if ar.shape[1] == 3:  # need to add index columns
             id = np.arange(len(ar))
@@ -131,7 +131,7 @@ class SpatialCalculator:
         return df[~duplicate_indices]
 
     def _validate_dataframe(self, df) -> pd.DataFrame:
-        """ Ensure all the parameters of the dataframe are reasonable. """
+        """Ensure all the parameters of the dataframe are reasonable."""
         # first cull out columns that aren't needed and de-dup index
         if ("depth" in df.columns) and ("elevation" not in df.columns):
             # Make sure that the df has an elevation column
@@ -158,7 +158,7 @@ class SpatialCalculator:
     # --- methods for calculating spatial relationships
 
     def _get_spatial_relations(self, array):
-        """ Calculate distances and azimuths. """
+        """Calculate distances and azimuths."""
         # TODO this may be vectorizable, look into it
         # get planet radius and flattening
         a, f = self.radius, self.flattening

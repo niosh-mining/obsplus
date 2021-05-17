@@ -42,7 +42,7 @@ class _WFExampleLoader:
 
     @register_func(example_loaders, "default")
     def _make_wf_from_st_no_response(self):
-        """ Get a copy of the default trace, remove response. """
+        """Get a copy of the default trace, remove response."""
         st = obspy.read()
         # drop response for easier stats dtypes
         for tr in st:
@@ -107,7 +107,7 @@ class _DFExtractorFromStatsAndClient:
         return out
 
     def _get_data_df(self, arrays):
-        """ A fast way to convert a list of np.ndarrays to a single ndarray. """
+        """A fast way to convert a list of np.ndarrays to a single ndarray."""
         # Surprisingly this is much (5x) times faster than just passing arrays
         # to the DataFrame constructor.
         max_len = max([len(x) if x.shape else 0 for x in arrays])
@@ -122,7 +122,7 @@ class _DFExtractorFromStatsAndClient:
         return pd.DataFrame(out)
 
     def _get_data_and_stats(self, bulk):
-        """ Using a waveform client return an array of data and stats. """
+        """Using a waveform client return an array of data and stats."""
         waveforms = self.client
         # Get a stream of waveforms.
         if not isinstance(waveforms, obspy.Stream):
@@ -159,7 +159,7 @@ class _DFExtractorFromStatsAndClient:
 
 
 class _DFtoStreamConverter:
-    """ Class for converting dataframes to and from streams. """
+    """Class for converting dataframes to and from streams."""
 
     def _stats_df_to_stats(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -180,7 +180,7 @@ class _DFtoStreamConverter:
         return df
 
     def __call__(self, df):
-        """ convert waveframe df to stream. """
+        """convert waveframe df to stream."""
         stats_df_old, data_df = df["stats"], df["data"]
         # get stats, convert datetimes back to obspy
         stats_df = self._stats_df_to_stats(stats_df_old)

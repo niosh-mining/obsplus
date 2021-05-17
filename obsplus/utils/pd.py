@@ -410,7 +410,7 @@ def filter_df(df: pd.DataFrame, **kwargs) -> np.array:
 
 
 def _filter_starttime_endtime(df, starttime=None, endtime=None):
-    """ Filter dataframe on starttime and endtime. """
+    """Filter dataframe on starttime and endtime."""
     bool_index = np.ones(len(df), dtype=bool)
     t1 = to_datetime64(starttime) if starttime is not None else SMALLDT64
     t2 = to_datetime64(endtime) if endtime is not None else LARGEDT64
@@ -423,12 +423,12 @@ def _filter_starttime_endtime(df, starttime=None, endtime=None):
 
 @lru_cache(maxsize=2500)
 def get_regex(seed_str):
-    """ Compile, and cache regex for str queries. """
+    """Compile, and cache regex for str queries."""
     return fnmatch.translate(seed_str)  # translate to re
 
 
 def _column_contains(ser: pd.Series, str_sequence: Iterable[str]) -> pd.Series:
-    """ Test if a str series contains any values in a sequence """
+    """Test if a str series contains any values in a sequence"""
     safe_matches = {re.escape(x) for x in str_sequence}
     return ser.str.contains("|".join(safe_matches)).values
 
@@ -453,7 +453,7 @@ def get_waveforms_bulk_args(
     """
 
     def rename_startdate_enddate(df):
-        """ rename startdate, enddate to starttime endtime """
+        """rename startdate, enddate to starttime endtime"""
         col_set = set(df.columns)
         if "startdate" in col_set and "starttime" not in col_set:
             df = df.rename(columns={"startdate": "starttime"})
@@ -462,13 +462,13 @@ def get_waveforms_bulk_args(
         return df
 
     def _times_to_utc(df):
-        """ Convert time columns to UTCDateTime."""
+        """Convert time columns to UTCDateTime."""
         df["starttime"] = to_utc(df["starttime"])
         df["endtime"] = to_utc(df["endtime"])
         return df
 
     def _check_nslc_codes(df):
-        """ Ensure there are no wildcards in NSLC columns. """
+        """Ensure there are no wildcards in NSLC columns."""
         for code in NSLC:
             has_qmark = df[code].str.contains("?", regex=False).any()
             has_star = df[code].str.contains("*", regex=False).any()
@@ -478,7 +478,7 @@ def get_waveforms_bulk_args(
         return df
 
     def _check_starttime_endtime(df):
-        """ Ensure all starttimes are less than endtimes. """
+        """Ensure all starttimes are less than endtimes."""
         # starttimes must be <= endtime
         invalid_time_range = df["starttime"] >= df["endtime"]
         if invalid_time_range.any():
@@ -487,7 +487,7 @@ def get_waveforms_bulk_args(
         return df
 
     def _check_missing_data(df):
-        """ There should be no missing data in the required columns."""
+        """There should be no missing data in the required columns."""
         # first check if all required columns exist
         if not set(BULK_WAVEFORM_COLUMNS).issubset(set(df.columns)):
             missing_cols = set(BULK_WAVEFORM_COLUMNS) - set(df.columns)

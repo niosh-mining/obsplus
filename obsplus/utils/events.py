@@ -236,7 +236,7 @@ def bump_creation_version(obj):
 
 
 def _bump_version(version):
-    """ bump the version in the creation info"""
+    """bump the version in the creation info"""
     if isinstance(version, str):
         split = [int(x) for x in version.split(".")]
         split[-1] += 1
@@ -309,7 +309,7 @@ def make_origins(
 
 
 def _create_first_pick_origin(first_pick, channel_ser, depth):
-    """ Create an origin based on first pick and a channel series. """
+    """Create an origin based on first pick and a channel series."""
     msg = (
         "origin fixed to location and time of earliest pick by "
         f"obsplus version {obsplus.__last_version__}"
@@ -432,7 +432,7 @@ def get_preferred(event: Event, what: str, init_empty=False):
     """
 
     def _none_or_empty():
-        """ Return None or an empty object of correct type. """
+        """Return None or an empty object of correct type."""
         if init_empty:
             return getattr(obspy.core.event, what.capitalize())()
         else:

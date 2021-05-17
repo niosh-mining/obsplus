@@ -47,7 +47,7 @@ def starttimes_consistent(dar, tolerance=0.0001):
 
 
 class TestWaveform2ArrayDict:
-    """ tests for the waveforms to array dict functions """
+    """tests for the waveforms to array dict functions"""
 
     # Fixtures that return array dicts with only 1 sampling rate
     homogeneous_fixtures = [
@@ -60,7 +60,7 @@ class TestWaveform2ArrayDict:
     # fixtures
     @pytest.fixture(scope="class")
     def default_array_dict_from_stream(self):
-        """ return the default waveforms converted to an array dict """
+        """return the default waveforms converted to an array dict"""
         return obspy_to_array_dict(obspy.read())
 
     @pytest.fixture(scope="class")
@@ -71,13 +71,13 @@ class TestWaveform2ArrayDict:
 
     @pytest.fixture(scope="class")
     def array_dict_from_trace_dict(self):
-        """ create an array dict from a trace dict """
+        """create an array dict from a trace dict"""
         st = obspy.read()
         return obspy_to_array_dict({tr.id: tr for tr in st})
 
     @pytest.fixture(scope="class")
     def array_dict_from_trace(self):
-        """ create an array dict from a trace """
+        """create an array dict from a trace"""
         return obspy_to_array_dict({1: obspy.read()[0]})
 
     @pytest.fixture(scope="class")
@@ -95,19 +95,19 @@ class TestWaveform2ArrayDict:
     # meta fixtures
     @pytest.fixture(scope="class", params=homogeneous_fixtures)
     def homogeneous_array_dict(self, request):
-        """ collect all homogeneous fixtures """
+        """collect all homogeneous fixtures"""
         return request.getfixturevalue(request.param)
 
     # specific tests
     def test_different_sample_rates(self, array_dict_different_sr):
-        """ ensure all the sample rates is represented """
+        """ensure all the sample rates is represented"""
         assert len(array_dict_different_sr) == 3
         for item, val in array_dict_different_sr.items():
             assert isinstance(item, int)
             assert isinstance(val, xr.DataArray)
 
     def test_one_trace(self):
-        """ ensure a single trace is valid input """
+        """ensure a single trace is valid input"""
         tr = obspy.read()[0]
         out = obspy_to_array_dict(tr)
         assert isinstance(out, dict)
@@ -130,7 +130,7 @@ class TestStreamDict2DataArray:
 
     # helper functions
     def trim_end(self, st, samps):
-        """ trim samps from end of each trace in st """
+        """trim samps from end of each trace in st"""
         st = st.copy()
         for tr in st:
             tr.data = tr.data[:-samps]
@@ -139,7 +139,7 @@ class TestStreamDict2DataArray:
     # fixture
     @pytest.fixture
     def stream_dict_short_len(self):
-        """ create a waveforms dict with different lengths """
+        """create a waveforms dict with different lengths"""
         st = obspy.read()
         st_bad = st.copy()
         t2 = st_bad[0].stats.endtime
@@ -148,22 +148,22 @@ class TestStreamDict2DataArray:
 
     @pytest.fixture
     def st_dict_close_lens(self):
-        """ create a waveforms dict with streams that are almost the same len"""
+        """create a waveforms dict with streams that are almost the same len"""
         st = obspy.read()
         return {0: st, 1: self.trim_end(st, 10), 2: self.trim_end(st, 15)}
 
     # tests
     def test_type(self, data_array_from_dict):
-        """ ensure the type is correct """
+        """ensure the type is correct"""
         assert isinstance(data_array_from_dict, xr.DataArray)
 
     def test_dimensions(self, data_array_from_dict):
-        """ ensure there are 3 dimensions """
+        """ensure there are 3 dimensions"""
         assert len(data_array_from_dict.dims) == 3
         assert ("stream_id", "seed_id", "time") == data_array_from_dict.dims
 
     def test_data_survived(self, data_array_from_dict, stream_dict):
-        """ ensure the data did not get changed from conversion """
+        """ensure the data did not get changed from conversion"""
         for key, st in stream_dict.items():
             for tr in st:
                 seed_id = tr.id
@@ -171,11 +171,11 @@ class TestStreamDict2DataArray:
                 assert np.allclose(ar, tr.data)
 
     def test_attrs_survived(self, data_array_from_dict):
-        """ ensure attrs came out """
+        """ensure attrs came out"""
         assert data_array_from_dict.attrs
 
     def test_starttime_coord(self, data_array_from_dict):
-        """ ensure the starttime is found in the DataArray """
+        """ensure the starttime is found in the DataArray"""
         dar = data_array_from_dict
         assert "starttime" in dar.coords
 
@@ -201,7 +201,7 @@ class TestStreamDict2DataArray:
         assert len(dar.time.values), " empty time dimension "
 
     def test_stream_processor(self):
-        """ ensure a waveforms processor gets called """
+        """ensure a waveforms processor gets called"""
         state = []
 
         def stream_proc(stream):
@@ -212,7 +212,7 @@ class TestStreamDict2DataArray:
         assert len(state)
 
     def test_empty_stream(self):
-        """ test some empty streams as inputs """
+        """test some empty streams as inputs"""
         stream_dict = {0: obspy.read(), 1: obspy.read(), 2: obspy.Stream()}
         dar = obspy_to_array(stream_dict)
         assert isinstance(dar, xr.DataArray)
@@ -220,7 +220,7 @@ class TestStreamDict2DataArray:
         assert 2 not in dar.stream_id.values
 
     def test_misbalanced_array(self):
-        """ test the behavior when one channel is much shorter than others """
+        """test the behavior when one channel is much shorter than others"""
         # make streamdict where one channel is very short
         stream_dict = {0: obspy.read(), 1: obspy.read(), 2: obspy.Stream()}
         stream_dict[0][1].data = stream_dict[0][0].data[:100]
@@ -232,7 +232,7 @@ class TestStreamDict2DataArray:
         assert abs(len(dar.time) - expected_len) <= 1
 
     def test_short_stream(self, stream_dict_short_len):
-        """ test for when a waveforms is much shorter than the others """
+        """test for when a waveforms is much shorter than the others"""
         with pytest.warns(UserWarning) as w:
             ar = obspy_to_array(stream_dict_short_len)
         # ensure a warning was raised, some depreciation warnings creep in
@@ -242,19 +242,19 @@ class TestStreamDict2DataArray:
         assert not ar.isnull().any()
 
     def test_stream_uneven(self, st_dict_close_lens):
-        """ tests for when all streams are different lens """
+        """tests for when all streams are different lens"""
         ar = obspy_to_array(st_dict_close_lens)
         assert not ar.isnull().any()
 
     def test_idempotent(self, st_dict_close_lens):
-        """ ensure the transformation to data array is idempotent """
+        """ensure the transformation to data array is idempotent"""
         dar = obspy_to_array(st_dict_close_lens)
         dar2 = obspy_to_array(dar)
         assert (dar == dar2).all()
 
 
 class TestStream2DataArray:
-    """ ensure the stream2dataset function works as expected """
+    """ensure the stream2dataset function works as expected"""
 
     # fixtures
     @pytest.fixture()
@@ -268,7 +268,7 @@ class TestStream2DataArray:
 
     @pytest.fixture(scope="class")
     def data_array_from_trace_dict(self, waveform_cache):
-        """ make a data array from a dict of traces (not streams)"""
+        """make a data array from a dict of traces (not streams)"""
         st = waveform_cache["default"]
         out = {}
         for num, tr in enumerate(st):
@@ -278,20 +278,20 @@ class TestStream2DataArray:
 
     # tests
     def test_type(self, data_array_from_stream):
-        """ ensure a dataset was returned """
+        """ensure a dataset was returned"""
         assert isinstance(data_array_from_stream, xr.DataArray)
 
     def test_shape(self, data_array_from_stream, waveform_cache_stream):
-        """ make sure the dataset matched the req_len of waveforms (plus time) """
+        """make sure the dataset matched the req_len of waveforms (plus time)"""
         assert data_array_from_stream.shape[1] == len(waveform_cache_stream)
 
     def test_attrs(self, data_array_from_stream):
-        """ make sure the dataset has the starttime coordinate """
+        """make sure the dataset has the starttime coordinate"""
         attrs = data_array_from_stream.attrs
         assert {"sampling_rate"}.issubset(attrs)
 
     def test_stream_with_gap(self, data_array_from_gappy_stream, basic_stream_with_gap):
-        """ make sure the gappy waveforms worked """
+        """make sure the gappy waveforms worked"""
         dar = data_array_from_gappy_stream
         st, st1, st2 = basic_stream_with_gap
 
@@ -312,7 +312,7 @@ class TestStream2DataArray:
         assert abs(gapsize_ds - gapsize_st) < 2
 
     def test_trace_dict_has_all_dims(self, data_array_from_trace_dict):
-        """ ensure an array created from a dict of traces has all the dims """
+        """ensure an array created from a dict of traces has all the dims"""
         dims = ("stream_id", "seed_id", "time")
         assert data_array_from_trace_dict.dims == dims
 
@@ -323,17 +323,17 @@ class TestTrace2DataArray:
     # fixtures
     @pytest.fixture(scope="class")
     def data_array_from_trace(self, waveform_cache_trace):
-        """ convert the trace to a data array, return data array """
+        """convert the trace to a data array, return data array"""
         tr = waveform_cache_trace
         return obspy_to_array(tr), tr
 
     # tests
     def test_type(self, data_array_from_trace):
-        """ ensure correct type returned """
+        """ensure correct type returned"""
         assert isinstance(data_array_from_trace[0], xr.DataArray)
 
     def test_time_dimension(self, data_array_from_trace):
-        """ ensure the time dimension is correct """
+        """ensure the time dimension is correct"""
         array, trace = data_array_from_trace
         time = array.time
         t1 = array.starttime.values.flatten()[0]
@@ -342,7 +342,7 @@ class TestTrace2DataArray:
         assert (array.values == trace.data).all()
 
     def test_stats_as_metadata(self, data_array_from_trace):
-        """ ensure the stats dict was copied to attrs """
+        """ensure the stats dict was copied to attrs"""
         array, trace = data_array_from_trace
         assert hasattr(array, "attrs")
         stream_id = array.stream_id.values[0]
@@ -355,12 +355,12 @@ class TestTrace2DataArray:
 
 
 class TestArray2Dict:
-    """ tests for converting DataArrays back to obspy objects """
+    """tests for converting DataArrays back to obspy objects"""
 
     number_of_streams = 10
 
     def _remove_processing(self, st):
-        """ copy stream and remove processing"""
+        """copy stream and remove processing"""
         from obspy.core.trace import Stats
 
         st = st.copy()
@@ -383,12 +383,12 @@ class TestArray2Dict:
     # fixtures
     @pytest.fixture(scope="class")
     def default_array2dict(self, default_array):
-        """ convert the default array to a dict of obspy streams """
+        """convert the default array to a dict of obspy streams"""
         return obsplus.array_to_obspy(default_array)
 
     @pytest.fixture(scope="class")
     def long_stream_dict(self):
-        """ return a long dict of the default waveforms """
+        """return a long dict of the default waveforms"""
         st = obspy.read()
         stream_dict = {
             f"event_{item}": st.copy() for item in range(self.number_of_streams)
@@ -397,17 +397,17 @@ class TestArray2Dict:
 
     @pytest.fixture(scope="class")
     def array_long_stream_dict(self, long_stream_dict):
-        """ convert the long waveforms dict to an array """
+        """convert the long waveforms dict to an array"""
         return obsplus.array_to_obspy(long_stream_dict)
 
     # tests
     def test_stream_ids_are_keys(self, default_array, default_array2dict):
-        """ ensure the default array waveforms ids made it into the dict """
+        """ensure the default array waveforms ids made it into the dict"""
         stream_ids = set(default_array.stream_id.values)
         assert stream_ids == set(default_array2dict)
 
     def test_streams_equal(self, default_array2dict, default_array, waveform_cache):
-        """ ensure the streams before and after array transform are equal """
+        """ensure the streams before and after array transform are equal"""
         st1 = waveform_cache["default"].sort()
         da = default_array2dict
         st2 = da[0].sort()
@@ -415,7 +415,7 @@ class TestArray2Dict:
         assert self.equal_without_processing(st1, st2)
 
     def test_crandall_arrays(self):
-        """ Ensure the crandall_test canyon arrays can be converted back """
+        """Ensure the crandall_test canyon arrays can be converted back"""
         # create data arrays from crandall_test
         ds = obsplus.load_dataset("crandall_test")
         fetcher = ds.get_fetcher()
@@ -434,18 +434,18 @@ class TestArray2Dict:
 
 
 class TestList2Array:
-    """ tests for converting a list of waveforms to a dataarray. """
+    """tests for converting a list of waveforms to a dataarray."""
 
     list1_len = 4
 
     @pytest.fixture
     def list_array1(self):
-        """ A  list of homogeneous streams """
+        """A  list of homogeneous streams"""
         return obspy_to_array([obspy.read() for _ in range(self.list1_len)])
 
     @pytest.fixture
     def list_array2(self):
-        """ A list of heterogeneous traces/streams """
+        """A list of heterogeneous traces/streams"""
         # change the channel names on the default trace
         st_odd = obspy.read()
         for tr in st_odd:
@@ -466,12 +466,12 @@ class TestList2Array:
 
 
 class TestWriteDataArray:
-    """ ensure the data array can be written to disk """
+    """ensure the data array can be written to disk"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def written_array(self, default_array):
-        """ write the default array to disk, return path """
+        """write the default array to disk, return path"""
 
         # TODO finish this
 
@@ -479,18 +479,18 @@ class TestWriteDataArray:
 class TestAttachPicks:
     # tests
     def test_ptime_stime_coords(self, dar_attached_picks):
-        """ ensure the coordinates ptime stime exist """
+        """ensure the coordinates ptime stime exist"""
         assert "origin_time" in dar_attached_picks.coords
         assert "p_time" in dar_attached_picks.coords
         assert "s_time" in dar_attached_picks.coords
 
     def test_some_valid_values(self, dar_attached_picks):
-        """ ensure at least some P values made it to the coords """
+        """ensure at least some P values made it to the coords"""
         vals = dar_attached_picks.coords["p_time"]
         assert (~pd.isnull(vals)).any()
 
     def test_dtypes(self, dar_attached_picks):
-        """ the datatype of the picks columns should be float """
+        """the datatype of the picks columns should be float"""
         for phase in ["p_time", "s_time"]:
             col = getattr(dar_attached_picks, phase)
             dtype = col.dtype
@@ -509,7 +509,7 @@ class TestAttachPicks:
             assert ((dd.starttime.values - to_utc(time).timestamp) < 100).all()
 
     def test_starttime_pick_separation(self, dar_attached_picks):
-        """ ensure the picks are close to starttime """
+        """ensure the picks are close to starttime"""
         dar = dar_attached_picks
         assert starttimes_consistent(dar, tolerance=0.02)
         picks = dar.p_time
@@ -518,7 +518,7 @@ class TestAttachPicks:
         assert (diff.isnull().values | (abs(diff) < 100).values).all()
 
     def test_attach_picks_many_events(self, crandall_data_array):
-        """ tests for attaching picks with many (>1) events """
+        """tests for attaching picks with many (>1) events"""
         p_picks = crandall_data_array.coords["p_time"]
         # all events should have at least one p pick
         all_null_events = p_picks.isnull().all(dim="seed_id")
@@ -526,7 +526,7 @@ class TestAttachPicks:
 
 
 class TestTrimArray:
-    """ tests for waveform channel trimming """
+    """tests for waveform channel trimming"""
 
     time2add = 1
     common_fixtures = [
@@ -546,7 +546,7 @@ class TestTrimArray:
 
     @pytest.fixture(scope="class")
     def dar_ref_starttime(self, default_array):
-        """ data array with coord that reference start of trace """
+        """data array with coord that reference start of trace"""
         dar = copy.deepcopy(default_array)
         add = np.ones(dar.shape[:-1]) * self.time2add
         dar.coords["something"] = (("stream_id", "seed_id"), add)
@@ -554,12 +554,12 @@ class TestTrimArray:
 
     @pytest.fixture(scope="class")
     def trimmed_dar_ref_starttime(self, dar_ref_starttime):
-        """ apply the trim function with coords that reference starttime """
+        """apply the trim function with coords that reference starttime"""
         return dar_ref_starttime.ops.trim(trim="something", is_timestamp=False)
 
     @pytest.fixture(scope="class")
     def attached_picks_and_groups(self, dar_attached_picks):
-        """ apply groups to the attached_picks """
+        """apply groups to the attached_picks"""
         dar = dar_attached_picks.copy(deep=True)
         # make two groups for testing
         ones = np.ones_like(dar.starttime)
@@ -570,13 +570,13 @@ class TestTrimArray:
 
     @pytest.fixture(scope="class")
     def trimmed_group(self, attached_picks_and_groups):
-        """ apply the trim groups to the data array """
+        """apply the trim groups to the data array"""
         dar = attached_picks_and_groups.copy(deep=True)
         return dar.ops.trim(trim="p_time", aggregate_by="group")
 
     @pytest.fixture(scope="class")
     def trimmed_on_stream_id(self, dar_attached_picks):
-        """ return trimmed results on a coord that is set on stream_id """
+        """return trimmed results on a coord that is set on stream_id"""
         dar = dar_attached_picks.copy(deep=True)
         time2add = self.time2add * np.ones(np.shape(dar.stream_id))
         ser = pd.Series(time2add, index=dar.stream_id.values)
@@ -587,7 +587,7 @@ class TestTrimArray:
 
     @pytest.fixture(scope="class", params=common_fixtures)
     def all_trimmed_dar(self, request):
-        """ metafixture for gathering all trimmed results for common tests """
+        """metafixture for gathering all trimmed results for common tests"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture(scope="class")
@@ -597,14 +597,14 @@ class TestTrimArray:
 
     # specific tests
     def test_no_modification_to_original(self, dar_attached_picks):
-        """ ensure there is no modification to the original data array """
+        """ensure there is no modification to the original data array"""
         dar1 = dar_attached_picks.copy(deep=True)
         assert dar1.equals(dar_attached_picks)
         _ = dar_attached_picks.ops.trim(trim="p_time")
         assert dar1.equals(dar_attached_picks)
 
     def test_starttimes_are_ptimes(self, trimmed_dar):
-        """ the start times should now coincide with the p_times """
+        """the start times should now coincide with the p_times"""
         ptimes = trimmed_dar.coords["p_time"]
         starttimes = trimmed_dar.coords["starttime"]
         # either there should be no p_pick time or it should be nearly
@@ -612,13 +612,13 @@ class TestTrimArray:
         assert ((ptimes - starttimes <= 0.01) | pd.isnull(ptimes)).all()
 
     def test_relative_trim(self, trimmed_dar_ref_starttime, default_array):
-        """ ensure the relative start time stuff works """
+        """ensure the relative start time stuff works"""
         dar = trimmed_dar_ref_starttime
         expected_times = default_array.starttime + self.time2add
         assert (dar.starttime == expected_times).all()
 
     def test_attrs_kept(self, trimmed_dar):
-        """ ensure the attrs propagated """
+        """ensure the attrs propagated"""
         assert hasattr(trimmed_dar, "attrs")
 
     def test_all_times_changed(self, trimmed_group, attached_picks_and_groups):
@@ -635,19 +635,19 @@ class TestTrimArray:
         assert (startimes_not_equal | in_no_pick_group).all()
 
     def test_trim_stream_id_passed(self, trimmed_on_stream_id, dar_attached_picks):
-        """ ensure the starttimes were adjusted """
+        """ensure the starttimes were adjusted"""
         dar1, dar2 = trimmed_on_stream_id, dar_attached_picks
         assert (dar1.starttime != dar2.starttime).all()
 
     def test_trim_constant(self, default_array):
-        """ test that passing a constant trims the array """
+        """test that passing a constant trims the array"""
         old_start = default_array.starttime
         out = default_array.ops.trim(10, is_timestamp=False)
         new_start = out.starttime
         assert np.all((new_start - old_start) == 10)
 
     def test_trim_dataarray(self, default_array):
-        """ test that passing a dataarray trims the array """
+        """test that passing a dataarray trims the array"""
         old_start = default_array.starttime
         out = default_array.ops.trim(old_start + 10)
         new_start = out.starttime
@@ -655,16 +655,16 @@ class TestTrimArray:
 
     # common tests
     def test_starttimes_intacted(self, all_trimmed_dar):
-        """ the starttimes should all be floats (non-nan) """
+        """the starttimes should all be floats (non-nan)"""
         assert (~pd.isnull(all_trimmed_dar.starttime)).all()
 
     def test_all_times_unique(self, all_trimmed_dar):
-        """ ensure the time vector contains only unique values """
+        """ensure the time vector contains only unique values"""
         flat_times = np.ravel(all_trimmed_dar.time.values)
         assert len(np.unique(flat_times)) == len(flat_times)
 
     def test_no_nan_values_near_start(self, all_trimmed_dar):
-        """ ensure all the values at the start of the trace are not NaN """
+        """ensure all the values at the start of the trace are not NaN"""
         tmin, tmax = all_trimmed_dar.time.min(), all_trimmed_dar.time.max()
         t1 = tmin
         t2 = tmin + (tmax - tmin) / 2.0
@@ -672,7 +672,7 @@ class TestTrimArray:
         assert np.all(~pd.isnull(non_nans.values))
 
     def test_no_private_trim_coord(self, all_trimmed_dar):
-        """ ensure the _trim coord has been removed """
+        """ensure the _trim coord has been removed"""
         assert "_trim" not in all_trimmed_dar.coords
 
 
@@ -688,21 +688,21 @@ class TestPadTime:
     # fixtures
     @pytest.fixture(scope="class")
     def padded_array(self, default_array):
-        """ pad the default array """
+        """pad the default array"""
         return pad_time(default_array, total_time=self.total_time)
 
     # tests
 
     def test_type(self, padded_array):
-        """ tests to run on the padded array """
+        """tests to run on the padded array"""
         assert isinstance(padded_array, xr.DataArray)
 
     def test_attrs_survived(self, padded_array):
-        """ make sure the attrs dict came through """
+        """make sure the attrs dict came through"""
         assert padded_array.attrs
 
     def test_pad_time(self, padded_array):
-        """ tests to run on the padded array """
+        """tests to run on the padded array"""
         pads = padded_array.sel(time=slice(30, 60)).values
         np.allclose(pads, np.zeros_like(pads))
         sr = 1.0 / padded_array.attrs["sampling_rate"]
@@ -710,7 +710,7 @@ class TestPadTime:
         assert abs(times[-1] - self.total_time) <= 2 * sr
 
     def test_start_end_padding(self, default_array):
-        """ ensure the end and start can be padded """
+        """ensure the end and start can be padded"""
         padded = pad_time(
             default_array, time_after=self.time_after, time_before=self.time_before
         )
@@ -723,7 +723,7 @@ class TestPadTime:
         assert duration > dduration
 
     def test_start_zeroed(self, default_array):
-        """ ensure the zeroed array starts at zero """
+        """ensure the zeroed array starts at zero"""
         zeroed = pad_time(
             default_array, time_before=self.time_before, start_at_zero=True
         )
@@ -742,7 +742,7 @@ class TestPadTime:
         assert old_time[0] - new_time[0] == self.negative_time
 
     def test_trimmed_array_zero_start(self, default_array):
-        """ ensure when start at 0 is used the start times get updated """
+        """ensure when start at 0 is used the start times get updated"""
         pad = default_array.ops.pad(time_before=self.negative_time, start_at_zero=True)
 
         # ensure the start of the time vectors are the same
@@ -757,12 +757,12 @@ class TestPadTime:
 
 
 class TestBinArray:
-    """ tests for binning values in an array """
+    """tests for binning values in an array"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def default_bins(self, default_array):
-        """ get limit bins for the default array """
+        """get limit bins for the default array"""
         return np.linspace(default_array.min(), default_array.max(), 100)
 
     @pytest.fixture(scope="class")
@@ -771,14 +771,14 @@ class TestBinArray:
 
     # tests
     def test_dims(self, binned_default_array, default_array, default_bins):
-        """ ensure the shape and dimension labels are correct """
+        """ensure the shape and dimension labels are correct"""
         dar = binned_default_array
         assert dar.dims[:-1] == default_array.dims[:-1]
         assert np.all(dar.bin == default_bins[:-1])
         assert np.all(dar.coords["upper_bin"] == default_bins[1:])
 
     def test_bad_bins_raise(self, default_array, default_bins):
-        """ ensure bad bins raise with default raise_on_limit """
+        """ensure bad bins raise with default raise_on_limit"""
         new_dar = default_array.copy(deep=True) * 1000
         with pytest.raises(ValueError) as exec_info:
             bin_array(new_dar, default_bins)
@@ -801,17 +801,17 @@ class TestAggregations:
 
     @pytest.fixture
     def zoo_mean_station(self, dar_disjoint_seeds):
-        """ aggregate with mean on the station level """
+        """aggregate with mean on the station level"""
         return aggregate(dar_disjoint_seeds, "mean", "station")
 
     @pytest.fixture
     def zoo_max_network(self, dar_disjoint_seeds):
-        """ aggregate with max on the network level """
+        """aggregate with max on the network level"""
         return aggregate(dar_disjoint_seeds, "max", "network")
 
     @pytest.fixture
     def zoo_std_all(self, dar_disjoint_seeds):
-        """ aggregate with max on the network level """
+        """aggregate with max on the network level"""
         return aggregate(dar_disjoint_seeds, "std", "all")
 
     @pytest.fixture(params=common_fixtures)
@@ -822,7 +822,7 @@ class TestAggregations:
 
     @pytest.fixture
     def aggregated_with_group_1d(self, dar_disjoint_seeds):
-        """ Test aggregation with a dependent coordinate along one dim """
+        """Test aggregation with a dependent coordinate along one dim"""
         # swap out time series
         dar = dar_disjoint_seeds.copy(deep=True)
         dar.values = rand.rand(*dar.values.shape)
@@ -832,7 +832,7 @@ class TestAggregations:
 
     @pytest.fixture
     def aggregated_with_group_2d(self, dar_disjoint_seeds):
-        """ Test aggregation with a dependent coordinate along one dim """
+        """Test aggregation with a dependent coordinate along one dim"""
         # swap out time series
         dar = dar_disjoint_seeds.copy(deep=True)
         dar.values = rand.rand(*dar.values.shape)
@@ -845,13 +845,13 @@ class TestAggregations:
 
     # general tests
     def test_type(self, aggregated):
-        """ ensure a data array was returned """
+        """ensure a data array was returned"""
         assert isinstance(aggregated, xr.DataArray)
         assert "seed_id" in aggregated.coords
 
     # specific tests
     def test_mean_station(self, zoo_mean_station):
-        """ ensure the level=station and method=mean works """
+        """ensure the level=station and method=mean works"""
         df = self.split_seeds(zoo_mean_station)
         assert set(df.network) == {"UU", "BW"}
         assert set(df.station) == {"BOB", "RJOB"}
@@ -859,7 +859,7 @@ class TestAggregations:
         assert "location" not in df.columns
 
     def test_max_network(self, zoo_max_network):
-        """ ensure the level=station and method=mean works """
+        """ensure the level=station and method=mean works"""
         df = self.split_seeds(zoo_max_network)
         assert set(df.network) == {"UU", "BW"}
         assert "station" not in df.columns
@@ -867,7 +867,7 @@ class TestAggregations:
         assert "location" not in df.columns
 
     def test_std_all(self, zoo_std_all):
-        """ ensure the all method returns only 1 seed_id """
+        """ensure the all method returns only 1 seed_id"""
         assert zoo_std_all.to_dataset(name="var").dims["seed_id"] == 1
 
     def test_groups_are_truncated_1d(self, aggregated_with_group_1d):
@@ -887,41 +887,41 @@ class TestAggregations:
             assert len(str(group).split(".")) == 2  # only station level
 
     def test_aggregate_with_ufunc(self, data_array_from_dict):
-        """ Ensure aggregations can be performed with universal functions. """
+        """Ensure aggregations can be performed with universal functions."""
         dar = data_array_from_dict
         out1 = dar.ops.agg("mean", "station")
         out2 = dar.ops.agg(np.mean, "station")
         assert (out1 == out2).all()
 
     def test_aggregate_non_xarray_function(self, data_array_from_dict):
-        """ functions that dont have xarray methods should also work. """
+        """functions that dont have xarray methods should also work."""
         dar = data_array_from_dict
         out = dar.ops.agg(np.linalg.norm, "station")
         assert isinstance(out, xr.DataArray)
 
 
 class TestFFT3D:
-    """ test for fft on higher dimensional sets """
+    """test for fft on higher dimensional sets"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def fft_3d(self, data_array_from_dict):
-        """" run the 3d array through the fft """
+        """ " run the 3d array through the fft"""
         return array_rfft(data_array_from_dict)
 
     # tests
     def test_type(self, fft_3d):
-        """ make sure an array was returned """
+        """make sure an array was returned"""
         assert isinstance(fft_3d, xr.DataArray)
 
     def test_dims(self, fft_3d, data_array_from_dict):
-        """ make sure the dim order is the same, swapping freq for time """
+        """make sure the dim order is the same, swapping freq for time"""
         assert fft_3d.dims[:-1] == data_array_from_dict.dims[:-1]
         assert fft_3d.frequency.values.any()
 
 
 class TestArrayFFTAndIFFT:
-    """ tests for performing fft and ifft on the detex data arrays """
+    """tests for performing fft and ifft on the detex data arrays"""
 
     fixtures = ["default_fft", "fft_no_attrs", "default_fft_padded"]
     fft_input_names = ["default_array", "default_array_no_attrs"]
@@ -929,7 +929,7 @@ class TestArrayFFTAndIFFT:
 
     # helper functions
     def arrays_are_about_equal(self, ar1, ar2):
-        """ test that the data arrays are equal """
+        """test that the data arrays are equal"""
         assert ar1.shape == ar2.shape
         assert np.allclose(ar1.values, ar2.values)
         assert set(ar1.dims) == set(ar2.dims)
@@ -946,7 +946,7 @@ class TestArrayFFTAndIFFT:
     # fixtures
     @pytest.fixture(scope="class", params=fft_input_names)
     def fft_input(self, request):
-        """ return the inputs for fft function """
+        """return the inputs for fft function"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture(scope="class")
@@ -959,24 +959,24 @@ class TestArrayFFTAndIFFT:
 
     @pytest.fixture(scope="class", params=fixtures)
     def array_fft_outputs(self, fft_input):
-        """ return output of all fixtures in fixtures class attr """
+        """return output of all fixtures in fixtures class attr"""
         return array_rfft(fft_input)
 
     @pytest.fixture(scope="class")
     def array_ifft_outputs(self, array_fft_outputs):
-        """ return output of all fixtures in fixtures class attr """
+        """return output of all fixtures in fixtures class attr"""
         return array_irfft(array_fft_outputs)
 
     @pytest.fixture(scope="class")
     def default_array_no_attrs(self, default_array):
-        """ clear the attrs on the default array, run fft, return """
+        """clear the attrs on the default array, run fft, return"""
         ar = default_array.copy()
         ar.attrs = {}
         return ar
 
     @pytest.fixture(scope="class")
     def default_array_extra_coord(self, default_array):
-        """ test if extra coord are propogated """
+        """test if extra coord are propogated"""
         ar = default_array.copy()
         ar["extra_coord"] = "why!?"
         return array_rfft(ar)
@@ -993,18 +993,18 @@ class TestArrayFFTAndIFFT:
 
     @pytest.fixture(scope="class")
     def default_fft_padded(self, default_array):
-        """ return the padded fft of the default array """
+        """return the padded fft of the default array"""
         ar = default_array.copy()
         return array_rfft(ar, required_len=self.pad_length)
 
     # tests
     def test_type(self, array_fft_outputs):
-        """ ensure an array was returned with complex dtype """
+        """ensure an array was returned with complex dtype"""
         assert isinstance(array_fft_outputs, xr.DataArray)
         assert array_fft_outputs.values.dtype == np.complex128
 
     def test_fft_outputs(self, array_fft_outputs):
-        """ ensure an array was returned with complex dtype """
+        """ensure an array was returned with complex dtype"""
         assert isinstance(array_fft_outputs, xr.DataArray)
         assert array_fft_outputs.values.dtype == np.complex128
 
@@ -1019,24 +1019,24 @@ class TestArrayFFTAndIFFT:
             assert abs(freqs[-1]) == niquist
 
     def test_ifft(self, array_ifft_outputs, fft_input):
-        """ test that converting to and from freq. domain is low-lossy """
+        """test that converting to and from freq. domain is low-lossy"""
         ar1, ar2 = fft_input, array_ifft_outputs
         self.arrays_are_about_equal(ar1, ar2)
 
     def test_attrs_survived_fft(self, default_fft, default_array):
-        """ ensure an array was returned with complex dtype """
+        """ensure an array was returned with complex dtype"""
         assert default_fft.attrs == default_array.attrs
 
     def test_attrs_survived_ifft(self, default_fft, default_ifft):
-        """ ensure an array was returned with complex dtype """
+        """ensure an array was returned with complex dtype"""
         assert default_fft.attrs == default_ifft.attrs
 
     def test_extra_coord_survives(self, default_array_extra_coord):
-        """ ensure the extra coord survived """
+        """ensure the extra coord survived"""
         assert "extra_coord" in default_array_extra_coord.coords
 
     def test_default_values(self, default_fft, waveform_cache):
-        """ ensure performing fft directly on trace returns same result """
+        """ensure performing fft directly on trace returns same result"""
         st = waveform_cache["default"]
         for tr in st:
             # ensure the data are the same if fft performed directly along
@@ -1051,52 +1051,52 @@ class TestArrayFFTAndIFFT:
             assert np.allclose(t_arr, tr.data)
 
     def test_fft_padding(self, default_fft_padded):
-        """ make sure the array is correctly padded """
+        """make sure the array is correctly padded"""
         assert default_fft_padded.shape[-1] == self.pad_length // 2 + 1
 
 
 class TestIterSeed:
-    """ tests for iteratively slicing arrays by seed_id """
+    """tests for iteratively slicing arrays by seed_id"""
 
     # tests
     def test_iter_station(self, many_sid_array):
-        """ ensure iterstation works """
+        """ensure iterstation works"""
         for dar in many_sid_array.ops.iter_seed("station"):
             df = get_seed_id_df(dar)
             assert len(df.station.unique()) == 1
 
 
 class TestGetSid:
-    """ test for slicing dataframes based on seed ids """
+    """test for slicing dataframes based on seed ids"""
 
     default_seed_id = "BW.RJOB..EHZ"
 
     # fixtures
     @pytest.fixture(scope="class")
     def sliced_by_seed(self, many_sid_array):
-        """ get a particular seed_id from the default array"""
+        """get a particular seed_id from the default array"""
         return sel_sid(many_sid_array, self.default_seed_id)
 
     @pytest.fixture(scope="class")
     def sliced_by_wildcard(self, many_sid_array):
-        """ slice by wildcard"""
+        """slice by wildcard"""
         return sel_sid(many_sid_array, "*.*.*.EHZ")
 
     # tests
     def test_sliced_by_one_seed(self, sliced_by_seed):
-        """ ensure only the selected seed is taken """
+        """ensure only the selected seed is taken"""
         df = get_seed_id_df(sliced_by_seed)
         assert len(df) == 1
         expected = set([self.default_seed_id])
         assert expected == set(sliced_by_seed.seed_id.values)
 
     def test_slice_by_wild(self, sliced_by_wildcard):
-        """ ensure the wildcard sloce works """
+        """ensure the wildcard sloce works"""
         df = get_seed_id_df(sliced_by_wildcard)
         assert set(df.channel.values) == set(["EHZ"])
 
     def test_network_channel_filter(self, bingham_dar):
-        """ tests for filtering on network and channel using bingham_test data """
+        """tests for filtering on network and channel using bingham_test data"""
         filtered_dar = bingham_dar.ops.sel_sid("UU.*.*.ENZ")
         assert len(filtered_dar.seed_id)
         for seed_id in filtered_dar.seed_id.values:
@@ -1105,12 +1105,12 @@ class TestGetSid:
 
 
 class TestPickle:
-    """ tests for the pickle functionality on data arrays """
+    """tests for the pickle functionality on data arrays"""
 
     # fixtures
     @pytest.fixture(scope="class")
     def pickled_path(self, default_array):
-        """ save an object to a temporary file """
+        """save an object to a temporary file"""
         with tempfile.NamedTemporaryFile() as tf:
             default_array.ops.to_pickle(tf.name)
             yield tf.name
@@ -1119,31 +1119,31 @@ class TestPickle:
 
     @pytest.fixture(scope="class")
     def unpickled_from_path(self, pickled_path):
-        """ unpickle the pickled path """
+        """unpickle the pickled path"""
         return read_pickle(pickled_path)
 
     @pytest.fixture(scope="class")
     def pickled_bytes(self, default_array):
-        """ pickle to bytes """
+        """pickle to bytes"""
         return default_array.ops.to_pickle()
 
     @pytest.fixture(scope="class")
     def unpickled_from_bytes(self, pickled_bytes):
-        """ unpickle from bytes """
+        """unpickle from bytes"""
         return read_pickle(pickled_bytes)
 
     # tests
     def test_unpickled_file(self, default_array, unpickled_from_path):
-        """ ensure the pickle is non-lossy """
+        """ensure the pickle is non-lossy"""
         assert default_array.equals(unpickled_from_path)
 
     def test_unpickled_bytes(self, unpickled_from_bytes, default_array):
-        """ ensure byte pickling is non-lossy """
+        """ensure byte pickling is non-lossy"""
         assert unpickled_from_bytes.equals(default_array)
 
 
 class Test2Netcdf:
-    """ Tests for writing netcdf files from data arrays """
+    """Tests for writing netcdf files from data arrays"""
 
     output_params = ["read_netcdf_from_path"]
 
@@ -1159,7 +1159,7 @@ class Test2Netcdf:
 
     @pytest.fixture(scope="class")
     def netcdf_path(self, default_array_more):
-        """ save the array to a temporary netcdf file """
+        """save the array to a temporary netcdf file"""
         with tempfile.NamedTemporaryFile(suffix=".h5") as tf:
             default_array_more.ops.to_netcdf(tf.name)
             yield tf.name
@@ -1168,33 +1168,33 @@ class Test2Netcdf:
 
     @pytest.fixture(scope="class")
     def read_netcdf_from_path(self, netcdf_path):
-        """ read the netcdf file back into memory """
+        """read the netcdf file back into memory"""
         return netcdf2array(netcdf_path)
 
     @pytest.fixture(scope="class")
     def netcdf_bytes(self, default_array_more):
-        """ convert datarray to netcdf bytes """
+        """convert datarray to netcdf bytes"""
         return default_array_more.ops.to_netcdf()
 
     @pytest.fixture(scope="class")
     def read_netcdf_from_bytes(self, netcdf_bytes):
-        """ read the netcdf from bytes """
+        """read the netcdf from bytes"""
         return netcdf2array(netcdf_bytes)
 
     @pytest.fixture(scope="class", params=output_params)
     def output_dar(self, request):
-        """ metafixture for collecting outputs """
+        """metafixture for collecting outputs"""
         return request.getfixturevalue(request.param)
 
     # tests
     def test_basics(self, output_dar):
-        """ ensure the correct type and attrs exists """
+        """ensure the correct type and attrs exists"""
         assert isinstance(output_dar, xr.DataArray)
         assert hasattr(output_dar, "attrs")
         assert output_dar.attrs  # non-empty dict
 
     def test_not_lossy(self, output_dar, default_array_more):
-        """ make sure the IO is non-lossy """
+        """make sure the IO is non-lossy"""
         assert output_dar.equals(default_array_more)
         cat1 = default_array_more.attrs["events"]
         cat2 = output_dar.attrs["events"]
@@ -1205,7 +1205,7 @@ class Test2Netcdf:
 
 
 class TestSeedStacking:
-    """ Tests for stacking waveform arrays by seed levels """
+    """Tests for stacking waveform arrays by seed levels"""
 
     def test_all_level_stacks(self, crandall_data_array):
         """
@@ -1228,12 +1228,12 @@ class TestSeedStacking:
             assert ((dar1.values == dar3.values) | dar3.isnull().values).all()
 
     def test_unstack_not_stacked_dar_rasies(self, default_array):
-        """ unstacking a data array that has not been stacked should raise """
+        """unstacking a data array that has not been stacked should raise"""
         with pytest.raises(ValueError):
             default_array.ops.unstack_seed()
 
     def test_stacking_with_frequencies(self, crandall_data_array):
-        """ ensure stacking can be performed with frequency domain data. """
+        """ensure stacking can be performed with frequency domain data."""
         stacked_time = crandall_data_array.ops.stack_seed("station")
         dar_freq = crandall_data_array.ops.rfft()
         stacked_freq = dar_freq.ops.stack_seed("station")

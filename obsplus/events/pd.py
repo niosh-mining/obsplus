@@ -77,7 +77,7 @@ class _OriginQualityExtractor:
         self.event = event
 
     def _get_picks_linked_to_amps(self, eve, arrival_set):
-        """ Make sure the picks exists the amplitudes point to. """
+        """Make sure the picks exists the amplitudes point to."""
         for pick in eve.picks:
             pick.resource_id.set_referred_object(pick)
         pick_dict = {str(p.resource_id): p for p in eve.picks}
@@ -87,7 +87,7 @@ class _OriginQualityExtractor:
         return pick_dict
 
     def _get_pick_count(self, phase, pict_dict):
-        """ count the number of non-rejected picks with given phase """
+        """count the number of non-rejected picks with given phase"""
         out = {
             i
             for i, v in pict_dict.items()
@@ -96,7 +96,7 @@ class _OriginQualityExtractor:
         return len(out)
 
     def _get_phase_count(self, ori: ev.Origin, phase_type: str):
-        """ return the number of phases with phase_type found in origin """
+        """return the number of phases with phase_type found in origin"""
         count = 0
         for ar in ori.arrivals:
             # if phase is not specified dont count it
@@ -107,7 +107,7 @@ class _OriginQualityExtractor:
         return count
 
     def _get_origin_quality_info(self, origin, out):
-        """ Get information from quality info."""
+        """Get information from quality info."""
         quality_attrs = (
             ("standard_error", np.NaN),
             ("associated_phase_count", out.get("associated_phase_count", 0)),
@@ -119,14 +119,14 @@ class _OriginQualityExtractor:
             out[attr] = getattr(quality, attr, None) or default
 
     def _get_origin_uncertainty(self, origin, out):
-        """ Get information from uncertainty. """
+        """Get information from uncertainty."""
         uncert_attrs = (("horizontal_uncertainty", np.NaN),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
         for (attr, default) in uncert_attrs:
             out[attr] = getattr(uncert, attr, default) or default
 
     def _get_depth_uncertainty_info(self, origin, out):
-        """ Get info from depth info. """
+        """Get info from depth info."""
         depth_uncert = origin.depth_errors
         out["vertical_uncertainty"] = getattr(depth_uncert, "uncertainty", np.NaN)
 
@@ -149,7 +149,7 @@ class _OriginQualityExtractor:
         out["station_count"] = len(sl)
 
     def __call__(self):
-        """ Return a dict of origin quality attributes. """
+        """Return a dict of origin quality attributes."""
         out = {}
         origin = get_preferred(self.event, "origin", init_empty=True)
         # get phase and pick count
@@ -162,7 +162,7 @@ class _OriginQualityExtractor:
 
 
 def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = None):
-    """ Get the value of the last magnitude, optionally of a given type. """
+    """Get the value of the last magnitude, optionally of a given type."""
     out = np.NaN
     for mag in mags:
         if mag_type is not None:
@@ -184,7 +184,7 @@ def _path_or_event_bank(path):
 
 @events_to_df.extractor
 def _get_event_description(event):
-    """ return a string of the first event description. """
+    """return a string of the first event description."""
     try:
         return event.event_descriptions[0].text
     except (AttributeError, IndexError, TypeError):
@@ -198,14 +198,14 @@ def _get_event_id(event):
 
 @events_to_df.extractor
 def _get_author(event):
-    """ get the name of the analyst as a string, or return empty str """
+    """get the name of the analyst as a string, or return empty str"""
     ci = getattr(event, "creation_info", None)
     return getattr(ci, "author", "")
 
 
 @events_to_df.extractor
 def _get_eve_creation_info(event):
-    """ pull out information from the event level creation_info """
+    """pull out information from the event level creation_info"""
     keys = ("author", "agency_id", "creation_time", "version")
     out = {}
     cinfo = getattr(event, "creation_info", None)
@@ -216,7 +216,7 @@ def _get_eve_creation_info(event):
 
 @events_to_df.extractor()
 def _get_update_time(eve):
-    """ return the most recent time anything was updated in event """
+    """return the most recent time anything was updated in event"""
     creations = get_instances_from_tree(eve, cls=ev.CreationInfo)
     timestamps = [getattr(x.creation_time, "timestamp", None) or 0 for x in creations]
     return {"updated": max(timestamps) if timestamps else np.NaN}
@@ -227,7 +227,7 @@ loc_dtypes = {x: EVENT_DTYPES[x] for x in ("latitude", "longitude", "depth")}
 
 @events_to_df.extractor(dtypes=loc_dtypes)
 def _get_origin_basic(eve):
-    """ extract basic info from origin. """
+    """extract basic info from origin."""
     ori = get_preferred(eve, "origin", init_empty=True)
     return getattrs(ori, set(loc_dtypes))
 
@@ -242,7 +242,7 @@ def _get_time(event):
 
 @events_to_df.extractor
 def _get_origin_quality(eve: ev.Event):
-    """ get information from origin quality """
+    """get information from origin quality"""
     return _OriginQualityExtractor(eve)()
 
 
@@ -299,7 +299,7 @@ def _file_to_picks_df(path):
 @picks_to_df.register(ev.Event)
 @picks_to_df.register(ev.Catalog)
 def _picks_from_event(event: ev.Event):
-    """ return a dataframe of picks from a pick list """
+    """return a dataframe of picks from a pick list"""
     return _objs_from_event(event, "picks", picks_to_df)
 
 
@@ -331,7 +331,7 @@ def _file_to_arrivals_df(path):
 @arrivals_to_df.register(ev.Event)
 @arrivals_to_df.register(ev.Catalog)
 def _arrivals_from_event(event: ev.Event):
-    """ return a dataframe of arrivals from an event """
+    """return a dataframe of arrivals from an event"""
     cat = [event] if isinstance(event, ev.Event) else event
     origins = [e.preferred_origin() for e in cat if e.preferred_origin()]
     arr_list = []
@@ -386,7 +386,7 @@ def _file_to_amplitudes_df(path):
 @amplitudes_to_df.register(ev.Event)
 @amplitudes_to_df.register(ev.Catalog)
 def _amplitudes_from_event(event: ev.Event):
-    """ return a dataframe of amplitudes from an amplitude list """
+    """return a dataframe of amplitudes from an amplitude list"""
     return _objs_from_event(event, "amplitudes", amplitudes_to_df)
 
 
@@ -423,13 +423,13 @@ def _file_to_station_magnitudes_df(path):
 @station_magnitudes_to_df.register(ev.Event)
 @station_magnitudes_to_df.register(ev.Catalog)
 def _station_magnitudes_from_event(event: ev.Event):
-    """ return a dataframe of station_magnitudes from a station_magnitude list """
+    """return a dataframe of station_magnitudes from a station_magnitude list"""
     return _objs_from_event(event, "station_magnitudes", station_magnitudes_to_df)
 
 
 @station_magnitudes_to_df.register(ev.Magnitude)  # This may not work nicely...
 def _station_magnitudes_from_magnitude(mag: ev.Magnitude):
-    """ return a dataframe of station magnitudes from a Magnitude """
+    """return a dataframe of station magnitudes from a Magnitude"""
     sms = []
     for smc in mag.station_magnitude_contributions:
         if smc.station_magnitude_id:
@@ -464,7 +464,7 @@ def _file_to_magnitudes_df(path):
 @magnitudes_to_df.register(ev.Event)
 @magnitudes_to_df.register(ev.Catalog)
 def _magnitudes_from_event(event: ev.Event):
-    """ return a dataframe of magnitudes from a magnitude list """
+    """return a dataframe of magnitudes from a magnitude list"""
     return _objs_from_event(event, "magnitudes", magnitudes_to_df)
 
 
@@ -491,7 +491,7 @@ def _file_to_df(path, extractor):
 
 
 def _objs_from_event(event, attr, extractor):
-    """ return a dataframe of an obj type from an event """
+    """return a dataframe of an obj type from an event"""
     # ensure we have an iterable and flatten station_magnitudes
     cat = [event] if isinstance(event, ev.Event) else event
     objs = [obj for e in cat for obj in getattr(e, attr)]
@@ -499,13 +499,13 @@ def _objs_from_event(event, attr, extractor):
 
 
 def _objs_from_event_bank(event_bank, extractor):
-    """ return a dataframe of a set obj type from an event bank """
+    """return a dataframe of a set obj type from an event bank"""
     assert isinstance(event_bank, EventClient)
     return extractor(event_bank.get_events())
 
 
 def _obj_extractor(obj, dtypes, seed_id=True, error_obj=None):
-    """ extract common information from event object """
+    """extract common information from event object"""
     # extract attributes that are floats/str
     overlap = set(obj.__dict__) & set(dtypes)
     base = {i: getattr(obj, i) for i in overlap}
@@ -538,7 +538,7 @@ def _get_event_info(cat, attr):
 
 
 def _get_creation_info(cio):
-    """ Strip the creation info for an extractor """
+    """Strip the creation info for an extractor"""
     return {
         "creation_time": cio.creation_time,
         "author": cio.author,
@@ -547,7 +547,7 @@ def _get_creation_info(cio):
 
 
 def _get_uncertainty(errors):
-    """ Strip uncertainty info for an extractor """
+    """Strip uncertainty info for an extractor"""
     return {
         "uncertainty": errors.uncertainty,
         "lower_uncertainty": errors.lower_uncertainty,
@@ -557,7 +557,7 @@ def _get_uncertainty(errors):
 
 
 def _get_seed_id(obj):
-    """ Strip nslc info for an extractor """
+    """Strip nslc info for an extractor"""
     seed_id = get_seed_id(obj)
     split = seed_id.split(".")
     if len(split) != 4:
@@ -609,7 +609,7 @@ obspy.core.event.Event.to_df = event_to_dataframe
 
 # picks_to_dataframe
 def picks_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a dataframe of picks """
+    """Given a catalog or event, return a dataframe of picks"""
     return picks_to_df(cat_or_event)
 
 
@@ -619,7 +619,7 @@ obspy.core.event.Event.picks_to_df = picks_to_dataframe
 
 # arrivals_to_dataframe
 def arrivals_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a dataframe of arrivals """
+    """Given a catalog or event, return a dataframe of arrivals"""
     return arrivals_to_df(cat_or_event)
 
 
@@ -630,7 +630,7 @@ obspy.core.event.Origin.arrivals_to_df = arrivals_to_dataframe
 
 # amplitudes_to_dataframe
 def amplitudes_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a dataframe of amplitudes """
+    """Given a catalog or event, return a dataframe of amplitudes"""
     return amplitudes_to_df(cat_or_event)
 
 
@@ -640,7 +640,7 @@ obspy.core.event.Event.amplitudes_to_df = amplitudes_to_dataframe
 
 # station_magnitudes_to_dataframe
 def station_magnitudes_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a dataframe of station magnitudes """
+    """Given a catalog or event, return a dataframe of station magnitudes"""
     return station_magnitudes_to_df(cat_or_event)
 
 
@@ -651,7 +651,7 @@ obspy.core.event.Magnitude.station_magnitudes_to_df = station_magnitudes_to_data
 
 # magnitudes_to_dataframe
 def magnitudes_to_dataframe(cat_or_event):
-    """ Given a catalog or event, return a dataframe of magnitudes """
+    """Given a catalog or event, return a dataframe of magnitudes"""
     return magnitudes_to_df(cat_or_event)
 
 

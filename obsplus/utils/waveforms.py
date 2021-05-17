@@ -150,7 +150,7 @@ def _get_waveform_df(stream: wave_type) -> pd.DataFrame:
 
 
 def _get_bulk(bulk):
-    """ Private function to reformat the bulk """
+    """Private function to reformat the bulk"""
     # Convert dataframe to bulk input
     if bulk is None:
         return []
@@ -234,7 +234,7 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     """
 
     def _make_trace_df(traces: trace_sequence) -> pd.DataFrame:
-        """ Create a dataframe form a sequence of traces. """
+        """Create a dataframe form a sequence of traces."""
         # create dataframe of traces and stats (use ns for all time values)
         sortby = ["seed_id", "sampling_rate", "starttime", "endtime"]
         index = _get_waveform_df(traces).sort_values(sortby).reset_index(drop=True)
@@ -368,7 +368,7 @@ def _get_stream_start_end(stream, gap_df):
 
 
 def _make_gap_dataframe(gaps):
-    """ make a dataframe out of the gaps in a waveforms"""
+    """make a dataframe out of the gaps in a waveforms"""
     # get a dataframe of gaps
     columns = [
         "network",
@@ -389,7 +389,7 @@ def _make_gap_dataframe(gaps):
 
 
 def _get_waveforms_bulk_naive(self, bulk_arg):
-    """ a naive implementation of get_waveforms_bulk that uses iteration. """
+    """a naive implementation of get_waveforms_bulk that uses iteration."""
     st = obspy.Stream()
     for arg in bulk_arg:
         st += self.get_waveforms(*arg)
@@ -455,7 +455,7 @@ def archive_to_sds(
 
 
 def _get_sds_filename(st, base_path, type_code, network, station, location, channel):
-    """ Given a stream get the expected path for the file. """
+    """Given a stream get the expected path for the file."""
     time = _nearest_day(min([x.stats.starttime for x in st]))
 
     # add year and julday to formatting dict
@@ -468,7 +468,7 @@ def _get_sds_filename(st, base_path, type_code, network, station, location, chan
 
 
 def _nearest_day(time):
-    """ Round a time down to the nearest day. """
+    """Round a time down to the nearest day."""
     ts = to_utc(time).timestamp
     ts_day = 3600 * 24
     return to_utc(ts - (ts % ts_day))
@@ -512,7 +512,7 @@ def get_waveform_client(waveforms: waveform_clientable_type) -> WaveformClient:
 @get_waveform_client.register(str)
 @get_waveform_client.register(Path)
 def _get_waveclient_from_path(path):
-    """ get a waveform client from a path. """
+    """get a waveform client from a path."""
     path = Path(path)
     if path.is_dir():
         return get_waveform_client(obsplus.WaveBank(path))

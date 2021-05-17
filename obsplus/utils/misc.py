@@ -179,7 +179,7 @@ def get_instances_from_tree(object, cls):
 
 
 def try_read_catalog(catalog_path, **kwargs):
-    """ Try to read a events from file, if it raises return None """
+    """Try to read a events from file, if it raises return None"""
     read = READ_DICT.get(kwargs.pop("format", None), obspy.read_events)
     try:
         cat = read(catalog_path, **kwargs)
@@ -256,7 +256,7 @@ def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Optional:
     """
 
     def _new_update(bar):
-        """ A new update function that swallows attribute and index errors """
+        """A new update function that swallows attribute and index errors"""
         old_update = bar.update
 
         def update(value=None, force=False, **kwargs):
@@ -292,13 +292,13 @@ def iterate(obj):
 
 
 class DummyFile(object):
-    """ Dummy class to mock std out interface but go nowhere. """
+    """Dummy class to mock std out interface but go nowhere."""
 
     def write(self, x):
-        """ do nothing """
+        """do nothing"""
 
     def flush(self):
-        """ do nothing """
+        """do nothing"""
 
 
 def getattrs(obj: object, col_set: Collection, default_value: object = np.nan) -> dict:

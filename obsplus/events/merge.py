@@ -119,7 +119,7 @@ def _merge_amplitudes(eve1, eve2, reject_old=False):
 
 
 def _reject_old(objs, hash_attr, checklist):
-    """ Set the evaluation status of outdated objects to 'rejected' """
+    """Set the evaluation status of outdated objects to 'rejected'"""
     for x in objs:
         try:
             wid = _hash_wid(x, hash_attr)
@@ -194,7 +194,7 @@ def attach_new_origin(
 
 
 def _associate_picks(old_eve, new_event, new_origin):
-    """ associate the origin arrivals with correct picks from old event"""
+    """associate the origin arrivals with correct picks from old event"""
     picks = old_eve.picks  # picks of old cat_name
     new_resource_pick_dict = {x.resource_id.id: x for x in new_event.picks}
     old_pick_dict = _hash_wids(picks, "phase_hint")
