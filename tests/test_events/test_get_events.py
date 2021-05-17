@@ -11,6 +11,8 @@ from obspy.core.event import CreationInfo
 from obspy.geodetics import gps2dist_azimuth
 
 
+from obsplus.events.get_events import get_events
+
 # ---------------------- module fixtures
 
 
@@ -123,3 +125,24 @@ class TestGetEventSummary:
         df = catalog.get_event_summary()
         assert isinstance(df, pd.DataFrame)
         assert len(df)
+
+
+class TestDateLineQuery:
+    """
+    Tests for getting events spanning the dateline.
+    """
+
+    def test_get_event_query_around_earth(self, dateline_catalog):
+        """Ensure getting events can reach across dateline."""
+        kwargs = dict(minlongitude=-179, maxlongitude=179)
+        out = get_events(dateline_catalog, **kwargs)
+        assert len(out) == 1
+        assert out[0].origins[0].longitude == 0
+        assert out[0].origins[0].latitude == 0
+
+    def test_get_event_query_over_dateline(self, dateline_catalog):
+        """Test for just querying over the dateline."""
+        kwargs = dict(minlongitude=179, maxlongitude=-179)
+        out = get_events(dateline_catalog, **kwargs)
+        # should return both events
+        assert len(out) == 2

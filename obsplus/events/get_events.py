@@ -126,6 +126,7 @@ def _get_ids(df, kwargs) -> set:
             filt &= radius < circular_kwargs["maxradius"]
         df = df[filt]
     else:  # No circular kwargs are being used; normal query
+        filt, kwargs = _handle_dateline_transversal(filt, df, kwargs)
         for item, value in kwargs.items():
             if value is None:
                 continue
@@ -143,6 +144,22 @@ def _get_ids(df, kwargs) -> set:
         df = df[filt]
     limit = kwargs.get("limit", len(df))
     return set(df.event_id[:limit])
+
+
+def _handle_dateline_transversal(filt, df, kwargs):
+    """Check if dateline should be transversed by query."""
+    # if longitudes aren't being used bail out
+    if not {"minlongitude", "maxlongitude"}.issubset(set(kwargs)):
+        return filt, kwargs
+    # if dateline is not to be transversed by query bail out
+    minlong, maxlong = kwargs["minlongitude"], kwargs["maxlongitude"]
+    if not minlong > maxlong:
+        return filt, kwargs
+    long = df["longitude"]
+    # remove min/max long from query dict and reform to two queries.
+    kwargs.pop("minlongitude"), kwargs.pop("maxlongitude")
+    filt &= (long >= minlong) | (long <= maxlong)
+    return filt, kwargs
 
 
 @compose_docstring(get_events_params=get_events_parameters)

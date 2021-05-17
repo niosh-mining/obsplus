@@ -388,6 +388,17 @@ def catalog_cache():
     return test_catalog_cache_obj
 
 
+@pytest.fixture
+def dateline_catalog():
+    """Create a catalog which spans the dateline"""
+    lat_lons = [[35.899, -179.999], [36.122, 179.789], [0, 0]]
+    cat = obspy.read_events()
+    for num, (lat, lon) in enumerate(lat_lons):
+        cat[num].origins[0].latitude = lat
+        cat[num].origins[0].longitude = lon
+    return cat
+
+
 @pytest.fixture(params=glob.glob(join(TEST_DATA_PATH, "qml2merge", "*")))
 def qml_to_merge_paths(request):
     """
