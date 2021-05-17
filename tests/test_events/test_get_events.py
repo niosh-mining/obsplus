@@ -135,6 +135,7 @@ class TestDateLineQuery:
     def test_get_event_query_around_earth(self, dateline_catalog):
         """Ensure getting events can reach across dateline."""
         kwargs = dict(minlongitude=-179, maxlongitude=179)
+        # should only return event at 0,0 not events around dateline
         out = get_events(dateline_catalog, **kwargs)
         assert len(out) == 1
         assert out[0].origins[0].longitude == 0
@@ -144,5 +145,5 @@ class TestDateLineQuery:
         """Test for just querying over the dateline."""
         kwargs = dict(minlongitude=179, maxlongitude=-179)
         out = get_events(dateline_catalog, **kwargs)
-        # should return both events
+        # should return events around dateline but not event at 0,0
         assert len(out) == 2

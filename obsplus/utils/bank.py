@@ -341,9 +341,25 @@ def _make_wheres(queries):
             kwargs["mintime"] = SMALLDT64.astype(np.int64) + 1
         return kwargs
 
+    def _handle_dateline_transversal(kwargs, out):
+        """Check if dateline should be transversed by query."""
+        # if longitudes aren't being used bail out
+        if not {"minlongitude", "maxlongitude"}.issubset(set(kwargs)):
+            return kwargs, out
+        # if dateline is not to be transversed by query bail out
+        minlong, maxlong = kwargs["minlongitude"], kwargs["maxlongitude"]
+        if not minlong > maxlong:
+            return kwargs, out
+        # remove min/max long from query dict and reform to two queries.
+        kwargs.pop("minlongitude"), kwargs.pop("maxlongitude")
+        cond = f"(( longitude > {minlong}) OR ( longitude < {maxlong})) "
+        out.append(cond)
+        return kwargs, out
+
     def _build_query(kwargs):
         """ iterate each key/value and build query """
         out = []
+        kwargs, out = _handle_dateline_transversal(kwargs, out)
         for key, val in kwargs.items():
             # deal with simple min/max
             if key.startswith("min"):
@@ -354,7 +370,7 @@ def _make_wheres(queries):
             elif isinstance(val, Sequence):
                 if isinstance(val, str):
                     val = [val]
-                tup = str(tuple(val)).replace(",)", ")")  # no trailing coma
+                tup = str(tuple(val)).replace(",)", ")")  # no trailing comma
                 out.append(f"{key} IN {tup}")
             else:
                 out.append(f"{key} = {val}")

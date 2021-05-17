@@ -98,6 +98,14 @@ def ebank_with_bad_files(tmpdir):
     return bank
 
 
+@pytest.fixture
+def dateline_eventbank(dateline_catalog, tmp_path):
+    """Add the dateline catalog to a temporary path."""
+    ebank = EventBank(tmp_path)
+    ebank.put_events(dateline_catalog)
+    return ebank
+
+
 # ------------ tests
 
 
@@ -479,6 +487,24 @@ class TestReadIndexQueries:
         """Ensure unsupported kwargs raise."""
         with pytest.raises(UnsupportedKeyword, match="not_a_kwarg"):
             ebank.read_index(not_a_kwarg=10)
+
+    def test_query_around_earth(self, dateline_eventbank):
+        """Ensure getting events can reach across dateline."""
+        ebank = dateline_eventbank
+        kwargs = dict(minlongitude=-179, maxlongitude=179)
+        # should only return event at 0,0 not events around dateline
+        df = ebank.read_index(**kwargs)
+        assert len(df) == 1
+        assert np.allclose(df["longitude"], 0)
+        assert np.allclose(df["latitude"], 0)
+
+    def test_query_over_dateline(self, dateline_eventbank):
+        """Test for just querying over the dateline."""
+        ebank = dateline_eventbank
+        kwargs = dict(minlongitude=179, maxlongitude=-179)
+        out = ebank.read_index(**kwargs)
+        # should return events around dateline but not event at 0,0
+        assert len(out) == 2
 
 
 class TestGetEvents:
