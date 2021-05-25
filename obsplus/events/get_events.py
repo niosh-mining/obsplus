@@ -12,7 +12,6 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import kilometers2degrees
 
 import obsplus
-import obsplus.utils.geodetics
 import obsplus.utils.misc
 from obsplus.constants import (
     get_events_parameters,
@@ -22,6 +21,7 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.docs import compose_docstring
+from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.utils.misc import strip_prefix
 from obsplus.utils.time import _dict_times_to_npdatetimes
 
@@ -115,7 +115,7 @@ def _get_ids(df, kwargs) -> set:
         filt = np.ones(len(df)).astype(bool)
         # Trim based on circular kwargs, first get distance dataframe.
         input = (circular_kwargs["latitude"], circular_kwargs["longitude"], 0)
-        dist_calc = obsplus.utils.geodetics.SpatialCalculator()
+        dist_calc = SpatialCalculator()
         dist_df = dist_calc(input, df)
         # then get radius and filter if needed
         degrees = circular_kwargs.get("distance_degrees", True)
@@ -152,7 +152,8 @@ def _handle_dateline_transversal(filt, df, kwargs):
     if not {"minlongitude", "maxlongitude"}.issubset(set(kwargs)):
         return filt, kwargs
     # if dateline is not to be transversed by query bail out
-    minlong, maxlong = kwargs["minlongitude"], kwargs["maxlongitude"]
+    long_array = np.array([kwargs["minlongitude"], kwargs["maxlongitude"]])
+    minlong, maxlong = map_longitudes(long_array)
     if not minlong > maxlong:
         return filt, kwargs
     long = df["longitude"]

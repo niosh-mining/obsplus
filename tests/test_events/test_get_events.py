@@ -147,3 +147,10 @@ class TestDateLineQuery:
         out = get_events(dateline_catalog, **kwargs)
         # should return events around dateline but not event at 0,0
         assert len(out) == 2
+
+    def test_get_event_query_over_dateline_calum_style(self, dateline_catalog):
+        """Test for using longitudes out of |180| range."""
+        kwargs = dict(minlongitude=179, maxlongitude=181)
+        out = get_events(dateline_catalog, **kwargs)
+        # should return events around dateline but not event at 0,0
+        assert len(out) == 2

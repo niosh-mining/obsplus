@@ -506,6 +506,14 @@ class TestReadIndexQueries:
         # should return events around dateline but not event at 0,0
         assert len(out) == 2
 
+    def test_query_over_dateline_calum_style(self, dateline_eventbank):
+        """Test for querying over the dateline with abs(longitudes) > |180|"""
+        ebank = dateline_eventbank
+        kwargs = dict(minlongitude=179, maxlongitude=181)
+        out = ebank.read_index(**kwargs)
+        # should return events around dateline but not event at 0,0
+        assert len(out) == 2
+
 
 class TestGetEvents:
     """tests for pulling events out of the bank"""

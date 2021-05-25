@@ -23,6 +23,7 @@ from obsplus.constants import (
     READ_HDF5_KWARGS,
 )
 from obsplus.exceptions import UnsupportedKeyword
+from obsplus.utils.geodetics import map_longitudes
 from obsplus.utils.misc import READ_DICT, _get_path
 from obsplus.utils.mseed import summarize_mseed
 from obsplus.utils.time import to_datetime64, _dict_times_to_ns
@@ -347,7 +348,8 @@ def _make_wheres(queries):
         if not {"minlongitude", "maxlongitude"}.issubset(set(kwargs)):
             return kwargs, out
         # if dateline is not to be transversed by query bail out
-        minlong, maxlong = kwargs["minlongitude"], kwargs["maxlongitude"]
+        long_array = np.array([kwargs["minlongitude"], kwargs["maxlongitude"]])
+        minlong, maxlong = map_longitudes(long_array)
         if not minlong > maxlong:
             return kwargs, out
         # remove min/max long from query dict and reform to two queries.
