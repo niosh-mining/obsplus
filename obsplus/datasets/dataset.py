@@ -115,7 +115,7 @@ class DataSet(abc.ABC):
     _verbose = True
 
     def __init_subclass__(cls, **kwargs):
-        """ Register subclasses of datasets. """
+        """Register subclasses of datasets."""
         assert isinstance(cls.name, str), "name must be a string"
         validate_version_str(cls.version)
         # Register the subclass as a dataset.
@@ -124,7 +124,7 @@ class DataSet(abc.ABC):
     # --- logic for loading and caching data
 
     def __init__(self, base_path=None):
-        """ download and load data into memory. """
+        """download and load data into memory."""
         self.base_path = self._get_opsdata_path(base_path)
         # create the dataset's base directory
         self.data_path.mkdir(exist_ok=True, parents=True)
@@ -154,7 +154,7 @@ class DataSet(abc.ABC):
         return Path(opsdata_path)
 
     def _run_downloads(self) -> None:
-        """ Iterate each kind of data and download if needed. """
+        """Iterate each kind of data and download if needed."""
         # Make sure the version of the dataset is okay
         version_ok = self.check_version()
         downloaded = False
@@ -183,7 +183,7 @@ class DataSet(abc.ABC):
             self._save_data_path()
 
     def _load(self, what, path):
-        """ Load the client-like objects from disk. """
+        """Load the client-like objects from disk."""
         try:
             client = self._load_funcs[what](path)
         except TypeError:
@@ -253,14 +253,14 @@ class DataSet(abc.ABC):
     __call__ = get_fetcher
 
     def _write_readme(self, filename="readme.txt"):
-        """ Writes the classes docstring to a file. """
+        """Writes the classes docstring to a file."""
         path = self.data_path / filename
         if not path.exists():
             with path.open("w") as fi:
                 fi.write(str(self.__doc__))
 
     def _save_data_path(self, path=None):
-        """ Save the path to where the data where downloaded in source folder. """
+        """Save the path to where the data where downloaded in source folder."""
         path = Path(path or self._path_to_saved_path_file)
         path.parent.mkdir(exist_ok=True, parents=True)
         with path.open("w") as fi:
@@ -399,7 +399,7 @@ class DataSet(abc.ABC):
 
     @property
     def _version_path(self):
-        """ A path to the saved version file. """
+        """A path to the saved version file."""
         return self.data_path / self._version_filename
 
     @property
@@ -455,19 +455,19 @@ class DataSet(abc.ABC):
     @property
     @lru_cache()
     def waveform_client(self) -> Optional[WaveformClient]:
-        """ A cached property for a waveform client """
+        """A cached property for a waveform client"""
         return self._load("waveform", self.waveform_path)
 
     @property
     @lru_cache()
     def event_client(self) -> Optional[EventClient]:
-        """ A cached property for an event client """
+        """A cached property for an event client"""
         return self._load("event", self.event_path)
 
     @property
     @lru_cache()
     def station_client(self) -> Optional[StationClient]:
-        """ A cached property for a station client """
+        """A cached property for a station client"""
         return self._load("station", self.station_path)
 
     @property
@@ -481,7 +481,7 @@ class DataSet(abc.ABC):
 
     @_download_client.setter
     def _download_client(self, item):
-        """ just allow this to be overwritten """
+        """just allow this to be overwritten"""
         self.__dict__["client"] = item
 
     def _log(self, msg):
@@ -592,7 +592,7 @@ class DataSet(abc.ABC):
         return True  # All is well. Continue.
 
     def write_version(self, path: Optional[Union[Path, str]] = None):
-        """ Write the version string to disk. """
+        """Write the version string to disk."""
         version_path = path or self._version_path
         with version_path.open("w") as fi:
             fi.write(self.version)

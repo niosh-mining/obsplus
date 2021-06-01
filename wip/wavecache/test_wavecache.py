@@ -13,20 +13,20 @@ from obsplus.structures.wavecache import WaveCache
 
 @pytest.fixture
 def wavecache(bingham_dataset):
-    """ return a wavecache of bingham_test archive """
+    """return a wavecache of bingham_test archive"""
     bank = WaveBank(bingham_dataset.waveform_client)
     return WaveCache(bank)
 
 
 class TestBasics:
     def test_load_waveforms(self, wavecache):
-        """ ensure cache loads waveforms """
+        """ensure cache loads waveforms"""
         t1 = obspy.UTCDateTime(wavecache.index.starttime.iloc[0])
         st = wavecache.get_waveforms(starttime=t1, endtime=t1 + 12)
         assert isinstance(st, obspy.Stream)
 
     def test_chached_waveforms(self, wavecache):
-        """ ensure the same waveforms is returned on multiple calls """
+        """ensure the same waveforms is returned on multiple calls"""
         t1 = obspy.UTCDateTime(wavecache.index.starttime.iloc[0])
         st1 = wavecache.get_waveforms(starttime=t1, endtime=t1 + 12)
         st2 = wavecache.get_waveforms(starttime=t1, endtime=t1 + 12)
@@ -35,7 +35,7 @@ class TestBasics:
         assert {id(tr) for tr in st1} == {id(tr) for tr in st2}
 
     def test_add_waveforms(self, wavecache):
-        """ ensure waveforms can be added and returned """
+        """ensure waveforms can be added and returned"""
         st = obspy.read()
         wavecache.add_waveforms(st)
         st2 = wavecache.get_waveforms(station="RJOB")

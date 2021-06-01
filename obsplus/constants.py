@@ -56,7 +56,7 @@ STATION_DTYPES = OrderedDict(
     channel="nslc_code",
     seed_id=str,
     latitude=float,
-    longitude=float,
+    longitude="longitude",
     elevation=float,
     depth=float,
     azimuth=float,
@@ -74,7 +74,7 @@ DF_TO_INV_DTYPES = OrderedDict(
     location="nslc_code",
     channel="nslc_code",
     latitude=float,
-    longitude=float,
+    longitude="longitude",
     elevation=float,
     depth=float,
     sample_rate=float,
@@ -88,7 +88,7 @@ DF_TO_INV_COLUMNS = tuple(DF_TO_INV_DTYPES)
 EVENT_DTYPES = OrderedDict(
     time="datetime64[ns]",
     latitude=float,
-    longitude=float,
+    longitude="longitude",
     depth=float,
     magnitude=float,
     event_description=str,
@@ -168,9 +168,7 @@ DISTANCE_COLUMN_DTYPES = OrderedDict(
 )
 
 # Columns for dataframe inputs
-DISTANCE_COLUMN_INPUT_DTYPES = OrderedDict(
-    latitude=float, longitude=float, elevation=float
-)
+LOCATION_DTYPE = OrderedDict(latitude=float, longitude=float, elevation=float)
 
 ALT_DISTANCE_COLUMN_DTYPES = OrderedDict(latitude=float, longitude=float, depth=float)
 

@@ -213,7 +213,7 @@ class WaveBank(_Bank):
 
     @property
     def hdf_kwargs(self) -> dict:
-        """ A dict of hdf_kwargs to pass to PyTables """
+        """A dict of hdf_kwargs to pass to PyTables"""
         return dict(
             complib=self._complib,
             complevel=self._complevel,
@@ -256,7 +256,7 @@ class WaveBank(_Bank):
         return self
 
     def _write_update(self, update_df, update_time):
-        """ convert updates to dataframe, then append to index table """
+        """convert updates to dataframe, then append to index table"""
         # read in dataframe and prepare for input into hdf5 index
         df = self._prep_write_df(update_df)
         with pd.HDFStore(self.index_path) as store:
@@ -280,7 +280,7 @@ class WaveBank(_Bank):
                 store.put(self._meta_node, meta, format="table")
 
     def _prep_write_df(self, df):
-        """ Prepare the dataframe to put it into the HDF5 store. """
+        """Prepare the dataframe to put it into the HDF5 store."""
         # ensure the bank path is not in the path column
         assert "path" in set(df.columns), f"{df} has no path column"
         df["path"] = _remove_base_path(df["path"], self.bank_path)
@@ -421,7 +421,7 @@ class WaveBank(_Bank):
         """
 
         def _get_gap_dfs(df, min_gap):
-            """ function to apply to each group of seed_id dataframes """
+            """function to apply to each group of seed_id dataframes"""
             # get the min gap
             if min_gap is None:
                 min_gap = 1.5 * df["sampling_period"].iloc[0]
@@ -661,7 +661,7 @@ class WaveBank(_Bank):
     # ------------------------ misc methods
 
     def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
-        """ return the waveforms in the index """
+        """return the waveforms in the index"""
         # get abs path to each datafame
         files: pd.Series = (str(self.bank_path) + index.path).unique()
         # make sure start and endtimes are in UTCDateTime

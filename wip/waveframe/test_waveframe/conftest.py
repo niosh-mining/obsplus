@@ -9,7 +9,7 @@ from obsplus import WaveFrame
 
 
 def _make_st_no_response():
-    """ Get a copy of the default trace, remove response. """
+    """Get a copy of the default trace, remove response."""
     st = obspy.read()
     # drop response for easier stats dtypes
     for tr in st:
@@ -19,13 +19,13 @@ def _make_st_no_response():
 
 @pytest.fixture
 def st_no_response():
-    """ Get a copy of the default trace, remove response. """
+    """Get a copy of the default trace, remove response."""
     return _make_st_no_response()
 
 
 @pytest.fixture
 def stream_wf(st_no_response) -> WaveFrame:
-    """ Create a basic WaveFrame from default stream. """
+    """Create a basic WaveFrame from default stream."""
     return WaveFrame.load_example_wf()
 
 

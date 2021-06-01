@@ -44,7 +44,7 @@ def get_finite_segments(
     """
 
     def _get_break_points(ar_inds):
-        """ Get the breakpoints from the flat array. """
+        """Get the breakpoints from the flat array."""
         row_count = ar_inds[1]
         # we know a new segment starts if an expected value is skipped
         # this accounts for NaN interrupting segments or new rows
@@ -147,7 +147,7 @@ def _new_waveframe_df(wdf, data=None, stats=None, allow_size_change=True):
     """
 
     def _df_from_array(old, ar):
-        """ Create an dataframe from an array. """
+        """Create an dataframe from an array."""
         if isinstance(ar, pd.DataFrame):
             return ar
         index, cols = old.index, old.columns
@@ -199,7 +199,7 @@ def _combine_stats_and_data(
 
 
 def get_time_array(df):
-    """ get an array of times corresponding to each sample in data. """
+    """get an array of times corresponding to each sample in data."""
     data, stats = df["data"], df["stats"]
     start, delta = stats["starttime"], stats["delta"]
     data_inds = data.columns.values.astype(int) * delta[:, np.newaxis]
@@ -236,7 +236,7 @@ class DFTransformer:
         self.method = self.method_dict[method]
 
     def __init_subclass__(cls, **kwargs):
-        """ create method dictionary """
+        """create method dictionary"""
         method_dict = {
             i: v
             for i, v in cls.__dict__.items()
@@ -245,7 +245,7 @@ class DFTransformer:
         cls.method_dict = method_dict
 
     def run(self, df: pd.DataFrame) -> pd.DataFrame:
-        """ default run is simply to return a copy. """
+        """default run is simply to return a copy."""
         return df
 
     def __call__(self, df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:

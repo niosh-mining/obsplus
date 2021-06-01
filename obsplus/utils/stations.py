@@ -92,7 +92,7 @@ class _InventoryConstructor:
         self._client = station_client
 
     def _groupby_if_exists(self, df, level):
-        """ Groupby columns if they exist on dataframe, else return empty. """
+        """Groupby columns if they exist on dataframe, else return empty."""
         columns = list(self._gb_cols[level])
         cols = list(obsplus.utils.misc.iterate(columns))
         # copy df and set missing start/end times to reasonable values
@@ -114,7 +114,7 @@ class _InventoryConstructor:
             yield ind, df_sub
 
     def _get_kwargs(self, series, key_mapping):
-        """ create the kwargs from a series and key mapping. """
+        """create the kwargs from a series and key mapping."""
         out = {}
         for k, v in key_mapping.items():
             # skip if requested kwarg is not in the series
@@ -132,7 +132,7 @@ class _InventoryConstructor:
     @property
     @lru_cache()
     def nrl_client(self):
-        """ Initiate a nominal response library object. """
+        """Initiate a nominal response library object."""
         from obspy.clients.nrl import NRL
 
         return NRL()

@@ -153,7 +153,7 @@ class ChainClient:
         return out
 
     def _iter_client_bulk(self, clients, method, bulk_method, out, bulk):
-        """ iterate over clients trying to get bulk requests. """
+        """iterate over clients trying to get bulk requests."""
         for client in clients:
             if hasattr(client, bulk_method):
                 out += getattr(client, bulk_method)(bulk)

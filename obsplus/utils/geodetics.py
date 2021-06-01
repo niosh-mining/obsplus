@@ -15,7 +15,7 @@ from obsplus.constants import (
     event_type,
     inventory_type,
     DISTANCE_COLUMN_DTYPES,
-    DISTANCE_COLUMN_INPUT_DTYPES,
+    LOCATION_DTYPE,
     ALT_DISTANCE_COLUMN_DTYPES,
 )
 from obsplus.utils.docs import compose_docstring
@@ -65,7 +65,7 @@ class SpatialCalculator:
         """
         Return a dataframe with latitude, longitude, elevation, and id.
         """
-        cols = list(DISTANCE_COLUMN_INPUT_DTYPES)
+        cols = list(LOCATION_DTYPE)
         cols1 = list(ALT_DISTANCE_COLUMN_DTYPES)
         # if a dataframe is used
         if isinstance(obj, pd.DataFrame):
@@ -88,18 +88,18 @@ class SpatialCalculator:
         return self._validate_dataframe(df)
 
     def _df_from_events(self, obj):
-        """ Get the needed dataframe from some objects with event data. """
+        """Get the needed dataframe from some objects with event data."""
         df = obsplus.events_to_df(obj).set_index("event_id")
         df["elevation"] = -df["depth"]
         return df
 
     def _df_from_stations(self, obj):
-        """ Get the needed dataframe from some object with station data. """
+        """Get the needed dataframe from some object with station data."""
         df = obsplus.stations_to_df(obj).set_index("seed_id")
         return df
 
     def _df_from_sequences(self, obj):
-        """ Get the dataframe from generic sequences. """
+        """Get the dataframe from generic sequences."""
         ar = np.atleast_2d(obj)
         if ar.shape[1] == 3:  # need to add index columns
             id = np.arange(len(ar))
@@ -108,7 +108,7 @@ class SpatialCalculator:
         else:
             msg = "A sequence must have either 3 or 4 elements."
             raise ValueError(msg)
-        cols = list(DISTANCE_COLUMN_INPUT_DTYPES)
+        cols = list(LOCATION_DTYPE)
         df = pd.DataFrame(ar, index=id, columns=cols)
         return df
 
@@ -119,7 +119,7 @@ class SpatialCalculator:
         """
         # determine if there are any duplicates with different coords
         duplicate_indices = df.index.duplicated()
-        duplicated_data = df.duplicated(list(DISTANCE_COLUMN_INPUT_DTYPES))
+        duplicated_data = df.duplicated(list(LOCATION_DTYPE))
         # if so raise an exception as this will not produced desired result.
         if (duplicate_indices & (~duplicated_data)).any():
             dup_ids = set(df.index[(duplicate_indices & (~duplicated_data))])
@@ -131,7 +131,7 @@ class SpatialCalculator:
         return df[~duplicate_indices]
 
     def _validate_dataframe(self, df) -> pd.DataFrame:
-        """ Ensure all the parameters of the dataframe are reasonable. """
+        """Ensure all the parameters of the dataframe are reasonable."""
         # first cull out columns that aren't needed and de-dup index
         if ("depth" in df.columns) and ("elevation" not in df.columns):
             # Make sure that the df has an elevation column
@@ -143,8 +143,8 @@ class SpatialCalculator:
             self._de_duplicate_df_index(out)
         else:
             out = (
-                df[list(DISTANCE_COLUMN_INPUT_DTYPES)]
-                .astype(DISTANCE_COLUMN_INPUT_DTYPES)
+                df[list(LOCATION_DTYPE)]
+                .astype(LOCATION_DTYPE)
                 .pipe(self._de_duplicate_df_index)
             )
         # sanity checks on lat/lon
@@ -158,7 +158,7 @@ class SpatialCalculator:
     # --- methods for calculating spatial relationships
 
     def _get_spatial_relations(self, array):
-        """ Calculate distances and azimuths. """
+        """Calculate distances and azimuths."""
         # TODO this may be vectorizable, look into it
         # get planet radius and flattening
         a, f = self.radius, self.flattening
@@ -176,7 +176,7 @@ class SpatialCalculator:
 
     @compose_docstring(
         out_columns=str(tuple(DISTANCE_COLUMN_DTYPES)),
-        in_columns=str(tuple(DISTANCE_COLUMN_INPUT_DTYPES)),
+        in_columns=str(tuple(LOCATION_DTYPE)),
     )
     def __call__(
         self,
@@ -218,3 +218,34 @@ class SpatialCalculator:
         out = self._get_spatial_relations(array)
         index = pd.MultiIndex.from_arrays([ind1, ind2], names=["id1", "id2"])
         return pd.DataFrame(out, columns=list(DISTANCE_COLUMN_DTYPES), index=index)
+
+
+def map_longitudes(angle_array: Union[np.ndarray, pd.Series]) -> pd.Series:
+    """
+    Map longitudes to -180 to 180 domain.
+
+    Parameters
+    ----------
+    angle_array
+        An array or series with real numeric values representing angles in
+        degrees.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> angles = np.array([35, -45, 340, -721])
+    >>> out = map_longitudes(angles)
+    >>> expected = np.array([35, -45, -20, -1])
+    >>> assert np.allclose(out, expected)
+    """
+    out = angle_array.astype(float) % 360
+    gt_180 = out > 180
+    out[gt_180] = out[gt_180] - 360
+    return out
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()

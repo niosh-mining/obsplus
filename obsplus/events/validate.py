@@ -16,7 +16,7 @@ CATALOG_VALIDATORS = []
 
 
 def _none_or_type(obj, type_check):
-    """ return if obj is None or of type type_check """
+    """return if obj is None or of type type_check"""
     if obj is None:
         return True
     else:
@@ -40,7 +40,7 @@ def set_preferred_values(event: Event):
 
 @validator("obsplus", Event)
 def attach_all_resource_ids(event: Event):
-    """ recurse all objects in a events and set referred objects """
+    """recurse all objects in a events and set referred objects"""
     rid_to_object = {}
     # first pass, bind all resource ids to parent
     for rid, parent, attr in yield_obj_parent_attr(event, ResourceIdentifier):
@@ -77,7 +77,7 @@ def check_arrivals_pick_id(event: Event):
 
 @validator("obsplus", Event)
 def check_origins(event: Event):
-    """ check the origins and types """
+    """check the origins and types"""
     for ori in event.origins:
         for atr in ORIGIN_FLOATS:
             assert _none_or_type(getattr(ori, atr), float)
@@ -103,7 +103,7 @@ def check_duplicate_picks(event: Event):
     """
 
     def dup_picks(df, phase_hint, subset):
-        """ Function for checking for duplications. """
+        """Function for checking for duplications."""
         seed_id = get_seed_id_series(df, subset=subset)
         bad = seed_id[seed_id.duplicated()].tolist()
         assert len(bad) == 0, (

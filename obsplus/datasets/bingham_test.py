@@ -38,12 +38,12 @@ class Bingham(DataSet):
     max_dist = 20  # distance in km
 
     def download_events(self):
-        """ Simply copy events from base directory. """
+        """Simply copy events from base directory."""
         cat = obspy.read_events(str(self.source_path / "events.xml"))
         obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_bingham(self):
-        """ Use obspy's mass downloader to get station/waveforms data. """
+        """Use obspy's mass downloader to get station/waveforms data."""
         bank = WaveBank(self.waveform_path)
         domain = CircularDomain(
             self.latitude,

@@ -12,7 +12,7 @@ import obsplus
 
 
 def _create_opsdata(opsdata_path: Path):
-    """ Create the directory to store obsplus datasets, add readme. """
+    """Create the directory to store obsplus datasets, add readme."""
     opsdata_path = Path(opsdata_path)
     # bail out early if the directory already exists
     if opsdata_path.exists():

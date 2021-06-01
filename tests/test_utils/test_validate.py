@@ -22,19 +22,19 @@ from obsplus.utils.validate import (
 
 
 class Thing1:
-    """ The first dummy class for testing. """
+    """The first dummy class for testing."""
 
 
 class Thing2:
-    """ The second dummy class for testing. """
+    """The second dummy class for testing."""
 
 
 class Thing3(Thing1, Thing2):
-    """ The third dummy class for testing. """
+    """The third dummy class for testing."""
 
 
 class Thing4:
-    """ The fourth dummy class. """
+    """The fourth dummy class."""
 
 
 @pytest.fixture()
@@ -70,12 +70,12 @@ class TestValidateBasics:
 
         @validator(self.validate_namespace, Thing4)
         def fourth_validator(obj):
-            """ This validator should fail. """
+            """This validator should fail."""
             assert False
 
         @validator(self.validate_namespace, (Thing1, Thing2))
         def multiple_cls_validator(obj):
-            """ A validator for testing tuples of classes. """
+            """A validator for testing tuples of classes."""
             outdist["multiple_validate"] += 1
 
         # register the same validator again for each class
@@ -85,7 +85,7 @@ class TestValidateBasics:
         yield outdist
 
     def test_thing_one(self, registered_validators):
-        """ Ensure the validator is triggered on thing one instance. """
+        """Ensure the validator is triggered on thing one instance."""
         validate(Thing1(), self.validate_namespace)
         assert registered_validators["test1"] == 1
 
@@ -99,18 +99,18 @@ class TestValidateBasics:
             assert registered_validators[f"test{a}"] == 1
 
     def test_failed_validator(self, registered_validators):
-        """ Ensure an assertion is raised. """
+        """Ensure an assertion is raised."""
         with pytest.raises(AssertionError):
             validate(Thing4(), self.validate_namespace)
 
     def test_failed_validator_report(self, registered_validators):
-        """ Ensure a dataframe is returned with a report. """
+        """Ensure a dataframe is returned with a report."""
         df = validate(Thing4(), self.validate_namespace, report=True)
         assert len(df) == 1
         assert not df["passed"].iloc[0]
 
     def test_kwargs_passed(self, registered_validators):
-        """ Ensure the kwargs get passed to individual validators. """
+        """Ensure the kwargs get passed to individual validators."""
         with pytest.raises(ValueError):
             validate(Thing2(), self.validate_namespace, some_kwarg=True)
 
@@ -123,16 +123,16 @@ class TestValidateBasics:
         assert registered_validators["multiple_validate"] == 1
 
     def test_bad_namespace_raises(self):
-        """ A non-existent namespace should raise. """
+        """A non-existent namespace should raise."""
         with pytest.raises(ValidationNameError):
             validate("hey", namespace="not a real validation space")
 
 
 class TestDecompose:
-    """ Tests for decomposing objects into their respective classes. """
+    """Tests for decomposing objects into their respective classes."""
 
     def test_decompose_catalog(self):
-        """ ensure the catalog, and friends, can be decomposed. """
+        """ensure the catalog, and friends, can be decomposed."""
         test_cls = (ev.Catalog, ev.Event, ev.Origin, ev.Pick, ev.Amplitude)
         cat = obspy.read_events()
         for obj, _, _ in obsplus.utils.misc.yield_obj_parent_attr(cat):
@@ -141,7 +141,7 @@ class TestDecompose:
                 assert len(out) > 1
 
     def test_decompose_inventory(self):
-        """ Ensure an inventory (and children) can be decomposed. """
+        """Ensure an inventory (and children) can be decomposed."""
         # Ensure the inventory is broken down
         inv = obspy.read_inventory()
         out = decompose(inv)
@@ -154,14 +154,14 @@ class TestDecompose:
             assert len(decompose(obj)) > 1
 
     def test_decompose_stream(self):
-        """ Ensure a stream is decomposed in a sensible way. """
+        """Ensure a stream is decomposed in a sensible way."""
         out = decompose(obspy.read())
         expected = {Stream, Trace, np.ndarray}
         assert expected.issubset(set(out))
 
 
 class TestDocumentationCase:
-    """ Tests for the validator case in the documentation. """
+    """Tests for the validator case in the documentation."""
 
     namespace = "_testdoc_case"
 
@@ -185,7 +185,7 @@ class TestDocumentationCase:
 
     @pytest.fixture
     def bad_catalog(self):
-        """ Create a catalog which will fail both validators. """
+        """Create a catalog which will fail both validators."""
         cat = obspy.read_events()
         for event in cat:
             event.picks = []
@@ -196,11 +196,11 @@ class TestDocumentationCase:
 
     @pytest.fixture
     def validation_report(self, validators, bad_catalog):
-        """ return the report of the validators. """
+        """return the report of the validators."""
         return validate(bad_catalog, self.namespace, report=True)
 
     def test_validation_runs(self, validation_report):
-        """ Ensure the validators ran the expected number of times. """
+        """Ensure the validators ran the expected number of times."""
         df = validation_report
         picks = df["validator"] == "ensure_events_have_four_picks"
         assert picks.sum() == 3

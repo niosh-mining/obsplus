@@ -16,22 +16,22 @@ from obsplus.utils.misc import suppress_warnings
 
 
 class Testbasics:
-    """ Basic tests of waveframe. """
+    """Basic tests of waveframe."""
 
     def test_get_item(self, stream_wf):
-        """ get item should return the series from the stats df. """
+        """get item should return the series from the stats df."""
         wf = stream_wf
         ser = wf["station"]
         assert (ser == "RJOB").all()
 
     def test_set_item(self, stream_wf):
-        """ Set item should set a column in the stats dataframe. """
+        """Set item should set a column in the stats dataframe."""
         wf = stream_wf
         wf["station"] = "JOB"
         assert (wf["station"] == "JOB").all()
 
     def test_add_new_column(self, stream_wf):
-        """ Add a new column to stats. """
+        """Add a new column to stats."""
         wf = stream_wf
         wf["new_col"] = "heyo"
         out = wf["new_col"]
@@ -39,7 +39,7 @@ class Testbasics:
         assert len(out) == len(wf)
 
     def test_filtering(self, stream_wf):
-        """ Ensure passing a boolean filters the dataframe. """
+        """Ensure passing a boolean filters the dataframe."""
         wf = stream_wf
         ser = wf["channel"].str.endswith("Z")
         wf2 = wf[ser]
@@ -47,7 +47,7 @@ class Testbasics:
         assert wf2["channel"].str.endswith("Z").all()
 
     def test_data_and_stats_write_only(self, stream_wf):
-        """ The data and stats parameter should be write only."""
+        """The data and stats parameter should be write only."""
         data, stats = stream_wf.data, stream_wf.stats
         with pytest.raises(AttributeError):
             stream_wf.data = data
@@ -55,14 +55,14 @@ class Testbasics:
             stream_wf.stats = stats
 
     def test_cant_access_class_data_stats(self):
-        """ Class level data and stats should not be accessible. """
+        """Class level data and stats should not be accessible."""
         with pytest.raises(AttributeError):
             WaveFrame.stats
         with pytest.raises(AttributeError):
             WaveFrame.data
 
     def test_set_readonly_stats(self, stream_wf):
-        """ Ensure an error is raised when accessing protected stats. """
+        """Ensure an error is raised when accessing protected stats."""
         with pytest.raises(AttributeError):
             stream_wf["endtime"] = np.datetime64("2019-01-01")
 
@@ -77,7 +77,7 @@ class Testbasics:
         assert "is not a stats column" in msg
 
     def test_set_new_column(self, stream_wf):
-        """ get_item syntax should allow for setting new values on index. """
+        """get_item syntax should allow for setting new values on index."""
         # a single value should work
         stream_wf["bob"] = 2
         assert (stream_wf["bob"] == 2).all()
@@ -94,7 +94,7 @@ class Testbasics:
 
 
 class TestConstructor:
-    """ Basic tests for creating WaveFrame instances. """
+    """Basic tests for creating WaveFrame instances."""
 
     t1 = UTCDateTime("2009-08-24T00-20-03")
 
@@ -104,7 +104,7 @@ class TestConstructor:
         return df
 
     def test_wildcard_raises(self):
-        """ WaveFrame does not support using wildcards in str params of bulk. """
+        """WaveFrame does not support using wildcards in str params of bulk."""
         bad_nslc = ["*", "bob", "01", "BHZ", self.t1, self.t1 + 10]
         df = self._make_stats_df(bad_nslc)
         # since there is a wildcard it should raise a ValueError
@@ -112,7 +112,7 @@ class TestConstructor:
             WaveFrame(waveforms=obspy.read(), stats=df)
 
     def test_test_bad_starttime_endtime_raises(self):
-        """ Ensure bad starttime/endtimes raise. """
+        """Ensure bad starttime/endtimes raise."""
         bad_args = ["UU", "BOB", "01", "BHZ", self.t1, self.t1 - 10]
         df = self._make_stats_df(bad_args)
         # since starttime is after endtime this should raise
@@ -120,14 +120,14 @@ class TestConstructor:
             WaveFrame(waveforms=obspy.read(), stats=df)
 
     def test_null_values_raise(self):
-        """ Null values in any column should raise. """
+        """Null values in any column should raise."""
         bad_args = ["UU", "BOB", "01", None, self.t1, self.t1 - 10]
         df = self._make_stats_df(bad_args)
         with pytest.raises(DataFrameContentError):
             WaveFrame(waveforms=obspy.read(), stats=df)
 
     def test_date_columns_renamed(self):
-        """ Ensure enddate and startdate get renamed to starttime and endtime """
+        """Ensure enddate and startdate get renamed to starttime and endtime"""
         bulk = ["BW", "RJOB", "", "EHZ", self.t1, self.t1 + 10]
         names = list(NSLC) + ["startdate", "enddate"]
         df = pd.DataFrame([bulk], columns=names)
@@ -136,7 +136,7 @@ class TestConstructor:
         assert {"starttime", "endtime"}.issubset(set(wf.stats.columns))
 
     def test_gappy_traces(self, waveframe_gap):
-        """ Ensure gappy data still works. """
+        """Ensure gappy data still works."""
 
         # there should also be some NaN on the last row
         data = waveframe_gap.data
@@ -159,7 +159,7 @@ class TestConstructor:
         assert data.isnull().all().all()
 
     def test_init_waveframe_from_waveframe(self, stream_wf):
-        """ A waveframe should be valid input to waveframe constructor"""
+        """A waveframe should be valid input to waveframe constructor"""
         wf1 = stream_wf
         wf2 = WaveFrame(wf1)
         assert wf1 is not wf2
@@ -167,7 +167,7 @@ class TestConstructor:
         assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_df(self, stream_wf):
-        """ A waveframe can be inited from a dataframe from a waveframe. """
+        """A waveframe can be inited from a dataframe from a waveframe."""
         wf1 = stream_wf
         wf2 = WaveFrame(wf1._df)
         assert wf1 is not wf2
@@ -175,7 +175,7 @@ class TestConstructor:
         assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_parts(self, stream_wf):
-        """ A wavefrom should be init'able from a waveframes parts """
+        """A wavefrom should be init'able from a waveframes parts"""
         wf1 = stream_wf
         wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
         assert wf1 is not wf2
@@ -183,13 +183,13 @@ class TestConstructor:
         assert wf1 == wf2
 
     def test_waveframe_has_delta(self, stream_wf):
-        """ Waveframe should have a delta parameter in its stats. """
+        """Waveframe should have a delta parameter in its stats."""
         stats = stream_wf.stats
         assert "delta" in stats.columns
         assert np.issubdtype(stats["delta"].values.dtype, np.timedelta64)
 
     def test_stream_uneven(self, st_no_response):
-        """ Tests for when streams are not evenly sized. """
+        """Tests for when streams are not evenly sized."""
         st = st_no_response
         st[0].data = st[0].data[:100]
         wf = WaveFrame.from_stream(st)
@@ -199,7 +199,7 @@ class TestConstructor:
         assert wf.data.shape[-1] > 100
 
     def test_from_stats(self, stream_wf):
-        """ Ensure a new wavefream from stats can be created. """
+        """Ensure a new wavefream from stats can be created."""
         stats = stream_wf.stats
         delta = np.timedelta64(10, "D")
 
@@ -211,7 +211,7 @@ class TestConstructor:
         assert (out["starttime"] == stats["starttime"]).all()
 
     def test_from_data(self, stream_wf):
-        """ Ensure a new waveframe can be created from a new data df. """
+        """Ensure a new waveframe can be created from a new data df."""
         data = (stream_wf + 10).data
         out = stream_wf.from_data(data)
         assert isinstance(out, WaveFrame)
@@ -219,7 +219,7 @@ class TestConstructor:
 
 
 class TestValidate:
-    """ tests for validating waveframes. """
+    """tests for validating waveframes."""
 
     def test_missing_required_columns_raises(self, stream_wf):
         """
@@ -242,7 +242,7 @@ class TestValidate:
             stream_wf.validate()
 
     def test_validation_report(self, stream_wf):
-        """ Ensure a report can be returned. """
+        """Ensure a report can be returned."""
         wf = stream_wf
         df = wf.validate(report=True)
         assert isinstance(df, pd.DataFrame)
@@ -250,12 +250,12 @@ class TestValidate:
 
 
 class TestBasicOperations:
-    """ Tests for basic operations. """
+    """Tests for basic operations."""
 
     numbers = (0, 1, -1, 1.11, 10e2, 1 + 10j)
 
     def _generic_op_test(self, wf1, number, op):
-        """ Apply generic operation tests. """
+        """Apply generic operation tests."""
         # div 0 raises runtime warning, this is ok.
         with suppress_warnings():
             wf2 = op(wf1, number)
@@ -270,44 +270,44 @@ class TestBasicOperations:
 
     @pytest.mark.parametrize("number", numbers)
     def test_add_numbers(self, stream_wf, number):
-        """ Tests for adding numbers. """
+        """Tests for adding numbers."""
         self._generic_op_test(stream_wf, number, operator.add)
 
     @pytest.mark.parametrize("number", numbers)
     def test_subtract_numbers(self, stream_wf, number):
-        """ Tests for adding numbers. """
+        """Tests for adding numbers."""
         self._generic_op_test(stream_wf, number, operator.sub)
 
     @pytest.mark.parametrize("number", numbers)
     def test_mult_numbers(self, stream_wf, number):
-        """ Tests for adding numbers. """
+        """Tests for adding numbers."""
         self._generic_op_test(stream_wf, number, operator.mul)
 
     @pytest.mark.parametrize("number", numbers)
     def test_div_numbers(self, stream_wf, number):
-        """ Tests for adding numbers. """
+        """Tests for adding numbers."""
         self._generic_op_test(stream_wf, number, operator.truediv)
 
 
 class TestEqualityCheck:
-    """ Tests for comparing waveframes. """
+    """Tests for comparing waveframes."""
 
     def test_basic_comparison(self, stream_wf):
-        """ Tests for equality checks which should return True. """
+        """Tests for equality checks which should return True."""
         wf1 = stream_wf
         assert wf1 == wf1
         wf2 = wf1.copy()
         assert wf2 == wf1
 
     def test_compare_non_waveframes(self, stream_wf):
-        """ Tests for comparing objects which are not waveframes. """
+        """Tests for comparing objects which are not waveframes."""
         wf1 = stream_wf
         assert wf1 != 1
         assert wf1 != "bob"
         assert not wf1.equals(TestEqualityCheck)
 
     def test_not_equal(self, stream_wf):
-        """ simple tests for waveframes which should not be equal. """
+        """simple tests for waveframes which should not be equal."""
         wf1 = stream_wf
         wf2 = wf1 + 20
         assert wf1 != wf2

@@ -546,7 +546,7 @@ class Fetcher:
 
     @property
     def picks_df(self):
-        """ return a dataframe from the picks (if possible) """
+        """return a dataframe from the picks (if possible)"""
         if self._picks_df is None:
             try:
                 df = picks_to_df(self.event_client)

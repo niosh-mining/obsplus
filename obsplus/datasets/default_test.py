@@ -23,7 +23,7 @@ class Default(DataSet):
     # Days of interest. The collapse occurred on Aug 6th
 
     def download_events(self):
-        """ Just copy the events into a directory. """
+        """Just copy the events into a directory."""
         cat = obspy.read_events()
         obsplus.EventBank(self.event_path).put_events(cat)
 

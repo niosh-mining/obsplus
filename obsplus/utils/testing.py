@@ -54,7 +54,7 @@ def instrument_methods(obj):
 
 
 class ArchiveDirectory:
-    """ class for creating a simple archive """
+    """class for creating a simple archive"""
 
     def __init__(
         self,
@@ -85,7 +85,7 @@ class ArchiveDirectory:
         seed_ids: Optional[List[str]] = None,
         sampling_rate: Optional[Union[float, int]] = None,
     ) -> obspy.Stream:
-        """ create a waveforms from random data """
+        """create a waveforms from random data"""
         t1 = to_utc(starttime)
         t2 = to_utc(endtime)
         sr = sampling_rate or self.sampling_rate
@@ -107,7 +107,7 @@ class ArchiveDirectory:
         return st
 
     def get_gap_stream(self, t1, t2, gaps):
-        """ return streams with gaps in it """
+        """return streams with gaps in it"""
         assert len(gaps) == 1
         gap = gaps.iloc[0]
         ts1, ts2 = t1.timestamp, t2.timestamp
@@ -129,7 +129,7 @@ class ArchiveDirectory:
             raise ValueError("something went wrong!")  # pragma: no cover
 
     def create_directory(self):
-        """ create the directory with gaps in it """
+        """create the directory with gaps in it"""
         # get a dataframe of the gaps
         if self.gaps is not None:
             df = pd.DataFrame(self.gaps, columns=["start", "end"])
@@ -156,7 +156,7 @@ class ArchiveDirectory:
             st.write(path, "mseed")
 
     def create_directory_from_bulk_args(self, bulk_args):
-        """ Create a directory from bulk waveform arguments """
+        """Create a directory from bulk waveform arguments"""
         # ensure directory exists
         path = Path(self.path)
         path.mkdir(exist_ok=True, parents=True)
@@ -241,7 +241,7 @@ class _StreamEqualTester:
         self.allow_off_by_one = allow_off_by_one
 
     def _assert_stats_equal(self, tr1, tr2):
-        """ Assert that the stats dicts are almost equal. """
+        """Assert that the stats dicts are almost equal."""
         skeys, basic_stats = self.skeys, self.basic_stats
         sta1 = {x: tr1.stats[x] for x in skeys} if basic_stats else tr1.stats
         sta2 = {x: tr2.stats[x] for x in skeys} if basic_stats else tr2.stats
@@ -263,7 +263,7 @@ class _StreamEqualTester:
                 assert 0, msg
 
     def _assert_arrays_almost_equal(self, tr1, tr2):
-        """ Assert that the data arrays of the traces are almost equal. """
+        """Assert that the data arrays of the traces are almost equal."""
         ars = sorted([tr1.data, tr2.data], key=lambda x: len(x))
         len1, len2 = len(ars[0]), len(ars[1])
         len_diff = len2 - len1

@@ -7,7 +7,7 @@ import obspy
 
 
 def get_cat1(name="cat1.xml"):
-    """ the default obspy cat_name """
+    """the default obspy cat_name"""
     if os.path.exists(name):
         return
     cat = obspy.read_events()
@@ -15,7 +15,7 @@ def get_cat1(name="cat1.xml"):
 
 
 def get_cat2(name="cat2.xml"):
-    """ a large iris cat_name """
+    """a large iris cat_name"""
     if os.path.exists(name):
         return
     from obspy.clients.fdsn import Client
@@ -326,7 +326,7 @@ class MegaCatalog(object):
 
 
 def get_cat4(name="cat4.xml"):
-    """ A manually created single-event cat_name with many features """
+    """A manually created single-event cat_name with many features"""
 
     cat = MegaCatalog().catalog
     cat.write(name, "quakeml")

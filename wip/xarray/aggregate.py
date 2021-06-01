@@ -15,7 +15,7 @@ _AGGREGATION_FUNC = {}
 
 
 def register_aggregation_func(name):
-    """ decorator for registering aggregation functions """
+    """decorator for registering aggregation functions"""
 
     def _wrap(func):
         _AGGREGATION_FUNC[name] = func
@@ -25,7 +25,7 @@ def register_aggregation_func(name):
 
 
 def _get_aggregate_from_xarray(method):
-    """ closure for common group aggregations """
+    """closure for common group aggregations"""
 
     def groupby_aggregate(dar: xr.DataArray, level: str, dim: str, **kwargs):
         # ignore mean of empty slice warnings

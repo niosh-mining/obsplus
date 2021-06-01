@@ -22,7 +22,7 @@ from obsplus.constants import NSLC
 
 @pytest.fixture(scope="module")
 def text_file():
-    """ save some text to file (note a waveforms) return path """
+    """save some text to file (note a waveforms) return path"""
     with tempfile.NamedTemporaryFile("w") as tf:
         tf.write("some text, not a waveforms")
         tf.flush()
@@ -31,7 +31,7 @@ def text_file():
 
 
 class TestStreamPathStructure:
-    """ tests for using the PathStructure for Streams """
+    """tests for using the PathStructure for Streams"""
 
     structs = [
         "{year}/{month}/{day}",
@@ -45,12 +45,12 @@ class TestStreamPathStructure:
     # fixtures
     @pytest.fixture(scope="class", params=structs)
     def struct_string(self, request):
-        """ return the structure strings associated with class"""
+        """return the structure strings associated with class"""
         return request.param
 
     @pytest.fixture(scope="class")
     def output(self, struct_string, waveform_cache_trace):
-        """ init a bank_structure class from the structure strings """
+        """init a bank_structure class from the structure strings"""
         return _summarize_trace(waveform_cache_trace, path_struct=struct_string)
 
     # general tests
@@ -61,7 +61,7 @@ class TestStreamPathStructure:
 
     # specific tests
     def test_trace_path(self):
-        """ test the basics of trace conversions """
+        """test the basics of trace conversions"""
         struc = "waveforms/{year}/{month}/{day}/{network}/{station}/{channel}"
         tr = obspy.read()[0]
         expected = "waveforms/2009/08/24/BW/RJOB/EHZ/2009-08-24T00-20-03.mseed"
@@ -71,7 +71,7 @@ class TestStreamPathStructure:
 
 
 class TestEventPathStructure:
-    """ tests for event structures """
+    """tests for event structures"""
 
     def test_basic(self):
         """Simple sanity check."""
@@ -87,7 +87,7 @@ class TestReadStream:
     # fixtures
     @pytest.fixture()
     def stream_file(self):
-        """ save the default waveforms to disk return path """
+        """save the default waveforms to disk return path"""
         name = "deleteme.mseed"
         st = obspy.read()
         st.write(name, "mseed")
@@ -95,7 +95,7 @@ class TestReadStream:
         os.remove(name)
 
     def test_bad_returns_none(self, text_file):
-        """ make sure bad file returns None """
+        """make sure bad file returns None"""
         with pytest.warns(UserWarning) as warn:
             out = _try_read_stream(text_file)
         assert len(warn)
@@ -104,13 +104,13 @@ class TestReadStream:
         assert out is None
 
     def test_try_read_stream(self, stream_file):
-        """ make sure the waveforms file can be read in """
+        """make sure the waveforms file can be read in"""
         st = _try_read_stream(stream_file)
         assert isinstance(st, obspy.Stream)
 
 
 class TestSummarizeStreams:
-    """ tests for summarizing streams. """
+    """tests for summarizing streams."""
 
     start = UTC("2017-09-20T01-00-00")
     end = UTC("2017-09-20T02-00-00")
@@ -129,7 +129,7 @@ class TestSummarizeStreams:
 
     @pytest.fixture
     def gappy_stream(self):
-        """ Create a very simple mseed with one gap, return it. """
+        """Create a very simple mseed with one gap, return it."""
         stats = dict(
             network="UU",
             station="ELU",

@@ -19,7 +19,7 @@ SUPPORTED_ARGS = CLIENT_ARGS - UNSUPPORTED
 
 
 def match(name, patern):
-    """ perform case in-sensitive unix style matches with fnmatch """
+    """perform case in-sensitive unix style matches with fnmatch"""
     return fnmatch.fnmatch(name.upper(), patern.upper())
 
 
@@ -60,7 +60,7 @@ OPERATORS = dict(
 
 
 def _add_codes(inv):
-    """ add network, station, location, channel codes where applicable """
+    """add network, station, location, channel codes where applicable"""
     for network in inv:
         net_code = network.code
         network.network_code = net_code
@@ -134,7 +134,7 @@ def get_stations(inv: obspy.Inventory, **kwargs) -> obspy.Inventory:
 
 
 def get_stations_bulk(inv: obspy.Inventory, bulk_args) -> obspy.Inventory:
-    """ return bulk station request """
+    """return bulk station request"""
     raise NotImplementedError("working on it")
 
 

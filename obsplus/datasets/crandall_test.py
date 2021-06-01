@@ -44,12 +44,12 @@ class Crandall(DataSet):
     max_dist = 150  # max distance from event (km) to keep station
 
     def download_events(self):
-        """ Just copy the events into a directory. """
+        """Just copy the events into a directory."""
         cat = obspy.read_events(str(self.source_path / "events.xml"))
         obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_crandall(self):
-        """ download waveform/station info for dataset. """
+        """download waveform/station info for dataset."""
         bank = WaveBank(self.waveform_path)
         domain = CircularDomain(
             self.latitude,

@@ -472,7 +472,7 @@ class WaveFrame:
 
 @validator("ops_waveframe", WaveFrame)
 def has_stats_and_data(wf: WaveFrame):
-    """ Ensure the waveframe has the required stats columns. """
+    """Ensure the waveframe has the required stats columns."""
     df = wf._df
     levels = df.columns.get_level_values(0).unique()
     assert {"data", "stats"}.issubset(levels)
@@ -480,7 +480,7 @@ def has_stats_and_data(wf: WaveFrame):
 
 @validator("ops_waveframe", WaveFrame)
 def has_required_stats_columns(wf: WaveFrame):
-    """ Ensure the waveframe has the required stats columns. """
+    """Ensure the waveframe has the required stats columns."""
     current_cols = wf.stats.columns
     expected_cols = wf._required_stats_columns
     assert set(current_cols).issuperset(expected_cols)
@@ -488,13 +488,13 @@ def has_required_stats_columns(wf: WaveFrame):
 
 @validator("ops_waveframe", WaveFrame)
 def starttime_le_endtime(wf):
-    """ ensure starttimes is less than the endtime. """
+    """ensure starttimes is less than the endtime."""
     assert (wf["starttime"] <= wf["endtime"]).all()
 
 
 @validator("ops_waveframe", WaveFrame)
 def times_consistent_with_data_len(wf):
-    """ Ensure the start and endtimes are consistent with the data length. """
+    """Ensure the start and endtimes are consistent with the data length."""
     data_len = wf.shape[-1]
     expected_duration = wf["delta"] * (data_len - 1)
     assert (wf["starttime"] + expected_duration == wf["endtime"]).all()

@@ -12,7 +12,6 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import kilometers2degrees
 
 import obsplus
-import obsplus.utils.geodetics
 import obsplus.utils.misc
 from obsplus.constants import (
     get_events_parameters,
@@ -22,6 +21,7 @@ from obsplus.constants import (
 )
 from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.docs import compose_docstring
+from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.utils.misc import strip_prefix
 from obsplus.utils.time import _dict_times_to_npdatetimes
 
@@ -102,7 +102,7 @@ def _get_bounding_box(circular_kwargs: dict) -> dict:
 
 
 def _get_ids(df, kwargs) -> set:
-    """ return a set of event_ids that meet filter requirements """
+    """return a set of event_ids that meet filter requirements"""
     filt = np.ones(len(df)).astype(bool)
     # Separate kwargs used in circular searches.
     circular_kwargs, kwargs = _sanitize_circular_search(**kwargs)
@@ -115,7 +115,7 @@ def _get_ids(df, kwargs) -> set:
         filt = np.ones(len(df)).astype(bool)
         # Trim based on circular kwargs, first get distance dataframe.
         input = (circular_kwargs["latitude"], circular_kwargs["longitude"], 0)
-        dist_calc = obsplus.utils.geodetics.SpatialCalculator()
+        dist_calc = SpatialCalculator()
         dist_df = dist_calc(input, df)
         # then get radius and filter if needed
         degrees = circular_kwargs.get("distance_degrees", True)
@@ -126,6 +126,7 @@ def _get_ids(df, kwargs) -> set:
             filt &= radius < circular_kwargs["maxradius"]
         df = df[filt]
     else:  # No circular kwargs are being used; normal query
+        filt, kwargs = _handle_dateline_transversal(filt, df, kwargs)
         for item, value in kwargs.items():
             if value is None:
                 continue
@@ -143,6 +144,23 @@ def _get_ids(df, kwargs) -> set:
         df = df[filt]
     limit = kwargs.get("limit", len(df))
     return set(df.event_id[:limit])
+
+
+def _handle_dateline_transversal(filt, df, kwargs):
+    """Check if dateline should be transversed by query."""
+    # if longitudes aren't being used bail out
+    if not {"minlongitude", "maxlongitude"}.issubset(set(kwargs)):
+        return filt, kwargs
+    # if dateline is not to be transversed by query bail out
+    long_array = np.array([kwargs["minlongitude"], kwargs["maxlongitude"]])
+    minlong, maxlong = map_longitudes(long_array)
+    if not minlong > maxlong:
+        return filt, kwargs
+    long = df["longitude"]
+    # remove min/max long from query dict and reform to two queries.
+    kwargs.pop("minlongitude"), kwargs.pop("maxlongitude")
+    filt &= (long >= minlong) | (long <= maxlong)
+    return filt, kwargs
 
 
 @compose_docstring(get_events_params=get_events_parameters)

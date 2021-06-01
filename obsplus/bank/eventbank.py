@@ -163,7 +163,7 @@ class EventBank(_Bank):
         ext=".xml",
         executor: Optional[Executor] = None,
     ):
-        """ Initialize an instance. """
+        """Initialize an instance."""
         if isinstance(base_path, EventBank):
             self.__dict__.update(base_path.__dict__)
             return
@@ -187,7 +187,7 @@ class EventBank(_Bank):
 
     @property
     def last_updated_timestamp(self):
-        """ Return the last modified time stored in the index, else 0.0 """
+        """Return the last modified time stored in the index, else 0.0"""
         with sql_connection(self.index_path) as con:
             try:
                 return _read_table(self._time_node, con).loc[0, "time"]
@@ -196,7 +196,7 @@ class EventBank(_Bank):
 
     @property
     def _path_structure(self):
-        """ return the path structure stored in memory """
+        """return the path structure stored in memory"""
         try:
             return self._read_metadata()["path_structure"][0]
         except (pd.io.sql.DatabaseError, BankDoesNotExistError):
@@ -204,7 +204,7 @@ class EventBank(_Bank):
 
     @property
     def _name_structure(self):
-        """ return the name structure stored in memory """
+        """return the name structure stored in memory"""
         try:
             return self._read_metadata()["name_structure"][0]
         except (pd.io.sql.DatabaseError, BankDoesNotExistError):
@@ -288,7 +288,7 @@ class EventBank(_Bank):
 
     @staticmethod
     def _get_cat_update_time_path(path, bank_path, format):
-        """ Function to yield events, update_time and paths. """
+        """Function to yield events, update_time and paths."""
         # NOTE: This function must be static to avoid pickling the attached
         # executor. (see #158).
         cat = try_read_catalog(path, format=format)
@@ -345,7 +345,7 @@ class EventBank(_Bank):
         return out
 
     def _write_update(self, df: pd.DataFrame, update_time=None):
-        """ convert updates to dataframe, then append to index table """
+        """convert updates to dataframe, then append to index table"""
         # read in dataframe and cast to correct types
         assert not df.duplicated().any(), "update index has duplicate entries"
 
@@ -376,7 +376,7 @@ class EventBank(_Bank):
     # --- meta table
 
     def _read_metadata(self):
-        """ return the meta table """
+        """return the meta table"""
         self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'

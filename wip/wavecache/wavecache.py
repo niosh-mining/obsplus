@@ -45,7 +45,7 @@ class WaveCache:
         self.index.rename(columns={"path": "unique_key"}, inplace=True)
 
     def _make_st_calls(self, row):
-        """ make waveforms callables """
+        """make waveforms callables"""
 
         def _func(key=row.path):
             if key not in self._processed_cache:
@@ -97,7 +97,7 @@ class WaveCache:
             return st
 
     def add_waveforms(self, st):
-        """ add waveforms to cache """
+        """add waveforms to cache"""
         # get unique id and add to cache
         uid = id(st)
         self._stream_cache[uid] = st
@@ -105,7 +105,7 @@ class WaveCache:
         self.index = pd.concat([self.index, new_df], axis=0, sort=True)
 
     def _get_trace_info(self, tr, uid):
-        """ return a dict of info about particular trace """
+        """return a dict of info about particular trace"""
         net, sta, loc, chan = tr.id.split(".")
         t1, t2 = tr.stats.starttime.timestamp, tr.stats.endtime.timestamp
 
@@ -124,7 +124,7 @@ class WaveCache:
         )
 
     def _apply_processors(self, st):
-        """ apply the current processors to the waveforms """
+        """apply the current processors to the waveforms"""
         st = st.copy().merge(1)  # do not modify raw data
         for priority in sorted(self._stream_processors.keys()):
             for func in self._stream_processors[priority]:
@@ -152,6 +152,6 @@ class WaveCache:
         self._stream_processors[priority].append(stream_processor)
 
     def clear_processors(self):
-        """ remove all waveforms processors and reset cache """
+        """remove all waveforms processors and reset cache"""
         self._processed_cache.clear()
         self._stream_processors.clear()

@@ -23,7 +23,7 @@ class TestBasic:
     """Basic tests all banks should pass."""
 
     def test_paths(self, some_bank):
-        """ Each bank should have bank paths and index paths. """
+        """Each bank should have bank paths and index paths."""
         bank_path = some_bank.bank_path
         index_path = some_bank.index_path
         assert isinstance(bank_path, Path)
@@ -63,7 +63,7 @@ class TestVersions:
 
     @pytest.fixture
     def ebank_high_version(self, tmpdir, monkeypatch):
-        """ return the default bank with a negative version number. """
+        """return the default bank with a negative version number."""
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__last_version__", self.high_version_str)
         cat = obspy.read_events()
