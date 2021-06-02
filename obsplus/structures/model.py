@@ -19,20 +19,20 @@ from obsplus.exceptions import InvalidModelOperation, InvalidModelAttribute
 class ObsPlusMeta(ModelMetaclass):
     """A mixing for the metaclass to add getitem."""
 
-    # def __getitem__(cls, item):
-    #     item_name = str(getattr(item, '__name__', item))
-    #     cls_name = cls.__name__
-    #     name = f"{cls_name}__{item_name}"
-    #
-    #     _dict = {
-    #         '__reduce__': lambda cls: f"{cls.__module__}.{cls.__name__}"
-    #         # '__getstate__': ModelMetaclass.__getstate__,
-    #         # "__setstate__": ModelMetaclass.__setstate__,
-    #     }
-    #     new = type(name, (cls,), _dict)
-    #
-    #
-    #     return new
+    def __getitem__(cls, item):
+        item_name = str(getattr(item, "__name__", item))
+        cls_name = cls.__name__
+        name = f"{cls_name}__{item_name}"
+
+        _dict = {
+            "__reduce__": lambda cls: f"{cls.__module__}.{cls.__name__}"
+            # '__getstate__': ModelMetaclass.__getstate__,
+            # "__setstate__": ModelMetaclass.__setstate__,
+        }
+        new = type(name, (cls,), _dict)
+
+        return new
+
     #
     # def __getstate__(cls):
     #     breakpoint()
@@ -50,10 +50,16 @@ class ObsPlusMeta(ModelMetaclass):
 
 
 class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
+    """
+    ObsPlus' base model for defining schema.
+    """
+
     # extra: Optional[Dict[str, Any]] = None
     _contains = None  # for storing the containing info.
 
     class Config:
+        """pydantic config for obsplus model."""
+
         pass
         validate_assignment = True
         arbitrary_types_allowed = True
@@ -62,7 +68,7 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
 
     @staticmethod
     def _convert_to_obspy(value):
-        """Convert an object to obspy or return value. """
+        """Convert an object to obspy or return value."""
         if hasattr(value, "to_obspy"):
             return value.to_obspy()
         return value
@@ -121,7 +127,7 @@ class _ModelWithResourceID(ObsPlusModel):
 
     @validator("resource_id", always=True)
     def get_resource_id(cls, value):
-        """Ensure a valid str is returned. """
+        """Ensure a valid str is returned."""
         if value is None:
             return str(uuid4())
         return value
@@ -195,7 +201,7 @@ class OperationTracker:
         return self
 
     def _validate_or(self, or_str, graph_dict):
-        """"""
+        """validator or"""
         str_1, str_2 = or_str.split(" | ")
         # first make sure attributes exist and are valid.
         obj1 = OperationTracker(str_1).validate(graph_dict)
@@ -212,7 +218,7 @@ class OperationTracker:
         return type1[0]
 
     def _get_type(self, graph_dict) -> Tuple[str, bool]:
-        """Get a string of the type. """
+        """Get a string of the type."""
         # first split on attrs
         assert " | " not in self._op_str, "or is not supported at this stage."
         return _get_type_from_graph(self._op_str, graph_dict)
@@ -239,7 +245,7 @@ def _get_type_from_graph(address_string: str, graph_dict: dict) -> Tuple[str, bo
     """
 
     def _get_type_from_entry(attr_dict, attr_name):
-        """Get the type from an attr_dict """
+        """Get the type from an attr_dict"""
         atype = attr_dict["attr_type"][attr]
         ref = attr_dict["attr_ref"].get(attr)
         ref_id = attr_dict["attr_id_ref"].get(attr)
@@ -297,7 +303,7 @@ def _get_attr_ref_type(attr_dict):
 
 
 def _get_graph_dict(schema: ObsPlusModel) -> dict:
-    """"
+    """ "
     Return a dict of the form:
 
     #TODO fill in form of dict

@@ -20,7 +20,7 @@ class TestGraphDict:
     """Tests for getting the graph dictionary which defines relationships."""
 
     def test_expected_graph_keys(self, catalog_graph_dict):
-        """ Ensure each of the models have a place in the graph. """
+        """Ensure each of the models have a place in the graph."""
         for name in dir(eschema):
             if isinstance(getattr(eschema, name, None), ObsPlusModel):
                 assert name in catalog_graph_dict
@@ -75,7 +75,7 @@ class TestOperationTrackerBasic:
         return request.getfixturevalue(request.param)
 
     def test_get_proxy(self, model_proxy):
-        """Ensure a proxy is returned from class level get_attrs. """
+        """Ensure a proxy is returned from class level get_attrs."""
         assert isinstance(model_proxy, OperationTracker)
         assert str(model_proxy)
 
@@ -106,7 +106,7 @@ class TestValidateModelOperationTracker:
     """Tests for validing trackers."""
 
     def test_invalid_path_raises(self, catalog_graph_dict):
-        """Ensure a non-exist path raises. """
+        """Ensure a non-exist path raises."""
         with pytest.raises(InvalidModelAttribute, match="bob"):
             Catalog.events.bob.validate(catalog_graph_dict)
 

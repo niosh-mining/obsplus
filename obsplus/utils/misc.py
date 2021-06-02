@@ -115,7 +115,7 @@ def yield_obj_parent_attr(
     >>> assert len(picks)
 
     >>> # --- yield all objects which have resource identifiers
-import obsplus.utils.model
+    import obsplus.utils.model
     >>> objects = []  # list of (rid, parent)
     >>> RID = obsplus.utils.model.ResourceIdentifier
     >>> for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):

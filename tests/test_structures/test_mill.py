@@ -5,7 +5,7 @@ import pytest
 
 import obsplus
 import obsplus.events.schema as schema
-from obsplus.structures.mill import Mill, DFCatalogMapping
+from obsplus.structures.mill import Mill
 
 
 @pytest.fixture(scope="class")
@@ -23,7 +23,7 @@ class TestDFMapper:
 class TestMillBasics:
     """Tests for the basics of the mill."""
 
-    def test_str(self, event_mill):
-        """Ensure a sensible str rep is available."""
-        breakpoint()
-        str_rep = str(event_mill)
+    # def test_str(self, event_mill):
+    #     """Ensure a sensible str rep is available."""
+    #     breakpoint()
+    #     str_rep = str(event_mill)

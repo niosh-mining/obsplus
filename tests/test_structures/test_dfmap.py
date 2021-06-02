@@ -5,8 +5,6 @@ Tests for dfmap.
 import pytest
 
 from obsplus.structures.dfmap import DFMap
-from obsplus.events.schema import Catalog
-from obsplus.events.event_dfmap import EventBasic, Picks
 
 
 class TestSubclassDFMap:

@@ -5,11 +5,13 @@ from typing import Sequence
 
 import obspy
 import obspy.core.event as ev
+import pytest
 
 import obsplus.events.schema as esc
 import obsplus.structures.model
 from obsplus.constants import NSLC
 from obsplus.events.json import cat_to_dict
+from pydantic import ValidationError
 
 
 class TestResourceID:
@@ -108,3 +110,20 @@ class TestConversions:
         pycat = esc.Catalog.from_orm(test_catalog)
         out = pycat.to_obspy()
         assert out == test_catalog
+
+
+class TestOrigin:
+    """Tests for various validations on Origin object."""
+
+    def test_origin_longitude(self):
+        """Ensure origin longitude is coerced into correct range."""
+        ori = ev.Origin(longitude=190.0)
+        # this passes if no error is raised, should coerce long into correct range
+        out = esc.Origin.from_orm(ori)
+        assert out.longitude == -170
+
+    def test_origin_latitude(self):
+        """Bad latitude should raise an error, coercing them is ambigous."""
+        ori = ev.Origin(latitude=99)
+        with pytest.raises(ValidationError):
+            esc.Origin.from_orm(ori)

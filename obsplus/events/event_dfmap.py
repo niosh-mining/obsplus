@@ -70,7 +70,7 @@ class Event(EventBasic):
 
 
 class Picks(DFMap):
-    """A dataframe mapper. """
+    """A dataframe mapper."""
 
     _model = es.Catalog
     _pick = es.Pick

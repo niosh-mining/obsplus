@@ -7,10 +7,12 @@ model.
 from datetime import datetime
 from typing import Optional, List
 
-from obsplus.constants import NSLC
-from pydantic import root_validator
-from typing_extensions import Literal
+import numpy as np
 
+from obsplus.constants import NSLC
+from obsplus.utils.geodetics import map_longitudes
+from pydantic import root_validator, Field, validator
+from typing_extensions import Literal
 
 from obsplus.structures.model import (
     ObsPlusModel,
@@ -129,6 +131,10 @@ PickPolarity = Literal["positive", "negative", "undecidable"]
 
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
+longitude_field = Field(None, le=180.0, ge=-180.0)
+latitude_field = Field(None, le=90.0, ge=-90.0)
+
+
 # --- Subclass of resource_id to indicated referred object type
 # TODO this is a bit of a hack, consider how to improve
 
@@ -245,9 +251,8 @@ class ConfidenceEllipsoid(ObsPlusModel):
     major_axis_rotation: Optional[float] = None
 
 
-
 class DataUsed(ObsPlusModel):
-    """ Data Used"""
+    """Data Used"""
 
     wave_type: Optional[DataUsedWaveType] = None
     station_count: Optional[int] = None
@@ -274,8 +279,7 @@ class StationMagnitude(_ModelWithResourceID):
 
 
 class StationMagnitudeContribution(ObsPlusModel):
-    """ Station Magnitude Contribution"""
-
+    """Station Magnitude Contribution"""
 
     station_magnitude_id: Optional[ResourceIdentifierStationMagnitude] = None
     residual: Optional[float] = None
@@ -386,11 +390,11 @@ class Arrival(_ModelWithResourceID):
 class Origin(_ModelWithResourceID):
     """Origin"""
 
-    time: datetime
+    time: Optional[datetime] = None
     time_errors: Optional[QuantityError] = None
-    longitude: Optional[float] = None
+    longitude: Optional[float] = longitude_field
     longitude_errors: Optional[QuantityError] = None
-    latitude: Optional[float] = None
+    latitude: Optional[float] = latitude_field
     latitude_errors: Optional[QuantityError] = None
     depth: Optional[float] = None
     depth_errors: Optional[QuantityError] = None
@@ -411,6 +415,12 @@ class Origin(_ModelWithResourceID):
     comments: List[Comment] = []
     arrivals: List[Arrival] = []
     composite_times: List[CompositeTime] = []
+
+    @validator("longitude", pre=True)
+    def _coerce_longitude(cls, long):
+        if long is None or abs(long) <= 180:
+            return long
+        return float(map_longitudes(np.array([long]))[0])
 
 
 class Magnitude(_ModelWithResourceID):
@@ -466,7 +476,8 @@ class PrincipalAxes(ObsPlusModel):
 
 
 class Tensor(ObsPlusModel):
-    """Tensor """
+    """Tensor"""
+
     m_rr: Optional[float] = None
     m_rr_errors: Optional[QuantityError] = None
     m_tt: Optional[float] = None
@@ -543,7 +554,7 @@ class EventDescription(ObsPlusModel):
 
 
 class Event(_ModelWithResourceID):
-    """Event """
+    """Event"""
 
     event_type: Optional[EventType] = None
     event_type_certainty: Optional[EventTypeCertainty] = None

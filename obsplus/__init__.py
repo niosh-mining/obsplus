@@ -34,6 +34,8 @@ from obsplus.bank.stationbank import StationBank
 
 from obsplus.structures.fetcher import Fetcher
 
+from obsplus.events.eventmill import EventMill
+
 # misc functions
 from obsplus.utils.time import get_reference_time
 from obsplus.structures.dfextractor import DataFrameExtractor
