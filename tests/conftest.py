@@ -277,6 +277,15 @@ def bingham_catalog(bingham_dataset):
     return cat
 
 
+@pytest.fixture(scope="session")
+def bingham_event_json():
+    """Create the event mill from Bingham Catalog."""
+    ds = load_and_update_dataset("bingham_test")
+    event = ds.event_client.get_events()
+    json = obsplus.cat_to_json(event)
+    return json
+
+
 @pytest.fixture()
 def bingham_stream(bingham_dataset):
     """load the bingham_test tests case"""
@@ -457,7 +466,7 @@ def disjointed_stream():
 
 @pytest.fixture
 def fragmented_stream():
-    """create a waveforms that has been fragemented"""
+    """create a waveforms that has been fragmented"""
     st = obspy.read()
     # make streams with new stations that are disjointed
     st2 = st.copy()

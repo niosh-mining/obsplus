@@ -1,13 +1,35 @@
 """Tests for EventMill."""
+import numpy as np
+import pandas as pd
+import obspy.core.event as ev
+
 import obsplus
 from obsplus import EventMill
 
 import pytest
 
 
-@pytest.fixture()
-def event_mill():
-    """Create the event mill from a json dict."""
+@pytest.fixture(scope="class")
+def bingham_events(bingham_dataset):
+    """Return the event dataframe from event_mill."""
+    events = bingham_dataset.event_client.get_events().copy()
+    # add some event descriptions
+    events[1].event_descriptions.append(ev.EventDescription("LR"))
+    events[2].event_descriptions.append(ev.EventDescription("A Big One"))
+    return events
+
+
+@pytest.fixture(scope="class")
+def event_mill(bingham_events):
+    """Init a mill from an event."""
+    mill = EventMill(bingham_events)
+    return mill
+
+
+@pytest.fixture(scope="class")
+def event_dataframe(event_mill):
+    """Return the event dataframe from event_mill."""
+    return event_mill.get_df("events")
 
 
 class TestEventMillBasics:
@@ -25,9 +47,66 @@ class TestEventMillBasics:
         assert isinstance(mill, EventMill)
 
 
+class TestGetReferredObject:
+    """Tests for getting the referred object based on str ID."""
+
+    def test_get_referred_object_address(self, event_mill, bingham_events):
+        """Ensure the address of the referred object can be found."""
+        # first get first event address
+        eid = str(bingham_events[0].resource_id)
+        address = event_mill.get_referred_address(eid)
+        assert address == ("events", 0)
+        # next try pick
+        eid = str(bingham_events[0].picks[1].resource_id)
+        address = event_mill.get_referred_address(eid)
+        assert address == ("events", 0, "picks", 1)
+
+
 class TestGetDF:
     """Tests for getting various forms of dataframes from EventMill."""
 
-    def test_get_event_dataframe(self):
+    def test_raise_on_unknown(self, event_mill):
+        """Ensure unknown frames raise exception."""
+        with pytest.raises(KeyError):
+            event_mill.get_df(name="not_a_valid_dataframer_name")
+
+    def test_get_event_dataframe(self, event_dataframe):
         """Tests for getting dataframes from mill."""
-        pass
+        assert isinstance(event_dataframe, pd.DataFrame)
+
+
+class TestEventDataframe:
+    """Tests specifically for the event dataframe."""
+
+    @pytest.fixture(scope="class")
+    def row_event_list(self, event_dataframe, bingham_events):
+        """return a list of (event_df, event) for comparing row with event."""
+        out = []
+        for (_, row), event in zip(event_dataframe.iterrows(), bingham_events):
+            out.append((row, event))
+        return out
+
+    def test_len(self, event_dataframe, bingham_catalog):
+        """The dataframe should have one row for each event."""
+        assert len(event_dataframe) == len(bingham_catalog)
+
+    def test_ids_and_order(self, row_event_list):
+        """The event order should remain unchanged."""
+        for row, event in row_event_list:
+            assert row["event_id"] == str(event.resource_id)
+
+    def test_event_description(self, row_event_list):
+        """Ensure the event descriptions match"""
+        for row, event in row_event_list:
+            if event.event_descriptions:
+                assert row["event_description"] == event.event_descriptions[0].text
+
+    def test_origin_info(self, row_event_list):
+        """Ensure the origin info (time, location) match."""
+        for row, event in row_event_list:
+            ori = event.preferred_origin()
+            assert np.isclose(row["event_longitude"], ori.longitude)
+            assert np.isclose(row["event_latitude"], ori.latitude)
+            assert np.isclose(row["event_depth"], ori.depth)
+            etime = obsplus.utils.time.to_timedelta64(ori.time)
+            assert np.isclose(row["event_time"], etime)

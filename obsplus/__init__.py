@@ -34,8 +34,6 @@ from obsplus.bank.stationbank import StationBank
 
 from obsplus.structures.fetcher import Fetcher
 
-from obsplus.events.eventmill import EventMill
-
 # misc functions
 from obsplus.utils.time import get_reference_time
 from obsplus.structures.dfextractor import DataFrameExtractor
@@ -55,6 +53,12 @@ from .waveforms.get_waveforms import get_waveforms
 from obsplus.utils.waveforms import get_waveform_client
 from obsplus.utils.events import get_event_client
 from obsplus.utils.stations import get_station_client
+
+# mill and such
+from obsplus.structures.mill import Mill
+from obsplus.structures.dataframer import DataFramer
+from obsplus.events.eventmill import EventMill
+
 
 # Get version versioneer
 from ._version import get_versions

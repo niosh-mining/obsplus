@@ -5,7 +5,7 @@ ObsPlus Event Model is a superset of, and compatible with, ObsPy's Event
 model.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from obsplus.structures.model import (
     ObsPlusModel,
     ResourceIdentifier,
     _ModelWithResourceID,
+    spec_callable,
 )
 
 # ----- Type Literals (enum like)
@@ -130,6 +131,8 @@ PickOnset = Literal["emergent", "impulsive", "questionable"]
 PickPolarity = Literal["positive", "negative", "undecidable"]
 
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
+
+EventPreferred = Literal["origin", "magnitude", "focal_mechanism"]
 
 longitude_field = Field(None, le=180.0, ge=-180.0)
 latitude_field = Field(None, le=90.0, ge=-90.0)
@@ -553,6 +556,13 @@ class EventDescription(ObsPlusModel):
     type: Optional[EventDescriptionType] = None
 
 
+_preferred_cls_dict = {
+    "origin": Origin,
+    "focal_mechanism": FocalMechanism,
+    "magnitude": Magnitude,
+}
+
+
 class Event(_ModelWithResourceID):
     """Event"""
 
@@ -571,11 +581,53 @@ class Event(_ModelWithResourceID):
     magnitudes: List[Magnitude] = []
     station_magnitudes: List[StationMagnitude] = []
 
+    def __post_init__(self):
+        self.data = self.events
+
     def to_obspy(self):
         """convert the catalog to obspy form"""
         out = super().to_obspy()
         out.scope_resource_ids()
         return out
+
+    def _get_preferred_(
+        self, what: EventPreferred, new=False
+    ) -> Optional[Union[Origin, Magnitude, FocalMechanism]]:
+        """
+        Return the preferred, whatever.
+
+        Parameters
+        ----------
+        what
+            The name of the preferred attribute.
+        new
+            Indicates whether or not to create a new object if no preferred is
+            found.
+        """
+        list_name = f"{what}s"
+        id_name = f"preferred_{what}_id"
+        object_id = getattr(self, id_name, None)
+        # no resource_id is set
+        if not object_id:
+            return None if not new else _preferred_cls_dict[what]()
+        # search for resource id
+        for child in getattr(self, list_name):
+            if child.resource_id == object_id:
+                return child
+        else:
+            raise ValueError(f"No {what} found with id {object_id}")
+
+    def get_preferred_origin(self, new=False) -> Optional[Origin]:
+        """Return the preferred origin or None."""
+        return self._get_preferred_("origin", new=new)
+
+    def get_preferred_magnitude(self, new=False) -> Optional[Magnitude]:
+        """Return the preferred magnitude or None."""
+        return self._get_preferred_("magnitude", new=new)
+
+    def get_preferred_focal_mechanism(self, new=False) -> Optional[FocalMechanism]:
+        """Return the preferred focal mechanism or None"""
+        return self._get_preferred_("focal_mechanism", new=new)
 
 
 class Catalog(_ModelWithResourceID):
@@ -585,3 +637,13 @@ class Catalog(_ModelWithResourceID):
     description: Optional[str] = None
     comments: Optional[List[Comment]] = None
     creation_info: Optional[CreationInfo] = None
+
+    # iteration protocol to behave like ObsPy Events
+    def __getitem__(self, item):
+        return self.events[item]
+
+    def __iter__(self):
+        return iter(self.events)
+
+    def __len__(self):
+        return len(self.events)

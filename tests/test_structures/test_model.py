@@ -1,19 +1,20 @@
 """
 Tests for the ObsPlusModel.
 """
+from typing_extensions import Literal
 
 import pytest
 import obsplus.events.schema as eschema
-from obsplus.exceptions import InvalidModelOperation, InvalidModelAttribute
+from obsplus.exceptions import InvalidModelAttribute
 from obsplus.events.schema import Catalog, Event, Origin
-from obsplus.structures.model import ObsPlusModel, OperationTracker
+from obsplus.structures.model import ObsPlusModel, _SpecGenerator, spec_callable
 from obsplus.utils.misc import register_func
 
 
 @pytest.fixture()
 def catalog_graph_dict():
     """Return the graph dict for catalog."""
-    return Catalog.get_graph_dict()
+    return Catalog.get_obsplus_schema()
 
 
 class TestGraphDict:
@@ -37,8 +38,8 @@ class TestGraphDict:
         assert ref_id_dict["preferred_magnitude_id"] == "Magnitude"
 
 
-class TestOperationTrackerBasic:
-    """Tests for model attribute proxies."""
+class TestSpecGenerator:
+    """Tests for generating tree specs."""
 
     proxy_list = []
 
@@ -47,12 +48,6 @@ class TestOperationTrackerBasic:
     def reference_id_proxy(self):
         """Return a proxy from a reference id"""
         return Event.preferred_origin_id
-
-    @pytest.fixture(scope="class")
-    @register_func(proxy_list)
-    def list_id_proxy(self):
-        """Return a proxy from a reference id"""
-        return Catalog.events.preferred_origin_id
 
     @pytest.fixture(scope="class")
     @register_func(proxy_list)
@@ -74,51 +69,41 @@ class TestOperationTrackerBasic:
         """meta-fixture to aggregate proxies."""
         return request.getfixturevalue(request.param)
 
-    def test_get_proxy(self, model_proxy):
-        """Ensure a proxy is returned from class level get_attrs."""
-        assert isinstance(model_proxy, OperationTracker)
-        assert str(model_proxy)
+    def test_operation_tracker_basic_attribute(self):
+        """Ensure an operation tracker is returned from a model."""
+        time = Origin.time
+        assert isinstance(time, _SpecGenerator)
 
-    def test_get_attr(self, list_id_proxy):
-        """Tests for list ID proxy."""
-        assert "Catalog.events.preferred_origin_id" in str(list_id_proxy)
+    def test_preferred(self):
+        """Tests for supporting preferred operator."""
+        pref_magnitude = Event._preferred_magnitude
+        assert isinstance(pref_magnitude, _SpecGenerator)
 
-    def test_or(self, list_id_proxy, reference_id_proxy):
-        """Ensure or operator works"""
-        out = list_id_proxy | reference_id_proxy
-        assert " | " in str(out)
-        # a second or is not currently allowed
-        with pytest.raises(InvalidModelOperation, match="Only one"):
-            out | out
+    def test_parent_preserved(self):
+        """Ensure parent model reference is preserved."""
+        mag = Event.magnitudes
+        assert hasattr(mag, "parent_model")
+        assert mag.parent_model == Event
+        amp = mag.amplitude
+        assert amp.parent_model == Event
+        pick = amp.pick_id._referred_object
+        assert pick.parent_model == Event
 
-    def test_get_item(self, reference_id_proxy):
-        """Ensure get item works."""
-        out = reference_id_proxy[0]
-        assert "[0]" in str(out)
+    def test_function(self):
+        """Tests for calling  functions."""
+        mag = Origin.preferred_origin().mag
+        breakpoint()
 
-    def test_get_item_raises_on_non_int(self, reference_id_proxy):
-        """Get item should only work on ints."""
-        with pytest.raises(TypeError, match="must be an int"):
-            reference_id_proxy["not an int"]
+    @pytest.mark.xfail
+    def test_track_schema(self):
+        """
+        The operation tracker should know where it is in the schema
+        and raise attribute errors if a non-existent attr is requested.
+        """
+        event = Catalog.events[0]
+        with pytest.raises(InvalidModelAttribute, match="not_an_attribute"):
+            event.not_an_attribute
+        with pytest.raises(InvalidModelAttribute, match="still_wrong"):
+            event.picks.still_wrong
 
-
-class TestValidateModelOperationTracker:
-    """Tests for validing trackers."""
-
-    def test_invalid_path_raises(self, catalog_graph_dict):
-        """Ensure a non-exist path raises."""
-        with pytest.raises(InvalidModelAttribute, match="bob"):
-            Catalog.events.bob.validate(catalog_graph_dict)
-
-    def test_validate_or(self, catalog_graph_dict):
-        """Ensure | which don't have the same shape fail."""
-        first = Catalog.resource_id
-        second = Event.picks[0]
-        out = first | second
-        with pytest.raises(InvalidModelOperation):
-            out.validate(catalog_graph_dict)
-
-    def test_or_then_attribute(self, catalog_graph_dict):
-        """Ensure we can get the attributes from the result of |"""
-        out = (Event.origins[0] | Event.preferred_origin_id).time
-        out.validate(catalog_graph_dict)
+        # but the special operations should work when they are supported

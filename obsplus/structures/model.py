@@ -1,52 +1,49 @@
 """
 Logic for defining tree-like data structures.
 """
-
-from functools import lru_cache
-from typing import Optional, Union, Tuple
+import inspect
+from functools import lru_cache, partial
+from typing import Optional, Union, Type, Sequence
 from uuid import uuid4
 
 from obspy.core import event as ev
 from pydantic import root_validator, validator
 from pydantic.main import BaseModel, ModelMetaclass
 
-from obsplus.exceptions import InvalidModelOperation, InvalidModelAttribute
+from obsplus.constants import SUPPORTED_MODEL_OPS
+from obsplus.exceptions import InvalidModelAttribute
+from obsplus.interfaces import TreeSpecCallable
 
 
 # a global cache for graphs
+
+TREE_SPEC_PARAMS = set(inspect.signature(TreeSpecCallable.__call__).parameters)
+TREE_SPEC_PARAMS.remove("self")
+
 
 #
 class ObsPlusMeta(ModelMetaclass):
     """A mixing for the metaclass to add getitem."""
 
-    def __getitem__(cls, item):
-        item_name = str(getattr(item, "__name__", item))
+    def __getitem__(cls: Type["ObsPlusModel"], item):
+        # item_name = str(getattr(item, "__name__", item))
         cls_name = cls.__name__
-        name = f"{cls_name}__{item_name}"
+        op_tuple = (cls_name, item)
+        return _SpecGenerator(op_tuple, parent_model=cls)
 
-        _dict = {
-            "__reduce__": lambda cls: f"{cls.__module__}.{cls.__name__}"
-            # '__getstate__': ModelMetaclass.__getstate__,
-            # "__setstate__": ModelMetaclass.__setstate__,
-        }
-        new = type(name, (cls,), _dict)
-
-        return new
-
-    #
-    # def __getstate__(cls):
-    #     breakpoint()
-    #
-    # def __setstate__(cls):
-    #     breakpoint()
-    def __getattr__(cls: "ObsPlusModel", item):
-        if item in getattr(cls, "__fields__", {}):
+    def __getattr__(cls: Type["ObsPlusModel"], item):
+        """Attrs that don't exist can be used for making specifications."""
+        fields = getattr(cls, "__fields__", {})
+        # this is requesting a get_attribute operator
+        if item in fields:
+            return cls.__getitem__(item)
+        # this is requesting a get_preferred operator
+        elif item.startswith(SUPPORTED_MODEL_OPS):
             cls_name = cls.__name__
-            op_str = f"{cls_name}.{item}"
-            return OperationTracker(op_str)
-
+            op_tuple = (cls_name, f"${item}")
+            return _SpecGenerator(op_tuple, parent_model=cls)
         msg = f"{cls.__name__} has not attribute {item}"
-        raise AttributeError(msg)
+        raise InvalidModelAttribute(msg)
 
 
 class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
@@ -54,13 +51,12 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     ObsPlus' base model for defining schema.
     """
 
-    # extra: Optional[Dict[str, Any]] = None
-    _contains = None  # for storing the containing info.
+    # # extra: Optional[Dict[str, Any]] = None
+    # _contains = None  # for storing the containing info.
 
     class Config:
         """pydantic config for obsplus model."""
 
-        pass
         validate_assignment = True
         arbitrary_types_allowed = True
         orm_mode = True
@@ -94,9 +90,11 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
 
     @classmethod
     @lru_cache()
-    def get_graph_dict(cls) -> dict:
-        """return a mapper for this model."""
-        return _get_graph_dict(cls.schema())
+    def get_obsplus_schema(cls) -> dict:
+        """
+        Return an ObsPlus Schema for this model and its children/parents.
+        """
+        return _get_obsplus_schema(cls.schema())
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -119,6 +117,12 @@ class ResourceIdentifier(ObsPlusModel):
         name = cls.__name__.replace("ResourceIdentifier", "")
         cls._points_to = name or cls._points_to
 
+    def __str__(self):
+        return str(self.id)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
 
 class _ModelWithResourceID(ObsPlusModel):
     """A model which has a resource ID"""
@@ -133,182 +137,90 @@ class _ModelWithResourceID(ObsPlusModel):
         return value
 
 
-class OperationTracker:
+#
+# class PreferredFinder:
+#     """
+#     Not a dating service, a class for finding preferred objects.
+#
+#     Parameters
+#     ----------
+#     model
+#         The class definition
+#     """
+#
+#     def __init__(
+#         self, model: Type[ObsPlusModel], name: str, default_index: Optional[int] = None
+#     ):
+#         self.cls = model
+#         self.name = name
+#         self.expected_id = f"preferred_{name}_id"
+#         self.index = default_index
+#
+#     def _check_fields(self, cls, name):
+#         """Ensure there is a way to set the preferred id."""
+#         fields = getattr(cls, "__fields__", {})
+#         expected_id = f"preferred_{name}_id"
+#         if expected_id not in fields:
+#             msg = f"{expected_id} not in fields of {cls}"
+#             raise ValueError(msg)
+#
+
+
+class _SpecGenerator:
     """
-    A simple class for keeping track of operations on a model.
+    A class for generating specs used to access data on tree structures.
+
+    See also :func:`obsplus.utils.mapping.resolve_tree_specs`.
     """
 
-    def __init__(self, op_str: Union[str, "OperationTracker"]):
-        if isinstance(op_str, self.__class__):
-            self._op_str = op_str._op_str
-        self._op_str = op_str
-        self._validated = False
-        self._type, self._is_array = None, None
+    def __init__(
+        self,
+        op_tuple: Union[Sequence[Union[int, str, callable]], "_SpecGenerator"],
+        parent_model: Optional[Type[ObsPlusModel]] = None,
+    ):
+        if isinstance(op_tuple, self.__class__):
+            self.spec_tuple = op_tuple.spec_tuple
+            self.parent_model = op_tuple.parent_model
+        else:
+            self.spec_tuple = tuple(op_tuple)
+            self.parent_model = parent_model
+
+    def replace_first(self, new) -> tuple:
+        """Replace the first operation with a new address."""
+        return tuple(list(new) + list(self.spec_tuple[1:]))
 
     def __getattr__(self, attr):
         """Create a new instance following attributes down."""
-        return self.__class__(f"{self._op_str}.{attr}")
+        return self.__class__(
+            list(self.spec_tuple) + [attr], parent_model=self.parent_model
+        )
 
     def __str__(self):
-        return f"AttributeTracker:: {self._op_str}"
-
-    def __or__(self, other):
-        if " | " in self._op_str:
-            msg = "Only one '|' operation is currently permitted."
-            raise InvalidModelOperation(msg)
-        new_str = f"({self._op_str} | {other._op_str})"
-        return self.__class__(new_str)
+        return f"AttributeTracker:: {self.spec_tuple}"
 
     def __getitem__(self, item):
-        if not isinstance(item, int):
-            msg = (
-                "getitem is reserved for selecting elements from as list "
-                f"and therefore must be an int. You passed {item}"
-            )
-            raise TypeError(msg)
-        return self.__class__(f"{self._op_str}[{item}]")
+        return self.__class__(
+            list(self.spec_tuple) + [item], parent_model=self.parent_model
+        )
+
+    def __call__(self, *args, **kwargs):
+        callable_name = self.spec_tuple[-1]
+        part = _FunctionProxy(callable_name, *args, **kwargs)
+        return self.__class__(
+            list(self.spec_tuple[:-1]) + [part], parent_model=self.parent_model
+        )
 
     __repr__ = __str__
 
-    def validate(self, graph_dict):
-        """
-        Validate the operation tracker based on a graph dict.
 
-        Parameters
-        ----------
-        graph_dict
-            The dict defining tree structure returned from
-            ~:meth:ObsPlusModel.get_graph_dict.
-
-        Raises
-        ------
-        InvalidModelOperation if the requested operations are inconsistent
-        with the object model in graph_dict.
-        """
-
-        # first resolve | by slicing out both strings
-        op_str = self._op_str
-        if " | " in op_str:
-            paren_index1 = op_str.index("(")
-            paren_index2 = op_str.index(")")
-            inside_or_str = op_str[paren_index1 + 1 : paren_index2]
-            resulting_type = self._validate_or(inside_or_str, graph_dict)
-            op_str = op_str.replace(f"({inside_or_str})", resulting_type)
-
-        # check the attributes and type.
-        self._type, self._is_array = _get_type_from_graph(op_str, graph_dict)
-        self._validated = True
-        return self
-
-    def _validate_or(self, or_str, graph_dict):
-        """validator or"""
-        str_1, str_2 = or_str.split(" | ")
-        # first make sure attributes exist and are valid.
-        obj1 = OperationTracker(str_1).validate(graph_dict)
-        obj2 = OperationTracker(str_2).validate(graph_dict)
-        # then make sure types are corrct.
-        type1 = obj1._get_type(graph_dict)
-        type2 = obj2._get_type(graph_dict)
-        if type1 != type2:
-            msg = (
-                f"Invalid | found in {or_str}. {obj1} is of type {type1} "
-                f"and {obj2} is of type {type2}, they must be the same."
-            )
-            raise InvalidModelOperation(msg)
-        return type1[0]
-
-    def _get_type(self, graph_dict) -> Tuple[str, bool]:
-        """Get a string of the type."""
-        # first split on attrs
-        assert " | " not in self._op_str, "or is not supported at this stage."
-        return _get_type_from_graph(self._op_str, graph_dict)
-
-
-def _get_type_from_graph(address_string: str, graph_dict: dict) -> Tuple[str, bool]:
-    """
-    Get the type an address string refers to from a graph_dict.
-
-    Parameters
-    ----------
-    address_string
-        A string pointing to an object defined in graph.
-    graph_dict
-        A dict of the object heirarch returned by ~:meth:ObsPlusModel.get_graph_dict.
-
-    Raises
-    ------
-    InvalidModelOperation if the path is invalid for the schema.
-
-    Returns
-    -------
-    A tuple of ('type': str, 'is_array': bool)
-    """
-
-    def _get_type_from_entry(attr_dict, attr_name):
-        """Get the type from an attr_dict"""
-        atype = attr_dict["attr_type"][attr]
-        ref = attr_dict["attr_ref"].get(attr)
-        ref_id = attr_dict["attr_id_ref"].get(attr)
-        is_array = attr_dict["attr_is_array"].get(attr, False)
-        if ref:
-            atype = ref
-        if ref_id:
-            atype = ref_id
-        return atype, is_array
-
-    # split attributes, determine which refer to arrays
-    attr_list = address_string.split(".")
-    has_getitem = ["[" in x and "]" in x for x in attr_list[1:]]
-    # init values and iterate through each level of attribute map
-    current_parent_type = atype = attr_list[0]
-    array = False
-    for attr, has_getitem in zip(attr_list[1:], has_getitem):
-        if has_getitem:
-            attr = attr[: attr.index("[")]  # strip out []
-        current = graph_dict[current_parent_type]
-        try:
-            atype, array = _get_type_from_entry(current, attr)
-        except KeyError:
-            msg = f"{current_parent_type} has no attribute {attr}"
-            raise InvalidModelAttribute(msg)
-        current_parent_type = atype
-        # determine if an array is being reduced
-        if array and has_getitem:
-            array = False
-    return atype, array
-
-
-def _get_attr_ref_type(attr_dict):
-    """
-    Determine the type and reference type of an attribute from a schema dict.
-
-    Returns a tuple of (
-    """
-    ref_str = "#/definitions/"
-    atype = attr_dict.get("type", "object")
-    is_array = atype == "array"
-    ref = None
-    if is_array:  # dealing with array, find out sub-type
-        items = attr_dict.get("items", {})
-        ref = items.get("$ref", None)
-        atype = items.get("type", atype)
-    else:
-        ref = attr_dict.get("$ref", None)
-    if ref:  # there is a reference to a def, just get name
-        ref = ref.replace(ref_str, "")
-    # check if this is a datetime
-    if attr_dict.get("format", "") == "date-time":
-        atype = "datetime64[ns]"
-    return atype, ref, is_array
-
-
-def _get_graph_dict(schema: ObsPlusModel) -> dict:
+def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
     """ "
-    Return a dict of the form:
+    Return a dict used to characterize class hierarchies of models.
 
-    #TODO fill in form of dict
+    Notes
+    -----
+    The form of the output is internal to ObsPlus and could change anytime!
     """
-    # type_dict = {'string': str, 'array': list, 'float': float, 'int': int}
     rid_str = "ResourceIdentifier"
 
     def _init_empty():
@@ -343,8 +255,9 @@ def _get_graph_dict(schema: ObsPlusModel) -> dict:
             # add reference type
             current["attr_ref"][attr] = ref
             # add name resource_id points to, if resource_id
-            cadd = [attr] if atype == "array" else attr
-            new_address = list(address) + [cadd]
+            # cadd = (attr,) if atype == "array" else attr
+            # cadd = attr
+            new_address = list(address) + [attr]
             new_base = definitions[ref]
             _recurse(new_base, definitions, cls_dict, new_address)
             # add resource_id info
@@ -356,3 +269,46 @@ def _get_graph_dict(schema: ObsPlusModel) -> dict:
         return cls_dict
 
     return _recurse(schema, schema["definitions"])
+
+
+def _get_attr_ref_type(attr_dict):
+    """
+    Determine the type and reference type of an attribute from a schema dict.
+
+    Returns a tuple of (
+    """
+    ref_str = "#/definitions/"
+    atype = attr_dict.get("type", "object")
+    is_array = atype == "array"
+    if is_array:  # dealing with array, find out sub-type
+        items = attr_dict.get("items", {})
+        ref = items.get("$ref", None)
+        atype = items.get("type", atype)
+    else:
+        ref = attr_dict.get("$ref", None)
+    if ref:  # there is a reference to a def, just get name
+        ref = ref.replace(ref_str, "")
+    # check if this is a datetime
+    if attr_dict.get("format", "") == "date-time":
+        atype = "datetime64[ns]"
+    return atype, ref, is_array
+
+
+def spec_callable(func):
+    """
+    Register a function as a tree_spec callable.
+
+    These function are used to implement custom logic when navigating tree
+    structures.
+
+    Notes
+    -----
+    Spec callables implement the :class:`obsplus.interfaces.TreeSpecCallable`
+    """
+    params = set(inspect.signature(func).parameters)
+    missing_params = TREE_SPEC_PARAMS - params
+    if missing_params:
+        msg = f"spec callables missing required params: {missing_params}"
+        raise TypeError(msg)
+    func._tree_spec_func = True
+    return func

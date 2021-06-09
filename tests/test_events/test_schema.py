@@ -1,6 +1,7 @@
 """
 Tests for event schema.
 """
+import copy
 from typing import Sequence
 
 import obspy
@@ -12,6 +13,12 @@ import obsplus.structures.model
 from obsplus.constants import NSLC
 from obsplus.events.json import cat_to_dict
 from pydantic import ValidationError
+
+
+@pytest.fixture()
+def model_catalog(bingham_catalog):
+    """Convert the bingham catalog to PyDantic Models."""
+    return esc.Catalog.from_orm(bingham_catalog)
 
 
 class TestResourceID:
@@ -39,25 +46,6 @@ class TestWaveformID:
         out = esc.WaveformStreamID(seed_string=seed_id)
         for name, value in zip(NSLC, seed_id.split(".")):
             assert getattr(out, f"{name}_code") == value
-
-
-class TestEvent:
-    """Test for event model."""
-
-    def test_resource_id(self):
-        """Ensure the ResourceID gets created."""
-        out = esc.Event()
-        assert out.resource_id is not None
-
-    def test_non_mutable_defaults(self):
-        """
-        Ensure appending to a default list in one instances doesn't effect others.
-        """
-        ev1 = esc.Event()
-        ev2 = esc.Event()
-        ev1.comments.append("bob")
-        assert "bob" in ev1.comments
-        assert not len(ev2.comments)
 
 
 class TestConversions:
@@ -127,3 +115,77 @@ class TestOrigin:
         ori = ev.Origin(latitude=99)
         with pytest.raises(ValidationError):
             esc.Origin.from_orm(ori)
+
+
+class TestEvent:
+    """Test for event model."""
+
+    def test_resource_id(self):
+        """Ensure the ResourceID gets created."""
+        out = esc.Event()
+        assert out.resource_id is not None
+
+    def test_non_mutable_defaults(self):
+        """
+        Ensure appending to a default list in one instances doesn't effect others.
+        """
+        ev1 = esc.Event()
+        ev2 = esc.Event()
+        ev1.comments.append("bob")
+        assert "bob" in ev1.comments
+        assert not len(ev2.comments)
+
+    def test_get_preferred_origin(self, model_catalog):
+        """
+        Test getting preferred origin when it exists
+        """
+        event = model_catalog.events[0]
+        pref_origin = event.get_preferred_origin()
+        assert pref_origin is not None
+        assert isinstance(pref_origin, esc.Origin)
+        assert str(pref_origin.resource_id) == str(event.preferred_origin_id)
+
+    def test_get_preferred_magnitude(self, model_catalog):
+        """
+        Test getting preferred magnitude when it exists.
+        """
+        event = model_catalog.events[0]
+        pref_origin = event.get_preferred_magnitude()
+        assert pref_origin is not None
+        assert isinstance(pref_origin, esc.Magnitude)
+        assert str(pref_origin.resource_id) == str(event.preferred_magnitude_id)
+
+    def test_get_preferred_focal_mechanism(self, model_catalog):
+        """
+        Test getting preferred focal mechanism. It doesn't exist.
+        """
+        event = model_catalog.events[0]
+        focal_mech = event.get_preferred_focal_mechanism()
+        assert focal_mech is None
+        # but we can init a default focal mech
+        focal_mech2 = event.get_preferred_focal_mechanism(new=True)
+        assert isinstance(focal_mech2, esc.FocalMechanism)
+
+    def test_preferred_wrong_id(self, model_catalog):
+        """The preferred id is set but the object is missing raise ValueError."""
+        event = copy.copy(model_catalog.events[0])
+        event.preferred_magnitude_id = "Not a real ID, obviously"
+        with pytest.raises(ValueError, match="No magnitude found"):
+            event.get_preferred_magnitude()
+
+
+class TestCatalog:
+    """Tests for catalog."""
+
+    def test_sequence(self, model_catalog):
+        """Ensure the catalog behaves like a sequence."""
+        cat = model_catalog
+        # test len
+        assert len(cat) == len(cat.events)
+        # test iteration
+        for e1, e2 in zip(cat, cat.events):
+            assert e1 is e2
+        # test subscription
+        for num in range(len(cat.events)):
+            e1, e2 = cat[num], cat.events[num]
+            assert e1 is e2

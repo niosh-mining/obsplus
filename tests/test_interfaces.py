@@ -7,7 +7,13 @@ from obspy.clients.fdsn.client import Client, FDSNException
 
 from obsplus import EventBank, WaveBank
 from obsplus.utils.misc import _get_progressbar
-from obsplus.interfaces import EventClient, WaveformClient, StationClient, ProgressBar
+from obsplus.interfaces import (
+    EventClient,
+    WaveformClient,
+    StationClient,
+    ProgressBar,
+    TreeSpecCallable,
+)
 
 
 class DynamicWrapper:
@@ -69,7 +75,7 @@ class TestEventClient:
         assert not isinstance(not_client, EventClient)
 
 
-class TestWaveformClient:
+class nTestWaveformClient:
     """Tests for waveform client interface."""
 
     def test_fdsn_isinstance(self, iris_client):

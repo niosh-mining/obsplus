@@ -6,6 +6,7 @@ import re
 from contextlib import suppress
 from functools import lru_cache, reduce
 from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
+from typing_extensions import Annotated, get_origin
 
 import numpy as np
 import pandas as pd
@@ -163,13 +164,33 @@ def cast_dtypes(
     inplace
         If true perform operation in place.
     """
+
+    def _get_column_funcs(overlap, dtypes):
+        """Get functions used for transforming columns."""
+        col_funcs = {}  # custom dtypes which are implemented as column functions
+        pandas_dtypes = {}  # dtypes df.astype supports
+        for name in overlap:
+            dtype = dtypes[name]
+            # handle custom dtypes defined with str
+            if dtype in OPS_DTYPE_FUNCS:
+                col_funcs[name] = OPS_DTYPE_FUNCS[dtype]
+                pandas_dtypes[name] = OPS_DTYPES[dtype]
+            # handle annotated types
+            elif get_origin(dtype) is Annotated:
+                origin = dtype.__origin__
+                meta = dtype.__metadata__[0]
+                if meta not in OPS_DTYPE_FUNCS and not callable(meta):
+                    raise NotImplementedError("Unsupported dtype found!")
+                col_funcs[name] = OPS_DTYPE_FUNCS.get(meta, meta)  # noqa
+                pandas_dtypes[name] = origin
+            else:
+                pandas_dtypes[name] = dtype
+        return col_funcs, pandas_dtypes
+
     df = df if not inplace else df.copy()
     # get overlapping columns, column functions, and pandas support dtypes
     overlap = set(dtype) & set(df.columns)
-    column_funcs = {
-        i: OPS_DTYPE_FUNCS[dtype[i]] for i in overlap if dtype[i] in OPS_DTYPE_FUNCS
-    }
-    supported_dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
+    column_funcs, supported_dtypes = _get_column_funcs(overlap, dtype)
     # apply functions defined with custom dtypes
     if column_funcs:
         df = apply_funcs_to_columns(df, column_funcs, inplace=inplace)
