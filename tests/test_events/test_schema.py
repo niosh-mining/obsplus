@@ -15,12 +15,6 @@ from obsplus.events.json import cat_to_dict
 from pydantic import ValidationError
 
 
-@pytest.fixture()
-def model_catalog(bingham_catalog):
-    """Convert the bingham catalog to PyDantic Models."""
-    return esc.Catalog.from_orm(bingham_catalog)
-
-
 class TestResourceID:
     """Tests for the resource ID"""
 

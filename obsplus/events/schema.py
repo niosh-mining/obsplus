@@ -18,7 +18,6 @@ from obsplus.structures.model import (
     ObsPlusModel,
     ResourceIdentifier,
     _ModelWithResourceID,
-    spec_callable,
 )
 
 # ----- Type Literals (enum like)

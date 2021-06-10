@@ -57,6 +57,12 @@ class InvalidModelAttribute(AttributeError):
     """
 
 
+class IncompatibleDataFramesError(ValueError):
+    """
+    Raised when an operation tries to join incompatible dataframes together.
+    """
+
+
 # --- Warnings
 
 

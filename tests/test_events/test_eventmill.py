@@ -1,29 +1,10 @@
 """Tests for EventMill."""
 import numpy as np
 import pandas as pd
-import obspy.core.event as ev
+import pytest
 
 import obsplus
 from obsplus import EventMill
-
-import pytest
-
-
-@pytest.fixture(scope="class")
-def bingham_events(bingham_dataset):
-    """Return the event dataframe from event_mill."""
-    events = bingham_dataset.event_client.get_events().copy()
-    # add some event descriptions
-    events[1].event_descriptions.append(ev.EventDescription("LR"))
-    events[2].event_descriptions.append(ev.EventDescription("A Big One"))
-    return events
-
-
-@pytest.fixture(scope="class")
-def event_mill(bingham_events):
-    """Init a mill from an event."""
-    mill = EventMill(bingham_events)
-    return mill
 
 
 @pytest.fixture(scope="class")

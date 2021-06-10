@@ -1,10 +1,15 @@
 """
 Module for converting tree-like structures into tables and visa-versa.
 """
-from typing import Type, Dict, Optional, Tuple
+import copy
+from collections import defaultdict
+from functools import lru_cache
+from typing import Type, Dict, Optional, Tuple, Sequence
 
 import obsplus
+import pandas as pd
 from obsplus.structures.model import ObsPlusModel
+from obsplus.exceptions import IncompatibleDataFramesError
 
 
 class Mill:
@@ -20,20 +25,26 @@ class Mill:
     _id_map: Dict[str, tuple]
     _data: dict
     _dataframers: Dict[str, Type["obsplus.DataFramer"]]
+    _type_map_key: str = "__id_type__"
 
     def __init_subclass__(cls, **kwargs):
         """Ensure subclasses have their own framers dict."""
         cls._dataframers = {}
 
     def __init__(self, data):
-        self._data = self._get_data(data)
-        self._stash = {}
-        self._id_map = {}
+        self._data = data
 
-    def _reset_cache(self):
-        """Reset caches, eg after data update."""
-        self._stash = {}
-        self._id_map = {}
+    @property
+    @lru_cache()
+    def _df_dicts(self):
+        df_dicts = _dict_to_tables(
+            data=self._get_data(self._data),
+            schema=self._model.get_obsplus_schema(),
+            data_type=self._model.__name__,
+        )
+        df_dicts = self._post_df_dict(df_dicts)
+        df_dicts["__summary__"] = self._add_df_summary(df_dicts)
+        return df_dicts
 
     def _get_data(self, data) -> dict:
         """Get the internal data structure."""
@@ -75,15 +86,6 @@ class Mill:
         framer = Framer(self)
         return framer.get_dataframe(self._data, stash=self._stash)
 
-    def _index_resource_ids(self):
-        """Index resource ids."""
-        schema = self._model.get_obsplus_schema()
-        if self._id_name is None:
-            return {}  # Ids are not used on this schema
-        addresses = schema[self._id_name]
-        breakpoint()
-        print(self)
-
     def get_referred_address(self, id_str) -> Tuple:
         """
         Get the address of the requested ID string.
@@ -96,5 +98,147 @@ class Mill:
         return self._id_map.get(id_str, ())
 
     def __str__(self):
-        msg = f"Mill with spec of {self._model.__name__}"
+        name = self._model.__name__
+        obj_count = len(self._df_dicts[self._type_map_key])
+        msg = f"Mill with spec of [{name}] and [{obj_count}] managed objects"
         return msg
+
+    def lookup(self, ids: Sequence[str]) -> pd.DataFrame:
+        """
+        Look up rows from a dataframe which have ids.
+
+        Parameters
+        ----------
+        ids
+            A sequence of Ids.
+
+        Raises
+        ------
+        IncompatibleDataFramesError
+            If the ids belong to different types of dataframes.
+        KeyError
+            If a requested ID is not contained by the mill.
+
+        Notes
+        -----
+        - If ids do not exist in Mill an empty df is returned
+        """
+        if isinstance(ids, str):
+            ids = [ids]
+        dtypes = self._df_dicts[self._type_map_key].loc[ids].unique()
+        if len(dtypes) > 1:
+            msg = "Provided ids belong to multiple types of objects"
+            raise IncompatibleDataFramesError(msg)
+        elif not len(dtypes):  # no dataframe found
+            return pd.DataFrame()
+
+        new_table = self._df_dicts[dtypes.unique().astype(str)[0]]
+        return new_table.loc[ids]
+
+    # methods for custom df_dict creations
+    def _add_df_summary(self, df_dicts):
+        """Add a summary table to the dataframe dict for easy querying."""
+        return {}
+
+    def _post_df_dict(self, df_dicts):
+        """This can be subclassed to run validators/checks on dataframes."""
+        return df_dicts
+
+
+def _dict_to_tables(
+    data,
+    schema,
+    data_type: str,
+    id_field: str = "resource_id",
+) -> Dict[str, pd.DataFrame]:
+    """
+    Decompose a json-like data-structure into tables.
+
+    Parameters
+    ----------
+    data
+        A list or dict with nested json supported objects.
+    schema
+        An obsplus schema which defines the structure of data.
+        See :meth:`obsplus.structures.model.Model.get_obsplus_schema`
+    data_type
+        The key in schema which describes the data's type.
+    id_field
+        The field used as a unique identifier.
+
+    Returns
+    -------
+    A dict of {classname: df}
+    """
+
+    def _flatten_ids(obj, id_attrs):
+        """Flatten ids from dict of {id: id_str} to just id_str."""
+        for key in id_attrs:
+            rid = obj[key]
+            if rid:
+                obj[key] = rid["id"]
+        return obj
+
+    def _handle_dict(obj: dict, schema, parent_id=None):
+        """handles dictionary decomposition."""
+        obj = copy.copy(obj)  # make a shallow copy of dict as we do modify it
+        current_id = obj.get(id_field)
+        keys = set(obj)
+        # get set of keys which have IDs of their own
+        id_keys = {i for i, v in schema["attr_ref"].items() if v in types_with_id}
+        array_keys = keys & schema["array_attrs"]
+        assert id_keys.issubset(array_keys), "All id_keys should be part of an array"
+        for sub_key in id_keys:
+            array = obj[sub_key]
+            if not array:
+                continue
+            new_type = schema["attr_ref"][sub_key]
+            # recurse array, sub in list of ids to flatten tree.
+            _recurse_objects(obj[sub_key], new_type, parent_id=current_id)
+            obj[sub_key] = [x[id_field]["id"] for x in array]
+        _flatten_ids(obj, schema["id_attrs"])
+        obj["parent_id"] = parent_id
+        return obj
+
+    def _recurse_objects(obj, current_type, parent_id=None):
+        """Recurse the objects and append to appropriate dict"""
+        sub_schema = schema[current_type]
+        if isinstance(obj, dict):
+            modified_obj = _handle_dict(obj, sub_schema, parent_id=parent_id)
+            object_lists[current_type].append(modified_obj)
+        if isinstance(obj, (list, tuple)):
+            assert current_type in types_with_id, "Only arrays with ids please"
+            for sub_obj in obj:
+                _recurse_objects(sub_obj, current_type, parent_id)
+
+    def _make_df_dict(object_list):
+        """Convert a dist of lists of dicts into a dict of DFs."""
+        out = {}
+        for dtype in list(schema):
+            dict_lists = object_list[dtype]
+            if not dict_lists:
+                df = pd.DataFrame(columns=[id_field])
+            else:
+                df = pd.DataFrame(object_list[dtype])
+            out[dtype] = df.set_index(id_field)
+        out["__id_type__"] = _make_id_type_lookup(out)
+        return out
+
+    def _make_id_type_lookup(_df_dict):
+        """Make a series of resource_id: type"""
+        series_dtypes = []
+        categorical = pd.CategoricalDtype(list(schema))
+        for i, v in _df_dict.items():
+            if not i.startswith("__"):
+                series_dtypes.append(pd.Series(index=v.index, data=i))
+        out = pd.concat(series_dtypes).astype(categorical)
+        return out
+
+    # get a set of event type names which have ids
+    types_with_id = {i for i, v in schema.items() if id_field in v["attr_type"]}
+    # populate dicts of lists for each type.
+    object_lists = defaultdict(list)
+    _recurse_objects(data, data_type)
+    # convert list of dicts to dataframes
+    out = _make_df_dict(object_lists)
+    return out

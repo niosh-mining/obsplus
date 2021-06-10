@@ -7,11 +7,8 @@ May eventually replace dfextractor.
 import inspect
 from typing import Mapping, Dict
 
-import pandas as pd
-
 import obsplus
 from obsplus.utils.mapping import FrozenDict
-from obsplus.utils.pd import cast_dtypes
 from obsplus.structures.model import (
     _SpecGenerator,
     ObsPlusModel,
@@ -104,19 +101,16 @@ class DataFramer:
             A dict of mapped components already known.
 
         """
-        stash = stash if stash is not None else {}
-        model_name = self._model.__name__
-        schema = self._model.get_obsplus_schema()
-        address = schema[model_name]["address"]
-        data = self._mill._data
-        breakpoint()
-        sub_data = expand_address(data, address, stash)
-        out = []
-        for parent_address, obj in sub_data.items():
-            ops = {i: v.replace_first(parent_address) for i, v in self._fields.items()}
-            out.append({i: fetch_branches(data, v, stash)[v] for i, v in ops.items()})
-        df = pd.DataFrame(out)
-        return cast_dtypes(df, dtype=self._dtypes, inplace=True)
+        # stash = stash if stash is not None else {}
+        # model_name = self._model.__name__
+        # schema = self._model.get_obsplus_schema()
+        # address = schema[model_name]["address"]
+        # data = self._mill._data
+        # # breakpoint()
+        # sub_data = expand_address(data, address, stash)
+        # out = []
+        # df = pd.DataFrame(out)
+        # return cast_dtypes(df, dtype=self._dtypes, inplace=True)
 
 
 @compose_docstring(supported=_SUPPORTED_OPERATOR_ARGUMENTS)

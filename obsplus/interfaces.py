@@ -5,7 +5,6 @@ Note: These are used instead of the ones in obspy.clients.base so the subclass
 hooks can be used.
 """
 from abc import abstractmethod
-from typing import List, Tuple, Sequence, Any, Union, Dict
 from typing_extensions import Protocol, runtime_checkable
 
 import obspy
@@ -124,23 +123,6 @@ class ProgressBar(Protocol):
     @abstractmethod
     def finish(self, **kwargs):
         """Puts the progress bar in the finished state."""
-
-
-class TreeSpecCallable(Protocol):
-    """
-    A callable which can be used in a tree specification.
-
-    See :class:`obsplus.structures.dataframer.DataFramer` for more info.
-    """
-
-    def __call__(
-        self,
-        spec: Sequence[Union[int, str, "TreeSpecCallable"]],
-        address: Sequence[Union[int, str]],
-        obj: Union[Sequence, Dict],
-        **kwargs
-    ) -> List[Tuple[Sequence, Sequence, Any]]:
-        """Return a new tuple of spec, address, obj."""
 
 
 if __name__ == "__main__":

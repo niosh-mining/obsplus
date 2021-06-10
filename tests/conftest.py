@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import obspy
 import pytest
+import obspy.core.event as ev
 from obspy.core.event.base import ResourceIdentifier
 
 import obsplus.utils.dataset
@@ -21,6 +22,8 @@ import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
 from obsplus.utils.testing import instrument_methods
 from obsplus.utils.misc import suppress_warnings
+import obsplus.events.schema as esch
+from obsplus import EventMill
 
 # ------------------------- define constants
 
@@ -275,6 +278,30 @@ def bingham_catalog(bingham_dataset):
     cat = bingham_dataset.event_client.get_events()
     assert len(cat), "catalog is empty"
     return cat
+
+
+@pytest.fixture(scope="class")
+def bingham_events(bingham_dataset):
+    """Return the event dataframe from event_mill."""
+    events = bingham_dataset.event_client.get_events().copy()
+    # add some event descriptions
+    events[1].event_descriptions.append(ev.EventDescription("LR"))
+    events[2].event_descriptions.append(ev.EventDescription("A Big One"))
+    return events
+
+
+@pytest.fixture(scope="class")
+def event_mill(bingham_events):
+    """Init a mill from an event."""
+    mill = EventMill(bingham_events)
+    return mill
+
+
+@pytest.fixture(scope="class")
+def model_catalog():
+    """Convert the bingham catalog to PyDantic Models."""
+    cat = obsplus.load_dataset("bingham_test").event_client.get_events()
+    return esch.Catalog.from_orm(cat)
 
 
 @pytest.fixture(scope="session")

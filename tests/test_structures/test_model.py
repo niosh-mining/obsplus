@@ -1,13 +1,11 @@
 """
 Tests for the ObsPlusModel.
 """
-from typing_extensions import Literal
-
 import pytest
 import obsplus.events.schema as eschema
 from obsplus.exceptions import InvalidModelAttribute
 from obsplus.events.schema import Catalog, Event, Origin
-from obsplus.structures.model import ObsPlusModel, _SpecGenerator, spec_callable
+from obsplus.structures.model import ObsPlusModel, _SpecGenerator
 from obsplus.utils.misc import register_func
 
 
@@ -88,11 +86,6 @@ class TestSpecGenerator:
         assert amp.parent_model == Event
         pick = amp.pick_id._referred_object
         assert pick.parent_model == Event
-
-    def test_function(self):
-        """Tests for calling  functions."""
-        mag = Origin.preferred_origin().mag
-        breakpoint()
 
     @pytest.mark.xfail
     def test_track_schema(self):

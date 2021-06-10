@@ -12,7 +12,6 @@ from obsplus.interfaces import (
     WaveformClient,
     StationClient,
     ProgressBar,
-    TreeSpecCallable,
 )
 
 

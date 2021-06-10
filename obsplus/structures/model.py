@@ -1,8 +1,7 @@
 """
 Logic for defining tree-like data structures.
 """
-import inspect
-from functools import lru_cache, partial
+from functools import lru_cache
 from typing import Optional, Union, Type, Sequence
 from uuid import uuid4
 
@@ -12,16 +11,8 @@ from pydantic.main import BaseModel, ModelMetaclass
 
 from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import InvalidModelAttribute
-from obsplus.interfaces import TreeSpecCallable
 
 
-# a global cache for graphs
-
-TREE_SPEC_PARAMS = set(inspect.signature(TreeSpecCallable.__call__).parameters)
-TREE_SPEC_PARAMS.remove("self")
-
-
-#
 class ObsPlusMeta(ModelMetaclass):
     """A mixing for the metaclass to add getitem."""
 
@@ -51,8 +42,7 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     ObsPlus' base model for defining schema.
     """
 
-    # # extra: Optional[Dict[str, Any]] = None
-    # _contains = None  # for storing the containing info.
+    _id_field: str = "resource_id"
 
     class Config:
         """pydantic config for obsplus model."""
@@ -137,35 +127,6 @@ class _ModelWithResourceID(ObsPlusModel):
         return value
 
 
-#
-# class PreferredFinder:
-#     """
-#     Not a dating service, a class for finding preferred objects.
-#
-#     Parameters
-#     ----------
-#     model
-#         The class definition
-#     """
-#
-#     def __init__(
-#         self, model: Type[ObsPlusModel], name: str, default_index: Optional[int] = None
-#     ):
-#         self.cls = model
-#         self.name = name
-#         self.expected_id = f"preferred_{name}_id"
-#         self.index = default_index
-#
-#     def _check_fields(self, cls, name):
-#         """Ensure there is a way to set the preferred id."""
-#         fields = getattr(cls, "__fields__", {})
-#         expected_id = f"preferred_{name}_id"
-#         if expected_id not in fields:
-#             msg = f"{expected_id} not in fields of {cls}"
-#             raise ValueError(msg)
-#
-
-
 class _SpecGenerator:
     """
     A class for generating specs used to access data on tree structures.
@@ -203,12 +164,12 @@ class _SpecGenerator:
             list(self.spec_tuple) + [item], parent_model=self.parent_model
         )
 
+    def lookup(self):
+        """Look up an ID."""
+        return self
+
     def __call__(self, *args, **kwargs):
-        callable_name = self.spec_tuple[-1]
-        part = _FunctionProxy(callable_name, *args, **kwargs)
-        return self.__class__(
-            list(self.spec_tuple[:-1]) + [part], parent_model=self.parent_model
-        )
+        pass
 
     __repr__ = __str__
 
@@ -228,9 +189,10 @@ def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
         return {
             "address": [],
             "attr_type": {},
-            "attr_is_array": {},
-            "attr_ref": {},
-            "attr_id_ref": {},
+            "array_attrs": set(),
+            "id_attrs": set(),  # attributes which are IDs
+            "attr_ref": {},  # attributes which reference other types
+            "attr_id_ref": {},  # types ids reference
         }
 
     def _recurse(base, definitions, cls_dict=None, address=()):
@@ -248,20 +210,20 @@ def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
             # this attribute has no linked items
             atype, ref, is_array = _get_attr_ref_type(attr_dict)
             current["attr_type"][attr] = atype
-            current["attr_is_array"][attr] = is_array
+            if is_array:
+                current["array_attrs"].add(attr)
             # this is not object which should have a definition.
             if ref is None:
                 continue
             # add reference type
             current["attr_ref"][attr] = ref
             # add name resource_id points to, if resource_id
-            # cadd = (attr,) if atype == "array" else attr
-            # cadd = attr
             new_address = list(address) + [attr]
             new_base = definitions[ref]
             _recurse(new_base, definitions, cls_dict, new_address)
             # add resource_id info
             if rid_str in ref:
+                current["id_attrs"].add(attr)
                 name = ref.replace(rid_str, "")
                 if name in definitions:
                     current["attr_id_ref"][attr] = name
@@ -305,10 +267,3 @@ def spec_callable(func):
     -----
     Spec callables implement the :class:`obsplus.interfaces.TreeSpecCallable`
     """
-    params = set(inspect.signature(func).parameters)
-    missing_params = TREE_SPEC_PARAMS - params
-    if missing_params:
-        msg = f"spec callables missing required params: {missing_params}"
-        raise TypeError(msg)
-    func._tree_spec_func = True
-    return func
