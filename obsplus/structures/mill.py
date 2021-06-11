@@ -39,7 +39,7 @@ class Mill:
     def _df_dicts(self):
         df_dicts = _dict_to_tables(
             data=self._get_data(self._data),
-            schema=self._model.get_obsplus_schema(),
+            master_schema=self._model.get_obsplus_schema(),
             data_type=self._model.__name__,
         )
         df_dicts = self._post_df_dict(df_dicts)
@@ -147,98 +147,123 @@ class Mill:
 
 def _dict_to_tables(
     data,
-    schema,
+    master_schema,
     data_type: str,
     id_field: str = "resource_id",
+    scope_type=None,
 ) -> Dict[str, pd.DataFrame]:
     """
-    Decompose a json-like data-structure into tables.
+    Decompose a json-like data-structure with known schema into tables.
 
     Parameters
     ----------
     data
         A list or dict with nested json supported objects.
-    schema
+    master_schema
         An obsplus schema which defines the structure of data.
         See :meth:`obsplus.structures.model.Model.get_obsplus_schema`
     data_type
         The key in schema which describes the data's type.
     id_field
         The field used as a unique identifier.
+    scope_type
+        The name of the class which will scope remaining data (eg events)
+
+    Notes
+    -----
+    This is not fully generic; there are certain patterns (eg
+    heterogeneous arrays) which are not supported.
 
     Returns
     -------
     A dict of {classname: df}
     """
+    index_columns = [id_field, "parent_id", "scope_id", "index", "attr"]
 
     def _flatten_ids(obj, id_attrs):
         """Flatten ids from dict of {id: id_str} to just id_str."""
         for key in id_attrs:
-            rid = obj[key]
-            if rid:
-                obj[key] = rid["id"]
+            if isinstance(obj[key], dict):
+                obj[key] = obj[key].get("id")
         return obj
 
-    def _handle_dict(obj: dict, schema, parent_id=None):
+    def _recurse(
+        obj: dict,
+        current_type: str,
+        parent_id=None,
+        scope_id=None,
+        attr=None,
+        index=None,
+    ):
         """handles dictionary decomposition."""
+        schema_ = master_schema[current_type]
         obj = copy.copy(obj)  # make a shallow copy of dict as we do modify it
+        # flatten all resource_ids
+        _flatten_ids(obj, schema_["id_attrs"])
         current_id = obj.get(id_field)
-        keys = set(obj)
-        # get set of keys which have IDs of their own
-        id_keys = {i for i, v in schema["attr_ref"].items() if v in types_with_id}
-        array_keys = keys & schema["array_attrs"]
-        assert id_keys.issubset(array_keys), "All id_keys should be part of an array"
-        for sub_key in id_keys:
-            array = obj[sub_key]
-            if not array:
+        if current_type == scope_type:
+            scope_id = current_id
+        # get set of keys which are sub models
+        for sub_key in set(schema_["attr_ref"]) - set(schema_["id_attrs"]):
+            sub_obj = obj.pop(sub_key)
+            if not sub_obj:  # skip empty items
                 continue
-            new_type = schema["attr_ref"][sub_key]
-            # recurse array, sub in list of ids to flatten tree.
-            _recurse_objects(obj[sub_key], new_type, parent_id=current_id)
-            obj[sub_key] = [x[id_field]["id"] for x in array]
-        _flatten_ids(obj, schema["id_attrs"])
-        obj["parent_id"] = parent_id
+            new_type = schema_["attr_ref"][sub_key]
+            # handle sub dicts
+            if not isinstance(sub_obj, list):
+                _recurse(sub_obj, new_type, current_id, scope_id, sub_key)
+                continue
+            # handle sub arrays
+            for num, sub in enumerate(sub_obj):
+                _recurse(sub, new_type, current_id, scope_id, sub_key, num)
+        # add indices
+        obj.update(
+            {
+                id_field: current_id,
+                "parent_id": parent_id,
+                "scope_id": scope_id,
+                "attr": attr,
+                "index": index,
+            }
+        )
+        object_lists[current_type].append(obj)
         return obj
-
-    def _recurse_objects(obj, current_type, parent_id=None):
-        """Recurse the objects and append to appropriate dict"""
-        sub_schema = schema[current_type]
-        if isinstance(obj, dict):
-            modified_obj = _handle_dict(obj, sub_schema, parent_id=parent_id)
-            object_lists[current_type].append(modified_obj)
-        if isinstance(obj, (list, tuple)):
-            assert current_type in types_with_id, "Only arrays with ids please"
-            for sub_obj in obj:
-                _recurse_objects(sub_obj, current_type, parent_id)
 
     def _make_df_dict(object_list):
         """Convert a dist of lists of dicts into a dict of DFs."""
         out = {}
-        for dtype in list(schema):
-            dict_lists = object_list[dtype]
-            if not dict_lists:
-                df = pd.DataFrame(columns=[id_field])
+        table_classes = set(master_schema) - {"ResourceIdentifier"}
+        for dtype in table_classes:
+            if dtype.startswith("ResourceIdentifier"):
+                continue
+            schema_ = master_schema[dtype]
+            # get columns which are resource ids or basic types
+            _not_referred = set(schema_["attr_type"]) - set(schema_["attr_ref"])
+            cols = sorted((_not_referred | schema_["id_attrs"]) - {id_field})
+            df_list = object_list[dtype]
+            if not df_list:
+                all_cols = sorted(cols + index_columns)
+                df = pd.DataFrame(columns=all_cols).set_index(index_columns)
             else:
-                df = pd.DataFrame(object_list[dtype])
-            out[dtype] = df.set_index(id_field)
+                df = pd.DataFrame(df_list).set_index(index_columns)[cols]
+            out[dtype] = df
         out["__id_type__"] = _make_id_type_lookup(out)
         return out
 
     def _make_id_type_lookup(_df_dict):
         """Make a series of resource_id: type"""
-        series_dtypes = []
-        categorical = pd.CategoricalDtype(list(schema))
+        dtypes_df = []
+
+        categorical = pd.CategoricalDtype(list(master_schema))
         for i, v in _df_dict.items():
             if not i.startswith("__"):
-                series_dtypes.append(pd.Series(index=v.index, data=i))
-        out = pd.concat(series_dtypes).astype(categorical)
-        return out
+                dtypes_df.append(pd.DataFrame(i, index=v.index, columns=["dtype"]))
+        out = pd.concat(dtypes_df).astype(categorical)
+        return out["dtype"]
 
-    # get a set of event type names which have ids
-    types_with_id = {i for i, v in schema.items() if id_field in v["attr_type"]}
     # populate dicts of lists for each type.
     object_lists = defaultdict(list)
-    _recurse_objects(data, data_type)
+    _recurse(data, data_type)
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
     return out
