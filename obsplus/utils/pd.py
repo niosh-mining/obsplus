@@ -537,3 +537,27 @@ def get_waveforms_bulk_args(
     # df = order_columns(df, required_columns=BULK_WAVEFORM_COLUMNS)
 
     return df[list(BULK_WAVEFORM_COLUMNS)].to_records(index=False).tolist()
+
+
+def loc_by_name(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    """
+    Select values of dataframe based on names in index.
+
+    Parameters
+    ----------
+    df
+        Any dataframe with a named index.
+    kwargs
+        The names of the index level and values.
+    """
+    requested_names = set(kwargs)
+    index_names = set(df.index.names)
+    if index_names == {None}:
+        msg = 'loc_by_name requires a dataframe with named indices'
+        raise KeyError(msg)
+    elif not requested_names.issubset(index_names):
+        diff = requested_names - index_names
+        msg = f'The following names are not in the df index: {diff}'
+        raise KeyError(msg)
+    loc = tuple(kwargs.get(name, slice(None)) for name in df.index.names)
+    return df.loc[loc]

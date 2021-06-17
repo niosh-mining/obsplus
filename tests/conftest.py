@@ -282,12 +282,18 @@ def bingham_catalog(bingham_dataset):
 
 @pytest.fixture(scope="class")
 def bingham_events(bingham_dataset):
-    """Return the event dataframe from event_mill."""
+    """Return the bingham events with some descriptions added."""
     events = bingham_dataset.event_client.get_events().copy()
     # add some event descriptions
     events[1].event_descriptions.append(ev.EventDescription("LR"))
     events[2].event_descriptions.append(ev.EventDescription("A Big One"))
     return events
+
+
+@pytest.fixture(scope="class")
+def bingham_events_df(bingham_events):
+    """Return ta dataframe of bingham events."""
+    return obsplus.events_to_df(bingham_events)
 
 
 @pytest.fixture(scope="class")

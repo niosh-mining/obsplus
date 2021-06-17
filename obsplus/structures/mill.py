@@ -135,6 +135,8 @@ class Mill:
         new_table = self._df_dicts[dtypes.unique().astype(str)[0]]
         return new_table.loc[ids]
 
+
+
     # methods for custom df_dict creations
     def _add_df_summary(self, df_dicts):
         """Add a summary table to the dataframe dict for easy querying."""
@@ -143,6 +145,7 @@ class Mill:
     def _post_df_dict(self, df_dicts):
         """This can be subclassed to run validators/checks on dataframes."""
         return df_dicts
+
 
 
 def _dict_to_tables(
@@ -246,7 +249,7 @@ def _dict_to_tables(
                 df = pd.DataFrame(columns=all_cols).set_index(index_columns)
             else:
                 df = pd.DataFrame(df_list).set_index(index_columns)[cols]
-            out[dtype] = df
+            out[dtype] = df.sort_index()
         out["__id_type__"] = _make_id_type_lookup(out)
         return out
 

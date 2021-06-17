@@ -2,6 +2,7 @@
 Tests for the pandas utilites.
 """
 import numpy as np
+
 import obspy
 import pandas as pd
 import pytest
@@ -11,6 +12,7 @@ import obsplus.utils.pd as upd
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64
+from obsplus.utils.pd import loc_by_name
 
 
 @pytest.fixture
@@ -223,6 +225,58 @@ class TestGetSeedIdSeries:
         """At least two columns are required in subset."""
         with pytest.raises(ValueError):
             upd.get_seed_id_series(pick_df, subset=["network"])
+
+
+class TestLocByName:
+    """Tests for selecting values on dataframe using various levels of index."""
+
+    def test_nameless_index_raises(self, bingham_events_df):
+        """A nameless index is not permitted for this function."""
+        with pytest.raises(KeyError, match='with named indices'):
+            loc_by_name(bingham_events_df)
+
+    def test_wrong_names(self, bingham_events_df):
+        """Ensure an error message is raised if wrong index names are used."""
+        df = bingham_events_df.set_index(['event_id', 'magnitude'])
+        with pytest.raises(KeyError, match='names are not in the df index'):
+            loc_by_name(df, amplitude=1)
+
+    def test_slice_only_level(self, bingham_events_df):
+        """Ensure method works with only level, should be equivalent to loc"""
+        df = bingham_events_df.set_index('event_id')
+        first_ids = df.index.values[:3]
+        out1 = df.loc[first_ids]
+        out2 = loc_by_name(df, event_id=first_ids)
+        assert out1.equals(out2)
+
+    def test_slice_one_level(self, bingham_events_df):
+        """Ensure method works slicing on one level."""
+        df = bingham_events_df.set_index(['event_id', 'time', 'magnitude']).sort_index()
+        out = loc_by_name(df, magnitude=slice(2, None))
+        expected = bingham_events_df[bingham_events_df['magnitude'] > 2]
+        assert len(out) == len(expected)
+        eid1 = out.reset_index()['event_id'].iloc[0]
+        eid2 = expected['event_id'].iloc[0]
+        assert (eid1 == eid2)
+
+    def test_slice_all_levels(self, bingham_events_df):
+        """Ensure slicing works on multiple levels."""
+        old = bingham_events_df
+        df = (
+            old.set_index(['event_id', 'latitude', 'depth'])
+            .sort_index()
+        )
+        eids = old['event_id'].iloc[:5]
+        lats = old['latitude']
+
+        out = loc_by_name(df, depth=slice(0, None), event_id=eids, latitude=slice(lats.min(), lats.max()))
+        expected = old[
+            (lats >= lats.min()) & (lats <= lats.max()) &
+            (old['event_id'].isin(eids)) &
+            (old['depth'] >= 0)
+        ]
+        assert len(expected) == len(out)
+        assert set(expected['event_id']) == set(out.reset_index()['event_id'])
 
 
 class TestMisc:

@@ -11,6 +11,7 @@ from obsplus.utils.geodetics import map_longitudes
 from obsplus.structures.mill import Mill
 from obsplus.structures.dataframer import DataFramer
 from obsplus.utils.time import to_datetime64
+from obsplus.utils.pd import loc_by_name
 
 
 class EventMill(Mill):
@@ -40,19 +41,32 @@ class EventMill(Mill):
         -------
 
         """
+        schema = self._model.get_obsplus_schema()
         df_dicts = df_dicts if df_dicts is not None else self._df_dicts
         event_df = df_dicts["Event"]
+        eids = event_df.index.get_level_values('resource_id')
         for name in {"origin", "magnitude", "focal_mechanism"}:
             preferred_id_name = f"preferred_{name}_id"
             object_column_name = f"{name}s"
             id_column = event_df[preferred_id_name]
-            object_column = event_df[object_column_name]
-            missing_preferred = ~id_column.astype(bool)
-            has_objects = object_column.astype(bool)
-            to_fill = missing_preferred & has_objects
 
-            new_ids = object_column[to_fill].apply(lambda x: x[index])
-            event_df.loc[to_fill, preferred_id_name] = new_ids
+            missing_preferred = ~id_column.astype(bool)
+            if not missing_preferred.any():
+                continue
+
+            sub_class = schema['Event']['attr_ref'][object_column_name]
+            sub_df = df_dicts[sub_class]
+            breakpoint()
+            subs = loc_by_name(sub_df, scope_id=eids, attr=f"{name}s", index=-1)
+            breakpoint()
+
+
+
+            # has_objects = object_column.astype(bool)
+            # to_fill = missing_preferred & has_objects
+            #
+            # new_ids = object_column[to_fill].apply(lambda x: x[index])
+            # event_df.loc[to_fill, preferred_id_name] = new_ids
         return df_dicts
 
 
