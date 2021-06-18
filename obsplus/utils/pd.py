@@ -561,3 +561,69 @@ def loc_by_name(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         raise KeyError(msg)
     loc = tuple(kwargs.get(name, slice(None)) for name in df.index.names)
     return df.loc[loc]
+
+
+def get_index_group(
+        df: pd.DataFrame,
+        index: int,
+        column='index',
+        column_group: Optional[Sequence[str]]=None
+) -> pd.Index:
+    """
+    Return the index of rows that meet index requirements.
+
+    This is used on a column or index level consisting of sequential ints.
+
+    Parameters
+    ----------
+    df
+        A dataframe
+    index
+        The value in column to search for. Negative indices are also allowed.
+    column
+        The column (or index level) which contains the int values.
+    column_group
+        Other columns (or index levels) which contain groups of index values.
+    """
+    cols = list(column_group or []) + [column]
+    sorted = df.reset_index()[cols].sort_values(cols)
+    arr = sorted[column].values
+    forward_shift = sorted[column].shift().values
+    # back_shift = sorted[column].shift(-1).values
+    # get an array of groups
+    is_start = ~ (forward_shift < arr)
+    group_inds = np.cumsum(is_start.astype(bool))
+    # get group start and stop indices
+    ugroups = np.unique(group_inds)
+    inds_1 = np.searchsorted(group_inds, ugroups, side='left')
+    inds_2 = np.searchsorted(group_inds, ugroups, side='right') - 1
+    # start
+    start = inds_1 if index >= 0 else inds_2
+    new_ind = index if index >= 0 else index + 1  # adjust for negative index
+    final = start + new_ind
+    is_valid = (final >= inds_1) & (final <= inds_2)
+    out = df.index[final[is_valid]]
+    return out
+
+
+def expand_loc(df, **kwargs):
+    """
+    Get values in df which meet
+
+    Parameters
+    ----------
+    df
+        The input dataframe.
+
+    kwargs
+        A single kwarg with column/index level name and values is required.
+
+    Returns
+    -------
+
+    """
+    assert len(kwargs) == 1
+    key = list(kwargs)[0]
+    indexed_df = df.reset_index().set_index(key)
+    assert indexed_df.index.is_unique, 'must df must have unique indices'
+    return indexed_df.reindex(kwargs[key])

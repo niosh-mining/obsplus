@@ -35,22 +35,40 @@ class TestEventMillBasics:
     def test_lookup_homogeneous(self, event_mill):
         """Look up a resource id for objects of same type"""
         pick_df = event_mill._df_dicts["Pick"]
-        some_rids = pick_df.index[::20]
+        some_rids = pick_df.index.get_level_values('resource_id')[::20]
         # lookup multiple dataframes of the same type
         out = event_mill.lookup(some_rids)
         assert isinstance(out, pd.DataFrame)
         assert len(out) == len(some_rids)
-        assert set(out.index) == set(some_rids)
+        assert set(out.index.get_level_values('resource_id')) == set(some_rids)
         # lookup a single resource_id
         out = event_mill.lookup(some_rids[0])
         assert isinstance(out, pd.DataFrame)
         assert len(out) == 1
-        assert set(out.index) == set(some_rids[:1])
+        assert set(out.index.get_level_values('resource_id')) == set(some_rids[:1])
 
     def test_lookup_missing(self, event_mill):
         """Test looking up a missing ID."""
         with pytest.raises(KeyError):
             event_mill.lookup("not a real_id")
+
+
+class TestFillPreferred:
+    """Tests for ensuring preferred values are set."""
+    @pytest.fixture(scope='class')
+    def missing_origin_id_mill(self, bingham_events):
+        """Get a mill which has some preferred_origin_ids not set."""
+        cat = bingham_events.copy()
+        for num, eve in enumerate(cat):
+            if num % 2 == 0:
+                eve.preferred_origin_id = None
+        return EventMill(cat)
+
+    def test_fill_id(self, missing_origin_id_mill):
+        out = missing_origin_id_mill.fill_preferred()
+
+        breakpoint()
+        str(out)
 
 
 class TestGetReferredObject:

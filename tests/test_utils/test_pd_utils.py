@@ -12,7 +12,7 @@ import obsplus.utils.pd as upd
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64
-from obsplus.utils.pd import loc_by_name
+from obsplus.utils.pd import loc_by_name, get_index_group, expand_loc
 
 
 @pytest.fixture
@@ -279,7 +279,72 @@ class TestLocByName:
         assert set(expected['event_id']) == set(out.reset_index()['event_id'])
 
 
-class TestMisc:
+class TestInIndexGroup:
+    """Tests for getting indices from index or columns."""
+    @pytest.fixture
+    def df_one_ind(self):
+        """A dataframe with a single index column"""
+        df = pd.DataFrame(range(100), columns=['ind'])
+        return df
+
+    @pytest.fixture
+    def df_multi_ind(self):
+        """A dataframe with multiple groupby_columns."""
+        col1 = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2]
+        col2 = [0, 1, 2, 0, 1, 2, 3, 0, 1, 2]
+        out = pd.DataFrame(np.stack([col1, col2]).T, columns=['col1', 'index'])
+        return out
+
+    def test_one_ind_positive(self, df_one_ind):
+        """Ensure positive ints work."""
+        out = get_index_group(df_one_ind, 0)
+        assert np.all(out.values == df_one_ind.index.values[:0])
+
+    def test_on_ind_negative(self, df_one_ind):
+        """Tests for negative indices."""
+        out = get_index_group(df_one_ind, -1)
+        assert np.all(out.values == df_one_ind.index.values[-1:])
+
+    def test_multiple_ind_positive(self, df_multi_ind):
+        """Ensure algorithm works with multiple indicies."""
+        out = get_index_group(df_multi_ind, 1, column_group=['col1'])
+        vals = df_multi_ind.loc[out]['index']
+        assert np.all(vals == 1)
+
+    def test_multiple_some_too_large(self, df_multi_ind):
+        """test when some groups final values are exceeded."""
+        out = get_index_group(df_multi_ind, 3, column_group=['col1'])
+        assert np.all(out.values == 6)
+
+    def test_multiple_negative(self, df_multi_ind):
+        """tests multi-group negative index"""
+        out = get_index_group(df_multi_ind, -1, column_group=['col1'])
+        assert np.all(out == np.array([2, 6, 9]))
+
+    def test_multiple_some_too_small(self, df_multi_ind):
+        """Test for when negative index is too small."""
+        out = get_index_group(df_multi_ind, -4, column_group=['col1'])
+        assert np.all(out.values == np.array([3]))
+
+    def test_empty(self, ):
+        """Ensure empty df still works."""
+        df = pd.DataFrame(columns=['index', 'col1'])
+        out = get_index_group(df, 0, column_group=['col1'])
+        assert not len(out)
+
+
+class TestExpandLoc:
+    """Tests for expanding a selection of a dataframe."""
+
+    def test_expand_loc_column(self):
+        """Ensure expand_loc works on a column"""
+        df = pd.DataFrame([1, 2, 3], columns=['col1'])
+        values = [0, 1, 1, 2, 3]
+        out = expand_loc(df, col1=values)
+        assert len(out) == len(values)
+
+
+class TestReplaceOrShallow:
     """Misc. small tests."""
 
     def test_replace_or_shallow_none(self, waveform_df):

@@ -4,12 +4,16 @@ Module for converting tree-like structures into tables and visa-versa.
 import copy
 from collections import defaultdict
 from functools import lru_cache
-from typing import Type, Dict, Optional, Tuple, Sequence
+from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
 
 import obsplus
 import pandas as pd
 from obsplus.structures.model import ObsPlusModel
 from obsplus.exceptions import IncompatibleDataFramesError
+from obsplus.utils.pd import loc_by_name
+
+
+MillType = TypeVar('MillType', bound='Mill')
 
 
 class Mill:
@@ -26,6 +30,7 @@ class Mill:
     _data: dict
     _dataframers: Dict[str, Type["obsplus.DataFramer"]]
     _type_map_key: str = "__id_type__"
+    _df_dicts_ = None
 
     def __init_subclass__(cls, **kwargs):
         """Ensure subclasses have their own framers dict."""
@@ -34,9 +39,18 @@ class Mill:
     def __init__(self, data):
         self._data = data
 
+    @classmethod
+    def _from_df_dict(cls, df_dict) -> MillType:
+        """init instance from df dict."""
+        out = cls(None)
+        out._df_dicts_ = df_dict
+        return out
+
     @property
     @lru_cache()
     def _df_dicts(self):
+        if self._df_dicts_ is not None:
+            return self._df_dicts_
         df_dicts = _dict_to_tables(
             data=self._get_data(self._data),
             master_schema=self._model.get_obsplus_schema(),
@@ -103,6 +117,8 @@ class Mill:
         msg = f"Mill with spec of [{name}] and [{obj_count}] managed objects"
         return msg
 
+    __repr__ = __str__
+
     def lookup(self, ids: Sequence[str]) -> pd.DataFrame:
         """
         Look up rows from a dataframe which have ids.
@@ -133,8 +149,7 @@ class Mill:
             return pd.DataFrame()
 
         new_table = self._df_dicts[dtypes.unique().astype(str)[0]]
-        return new_table.loc[ids]
-
+        return loc_by_name(new_table, resource_id=ids)
 
 
     # methods for custom df_dict creations
@@ -220,16 +235,16 @@ def _dict_to_tables(
             for num, sub in enumerate(sub_obj):
                 _recurse(sub, new_type, current_id, scope_id, sub_key, num)
         # add indices
-        obj.update(
-            {
+        structure = {
                 id_field: current_id,
                 "parent_id": parent_id,
                 "scope_id": scope_id,
                 "attr": attr,
                 "index": index,
-            }
-        )
+                "table_name": current_type
+        }
         object_lists[current_type].append(obj)
+        structure_list.append(structure)
         return obj
 
     def _make_df_dict(object_list):
@@ -239,6 +254,7 @@ def _dict_to_tables(
         for dtype in table_classes:
             if dtype.startswith("ResourceIdentifier"):
                 continue
+            # breakpoint()
             schema_ = master_schema[dtype]
             # get columns which are resource ids or basic types
             _not_referred = set(schema_["attr_type"]) - set(schema_["attr_ref"])
@@ -256,16 +272,17 @@ def _dict_to_tables(
     def _make_id_type_lookup(_df_dict):
         """Make a series of resource_id: type"""
         dtypes_df = []
-
         categorical = pd.CategoricalDtype(list(master_schema))
         for i, v in _df_dict.items():
             if not i.startswith("__"):
-                dtypes_df.append(pd.DataFrame(i, index=v.index, columns=["dtype"]))
+                id_ind = v.index.get_level_values(id_field)
+                dtypes_df.append(pd.DataFrame(i, index=id_ind, columns=["dtype"]))
         out = pd.concat(dtypes_df).astype(categorical)
         return out["dtype"]
 
     # populate dicts of lists for each type.
     object_lists = defaultdict(list)
+    structure_list = []  # a list for storing structural info
     _recurse(data, data_type)
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
