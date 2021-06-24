@@ -1,13 +1,16 @@
 """
 Logic for defining tree-like data structures.
 """
+import datetime
 from functools import lru_cache
 from typing import Optional, Union, Type, Sequence
 from uuid import uuid4
 
+import pandas as pd
 from obspy.core import event as ev
 from pydantic import root_validator, validator
 from pydantic.main import BaseModel, ModelMetaclass
+from pydantic.fields import SHAPE_NAME_LOOKUP
 
 from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import InvalidModelAttribute
@@ -41,7 +44,9 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     """
     ObsPlus' base model for defining schema.
     """
-
+    __version__ = '0.0.0'  # allows versioning of models
+    __dtype__ = None  # obsplus dtype if not None
+    __reference_type__ = None  # if this is a resource id, the type referred to
     _id_field: str = "resource_id"
 
     class Config:
@@ -84,7 +89,8 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
         """
         Return an ObsPlus Schema for this model and its children/parents.
         """
-        return _get_obsplus_schema(cls.schema())
+        return _get_obsplus_schema(cls)
+        # return _get_obsplus_schema(cls.schema())
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -92,6 +98,7 @@ class ResourceIdentifier(ObsPlusModel):
 
     id: Optional[str] = None
     _points_to = None
+    __dtype__ = str
 
     @root_validator(pre=True)
     def get_id(cls, values):
@@ -174,63 +181,83 @@ class _SpecGenerator:
     __repr__ = __str__
 
 
-def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
-    """ "
-    Return a dict used to characterize class hierarchies of models.
+# def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
+#     """ "
+#     Return a dict used to characterize class hierarchies of models.
+#
+#     Notes
+#     -----
+#     The form of the output is internal to ObsPlus and could change anytime!
+#     """
+#     rid_str = "ResourceIdentifier"
+#
+#     def _init_empty():
+#         """Return an empty form of dict."""
+#         return {
+#             "address": [],
+#             "attr_type": {},
+#             "array_attrs": set(),
+#             "id_attrs": set(),  # attributes which are IDs
+#             "attr_ref": {},  # attributes which reference other types
+#             "attr_id_ref": {},  # types ids reference
+#         }
+#
+#     def _recurse(base, definitions, cls_dict=None, address=()):
+#         # init empty data structures or reuse
+#         cls_dict = cls_dict if cls_dict is not None else {}
+#         title = base.get("title", "")
+#         # get the class dictionary file
+#         current = _init_empty() if title not in cls_dict else cls_dict[title]
+#         # add address and return if attributes have already been parsed
+#         current["address"].append(tuple(address))
+#         if current["attr_type"]:
+#             return
+#         # next iterate attributes
+#         for attr, attr_dict in base["properties"].items():
+#             # this attribute has no linked items
+#             atype, ref, is_array = _get_attr_ref_type(attr_dict)
+#             current["attr_type"][attr] = atype
+#             if is_array:
+#                 current["array_attrs"].add(attr)
+#             # this is not object which should have a definition.
+#             if ref is None:
+#                 continue
+#             # add reference type
+#             current["attr_ref"][attr] = ref
+#             # add name resource_id points to, if resource_id
+#             new_address = list(address) + [attr]
+#             new_base = definitions[ref]
+#             _recurse(new_base, definitions, cls_dict, new_address)
+#             # add resource_id info
+#             if rid_str in ref:
+#                 current["id_attrs"].add(attr)
+#                 name = ref.replace(rid_str, "")
+#                 if name in definitions:
+#                     current["attr_id_ref"][attr] = name
+#         cls_dict[title] = current
+#         return cls_dict
+#
+#     def _dict_to_df(schema_dict):
+#         """Convert the schema dict to dataframes."""
+#         out = {}
+#         _structure = pd.DataFrame(index=list(schema_dict))
+#         for name in schema_dict:
+#             # cls =
+#             pass
+#
+#
+#
+#         breakpoint()
+#         return _structure
+#
+#
+#     dicts = _recurse(schema, schema["definitions"])
+#
+#     return _dict_to_df(dicts)
 
-    Notes
-    -----
-    The form of the output is internal to ObsPlus and could change anytime!
-    """
-    rid_str = "ResourceIdentifier"
 
-    def _init_empty():
-        """Return an empty form of dict."""
-        return {
-            "address": [],
-            "attr_type": {},
-            "array_attrs": set(),
-            "id_attrs": set(),  # attributes which are IDs
-            "attr_ref": {},  # attributes which reference other types
-            "attr_id_ref": {},  # types ids reference
-        }
 
-    def _recurse(base, definitions, cls_dict=None, address=()):
-        # init empty data structures or reuse
-        cls_dict = cls_dict if cls_dict is not None else {}
-        title = base.get("title", "")
-        # get the class dictionary file
-        current = _init_empty() if title not in cls_dict else cls_dict[title]
-        # add address and return if attributes have already been parsed
-        current["address"].append(tuple(address))
-        if current["attr_type"]:
-            return
-        # next iterate attributes
-        for attr, attr_dict in base["properties"].items():
-            # this attribute has no linked items
-            atype, ref, is_array = _get_attr_ref_type(attr_dict)
-            current["attr_type"][attr] = atype
-            if is_array:
-                current["array_attrs"].add(attr)
-            # this is not object which should have a definition.
-            if ref is None:
-                continue
-            # add reference type
-            current["attr_ref"][attr] = ref
-            # add name resource_id points to, if resource_id
-            new_address = list(address) + [attr]
-            new_base = definitions[ref]
-            _recurse(new_base, definitions, cls_dict, new_address)
-            # add resource_id info
-            if rid_str in ref:
-                current["id_attrs"].add(attr)
-                name = ref.replace(rid_str, "")
-                if name in definitions:
-                    current["attr_id_ref"][attr] = name
-        cls_dict[title] = current
-        return cls_dict
 
-    return _recurse(schema, schema["definitions"])
 
 
 def _get_attr_ref_type(attr_dict):
@@ -254,6 +281,73 @@ def _get_attr_ref_type(attr_dict):
     if attr_dict.get("format", "") == "date-time":
         atype = "datetime64[ns]"
     return atype, ref, is_array
+
+
+def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
+    """ "
+    Return a dict used to characterize class hierarchies of models.
+
+    Notes
+    -----
+    The form of the output is internal to ObsPlus and could change anytime!
+    """
+    DTYPES = {
+        int: 'Int64', float: 'float', str: 'str',
+        datetime.datetime: 'datetime64[ns]',
+    }
+
+    def _get_dtype(type_, is_model):
+        """Return pandas dtype of field"""
+        raw_dtype = getattr(type_, '__dtype__', type_)
+        dtype = DTYPES.get(raw_dtype, None)
+        model_name = type_.__name__ if is_model else None
+        return dtype, model_name
+
+    def _is_list(shape):
+        if shape not in SHAPE_NAME_LOOKUP:
+            return False
+        value = SHAPE_NAME_LOOKUP.get(shape, '')
+        assert 'List' in value
+        return True
+
+    def _is_obsplus_model(cls):
+        """Return true if cls is an obsplus model subclass"""
+        try:
+            is_model = issubclass(cls, ObsPlusModel)
+        except TypeError:
+            is_model = False
+        return is_model
+
+    def _recurse(cls):
+        attr_dict = {}
+        for name, model_field in cls.__fields__.items():
+            current = {}
+            type_ = model_field.type_
+            is_model = _is_obsplus_model(type_)
+            current['dtype'], current['model'] = _get_dtype(type_, is_model)
+            current['referenced_model'] = getattr(type_, '__reference_type__', None)
+            current['optional'] = model_field.allow_none
+            current['is_list'] = _is_list(model_field.shape)
+            if is_model and cls.__name__ not in _tables:
+                _recurse(type_)
+            attr_dict[name] = current
+
+        _tables[cls.__name__] = attr_dict
+        structure_dict = {
+            'name': cls.__name__,
+            'version': cls.__version__,
+        }
+        _meta.append(structure_dict)
+
+    _meta = []
+    _tables = {}
+    _recurse(cls)
+    out = {n: pd.DataFrame(v).T for n, v in _tables.items()}
+    out['__meta__'] = pd.DataFrame(_meta)
+    breakpoint()
+
+    return _recurse(cls)
+
 
 
 def spec_callable(func):

@@ -5,6 +5,7 @@ import copy
 from collections import defaultdict
 from functools import lru_cache
 from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
+import uuid
 
 import obsplus
 import pandas as pd
@@ -218,7 +219,9 @@ def _dict_to_tables(
         obj = copy.copy(obj)  # make a shallow copy of dict as we do modify it
         # flatten all resource_ids
         _flatten_ids(obj, schema_["id_attrs"])
-        current_id = obj.get(id_field)
+        if id_field not in obj:
+            obj[id_field] = uuid.uuid4()
+        current_id = obj[id_field]
         if current_type == scope_type:
             scope_id = current_id
         # get set of keys which are sub models
@@ -285,5 +288,6 @@ def _dict_to_tables(
     structure_list = []  # a list for storing structural info
     _recurse(data, data_type)
     # convert list of dicts to dataframes
+    breakpoint()
     out = _make_df_dict(object_lists)
     return out
