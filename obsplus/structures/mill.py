@@ -12,6 +12,7 @@ import pandas as pd
 from obsplus.structures.model import ObsPlusModel
 from obsplus.exceptions import IncompatibleDataFramesError
 from obsplus.utils.pd import loc_by_name
+from obsplus.utils.pd import cast_dtypes, order_columns
 
 
 MillType = TypeVar('MillType', bound='Mill')
@@ -163,7 +164,6 @@ class Mill:
         return df_dicts
 
 
-
 def _dict_to_tables(
     data,
     master_schema,
@@ -215,21 +215,22 @@ def _dict_to_tables(
         index=None,
     ):
         """handles dictionary decomposition."""
-        schema_ = master_schema[current_type]
         obj = copy.copy(obj)  # make a shallow copy of dict as we do modify it
-        # flatten all resource_ids
-        _flatten_ids(obj, schema_["id_attrs"])
+        # flatten all resource_idsschema_["id_attrs"]
+        rid_attrs_set = rid_dict[current_type]
+        model_attr_dict = model_dict[current_type]
+        _flatten_ids(obj, rid_attrs_set)
         if id_field not in obj:
             obj[id_field] = uuid.uuid4()
         current_id = obj[id_field]
         if current_type == scope_type:
             scope_id = current_id
         # get set of keys which are sub models
-        for sub_key in set(schema_["attr_ref"]) - set(schema_["id_attrs"]):
+        for sub_key in (set(model_attr_dict) - rid_attrs_set):
             sub_obj = obj.pop(sub_key)
             if not sub_obj:  # skip empty items
                 continue
-            new_type = schema_["attr_ref"][sub_key]
+            new_type = model_attr_dict[sub_key]
             # handle sub dicts
             if not isinstance(sub_obj, list):
                 _recurse(sub_obj, new_type, current_id, scope_id, sub_key)
@@ -254,21 +255,26 @@ def _dict_to_tables(
         """Convert a dist of lists of dicts into a dict of DFs."""
         out = {}
         table_classes = set(master_schema) - {"ResourceIdentifier"}
-        for dtype in table_classes:
-            if dtype.startswith("ResourceIdentifier"):
+        for class_name, data in object_list.items():
+            if class_name.startswith("ResourceIdentifier"):
                 continue
-            # breakpoint()
-            schema_ = master_schema[dtype]
+            dtypes = dtype_dict[class_name]
+            dff = (
+                pd.DataFrame(data)
+                .pipe(order_columns, sorted(data_type), )
+            )
+            breakpoint()
+            df = order_columns()
             # get columns which are resource ids or basic types
             _not_referred = set(schema_["attr_type"]) - set(schema_["attr_ref"])
             cols = sorted((_not_referred | schema_["id_attrs"]) - {id_field})
-            df_list = object_list[dtype]
+            df_list = object_list[class_name]
             if not df_list:
                 all_cols = sorted(cols + index_columns)
                 df = pd.DataFrame(columns=all_cols).set_index(index_columns)
             else:
                 df = pd.DataFrame(df_list).set_index(index_columns)[cols]
-            out[dtype] = df.sort_index()
+            out[class_name] = df.sort_index()
         out["__id_type__"] = _make_id_type_lookup(out)
         return out
 
@@ -283,11 +289,29 @@ def _dict_to_tables(
         out = pd.concat(dtypes_df).astype(categorical)
         return out["dtype"]
 
+    def get_schema_dicts():
+        """Parses out dicts from dataframes for use in decomposition"""
+        rid_dict, model_dict, dtype_dict = {}, {}, {}
+        for name, df in master_schema.items():
+            if name.startswith('__'):
+                continue
+            new_name = name.replace('schema_', '')
+            # get set of attrs which are resource ids
+            is_rid = df['model'].str.startswith('ResourceIdentifier')
+            rid_dict[new_name] = set(df[is_rid].index)
+            # get referenced model type
+            has_model = df['model'].astype(bool)
+            model_dict[new_name] = dict(df[has_model]['model'])
+            # dtype
+            has_dtype = df['dtype'].astype(bool)
+            dtype_dict[new_name] = dict(df[has_dtype]['dtype'])
+        return rid_dict, model_dict, dtype_dict
+
     # populate dicts of lists for each type.
     object_lists = defaultdict(list)
     structure_list = []  # a list for storing structural info
+    rid_dict, model_dict, dtype_dict = get_schema_dicts()
     _recurse(data, data_type)
     # convert list of dicts to dataframes
-    breakpoint()
     out = _make_df_dict(object_lists)
     return out

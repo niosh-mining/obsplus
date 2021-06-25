@@ -291,15 +291,22 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     -----
     The form of the output is internal to ObsPlus and could change anytime!
     """
-    DTYPES = {
+    DTYPES_MAP = {
         int: 'Int64', float: 'float', str: 'str',
         datetime.datetime: 'datetime64[ns]',
+    }
+    COL_DTYPE = {
+       'model': str,
+       'dtype': str,
+       'referenced_model': str,
+       'optional': bool,
+       'is_list': bool,
     }
 
     def _get_dtype(type_, is_model):
         """Return pandas dtype of field"""
         raw_dtype = getattr(type_, '__dtype__', type_)
-        dtype = DTYPES.get(raw_dtype, None)
+        dtype = DTYPES_MAP.get(raw_dtype, None)
         model_name = type_.__name__ if is_model else None
         return dtype, model_name
 
@@ -332,7 +339,7 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
                 _recurse(type_)
             attr_dict[name] = current
 
-        _tables[cls.__name__] = attr_dict
+        _tables[f"schema_{cls.__name__}"] = attr_dict
         structure_dict = {
             'name': cls.__name__,
             'version': cls.__version__,
@@ -342,12 +349,12 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     _meta = []
     _tables = {}
     _recurse(cls)
-    out = {n: pd.DataFrame(v).T for n, v in _tables.items()}
+    out = {
+        n: pd.DataFrame(v).T.astype(dtype=COL_DTYPE).replace('nan', '')
+        for n, v in _tables.items()
+    }
     out['__meta__'] = pd.DataFrame(_meta)
-    breakpoint()
-
-    return _recurse(cls)
-
+    return out
 
 
 def spec_callable(func):
