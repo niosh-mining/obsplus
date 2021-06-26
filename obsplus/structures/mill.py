@@ -221,7 +221,7 @@ def _dict_to_tables(
         model_attr_dict = model_dict[current_type]
         _flatten_ids(obj, rid_attrs_set)
         if id_field not in obj:
-            obj[id_field] = uuid.uuid4()
+            obj[id_field] = str(uuid.uuid4())
         current_id = obj[id_field]
         if current_type == scope_type:
             scope_id = current_id
@@ -254,40 +254,20 @@ def _dict_to_tables(
     def _make_df_dict(object_list):
         """Convert a dist of lists of dicts into a dict of DFs."""
         out = {}
-        table_classes = set(master_schema) - {"ResourceIdentifier"}
         for class_name, data in object_list.items():
             if class_name.startswith("ResourceIdentifier"):
                 continue
             dtypes = dtype_dict[class_name]
             dff = (
                 pd.DataFrame(data)
-                .pipe(order_columns, sorted(data_type), )
+                .pipe(order_columns, sorted(dtypes))
+                .pipe(cast_dtypes, dtypes)
+                .set_index(id_field)
             )
-            breakpoint()
-            df = order_columns()
-            # get columns which are resource ids or basic types
-            _not_referred = set(schema_["attr_type"]) - set(schema_["attr_ref"])
-            cols = sorted((_not_referred | schema_["id_attrs"]) - {id_field})
-            df_list = object_list[class_name]
-            if not df_list:
-                all_cols = sorted(cols + index_columns)
-                df = pd.DataFrame(columns=all_cols).set_index(index_columns)
-            else:
-                df = pd.DataFrame(df_list).set_index(index_columns)[cols]
-            out[class_name] = df.sort_index()
-        out["__id_type__"] = _make_id_type_lookup(out)
-        return out
+            out[class_name] = dff
 
-    def _make_id_type_lookup(_df_dict):
-        """Make a series of resource_id: type"""
-        dtypes_df = []
-        categorical = pd.CategoricalDtype(list(master_schema))
-        for i, v in _df_dict.items():
-            if not i.startswith("__"):
-                id_ind = v.index.get_level_values(id_field)
-                dtypes_df.append(pd.DataFrame(i, index=id_ind, columns=["dtype"]))
-        out = pd.concat(dtypes_df).astype(categorical)
-        return out["dtype"]
+        out["__structure__"] = pd.DataFrame(structure_list).set_index(id_field)
+        return out
 
     def get_schema_dicts():
         """Parses out dicts from dataframes for use in decomposition"""
@@ -314,4 +294,5 @@ def _dict_to_tables(
     _recurse(data, data_type)
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
+    out.update(master_schema)
     return out
