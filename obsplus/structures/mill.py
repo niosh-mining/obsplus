@@ -31,7 +31,7 @@ class Mill:
     _id_map: Dict[str, tuple]
     _data: dict
     _dataframers: Dict[str, Type["obsplus.DataFramer"]]
-    _type_map_key: str = "__id_type__"
+    _structure_key: str = "__structure__"
     _df_dicts_ = None
 
     def __init_subclass__(cls, **kwargs):
@@ -114,9 +114,12 @@ class Mill:
         return self._id_map.get(id_str, ())
 
     def __str__(self):
-        name = self._model.__name__
-        obj_count = len(self._df_dicts[self._type_map_key])
-        msg = f"Mill with spec of [{name}] and [{obj_count}] managed objects"
+        cls_name = self.__class__.__name__
+        model_name = self._model.__name__
+        obj_count = len(self._df_dicts[self._structure_key])
+        msg = (
+            f"{cls_name} with spec of [{model_name}] and [{obj_count}] managed objects"
+        )
         return msg
 
     __repr__ = __str__
@@ -143,16 +146,16 @@ class Mill:
         """
         if isinstance(ids, str):
             ids = [ids]
-        dtypes = self._df_dicts[self._type_map_key].loc[ids].unique()
-        if len(dtypes) > 1:
+        df = self._df_dicts[self._structure_key].loc[ids]
+        models = df['model'].unique()
+        if len(models) > 1:
             msg = "Provided ids belong to multiple types of objects"
             raise IncompatibleDataFramesError(msg)
-        elif not len(dtypes):  # no dataframe found
+        elif not len(models):  # no objects with given ids
             return pd.DataFrame()
-
-        new_table = self._df_dicts[dtypes.unique().astype(str)[0]]
-        return loc_by_name(new_table, resource_id=ids)
-
+        model_name = models[0]
+        new_table = self._df_dicts[model_name]
+        return new_table.loc[ids]
 
     # methods for custom df_dict creations
     def _add_df_summary(self, df_dicts):
@@ -245,7 +248,7 @@ def _dict_to_tables(
                 "scope_id": scope_id,
                 "attr": attr,
                 "index": index,
-                "table_name": current_type
+                "model": current_type
         }
         object_lists[current_type].append(obj)
         structure_list.append(structure)

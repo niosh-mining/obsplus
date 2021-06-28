@@ -65,25 +65,10 @@ class TestFillPreferred:
         return EventMill(cat)
 
     def test_fill_id(self, missing_origin_id_mill):
+        """Ensure all preferred origin/mag ids are set."""
         out = missing_origin_id_mill.fill_preferred()
-
-        breakpoint()
-        str(out)
-
-
-class TestGetReferredObject:
-    """Tests for getting the referred object based on str ID."""
-
-    def test_get_referred_object_address(self, event_mill, bingham_events):
-        """Ensure the address of the referred object can be found."""
-        # first get first event address
-        eid = str(bingham_events[0].resource_id)
-        address = event_mill.get_referred_address(eid)
-        assert address == ("events", 0)
-        # next try pick
-        eid = str(bingham_events[0].picks[1].resource_id)
-        address = event_mill.get_referred_address(eid)
-        assert address == ("events", 0, "picks", 1)
+        event_df = out._df_dicts['Event']
+        assert not event_df['preferred_origin_id'].isnull().any()
 
 
 class TestGetDF:
