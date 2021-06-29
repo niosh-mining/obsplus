@@ -5,7 +5,7 @@ to dataframes.
 May eventually replace dfextractor.
 """
 import inspect
-from typing import Mapping, Dict
+from typing import Mapping
 
 import obsplus
 from obsplus.utils.mapping import FrozenDict
@@ -31,8 +31,6 @@ class DataFramer:
     _dtypes: Mapping[str, type]
     _model: ObsPlusModel
     _required_attrs = ("_model",)
-    _operators = Dict[str, callable]
-    _mill: "obsplus.Mill"
 
     def __init_subclass__(cls):
         """Validate subclasses."""
@@ -45,7 +43,6 @@ class DataFramer:
         # gather up all operation trackers
         cls._fields = cls._get_fields()
         cls._dtypes = cls._get_types()
-        cls._operators = cls._get_operators()
 
     def __init__(self, mill: "obsplus.Mill"):
         """Instantiate dataframe with a Mill."""
@@ -75,17 +72,12 @@ class DataFramer:
         types = {i: v for i, v in cls.__annotations__.items() if i in cls._fields}
         return FrozenDict(types)
 
-    @classmethod
-    def _get_operators(cls):
+    def tables_to_df(self, table_dict):
         """
-        Get a dict of operators supported by this dataframer.
+        Get a dataframe from tables of models.
+
+        This are typically created by :class:`obsplus.structures.mill.Mill`.
         """
-        out = {}
-        for attr, value in vars(cls).items():
-            if not getattr(value, "_is_obsplus_operator", False):
-                continue
-            out[attr] = value
-        return out
 
     def get_dataframe(self, stash=None):
         """

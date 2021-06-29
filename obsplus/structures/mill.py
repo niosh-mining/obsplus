@@ -11,11 +11,10 @@ import obsplus
 import pandas as pd
 from obsplus.structures.model import ObsPlusModel
 from obsplus.exceptions import IncompatibleDataFramesError
-from obsplus.utils.pd import loc_by_name
 from obsplus.utils.pd import cast_dtypes, order_columns
 
 
-MillType = TypeVar('MillType', bound='Mill')
+MillType = TypeVar("MillType", bound="Mill")
 
 
 class Mill:
@@ -100,7 +99,7 @@ class Mill:
             )
             raise KeyError(msg)
         framer = Framer(self)
-        return framer.get_dataframe(self._data, stash=self._stash)
+        return framer.get_dataframe(self._data)
 
     def get_referred_address(self, id_str) -> Tuple:
         """
@@ -147,7 +146,7 @@ class Mill:
         if isinstance(ids, str):
             ids = [ids]
         df = self._df_dicts[self._structure_key].loc[ids]
-        models = df['model'].unique()
+        models = df["model"].unique()
         if len(models) > 1:
             msg = "Provided ids belong to multiple types of objects"
             raise IncompatibleDataFramesError(msg)
@@ -200,7 +199,6 @@ def _dict_to_tables(
     -------
     A dict of {classname: df}
     """
-    index_columns = [id_field, "parent_id", "scope_id", "index", "attr"]
 
     def _flatten_ids(obj, id_attrs):
         """Flatten ids from dict of {id: id_str} to just id_str."""
@@ -229,7 +227,7 @@ def _dict_to_tables(
         if current_type == scope_type:
             scope_id = current_id
         # get set of keys which are sub models
-        for sub_key in (set(model_attr_dict) - rid_attrs_set):
+        for sub_key in set(model_attr_dict) - rid_attrs_set:
             sub_obj = obj.pop(sub_key)
             if not sub_obj:  # skip empty items
                 continue
@@ -243,12 +241,12 @@ def _dict_to_tables(
                 _recurse(sub, new_type, current_id, scope_id, sub_key, num)
         # add indices
         structure = {
-                id_field: current_id,
-                "parent_id": parent_id,
-                "scope_id": scope_id,
-                "attr": attr,
-                "index": index,
-                "model": current_type
+            id_field: current_id,
+            "parent_id": parent_id,
+            "scope_id": scope_id,
+            "attr": attr,
+            "index": index,
+            "model": current_type,
         }
         object_lists[current_type].append(obj)
         structure_list.append(structure)
@@ -276,18 +274,18 @@ def _dict_to_tables(
         """Parses out dicts from dataframes for use in decomposition"""
         rid_dict, model_dict, dtype_dict = {}, {}, {}
         for name, df in master_schema.items():
-            if name.startswith('__'):
+            if name.startswith("__"):
                 continue
-            new_name = name.replace('schema_', '')
+            new_name = name.replace("schema_", "")
             # get set of attrs which are resource ids
-            is_rid = df['model'].str.startswith('ResourceIdentifier')
+            is_rid = df["model"].str.startswith("ResourceIdentifier")
             rid_dict[new_name] = set(df[is_rid].index)
             # get referenced model type
-            has_model = df['model'].astype(bool)
-            model_dict[new_name] = dict(df[has_model]['model'])
+            has_model = df["model"].astype(bool)
+            model_dict[new_name] = dict(df[has_model]["model"])
             # dtype
-            has_dtype = df['dtype'].astype(bool)
-            dtype_dict[new_name] = dict(df[has_dtype]['dtype'])
+            has_dtype = df["dtype"].astype(bool)
+            dtype_dict[new_name] = dict(df[has_dtype]["dtype"])
         return rid_dict, model_dict, dtype_dict
 
     # populate dicts of lists for each type.

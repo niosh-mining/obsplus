@@ -553,21 +553,21 @@ def loc_by_name(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     requested_names = set(kwargs)
     index_names = set(df.index.names)
     if index_names == {None}:
-        msg = 'loc_by_name requires a dataframe with named indices'
+        msg = "loc_by_name requires a dataframe with named indices"
         raise KeyError(msg)
     elif not requested_names.issubset(index_names):
         diff = requested_names - index_names
-        msg = f'The following names are not in the df index: {diff}'
+        msg = f"The following names are not in the df index: {diff}"
         raise KeyError(msg)
     loc = tuple(kwargs.get(name, slice(None)) for name in df.index.names)
     return df.loc[loc]
 
 
 def get_index_group(
-        df: pd.DataFrame,
-        index: int,
-        column='index',
-        column_group: Optional[Sequence[str]]=None
+    df: pd.DataFrame,
+    index: int,
+    column="index",
+    column_group: Optional[Sequence[str]] = None,
 ) -> pd.Index:
     """
     Return the index of rows that meet index requirements.
@@ -591,12 +591,12 @@ def get_index_group(
     forward_shift = sorted[column].shift().values
     # back_shift = sorted[column].shift(-1).values
     # get an array of groups
-    is_start = ~ (forward_shift < arr)
+    is_start = ~(forward_shift < arr)
     group_inds = np.cumsum(is_start.astype(bool))
     # get group start and stop indices
     ugroups = np.unique(group_inds)
-    inds_1 = np.searchsorted(group_inds, ugroups, side='left')
-    inds_2 = np.searchsorted(group_inds, ugroups, side='right') - 1
+    inds_1 = np.searchsorted(group_inds, ugroups, side="left")
+    inds_2 = np.searchsorted(group_inds, ugroups, side="right") - 1
     # start
     start = inds_1 if index >= 0 else inds_2
     new_ind = index if index >= 0 else index + 1  # adjust for negative index
@@ -625,5 +625,5 @@ def expand_loc(df, **kwargs):
     assert len(kwargs) == 1
     key = list(kwargs)[0]
     indexed_df = df.reset_index().set_index(key)
-    assert indexed_df.index.is_unique, 'must df must have unique indices'
+    assert indexed_df.index.is_unique, "must df must have unique indices"
     return indexed_df.reindex(kwargs[key])

@@ -232,18 +232,18 @@ class TestLocByName:
 
     def test_nameless_index_raises(self, bingham_events_df):
         """A nameless index is not permitted for this function."""
-        with pytest.raises(KeyError, match='with named indices'):
+        with pytest.raises(KeyError, match="with named indices"):
             loc_by_name(bingham_events_df)
 
     def test_wrong_names(self, bingham_events_df):
         """Ensure an error message is raised if wrong index names are used."""
-        df = bingham_events_df.set_index(['event_id', 'magnitude'])
-        with pytest.raises(KeyError, match='names are not in the df index'):
+        df = bingham_events_df.set_index(["event_id", "magnitude"])
+        with pytest.raises(KeyError, match="names are not in the df index"):
             loc_by_name(df, amplitude=1)
 
     def test_slice_only_level(self, bingham_events_df):
         """Ensure method works with only level, should be equivalent to loc"""
-        df = bingham_events_df.set_index('event_id')
+        df = bingham_events_df.set_index("event_id")
         first_ids = df.index.values[:3]
         out1 = df.loc[first_ids]
         out2 = loc_by_name(df, event_id=first_ids)
@@ -251,40 +251,44 @@ class TestLocByName:
 
     def test_slice_one_level(self, bingham_events_df):
         """Ensure method works slicing on one level."""
-        df = bingham_events_df.set_index(['event_id', 'time', 'magnitude']).sort_index()
+        df = bingham_events_df.set_index(["event_id", "time", "magnitude"]).sort_index()
         out = loc_by_name(df, magnitude=slice(2, None))
-        expected = bingham_events_df[bingham_events_df['magnitude'] > 2]
+        expected = bingham_events_df[bingham_events_df["magnitude"] > 2]
         assert len(out) == len(expected)
-        eid1 = out.reset_index()['event_id'].iloc[0]
-        eid2 = expected['event_id'].iloc[0]
-        assert (eid1 == eid2)
+        eid1 = out.reset_index()["event_id"].iloc[0]
+        eid2 = expected["event_id"].iloc[0]
+        assert eid1 == eid2
 
     def test_slice_all_levels(self, bingham_events_df):
         """Ensure slicing works on multiple levels."""
         old = bingham_events_df
-        df = (
-            old.set_index(['event_id', 'latitude', 'depth'])
-            .sort_index()
-        )
-        eids = old['event_id'].iloc[:5]
-        lats = old['latitude']
+        df = old.set_index(["event_id", "latitude", "depth"]).sort_index()
+        eids = old["event_id"].iloc[:5]
+        lats = old["latitude"]
 
-        out = loc_by_name(df, depth=slice(0, None), event_id=eids, latitude=slice(lats.min(), lats.max()))
+        out = loc_by_name(
+            df,
+            depth=slice(0, None),
+            event_id=eids,
+            latitude=slice(lats.min(), lats.max()),
+        )
         expected = old[
-            (lats >= lats.min()) & (lats <= lats.max()) &
-            (old['event_id'].isin(eids)) &
-            (old['depth'] >= 0)
+            (lats >= lats.min())
+            & (lats <= lats.max())
+            & (old["event_id"].isin(eids))
+            & (old["depth"] >= 0)
         ]
         assert len(expected) == len(out)
-        assert set(expected['event_id']) == set(out.reset_index()['event_id'])
+        assert set(expected["event_id"]) == set(out.reset_index()["event_id"])
 
 
 class TestInIndexGroup:
     """Tests for getting indices from index or columns."""
+
     @pytest.fixture
     def df_one_ind(self):
         """A dataframe with a single index column"""
-        df = pd.DataFrame(range(100), columns=['ind'])
+        df = pd.DataFrame(range(100), columns=["ind"])
         return df
 
     @pytest.fixture
@@ -292,7 +296,7 @@ class TestInIndexGroup:
         """A dataframe with multiple groupby_columns."""
         col1 = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2]
         col2 = [0, 1, 2, 0, 1, 2, 3, 0, 1, 2]
-        out = pd.DataFrame(np.stack([col1, col2]).T, columns=['col1', 'index'])
+        out = pd.DataFrame(np.stack([col1, col2]).T, columns=["col1", "index"])
         return out
 
     def test_one_ind_positive(self, df_one_ind):
@@ -307,29 +311,31 @@ class TestInIndexGroup:
 
     def test_multiple_ind_positive(self, df_multi_ind):
         """Ensure algorithm works with multiple indicies."""
-        out = get_index_group(df_multi_ind, 1, column_group=['col1'])
-        vals = df_multi_ind.loc[out]['index']
+        out = get_index_group(df_multi_ind, 1, column_group=["col1"])
+        vals = df_multi_ind.loc[out]["index"]
         assert np.all(vals == 1)
 
     def test_multiple_some_too_large(self, df_multi_ind):
         """test when some groups final values are exceeded."""
-        out = get_index_group(df_multi_ind, 3, column_group=['col1'])
+        out = get_index_group(df_multi_ind, 3, column_group=["col1"])
         assert np.all(out.values == 6)
 
     def test_multiple_negative(self, df_multi_ind):
         """tests multi-group negative index"""
-        out = get_index_group(df_multi_ind, -1, column_group=['col1'])
+        out = get_index_group(df_multi_ind, -1, column_group=["col1"])
         assert np.all(out == np.array([2, 6, 9]))
 
     def test_multiple_some_too_small(self, df_multi_ind):
         """Test for when negative index is too small."""
-        out = get_index_group(df_multi_ind, -4, column_group=['col1'])
+        out = get_index_group(df_multi_ind, -4, column_group=["col1"])
         assert np.all(out.values == np.array([3]))
 
-    def test_empty(self, ):
+    def test_empty(
+        self,
+    ):
         """Ensure empty df still works."""
-        df = pd.DataFrame(columns=['index', 'col1'])
-        out = get_index_group(df, 0, column_group=['col1'])
+        df = pd.DataFrame(columns=["index", "col1"])
+        out = get_index_group(df, 0, column_group=["col1"])
         assert not len(out)
 
 
@@ -338,7 +344,7 @@ class TestExpandLoc:
 
     def test_expand_loc_column(self):
         """Ensure expand_loc works on a column"""
-        df = pd.DataFrame([1, 2, 3], columns=['col1'])
+        df = pd.DataFrame([1, 2, 3], columns=["col1"])
         values = [0, 1, 1, 2, 3]
         out = expand_loc(df, col1=values)
         assert len(out) == len(values)

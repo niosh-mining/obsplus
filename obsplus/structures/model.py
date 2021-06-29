@@ -44,7 +44,8 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     """
     ObsPlus' base model for defining schema.
     """
-    __version__ = '0.0.0'  # allows versioning of models
+
+    __version__ = "0.0.0"  # allows versioning of models
     __dtype__ = None  # obsplus dtype if not None
     __reference_type__ = None  # if this is a resource id, the type referred to
     _id_field: str = "resource_id"
@@ -256,10 +257,6 @@ class _SpecGenerator:
 #     return _dict_to_df(dicts)
 
 
-
-
-
-
 def _get_attr_ref_type(attr_dict):
     """
     Determine the type and reference type of an attribute from a schema dict.
@@ -292,20 +289,22 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     The form of the output is internal to ObsPlus and could change anytime!
     """
     DTYPES_MAP = {
-        int: 'Int64', float: 'float', str: 'str',
-        datetime.datetime: 'datetime64[ns]',
+        int: "Int64",
+        float: "float",
+        str: "str",
+        datetime.datetime: "datetime64[ns]",
     }
     COL_DTYPE = {
-       'model': str,
-       'dtype': str,
-       'referenced_model': str,
-       'optional': bool,
-       'is_list': bool,
+        "model": str,
+        "dtype": str,
+        "referenced_model": str,
+        "optional": bool,
+        "is_list": bool,
     }
 
     def _get_dtype(type_, is_model):
         """Return pandas dtype of field"""
-        raw_dtype = getattr(type_, '__dtype__', type_)
+        raw_dtype = getattr(type_, "__dtype__", type_)
         dtype = DTYPES_MAP.get(raw_dtype, None)
         model_name = type_.__name__ if is_model else None
         return dtype, model_name
@@ -313,8 +312,8 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     def _is_list(shape):
         if shape not in SHAPE_NAME_LOOKUP:
             return False
-        value = SHAPE_NAME_LOOKUP.get(shape, '')
-        assert 'List' in value
+        value = SHAPE_NAME_LOOKUP.get(shape, "")
+        assert "List" in value
         return True
 
     def _is_obsplus_model(cls):
@@ -331,18 +330,18 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
             current = {}
             type_ = model_field.type_
             is_model = _is_obsplus_model(type_)
-            current['dtype'], current['model'] = _get_dtype(type_, is_model)
-            current['referenced_model'] = getattr(type_, '__reference_type__', None)
-            current['optional'] = model_field.allow_none
-            current['is_list'] = _is_list(model_field.shape)
+            current["dtype"], current["model"] = _get_dtype(type_, is_model)
+            current["referenced_model"] = getattr(type_, "__reference_type__", None)
+            current["optional"] = model_field.allow_none
+            current["is_list"] = _is_list(model_field.shape)
             if is_model and cls.__name__ not in _tables:
                 _recurse(type_)
             attr_dict[name] = current
 
         _tables[f"schema_{cls.__name__}"] = attr_dict
         structure_dict = {
-            'name': cls.__name__,
-            'version': cls.__version__,
+            "name": cls.__name__,
+            "version": cls.__version__,
         }
         _meta.append(structure_dict)
 
@@ -350,10 +349,15 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     _tables = {}
     _recurse(cls)
     out = {
-        n: pd.DataFrame(v).T.astype(dtype=COL_DTYPE).replace('nan', '')
+        n: (
+            pd.DataFrame(v)
+            .T.astype(dtype=COL_DTYPE)
+            .replace("nan", "")
+            .replace("None", "")
+        )
         for n, v in _tables.items()
     }
-    out['__meta__'] = pd.DataFrame(_meta)
+    out["__meta__"] = pd.DataFrame(_meta)
     return out
 
 

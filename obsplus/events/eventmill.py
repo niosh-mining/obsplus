@@ -2,7 +2,6 @@
 Module for management of seismic events.
 """
 import copy
-from typing import TypeVar
 from typing_extensions import Annotated
 
 import numpy as np
@@ -23,7 +22,7 @@ class EventMill(Mill):
 
     _model = eschema.Catalog
     _id_name = "ResourceIdentifier"
-    _index_group = ('parent_id', 'attr')
+    _index_group = ("parent_id", "attr")
 
     def fill_preferred(self: MillType, index=-1, inplace=False) -> MillType:
         """
@@ -41,7 +40,7 @@ class EventMill(Mill):
         schema = self._model.get_obsplus_schema()
         df_dicts = self._df_dicts if inplace else copy.deepcopy(self._df_dicts)
         event_df = df_dicts["Event"]
-        eids = event_df.index.get_level_values('resource_id')
+        eids = event_df.index.get_level_values("resource_id")
         for name in {"origin", "magnitude", "focal_mechanism"}:
             preferred_id_name = f"preferred_{name}_id"
             object_column_name = f"{name}s"
@@ -51,12 +50,12 @@ class EventMill(Mill):
             if not missing_preferred.any():
                 continue
             # get df of child type
-            sub_class = schema['Event']['attr_ref'][object_column_name]
+            sub_class = schema["Event"]["attr_ref"][object_column_name]
             sub_df = df_dicts[sub_class]
             subs = loc_by_name(sub_df, scope_id=eids, attr=f"{name}s", index=-1)
             # get values from child table
             last_inds = get_index_group(subs, index, column_group=self._index_group)
-            out = expand_loc(subs[last_inds], parent_id=eids.values)['resource_id']
+            out = expand_loc(subs[last_inds], parent_id=eids.values)["resource_id"]
             # determine if values should be replaced
             should_fill = (missing_preferred & (~pd.isnull(out))).values
             event_df.loc[should_fill, preferred_id_name] = out.values[should_fill]

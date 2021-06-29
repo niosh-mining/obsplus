@@ -143,26 +143,31 @@ latitude_field = Field(None, le=90.0, ge=-90.0)
 
 class ResourceIdentifierPick(ResourceIdentifier):
     """ID which points to picks."""
+
     __reference_type__ = "Pick"
 
 
 class ResourceIdentifierOrigin(ResourceIdentifier):
     """ID which points to origins."""
+
     __reference_type__ = "Origin"
 
 
 class ResourceIdentifierMagnitude(ResourceIdentifier):
     """ID which points to magnitudes."""
+
     __reference_type__ = "Magnitude"
 
 
 class ResourceIdentifierStationMagnitude(ResourceIdentifier):
     """ID which points to station magnitudes."""
-    __reference_type__ = 'StationMagnitude'
+
+    __reference_type__ = "StationMagnitude"
 
 
 class ResourceIdentifierFocalMechanism(ResourceIdentifier):
     """ID which points to focal mechanisms."""
+
     __reference_type__ = "FocalMechanism"
 
 
