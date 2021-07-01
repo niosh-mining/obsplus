@@ -7,16 +7,13 @@ May eventually replace dfextractor.
 import inspect
 from typing import Mapping
 
-import obsplus
-from obsplus.utils.mapping import FrozenDict
+from obsplus.exceptions import InvalidModelAttribute
 from obsplus.structures.model import (
     _SpecGenerator,
     ObsPlusModel,
 )
 from obsplus.utils.docs import compose_docstring
-
-from obsplus.exceptions import InvalidModelAttribute
-
+from obsplus.utils.mapping import FrozenDict
 
 _SUPPORTED_OPERATOR_ARGUMENTS = {
     "object": "The object represented by model",
@@ -31,6 +28,8 @@ class DataFramer:
     _dtypes: Mapping[str, type]
     _model: ObsPlusModel
     _required_attrs = ("_model",)
+    _funcs = set()
+    _model_name: str = ""
 
     def __init_subclass__(cls):
         """Validate subclasses."""
@@ -43,10 +42,7 @@ class DataFramer:
         # gather up all operation trackers
         cls._fields = cls._get_fields()
         cls._dtypes = cls._get_types()
-
-    def __init__(self, mill: "obsplus.Mill"):
-        """Instantiate dataframe with a Mill."""
-        self._mill = mill
+        cls._model_name = cls._model.__name__
 
     @classmethod
     def _get_fields(cls):
@@ -71,13 +67,6 @@ class DataFramer:
         """Parse the type annotations on fields, dict of such."""
         types = {i: v for i, v in cls.__annotations__.items() if i in cls._fields}
         return FrozenDict(types)
-
-    def tables_to_df(self, table_dict):
-        """
-        Get a dataframe from tables of models.
-
-        This are typically created by :class:`obsplus.structures.mill.Mill`.
-        """
 
     def get_dataframe(self, stash=None):
         """

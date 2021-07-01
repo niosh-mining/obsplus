@@ -2,17 +2,19 @@
 Module for converting tree-like structures into tables and visa-versa.
 """
 import copy
+import uuid
 from collections import defaultdict
+from contextlib import suppress
 from functools import lru_cache
 from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
-import uuid
+
+import numpy as np
+import pandas as pd
 
 import obsplus
-import pandas as pd
+from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
 from obsplus.structures.model import ObsPlusModel
-from obsplus.exceptions import IncompatibleDataFramesError
-from obsplus.utils.pd import cast_dtypes, order_columns
-
+from obsplus.utils.pd import cast_dtypes, order_columns, get_index_group
 
 MillType = TypeVar("MillType", bound="Mill")
 
@@ -49,17 +51,28 @@ class Mill:
 
     @property
     @lru_cache()
-    def _df_dicts(self):
+    def _schema(self):
+        """Get schema from model."""
+        return _get_schema_dicts(self._model.get_obsplus_schema())
+
+    @property
+    @lru_cache()
+    def _table_dict(self):
         if self._df_dicts_ is not None:
             return self._df_dicts_
         df_dicts = _dict_to_tables(
             data=self._get_data(self._data),
-            master_schema=self._model.get_obsplus_schema(),
+            schema=self._schema,
             data_type=self._model.__name__,
         )
         df_dicts = self._post_df_dict(df_dicts)
         df_dicts["__summary__"] = self._add_df_summary(df_dicts)
         return df_dicts
+
+    @property
+    def structure_df(self):
+        """Get schema from model."""
+        return self._table_dict["__structure__"]
 
     def _get_data(self, data) -> dict:
         """Get the internal data structure."""
@@ -90,32 +103,36 @@ class Mill:
         name
             A string identifying the dataframe.
         """
+        if name in self._table_dict:
+            return self._table_dict[name]
         try:
             Framer = self._dataframers[name]
         except KeyError:
             msg = (
-                f"Unknown dataframer {name}, support framers are: \n"
-                f"{list(self._dataframers)}"
+                f"Unknown dataframe: {name}, known dataframes are: \n"
+                f"{list(self._dataframers) + list(self._table_dict)}"
             )
             raise KeyError(msg)
-        framer = Framer(self)
-        return framer.get_dataframe(self._data)
 
-    def get_referred_address(self, id_str) -> Tuple:
-        """
-        Get the address of the requested ID string.
+        framer = Framer()
+        return self._get_df_from_framer(framer)
 
-        An empty tuple is returned if it is not found.
-        """
-        if id_str in self._id_map:
-            return self._id_map[id_str]
-        self._id_map = self._index_resource_ids()
-        return self._id_map.get(id_str, ())
+    def _get_df_from_framer(self, framer):
+        out = {}
+        base = framer._model_name
+        base_df = self.get_df(base)
+        for attr_name, tracker in framer._fields.items():
+            specs = tracker.spec_tuple
+            dtype = framer._dtypes.get(attr_name)
+            resolver = _OperationResolver(self, specs, base_df, base, dtype)
+            out[attr_name] = resolver().astype(dtype)
+
+        print(out)
 
     def __str__(self):
         cls_name = self.__class__.__name__
         model_name = self._model.__name__
-        obj_count = len(self._df_dicts[self._structure_key])
+        obj_count = len(self._table_dict[self._structure_key])
         msg = (
             f"{cls_name} with spec of [{model_name}] and [{obj_count}] managed objects"
         )
@@ -123,7 +140,7 @@ class Mill:
 
     __repr__ = __str__
 
-    def lookup(self, ids: Sequence[str]) -> pd.DataFrame:
+    def lookup(self, ids: Sequence[str]) -> Tuple[pd.DataFrame, str]:
         """
         Look up rows from a dataframe which have ids.
 
@@ -145,30 +162,141 @@ class Mill:
         """
         if isinstance(ids, str):
             ids = [ids]
-        df = self._df_dicts[self._structure_key].loc[ids]
+        df = self._table_dict[self._structure_key].loc[ids]
         models = df["model"].unique()
         if len(models) > 1:
             msg = "Provided ids belong to multiple types of objects"
             raise IncompatibleDataFramesError(msg)
         elif not len(models):  # no objects with given ids
-            return pd.DataFrame()
+            return pd.DataFrame(), ""
         model_name = models[0]
-        new_table = self._df_dicts[model_name]
-        return new_table.loc[ids]
+        new_table = self._table_dict[model_name]
+        return new_table.loc[ids], model_name
+
+    def get_children(
+        self,
+        cls,
+        attr_name,
+        df=None,
+    ) -> Tuple[pd.DataFrame, str]:
+        """
+        Find all children of cls contained in attr_name.
+
+        Parameters
+        ----------
+        cls
+            The class name of the data.
+        attr_name
+            The attr name to search for children.
+        df
+            A dataframe of current parents. If none, simply use all
+            rows in cls table.
+
+        Examples
+        --------
+        # get all picks on events
+        >>> import obsplus
+        >>> cat = obsplus.load_dataset('bingham_test').event_client.get_events()
+        >>> mill = obsplus.EventMill(cat)  # init EventMill
+        >>> pick_df, child_model = mill.get_children('Event', 'picks')
+        """
+        if df is None:
+            df = self.get_df(cls)
+        try:
+            model_name = self._schema["models"][cls][attr_name]
+            child_table = self.get_df(model_name)
+        except KeyError:
+            msg = f"{cls} has no model attributes of {attr_name}"
+            raise InvalidModelAttribute(msg)
+        structure = self.structure_df
+
+        child_structure = structure.loc[child_table.index]
+        is_valid = child_structure["parent_id"].isin(df.index)
+
+        return child_table.loc[is_valid[is_valid].index], model_name
+
+    def get_parent_ids(
+        self,
+        ids: Sequence[str],
+        level: Optional[int] = None,
+        targets: Optional[Sequence[str]] = None,
+    ) -> pd.Series:
+        """
+        Transverse the object tree up to get parent ids of provided ids.
+
+        Parameters
+        ----------
+        ids
+            The ids for which parent ids will be found
+        level
+            A maximum number of levels to transverse up the object tree.
+            If None, go until the first orphan node is found.
+        targets
+            A set of expected ids when reached tree transversal is halted.
+        """
+        sdf = self.get_df("__structure__")
+        max_iterations = 1_000
+        targets = set() if targets is None else set(targets)
+        orphans = set()
+
+        out = pd.Series(list(ids), index=list(ids))
+        for num in range(max_iterations):
+            # determine if level requirements have been met
+            if level is not None and num >= level:
+                break
+            not_orphaned = ~out.isin(orphans)
+            unmet_target = ~out.isin(targets)
+            sub_ser = out[not_orphaned & unmet_target]
+            if not len(sub_ser):  # all termination conditions met
+                break
+            parents = sdf.loc[sub_ser.values, "parent_id"]
+            # determine if any orphans are found, update orphan set and
+            # set orphans to be there own parents (who else will do it?)
+            is_orphan = parents.isnull().values
+            if np.any(is_orphan):
+                orphans |= set(parents[is_orphan].index)
+                parents[is_orphan] = parents[is_orphan].index.values
+            parents.index = sub_ser.index
+            out.update(parents)
+        return out
 
     # methods for custom df_dict creations
     def _add_df_summary(self, df_dicts):
         """Add a summary table to the dataframe dict for easy querying."""
-        return {}
+        return pd.DataFrame()
 
     def _post_df_dict(self, df_dicts):
         """This can be subclassed to run validators/checks on dataframes."""
         return df_dicts
 
 
+def _get_schema_dicts(df_schema):
+    """Parses out dicts from dataframes for use in decomposition"""
+    rid_dict, model_dict, dtype_dict = {}, {}, {}
+    for name, df in df_schema.items():
+        if name.startswith("__"):
+            continue
+        new_name = name.replace("schema_", "")
+        # get set of attrs which are resource ids
+        is_rid = df["model"].str.startswith("ResourceIdentifier")
+        rid_dict[new_name] = set(df[is_rid].index)
+        # get referenced model type
+        has_model = df["model"].astype(bool)
+        model_dict[new_name] = dict(df[has_model]["model"])
+        # dtype
+        has_dtype = df["dtype"].astype(bool)
+        dtype_dict[new_name] = dict(df[has_dtype]["dtype"])
+    out = {
+        "resource_ids": rid_dict,
+        "models": model_dict,
+        "dtypes": dtype_dict,
+    }
+    return out
+
+
 def _dict_to_tables(
     data,
-    master_schema,
+    schema,
     data_type: str,
     id_field: str = "resource_id",
     scope_type=None,
@@ -180,7 +308,7 @@ def _dict_to_tables(
     ----------
     data
         A list or dict with nested json supported objects.
-    master_schema
+    schema
         An obsplus schema which defines the structure of data.
         See :meth:`obsplus.structures.model.Model.get_obsplus_schema`
     data_type
@@ -270,30 +398,141 @@ def _dict_to_tables(
         out["__structure__"] = pd.DataFrame(structure_list).set_index(id_field)
         return out
 
-    def get_schema_dicts():
-        """Parses out dicts from dataframes for use in decomposition"""
-        rid_dict, model_dict, dtype_dict = {}, {}, {}
-        for name, df in master_schema.items():
-            if name.startswith("__"):
-                continue
-            new_name = name.replace("schema_", "")
-            # get set of attrs which are resource ids
-            is_rid = df["model"].str.startswith("ResourceIdentifier")
-            rid_dict[new_name] = set(df[is_rid].index)
-            # get referenced model type
-            has_model = df["model"].astype(bool)
-            model_dict[new_name] = dict(df[has_model]["model"])
-            # dtype
-            has_dtype = df["dtype"].astype(bool)
-            dtype_dict[new_name] = dict(df[has_dtype]["dtype"])
-        return rid_dict, model_dict, dtype_dict
-
+    dtype_dict = schema["dtypes"]
+    rid_dict = schema["resource_ids"]
+    model_dict = schema["models"]
     # populate dicts of lists for each type.
     object_lists = defaultdict(list)
     structure_list = []  # a list for storing structural info
-    rid_dict, model_dict, dtype_dict = get_schema_dicts()
     _recurse(data, data_type)
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
-    out.update(master_schema)
+    out.update(schema)
+    return out
+
+
+class _OperationResolver:
+    """
+    A class for resolving operations specifying data in
+    """
+
+    fill_types = {
+        str: "",
+        "str": "",
+    }
+
+    def __init__(self, mill: Mill, spec, base_df, base_cls_name, dtype):
+        self.mill = mill
+        self.spec = spec
+        self._dtype = dtype
+        self._struc_df = mill.get_df("__structure__")
+        # get base (starting place) info
+        self._base_df = base_df
+        self._base_cls = base_cls_name
+        # set attrs which update for each operation
+        self.current_ = base_df
+        self.cls_ = base_cls_name
+        # maps the id of current back to base objects
+        self.base_id_map_ = pd.Series(base_df.index, index=base_df.index)
+        # functions, fill in for testing.
+        self._funcs = {}
+
+    def __call__(self):
+        """Resolve operations on mill."""
+        # apply all operation
+        for op in self.spec[1:]:
+            self.dispatch(op)
+        # join result to base
+        assert self.base_id_map_.index.unique().all(), "index must now be unique"
+        last = self.current_
+        assert isinstance(last, pd.Series)
+        # remap index back to original ids
+        last.index = last.index.map(_invert_series(self.base_id_map_))
+        out = (
+            pd.DataFrame(index=self._base_df.index)
+            .join(last)[last.name]
+            .astype(self._dtype)
+            .pipe(self._fill_null)
+        )
+        return out
+
+    def _fill_null(self, ser: pd.Series):
+        """Full null values with dtype specific defaults."""
+        if self._dtype not in self.fill_types:
+            return ser
+        return ser.fillna(self.fill_types[self._dtype])
+
+    def dispatch(
+        self,
+        op,
+    ):
+        """
+        Dispatch version operations to their appropriate functions.
+        """
+        # if operation is a known function
+        if op in self._funcs:
+            return self._funcs[op](op)
+        # if operation requests current index
+        elif op in self.current_.index.names:
+            return self._get_index()
+        # if operation is an int or slice just get appropriate item
+        elif isinstance(op, (int, slice)):  # an int gets
+            return self._apply_int_index(op)
+        # if a non-sliced series then follow resource_id
+        elif isinstance(self.current_, pd.Series):  # assume we need to follow rid
+            return self._follow_rid(op)
+        # try returning column
+        with suppress(KeyError):
+            return self._get_column(op)
+        # try getting child of current stored in op (attribute name)
+        with suppress(InvalidModelAttribute):
+            return self._get_children(op)
+        # No idea, give up
+        raise NotImplementedError("How did you get here!?")
+
+    def _get_index(self):
+        index = self.current_.index
+        self.current_ = pd.Series(index, index=index.values)
+
+    def _apply_int_index(self, op):
+        """Apply an int to aggregate list-like objects."""
+        sub_struct = self._struc_df.loc[self.current_.index]
+        valid_indices = get_index_group(sub_struct, op)
+        self.current_ = self.current_.loc[valid_indices]
+        valid_base = self.base_id_map_.isin(valid_indices)
+        self.base_id_map_ = self.base_id_map_[valid_base]
+
+    def _follow_rid(self, op):
+        """current should be a series of ids, simple look them up"""
+        out, cls = self.mill.lookup(self.current_.values)
+        assert len(out) == len(self.current_)
+        # TODO finangle output map
+        self.current_ = out
+        self.cls_ = cls
+        self.dispatch(op)
+
+    def _get_column(self, op):
+        """Try to get column from current."""
+        out = self.current_[op]  # this exception gets handled one stack up
+        self.current_ = out
+
+    def _get_children(self, op):
+        """Get children."""
+        kids, cls = self.mill.get_children(self.cls_, op, df=self.current_)
+        parents = self._struc_df.loc[kids.index, "parent_id"]
+        # invert mapping and reshape base_ind
+        # TODO there is probably a less confusing join or something to do here
+        mapping = _invert_series(parents)
+        base_invert = _invert_series(self.base_id_map_)
+        reind = base_invert.reindex(mapping.index)
+        out = _invert_series(reind).map(mapping)
+        # update state
+        self.cls_ = cls
+        self.base_id_map_ = out
+        self.current_ = kids
+
+
+def _invert_series(ser):
+    """Invert a series, swapping values and index."""
+    out = pd.Series(ser.index.values, index=ser.values)
     return out

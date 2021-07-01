@@ -153,7 +153,7 @@ def _new_waveframe_df(wdf, data=None, stats=None, allow_size_change=True):
         index, cols = old.index, old.columns
         return pd.DataFrame(ar, index=index, columns=cols)
 
-    wdf = wdf._df if isinstance(wdf, obsplus.WaveFrame) else wdf
+    wdf = wdf.current_ if isinstance(wdf, obsplus.WaveFrame) else wdf
 
     data_df = wdf["data"]
     stats_df = wdf["stats"]

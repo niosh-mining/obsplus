@@ -34,9 +34,9 @@ class ObsPlusMeta(ModelMetaclass):
         # this is requesting a get_preferred operator
         elif item.startswith(SUPPORTED_MODEL_OPS):
             cls_name = cls.__name__
-            op_tuple = (cls_name, f"${item}")
+            op_tuple = (cls_name, item)
             return _SpecGenerator(op_tuple, parent_model=cls)
-        msg = f"{cls.__name__} has not attribute {item}"
+        msg = f"{cls.__name__} has no attribute {item}"
         raise InvalidModelAttribute(msg)
 
 
@@ -165,7 +165,7 @@ class _SpecGenerator:
         )
 
     def __str__(self):
-        return f"AttributeTracker:: {self.spec_tuple}"
+        return f"Spec::{self.spec_tuple}"
 
     def __getitem__(self, item):
         return self.__class__(

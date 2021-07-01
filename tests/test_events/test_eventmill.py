@@ -5,6 +5,7 @@ import pytest
 
 import obsplus
 from obsplus import EventMill
+from obsplus.exceptions import InvalidModelAttribute
 
 
 @pytest.fixture(scope="class")
@@ -34,18 +35,20 @@ class TestEventMillBasics:
 
     def test_lookup_homogeneous(self, event_mill):
         """Look up a resource id for objects of same type"""
-        pick_df = event_mill._df_dicts["Pick"]
-        some_rids = pick_df.index.get_level_values("resource_id")[::20]
+        pick_df = event_mill.get_df("Pick")
+        some_rids = pick_df.index.values[::20]
         # lookup multiple dataframes of the same type
-        out = event_mill.lookup(some_rids)
+        out, cls = event_mill.lookup(some_rids)
         assert isinstance(out, pd.DataFrame)
         assert len(out) == len(some_rids)
         assert set(out.index.get_level_values("resource_id")) == set(some_rids)
+        assert cls == "Pick"
         # lookup a single resource_id
-        out = event_mill.lookup(some_rids[0])
+        out, cls = event_mill.lookup(some_rids[0])
         assert isinstance(out, pd.DataFrame)
         assert len(out) == 1
         assert set(out.index.get_level_values("resource_id")) == set(some_rids[:1])
+        assert cls == "Pick"
 
     def test_lookup_missing(self, event_mill):
         """Test looking up a missing ID."""
@@ -68,12 +71,80 @@ class TestFillPreferred:
     def test_fill_id(self, missing_origin_id_mill):
         """Ensure all preferred origin/mag ids are set."""
         out = missing_origin_id_mill.fill_preferred()
-        event_df = out._df_dicts["Event"]
+        event_df = out._table_dict["Event"]
         assert not event_df["preferred_origin_id"].isnull().any()
+
+
+class TestGetChildren:
+    """Tests for getting children of specific classes and attributes."""
+
+    def test_get_picks(self, event_mill, bingham_events):
+        """Get picks from event_mill."""
+        pdf, _ = event_mill.get_children("Event", "picks")
+        rids_mill = set(pdf.index)
+        rids_cat = {
+            str(pick.resource_id) for event in bingham_events for pick in event.picks
+        }
+        assert rids_mill == rids_cat
+
+    def test_get_picks_with_df(self, event_mill, bingham_events):
+        """Ensure a dataframe can be used to limit picks returned"""
+        df = event_mill.get_df("Event").iloc[0:2]
+        out, _ = event_mill.get_children("Event", "picks", df=df)
+        # get expected pick ids
+        expected = set()
+        for event in bingham_events[:2]:
+            for pick in event.picks:
+                expected.add(str(pick.resource_id))
+        assert set(out.index) == expected
+
+    def test_bad_cls(self, event_mill):
+        """Tests for class which don't exist."""
+        with pytest.raises(KeyError, match="Unknown dataframe"):
+            event_mill.get_children("NotAClass", "bad_attr")
+
+    def test_bad_attr(self, event_mill):
+        """Tests for accessing non-existent attributes"""
+        with pytest.raises(InvalidModelAttribute, match="no model attributes"):
+            event_mill.get_children("Event", "not_an_attr")
+
+
+class TestGetParentIds:
+    """Tests for finding parents of ids."""
+
+    def test_no_level_no_limit(self, event_mill, bingham_events):
+        """Tests for getting ids from default values."""
+        catalog_id = str(bingham_events.resource_id)
+        pick_ids = [str(pick.resource_id) for pick in bingham_events[0].picks]
+        parent_ids = event_mill.get_parent_ids(pick_ids)
+        # the result should simply be the catalog id
+        assert (parent_ids == catalog_id).all()
+
+    def test_up_one_level(self, event_mill, bingham_events):
+        """Tests getting ids for one level of parents up."""
+        event_id = str(bingham_events[0].resource_id)
+        pick_ids = [str(x.resource_id) for x in bingham_events[0].picks]
+        out = event_mill.get_parent_ids(pick_ids, level=1)
+        assert (out == event_id).all()
+
+    def test_target(self, event_mill, bingham_events):
+        """Tests for stopping transverse at certain targets."""
+        targets = {str(x.resource_id) for x in bingham_events}
+        pick_ids = {
+            str(pick.resource_id) for event in bingham_events for pick in event.picks
+        }
+        out = event_mill.get_parent_ids(pick_ids, targets=targets)
+        assert set(out.values).issubset(targets)
 
 
 class TestGetDF:
     """Tests for getting various forms of dataframes from EventMill."""
+
+    def test_get_contained_model(self, event_mill):
+        """The name of a model should return the contained df."""
+        out = event_mill.get_df("Event")
+        assert isinstance(out, pd.DataFrame)
+        assert len(out)
 
     def test_raise_on_unknown(self, event_mill):
         """Ensure unknown frames raise exception."""

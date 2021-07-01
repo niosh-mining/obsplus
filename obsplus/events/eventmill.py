@@ -38,7 +38,7 @@ class EventMill(Mill):
 
         """
         schema = self._model.get_obsplus_schema()
-        df_dicts = self._df_dicts if inplace else copy.deepcopy(self._df_dicts)
+        df_dicts = self._table_dict if inplace else copy.deepcopy(self._table_dict)
         event_df = df_dicts["Event"]
         eids = event_df.index.get_level_values("resource_id")
         for name in {"origin", "magnitude", "focal_mechanism"}:
@@ -71,7 +71,7 @@ class EventFramer(DataFramer):
     # Event level attrs
     _model = eschema.Event
     event_description: str = _model.event_descriptions[0].text
-    event_id = _model.resource_id
+    event_id: str = _model.resource_id
     # origin attrs
     _origin: eschema.Origin = _model.preferred_origin_id.lookup()
     event_time: Annotated[np.datetime64, to_datetime64] = _origin.time
@@ -79,8 +79,8 @@ class EventFramer(DataFramer):
     event_longitude: Annotated[float, map_longitudes] = _origin.longitude
     event_depth: float = _origin.depth
     # magnitude attrs
-    _pref_mag = _model._preferred_magnitude
-    magnitude: float = _pref_mag.magnitude
+    _pref_mag = _model.preferred_magnitude_id
+    magnitude: float = _pref_mag.mag
     magnitude_type: str = _pref_mag.magnitude_type
     # origin quality attrs
     _origin_quality: eschema.OriginQuality = _origin.quality

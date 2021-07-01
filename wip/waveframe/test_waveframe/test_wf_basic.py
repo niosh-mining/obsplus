@@ -163,15 +163,15 @@ class TestConstructor:
         wf1 = stream_wf
         wf2 = WaveFrame(wf1)
         assert wf1 is not wf2
-        assert wf1._df is not wf2._df
+        assert wf1.current_ is not wf2.current_
         assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_df(self, stream_wf):
         """A waveframe can be inited from a dataframe from a waveframe."""
         wf1 = stream_wf
-        wf2 = WaveFrame(wf1._df)
+        wf2 = WaveFrame(wf1.current_)
         assert wf1 is not wf2
-        assert wf1._df is not wf2._df
+        assert wf1.current_ is not wf2.current_
         assert wf1 == wf2
 
     def test_init_waveframe_from_waveframe_parts(self, stream_wf):
@@ -179,7 +179,7 @@ class TestConstructor:
         wf1 = stream_wf
         wf2 = WaveFrame(waveforms=wf1.data, stats=wf1.stats)
         assert wf1 is not wf2
-        assert wf1._df is not wf2._df
+        assert wf1.current_ is not wf2.current_
         assert wf1 == wf2
 
     def test_waveframe_has_delta(self, stream_wf):
@@ -227,7 +227,7 @@ class TestValidate:
         """
         wf = stream_wf
         # drop one of the requried columns
-        df = wf._df
+        df = wf.current_
         df.drop(columns=["delta"], level=1, inplace=True)
         with pytest.raises(AssertionError):
             wf.validate()
@@ -236,7 +236,7 @@ class TestValidate:
         """
         If the endtime is not consistent with the starttime + len of data raise.
         """
-        df = stream_wf._df
+        df = stream_wf.current_
         df.loc[:, ("stats", "endtime")] += df.loc[:, ("stats", "delta")] * 10
         with pytest.raises(AssertionError):
             stream_wf.validate()
