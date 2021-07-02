@@ -2,6 +2,8 @@
 Module for converting tree-like structures into tables and visa-versa.
 """
 import copy
+from typing_extensions import Annotated, get_origin
+
 import uuid
 from collections import defaultdict
 from contextlib import suppress
@@ -15,6 +17,7 @@ import obsplus
 from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
 from obsplus.structures.model import ObsPlusModel
 from obsplus.utils.pd import cast_dtypes, order_columns, get_index_group
+from obsplus.utils.misc import argisin
 
 MillType = TypeVar("MillType", bound="Mill")
 
@@ -125,9 +128,9 @@ class Mill:
             specs = tracker.spec_tuple
             dtype = framer._dtypes.get(attr_name)
             resolver = _OperationResolver(self, specs, base_df, base, dtype)
-            out[attr_name] = resolver().astype(dtype)
-
-        print(out)
+            out[attr_name] = resolver()
+        df = pd.DataFrame(out)
+        return df
 
     def __str__(self):
         cls_name = self.__class__.__name__
@@ -424,7 +427,7 @@ class _OperationResolver:
     def __init__(self, mill: Mill, spec, base_df, base_cls_name, dtype):
         self.mill = mill
         self.spec = spec
-        self._dtype = dtype
+        self._dtype = self._get_dtype(dtype)
         self._struc_df = mill.get_df("__structure__")
         # get base (starting place) info
         self._base_df = base_df
@@ -435,32 +438,47 @@ class _OperationResolver:
         # maps the id of current back to base objects
         self.base_id_map_ = pd.Series(base_df.index, index=base_df.index)
         # functions, fill in for testing.
-        self._funcs = {}
+        self._funcs = {'parent': self._get_parent}
+
+    def _get_parent(self, op):
+        """Get the parent of the current rows, expanding if needed."""
+        parents_id_map = self._struc_df.loc[self.current_.index, 'parent_id']
+        parents, cls = self.mill.lookup(np.unique(parents_id_map.values))
+        self.base_id_map_ = self.base_id_map_.map(parents_id_map)
+        self.current_ = parents
+        self.cls_ = cls
 
     def __call__(self):
         """Resolve operations on mill."""
         # apply all operation
         for op in self.spec[1:]:
             self.dispatch(op)
+            # ensure base_id map stays updated
+            assert set(self.base_id_map_.values) == set(self.current_.index.values)
         # join result to base
         assert self.base_id_map_.index.unique().all(), "index must now be unique"
         last = self.current_
         assert isinstance(last, pd.Series)
         # remap index back to original ids
-        last.index = last.index.map(_invert_series(self.base_id_map_))
+        re_map = last.loc[self.base_id_map_.values]
+        re_map.index = self.base_id_map_.index
+        dtype = {last.name: self._dtype} if self._dtype is not None else {}
         out = (
             pd.DataFrame(index=self._base_df.index)
-            .join(last)[last.name]
-            .astype(self._dtype)
+            .join(re_map)
+            .pipe(cast_dtypes, dtype=dtype)[last.name]
             .pipe(self._fill_null)
         )
         return out
 
     def _fill_null(self, ser: pd.Series):
         """Full null values with dtype specific defaults."""
+        if self._dtype in {str, 'str'}:
+            ser = ser.replace('nan', '')
         if self._dtype not in self.fill_types:
             return ser
-        return ser.fillna(self.fill_types[self._dtype])
+        out = ser.fillna(self.fill_types[self._dtype])
+        return out
 
     def dispatch(
         self,
@@ -503,36 +521,40 @@ class _OperationResolver:
         self.base_id_map_ = self.base_id_map_[valid_base]
 
     def _follow_rid(self, op):
-        """current should be a series of ids, simple look them up"""
+        """current should be a series of ids, simply look them up"""
         out, cls = self.mill.lookup(self.current_.values)
         assert len(out) == len(self.current_)
-        # TODO finangle output map
+        args = argisin(out.index.values, self.current_.values)
+        # update base id map
+        new = pd.Series(out.index.values, index=self.base_id_map_.index[args])
+        self.base_id_map_ = new
         self.current_ = out
         self.cls_ = cls
         self.dispatch(op)
 
     def _get_column(self, op):
         """Try to get column from current."""
-        out = self.current_[op]  # this exception gets handled one stack up
+        out = self.current_[op]  # this possible exception is handled one stack up
         self.current_ = out
 
     def _get_children(self, op):
-        """Get children."""
+        """Get child objects of parent."""
         kids, cls = self.mill.get_children(self.cls_, op, df=self.current_)
         parents = self._struc_df.loc[kids.index, "parent_id"]
-        # invert mapping and reshape base_ind
-        # TODO there is probably a less confusing join or something to do here
-        mapping = _invert_series(parents)
-        base_invert = _invert_series(self.base_id_map_)
-        reind = base_invert.reindex(mapping.index)
-        out = _invert_series(reind).map(mapping)
-        # update state
-        self.cls_ = cls
-        self.base_id_map_ = out
-        self.current_ = kids
+        # update base_id to now point to children
+        args = argisin(parents.values, self.base_id_map_.values)
+        new = pd.Series(kids.index.values, index=self.base_id_map_.values[args])
+        self.base_id_map_ = new
+        self.current_, self.cls_ = kids, cls
+
+    def _get_dtype(self, dtype):
+        """Get the datatype."""
+        if get_origin(dtype) is Annotated:
+            # just get raw dtype
+            dtype = origin = dtype.__origin__
+        return dtype
 
 
 def _invert_series(ser):
-    """Invert a series, swapping values and index."""
-    out = pd.Series(ser.index.values, index=ser.values)
-    return out
+    """Invert a series, return new series."""
+    return pd.Series(ser.index.values, index=ser.values)

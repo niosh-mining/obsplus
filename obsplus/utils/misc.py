@@ -597,6 +597,36 @@ def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
     return out
 
 
+def argisin(ar1: np.ndarray, ar2: np.ndarray) -> np.ndarray:
+    """
+    Return indices for first occurence in ar2 of each element in ar1.
+
+    Parameters
+    ----------
+    ar1
+        The elements to search for in ar2.
+    ar2
+        The search space.
+
+    Raises
+    ------
+    KeyError
+        If any element of sub_array is not in array.
+    """
+    # checks, ensure data are in correct form.
+    ar1, ar2 = np.array(ar1), np.array(ar2)
+    assert len(ar1.shape) == len(ar2.shape) == 1, 'ar1 and ar2 must be 1D'
+    ar1_in_ar2 = np.in1d(ar1, ar2)
+    if not ar1_in_ar2.all():
+        msg = f"the following elements of ar1 are not in ar2: {ar1[~ar1_in_ar2]}"
+        raise KeyError(msg)
+    # use sorted arrays/biscets to find elements quickly
+    sort_args = np.argsort(ar2)
+    args = np.searchsorted(ar2, ar1, side='left', sorter=sort_args)
+    return sort_args[args]
+
+
+
 class ObjectWrapper:
     """
     A class for wrapping objects.

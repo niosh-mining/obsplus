@@ -629,11 +629,7 @@ AGG_LEVEL_MAP = dict(network=1, station=2, location=3, channel=4, all=5)
 # These are special strings that can be used when defining DataFramers to
 # call functions rather than simply accessing attributes.
 SUPPORTED_MODEL_OPS = (
-    "_preferred_origin",
-    "_preferred_magnitude",
-    "_preferred_focal_mechanism",
-    "_referred_object",
-    "_parent",
+    "parent",
 )
 
 

@@ -88,19 +88,18 @@ class EventFramer(DataFramer):
     used_station_count: pd.Int64Dtype() = _origin_quality.used_station_count
     standard_error: float = _origin_quality.standard_error
     azimuthal_gap: float = _origin_quality.azimuthal_gap
-    #
-    # @model_operator
-    # def _preferred_origin(self, object, mill):
-    #     return self._get_preferred("origin", object, mill)
-    #
-    # @model_operator
-    # def _preferred_magnitude(self, object, mill):
-    #     return self._get_preferred("magnitude", object, mill)
-    #
-    # @model_operator
-    # def _preferred_origin(self, object, mill):
-    #     return self._get_preferred("origin", object, mill)
-    #
-    # def _get_preferred(self, what, object, mill):
-    #     """Fetches one preferred thing or another."""
-    #     breakpoint()
+
+
+@EventMill.register_data_framer("picks")
+class PickFramer(DataFramer):
+    """Dataframer for extracting picks from mill."""
+    _model = eschema.Pick
+    resource_id = _model.resource_id
+    time = _model.time
+    polarity = _model.polarity
+    phase_hint = _model.phase_hint
+
+
+
+    event_id = _model.parent.resource_id
+

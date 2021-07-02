@@ -1,17 +1,35 @@
 """Tests for EventMill."""
 import numpy as np
+
 import pandas as pd
 import pytest
 
 import obsplus
 from obsplus import EventMill
 from obsplus.exceptions import InvalidModelAttribute
+from obsplus.utils.misc import register_func
+
+event_dataframes = []
 
 
 @pytest.fixture(scope="class")
+@register_func(event_dataframes)
 def event_dataframe(event_mill):
     """Return the event dataframe from event_mill."""
     return event_mill.get_df("events")
+
+
+@pytest.fixture(scope='class')
+@register_func(event_dataframes)
+def pick_dataframe(event_mill):
+    """Get the pick dataframe."""
+    return event_mill.get_df('picks')
+
+
+@pytest.fixture(scope='class', params=event_dataframes)
+def eventmill_dataframe(request):
+    """Meta fixture to parameterize all dataframes produced by eventmill."""
+    return request.getfixturevalue(request.param)
 
 
 class TestEventMillBasics:
@@ -140,6 +158,12 @@ class TestGetParentIds:
 class TestGetDF:
     """Tests for getting various forms of dataframes from EventMill."""
 
+
+    def test_all_df(self, eventmill_dataframe):
+        """Test all the dfs."""
+        assert isinstance(eventmill_dataframe, pd.DataFrame)
+        assert len(eventmill_dataframe)
+
     def test_get_contained_model(self, event_mill):
         """The name of a model should return the contained df."""
         out = event_mill.get_df("Event")
@@ -189,5 +213,6 @@ class TestEventDataframe:
             assert np.isclose(row["event_longitude"], ori.longitude)
             assert np.isclose(row["event_latitude"], ori.latitude)
             assert np.isclose(row["event_depth"], ori.depth)
-            etime = obsplus.utils.time.to_timedelta64(ori.time)
-            assert np.isclose(row["event_time"], etime)
+            etime1 = obsplus.utils.time.to_utc(ori.time)
+            etime2 = obsplus.utils.time.to_utc(row["event_time"])
+            assert np.isclose(float(etime1), float(etime2))
