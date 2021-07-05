@@ -62,44 +62,51 @@ class EventMill(Mill):
         return self._from_df_dict(df_dicts)
 
 
-@EventMill.register_data_framer("events")
-class EventFramer(DataFramer):
+@EventMill.register_data_framer("event_core")
+class CoreEventFramer(DataFramer):
     """
-    Class for extracting dataframes from event info from EventMill.
+    Framer to get the minimum required info from events.
+
+    Only extracts enough information to support queries using `get_event.
     """
 
     # Event level attrs
     _model = eschema.Event
-    event_description: str = _model.event_descriptions[0].text
-    event_id: str = _model.resource_id
-    # origin attrs
     _origin: eschema.Origin = _model.preferred_origin_id.lookup()
-    event_time: Annotated[np.datetime64, to_datetime64] = _origin.time
-    event_latitude: float = _origin.latitude
-    event_longitude: Annotated[float, map_longitudes] = _origin.longitude
-    event_depth: float = _origin.depth
-    # magnitude attrs
     _pref_mag = _model.preferred_magnitude_id
+    _origin_quality: eschema.OriginQuality = _origin.quality
+
+    time: Annotated[np.datetime64, to_datetime64] = _origin.time
+    latitude: float = _origin.latitude
+    longitude: Annotated[float, map_longitudes] = _origin.longitude
+    depth: float = _origin.depth
     magnitude: float = _pref_mag.mag
     magnitude_type: str = _pref_mag.magnitude_type
-    # origin quality attrs
-    _origin_quality: eschema.OriginQuality = _origin.quality
-    used_phase_count: pd.Int64Dtype() = _origin_quality.associated_phase_count
-    used_station_count: pd.Int64Dtype() = _origin_quality.used_station_count
-    standard_error: float = _origin_quality.standard_error
-    azimuthal_gap: float = _origin_quality.azimuthal_gap
+    event_description: str = _model.event_descriptions[0].text
+    event_id: str = _model.resource_id
+    updated: Annotated[np.datetime64, to_datetime64] = _model.creation_info.time
+
+
+# @EventMill.register_data_framer("event")
+# class EventFramer(CoreEventFramer):
+#     """
+#     Framer to get the rest of the event information that might be useful.
+#     """
+#     # magnitude attrs
+#     # origin quality attrs
+#     used_phase_count: pd.Int64Dtype() = _origin_quality.associated_phase_count
+#     used_station_count: pd.Int64Dtype() = _origin_quality.used_station_count
+#     standard_error: float = _origin_quality.standard_error
+#     azimuthal_gap: float = _origin_quality.azimuthal_gap
 
 
 @EventMill.register_data_framer("picks")
 class PickFramer(DataFramer):
     """Dataframer for extracting picks from mill."""
+
     _model = eschema.Pick
     resource_id = _model.resource_id
     time = _model.time
     polarity = _model.polarity
     phase_hint = _model.phase_hint
-
-
-
     event_id = _model.parent.resource_id
-

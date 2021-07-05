@@ -14,10 +14,11 @@ import numpy as np
 import pandas as pd
 
 import obsplus
+from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
-from obsplus.structures.model import ObsPlusModel
+from obsplus.structures.model import ObsPlusModel, FunctionCall
 from obsplus.utils.pd import cast_dtypes, order_columns, get_index_group
-from obsplus.utils.misc import argisin
+from obsplus.utils.misc import argisin, register_func
 
 MillType = TypeVar("MillType", bound="Mill")
 
@@ -416,17 +417,18 @@ def _dict_to_tables(
 
 class _OperationResolver:
     """
-    A class for resolving operations specifying data in
+    A class for resolving operations specifying data access from models.
     """
 
     fill_types = {
         str: "",
         "str": "",
     }
+    _funcs = {}
 
     def __init__(self, mill: Mill, spec, base_df, base_cls_name, dtype):
         self.mill = mill
-        self.spec = spec
+        self.spec = spec if isinstance(spec, tuple) else spec.spec_tuple
         self._dtype = self._get_dtype(dtype)
         self._struc_df = mill.get_df("__structure__")
         # get base (starting place) info
@@ -437,16 +439,70 @@ class _OperationResolver:
         self.cls_ = base_cls_name
         # maps the id of current back to base objects
         self.base_id_map_ = pd.Series(base_df.index, index=base_df.index)
-        # functions, fill in for testing.
-        self._funcs = {'parent': self._get_parent}
 
-    def _get_parent(self, op):
+    @register_func(_funcs, "aggregate")
+    def _aggregate(self, func):
+        """Perform an aggregation on a column using a provided function."""
+        df = self.current_.copy()
+        df.index = self.base_id_map_.index
+        out = df.groupby(level=0).apply(func)
+        inds = out.index.values
+        self.current_ = out
+        self.base_id_map_ = pd.Series(inds, index=inds)
+
+    @register_func(_funcs, "parent")
+    def _get_parent(
+        self,
+    ):
         """Get the parent of the current rows, expanding if needed."""
-        parents_id_map = self._struc_df.loc[self.current_.index, 'parent_id']
+        parents_id_map = self._struc_df.loc[self.current_.index, "parent_id"]
         parents, cls = self.mill.lookup(np.unique(parents_id_map.values))
         self.base_id_map_ = self.base_id_map_.map(parents_id_map)
         self.current_ = parents
         self.cls_ = cls
+
+    @register_func(_funcs, "match")
+    def _get_match(self, _invers=False, **kwargs):
+        """Match columns, returned filtered df."""
+        df = self.current_
+        out = pd.Series(np.ones(len(df)), index=df.index).astype(bool)
+        for colname, condition in kwargs.items():
+            ser = df[colname]
+            out &= ser.str.match(condition)
+        if _invers:
+            out = ~out
+        self._reduce_current(df[out])
+
+    @register_func(_funcs, "antimatch")
+    def _get_antimatch(self, **kwargs):
+        """Perform antimatch (inversed match)."""
+        self._get_match(_invers=True, **kwargs)
+
+    @register_func(_funcs, "last")
+    def _get_last(self):
+        """return the last of each item (by index, attr, parent_id)."""
+        df = self.current_
+        struct = self._struc_df.loc[df.index]
+        last_ids = struct.groupby(["parent_id", "attr"])["index"].idxmax()
+        self._reduce_current(df.loc[last_ids.values])
+
+    @register_func(_funcs, "first")
+    def _get_first(self):
+        """return the first of each item (by index, attr, parent_id)."""
+        df = self.current_
+        struct = self._struc_df.loc[df.index]
+        last_ids = struct.groupby(["parent_id", "attr"])["index"].idxmin()
+        self._reduce_current(df.loc[last_ids.values])
+
+    def _reduce_current(self, df):
+        """
+        Update class state (current_ and base_id_map_) using df which
+        has a subset of columns from current_
+        """
+        bid = self.base_id_map_
+        args = argisin(df.index.values, bid.values)
+        self.base_id_map_ = pd.Series(df.index.values, index=bid.index.values[args])
+        self.current_ = df
 
     def __call__(self):
         """Resolve operations on mill."""
@@ -473,8 +529,8 @@ class _OperationResolver:
 
     def _fill_null(self, ser: pd.Series):
         """Full null values with dtype specific defaults."""
-        if self._dtype in {str, 'str'}:
-            ser = ser.replace('nan', '')
+        if self._dtype in {str, "str"}:
+            ser = ser.replace("nan", "")
         if self._dtype not in self.fill_types:
             return ser
         out = ser.fillna(self.fill_types[self._dtype])
@@ -488,8 +544,8 @@ class _OperationResolver:
         Dispatch version operations to their appropriate functions.
         """
         # if operation is a known function
-        if op in self._funcs:
-            return self._funcs[op](op)
+        if isinstance(op, FunctionCall):
+            return self._funcs[op.name](self, *op.args, **op.kwargs)
         # if operation requests current index
         elif op in self.current_.index.names:
             return self._get_index()
@@ -551,8 +607,10 @@ class _OperationResolver:
         """Get the datatype."""
         if get_origin(dtype) is Annotated:
             # just get raw dtype
-            dtype = origin = dtype.__origin__
+            dtype = dtype.__origin__
         return dtype
+
+    assert set(_funcs) == (set(SUPPORTED_MODEL_OPS)), "not all funcs supported"
 
 
 def _invert_series(ser):

@@ -19,14 +19,14 @@ def event_dataframe(event_mill):
     return event_mill.get_df("events")
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 @register_func(event_dataframes)
 def pick_dataframe(event_mill):
     """Get the pick dataframe."""
-    return event_mill.get_df('picks')
+    return event_mill.get_df("picks")
 
 
-@pytest.fixture(scope='class', params=event_dataframes)
+@pytest.fixture(scope="class", params=event_dataframes)
 def eventmill_dataframe(request):
     """Meta fixture to parameterize all dataframes produced by eventmill."""
     return request.getfixturevalue(request.param)
@@ -157,7 +157,6 @@ class TestGetParentIds:
 
 class TestGetDF:
     """Tests for getting various forms of dataframes from EventMill."""
-
 
     def test_all_df(self, eventmill_dataframe):
         """Test all the dfs."""

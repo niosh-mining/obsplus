@@ -630,6 +630,11 @@ AGG_LEVEL_MAP = dict(network=1, station=2, location=3, channel=4, all=5)
 # call functions rather than simply accessing attributes.
 SUPPORTED_MODEL_OPS = (
     "parent",
+    "match",
+    "last",
+    "first",
+    "antimatch",
+    "aggregate",
 )
 
 

@@ -135,6 +135,24 @@ class _ModelWithResourceID(ObsPlusModel):
         return value
 
 
+class FunctionCall:
+    """Simple class for keeping track of function calls in specs."""
+
+    def __init__(self, name, args, kwargs):
+        if name not in SUPPORTED_MODEL_OPS:
+            msg = f"Unsupported function {name} requested by spec."
+            raise ValueError(msg)
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+    def __str__(self):
+        msg = f"function: {self.name}, args/kwargs:{self.args}/{self.kwargs}"
+        return msg
+
+    __repr__ = __str__
+
+
 class _SpecGenerator:
     """
     A class for generating specs used to access data on tree structures.
@@ -144,7 +162,7 @@ class _SpecGenerator:
 
     def __init__(
         self,
-        op_tuple: Union[Sequence[Union[int, str, callable]], "_SpecGenerator"],
+        op_tuple: Union[Sequence[Union[int, str, FunctionCall]], "_SpecGenerator"],
         parent_model: Optional[Type[ObsPlusModel]] = None,
     ):
         if isinstance(op_tuple, self.__class__):
@@ -177,7 +195,9 @@ class _SpecGenerator:
         return self
 
     def __call__(self, *args, **kwargs):
-        pass
+        fc = FunctionCall(self.spec_tuple[-1], args, kwargs)
+        new_ops = tuple(list(self.spec_tuple[:-1]) + [fc])
+        return self.__class__(new_ops, parent_model=self.parent_model)
 
     __repr__ = __str__
 

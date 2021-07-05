@@ -434,23 +434,24 @@ class TestIterFiles:
 
 class TestArgisin:
     """Tests for finding first occurence of element in array."""
+
     ar_letters = np.array(list(string.ascii_lowercase))
 
     def test_simple_sorted(self):
         """test simplest case."""
-        sub_array = np.array(['a', 'b', 'c', 'z'])
+        sub_array = np.array(["a", "b", "c", "z"])
         args = argisin(sub_array, self.ar_letters)
         assert np.alltrue(self.ar_letters[args] == sub_array)
 
     def test_unsorted(self):
         """Tests for unsorted array as search space."""
-        space = np.array(['b', 'd', 'a', 'c'])
-        search = np.array(['a', 'b', 'c'])
+        space = np.array(["b", "d", "a", "c"])
+        search = np.array(["a", "b", "c"])
         args = argisin(search, space)
         assert np.alltrue(space[args] == search)
 
     def test_all_not_in_arg_raises(self):
         """If all elements of sub arg are not in array it should raise."""
-        ar = np.array(list('123'))
-        with pytest.raises(KeyError, match='the following elements'):
+        ar = np.array(list("123"))
+        with pytest.raises(KeyError, match="the following elements"):
             argisin(ar, self.ar_letters)
