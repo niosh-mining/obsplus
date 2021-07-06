@@ -8,6 +8,7 @@ import obsplus
 from obsplus import EventMill
 from obsplus.exceptions import InvalidModelAttribute
 from obsplus.utils.misc import register_func
+import obsplus.events.schema as eschema
 
 event_dataframes = []
 
@@ -217,5 +218,15 @@ class TestEventDataframe:
             assert np.isclose(float(etime1), float(etime2))
 
 
-class ToModel:
+class TestToModel:
     """Tests converting mills back to models."""
+
+    @pytest.fixture()
+    def model_from_mill(self, event_mill):
+        """Convert the event_mill to model."""
+        mod = event_mill.to_model()
+        return mod
+
+    def test_model_conversion(self, model_from_mill):
+        """ensure the model was losslessly converted."""
+        assert isinstance(model_from_mill, eschema.Catalog)

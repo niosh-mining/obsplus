@@ -273,6 +273,12 @@ class Mill:
         """This can be subclassed to run validators/checks on dataframes."""
         return df_dicts
 
+    def to_model(self):
+        """Return a populated model with data from mill."""
+        schema = self._schema
+        data = _table_to_dict(self._table_dict, self._model.__name__, schema)
+        return self._model(data)
+
 
 def _get_schema_dicts(df_schema):
     """Parses out dicts from dataframes for use in decomposition"""
@@ -412,6 +418,41 @@ def _dict_to_tables(
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
     out.update(schema)
+    return out
+
+
+def _table_to_dict(table_dict, cls_name, schema, id_field="resource_id") -> dict:
+    """
+    Convert the table_dict back to json like structures.
+
+    This is a very naive, loopy implimentation.
+
+    Parameters
+    ----------
+    table_dict
+        A dict of dataframes created by :func:`_dict_to_tables`.
+    """
+
+    def _get_attrs(data, cls_name):
+        """Get data from attributes in data."""
+        # get children to this element
+        child_ids = struct[struct["parent_id"] == data[id_field]].index.values
+        model_attrs = set(models[cls_name]) - set(rids[cls_name])
+        for attr in model_attrs:
+            model_name = models[cls_name][attr]
+            # get elements in sub-table which are children of data
+            child_table = table_dict.get(model_name, pd.DataFrame())
+            common_inds = np.intersect1d(child_ids, child_table.index.values)
+            sub_df = child_table.loc[common_inds]
+            if not len(sub_df):
+                continue
+
+    base_df = table_dict[cls_name]
+    struct = table_dict["__structure__"]
+    models, rids = schema["models"], schema["resource_ids"]
+    assert len(base_df) == 1, "base dataframe should have length of one"
+    first = dict(base_df.reset_index().iloc[0])
+    out = _get_attrs(first, cls_name)
     return out
 
 
