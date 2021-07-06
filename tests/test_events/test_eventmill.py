@@ -209,9 +209,13 @@ class TestEventDataframe:
         """Ensure the origin info (time, location) match."""
         for row, event in row_event_list:
             ori = event.preferred_origin()
-            assert np.isclose(row["event_longitude"], ori.longitude)
-            assert np.isclose(row["event_latitude"], ori.latitude)
-            assert np.isclose(row["event_depth"], ori.depth)
+            assert np.isclose(row["longitude"], ori.longitude)
+            assert np.isclose(row["latitude"], ori.latitude)
+            assert np.isclose(row["depth"], ori.depth)
             etime1 = obsplus.utils.time.to_utc(ori.time)
-            etime2 = obsplus.utils.time.to_utc(row["event_time"])
+            etime2 = obsplus.utils.time.to_utc(row["time"])
             assert np.isclose(float(etime1), float(etime2))
+
+
+class ToModel:
+    """Tests converting mills back to models."""

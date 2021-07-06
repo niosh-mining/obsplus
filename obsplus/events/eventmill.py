@@ -15,6 +15,9 @@ from obsplus.utils.time import to_datetime64
 from obsplus.utils.pd import loc_by_name, get_index_group, expand_loc
 
 
+TIME_TYPE = Annotated[np.datetime64, to_datetime64]
+
+
 class EventMill(Mill):
     """
     A class for managing Seismic events.
@@ -72,11 +75,11 @@ class CoreEventFramer(DataFramer):
 
     # Event level attrs
     _model = eschema.Event
-    _origin: eschema.Origin = _model.preferred_origin_id.lookup()
+    _origin: eschema.Origin = _model.preferred_origin_id
     _pref_mag = _model.preferred_magnitude_id
-    _origin_quality: eschema.OriginQuality = _origin.quality
+    _quality: eschema.OriginQuality = _origin.quality
 
-    time: Annotated[np.datetime64, to_datetime64] = _origin.time
+    time: TIME_TYPE = _origin.time
     latitude: float = _origin.latitude
     longitude: Annotated[float, map_longitudes] = _origin.longitude
     depth: float = _origin.depth
@@ -85,19 +88,35 @@ class CoreEventFramer(DataFramer):
     event_description: str = _model.event_descriptions[0].text
     event_id: str = _model.resource_id
     updated: Annotated[np.datetime64, to_datetime64] = _model.creation_info.time
+    standard_error: float = _quality.standard_error
 
 
-# @EventMill.register_data_framer("event")
-# class EventFramer(CoreEventFramer):
-#     """
-#     Framer to get the rest of the event information that might be useful.
-#     """
-#     # magnitude attrs
-#     # origin quality attrs
-#     used_phase_count: pd.Int64Dtype() = _origin_quality.associated_phase_count
-#     used_station_count: pd.Int64Dtype() = _origin_quality.used_station_count
-#     standard_error: float = _origin_quality.standard_error
-#     azimuthal_gap: float = _origin_quality.azimuthal_gap
+@EventMill.register_data_framer("events")
+class EventFramer(CoreEventFramer):
+    """
+    Framer to get the rest of the event information that might be useful.
+    """
+
+    _model: eschema.Event = CoreEventFramer._model
+    _origin: eschema.Origin = _model.preferred_origin_id
+    _pref_mag: eschema.Magnitude = _model.preferred_magnitude_id
+    _quality: eschema.OriginQuality = _origin.quality
+    _uncertainty: eschema.OriginUncertainty = _origin.origin_uncertainty
+    _mags = _model.magnitudes
+    _creation_info = _model.creation_info
+    # origin quality stuff
+    used_phase_count: pd.Int64Dtype() = _quality.associated_phase_count
+    used_station_count: pd.Int64Dtype() = _quality.used_station_count
+    horizontal_uncertainty: float = _uncertainty.horizontal_uncertainty
+    azimuthal_gap: float = _quality.azimuthal_gap
+    # magnitude stuff
+    local_magnitude: float = _mags.match(magnitude_type="ML").mag.last()
+    moment_magnitude: float = _mags.match(magnitude_type="Mw").mag.last()
+    duration_magnitude: float = _mags.match(magnitude_type="Md").mag.last()
+    updated: TIME_TYPE = _creation_info.creation_time
+    author: str = _creation_info.author
+    agency_id: str = _creation_info.agency_id
+    version: str = _creation_info.version
 
 
 @EventMill.register_data_framer("picks")
@@ -109,4 +128,4 @@ class PickFramer(DataFramer):
     time = _model.time
     polarity = _model.polarity
     phase_hint = _model.phase_hint
-    event_id = _model.parent.resource_id
+    event_id = _model.parent().resource_id

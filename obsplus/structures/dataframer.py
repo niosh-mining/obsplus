@@ -48,7 +48,8 @@ class DataFramer:
     def _get_fields(cls):
         """Get fields into dict and return their corresponding types."""
         fields = {}
-        for i, v in vars(cls).items():
+        for i in dir(cls):
+            v = getattr(cls, i)
             if i.startswith("_") or not isinstance(v, _SpecGenerator):
                 continue
             if not v.parent_model == cls._model:

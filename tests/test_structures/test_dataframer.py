@@ -27,7 +27,7 @@ class TestSubclassDFMap:
             """A framer which specifies an attribute which has a parent"""
 
             _model = eschema.Pick
-            event_id = _model._parent.resource_id
+            event_id = _model.parent().resource_id
 
     def test_wrong_base_raises(self):
         """A subclass which doesn't stem from model should raise"""
@@ -40,7 +40,7 @@ class TestSubclassDFMap:
                 _model = eschema.Origin
 
                 origin_time = _model.time  # this is ok
-                event_id = _model._parent.resource_id  # also ok
+                event_id = _model.parent().resource_id  # also ok
                 pick_time = eschema.Pick.time  # bad, not based on _model
 
     def test_model_operator_bad_parameters(self):

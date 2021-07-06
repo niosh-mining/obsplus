@@ -219,7 +219,7 @@ def _get_update_time(eve):
     """return the most recent time anything was updated in event"""
     creations = get_instances_from_tree(eve, cls=ev.CreationInfo)
     timestamps = [getattr(x.creation_time, "timestamp", None) or 0 for x in creations]
-    return {"updated": max(timestamps) if timestamps else np.NaT}
+    return {"updated": max(timestamps) if timestamps else np.NaN}
 
 
 loc_dtypes = {x: EVENT_DTYPES[x] for x in ("latitude", "longitude", "depth")}
