@@ -18,7 +18,7 @@ from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
 from obsplus.structures.model import ObsPlusModel, FunctionCall
 from obsplus.utils.pd import cast_dtypes, order_columns, get_index_group
-from obsplus.utils.misc import argisin, register_func
+from obsplus.utils.misc import argisin, register_func, iterate
 
 MillType = TypeVar("MillType", bound="Mill")
 
@@ -436,19 +436,23 @@ def _table_to_dict(table_dict, cls_name, schema, id_field="resource_id") -> dict
     def _get_attrs(data, cls_name):
         """Get data from attributes in data."""
         # get children to this element
-        child_ids = struct[struct["parent_id"] == data[id_field]].index.values
-        model_attrs = set(models[cls_name]) - set(rids[cls_name])
-        for attr in model_attrs:
-            model_name = models[cls_name][attr]
-            # get elements in sub-table which are children of data
-            child_table = table_dict.get(model_name, pd.DataFrame())
-            common_inds = np.intersect1d(child_ids, child_table.index.values)
-            sub_df = child_table.loc[common_inds]
-            if not len(sub_df):
-                continue
+        children = struct[struct["parent_id"] == data[id_field]].sort_values(
+            ["attr", "index"]
+        )
+        # recursively create all child structures
+        for attr, sub_struct in children.groupby(["attr"]):
+            sub_model_name = sub_struct["model"].iloc[0]
+            sub_df = table_dict[sub_model_name].loc[sub_struct.index].reset_index()
+            sub_data_list = [
+                _get_attrs(x._asdict(), sub_model_name)
+                for x in sub_df.itertuples(index=False)
+            ]
+            breakpoint()
+        return data
 
     base_df = table_dict[cls_name]
     struct = table_dict["__structure__"]
+    breakpoint()
     models, rids = schema["models"], schema["resource_ids"]
     assert len(base_df) == 1, "base dataframe should have length of one"
     first = dict(base_df.reset_index().iloc[0])
