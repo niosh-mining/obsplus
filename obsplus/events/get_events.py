@@ -22,7 +22,7 @@ from obsplus.constants import (
 from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
-from obsplus.utils.misc import strip_prefix
+from obsplus.utils.misc import strip_prefix, iterate
 from obsplus.utils.time import _dict_times_to_npdatetimes
 
 
@@ -134,13 +134,15 @@ def _get_ids(df, kwargs) -> set:
             if item.startswith("min"):
                 col = item.replace("min", "")
                 filt &= df[col] > value
-            if item.startswith("max"):
+            elif item.startswith("max"):
                 col = item.replace("max", "")
                 filt &= df[col] < value
-            if item == "updatedafter":
+            elif item == "updatedafter":
                 filt &= df["updated"] > value
-            if item == "eventid":
+            elif item == "eventid":
                 filt &= df["event_id"] == str(value)
+            elif item in df.columns:
+                filt &= df[item].isin(iterate(value))
         df = df[filt]
     limit = kwargs.get("limit", len(df))
     return set(df.event_id[:limit])
@@ -176,13 +178,11 @@ def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
     if not kwargs:
         return cat
     # Make sure all inputs are supported
-    if not set(kwargs).issubset(SUPPORTED_PARAMS):
-        bad_params = set(kwargs) - SUPPORTED_PARAMS
-        msg = f"{bad_params} are not supported get_events parameters"
-        raise TypeError(msg)
+    df = obsplus.events_to_df(cat)
+    _validate_get_event_kwargs(kwargs, extra=set(df.columns))
     # Ensure all times are numpy datetimes
     kwargs = _dict_times_to_npdatetimes(kwargs)
-    event_ids = _get_ids(obsplus.events_to_df(cat), kwargs)
+    event_ids = _get_ids(df, kwargs)
     events = [eve for eve in cat if str(eve.resource_id) in event_ids]
     return obspy.Catalog(events=events)
 

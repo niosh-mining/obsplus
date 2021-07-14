@@ -30,6 +30,13 @@ class TestResourceID:
         out = obsplus.structures.model.ResourceIdentifier(id=rid)
         assert out.id == rid
 
+    def test_from_str(self):
+        """Ensure a string is a proper constructor for model."""
+        rid = str(ev.ResourceIdentifier())
+        event_dict = {"resource_id": rid}
+        out = esc.Event(**event_dict)
+        assert str(out.resource_id) == rid
+
 
 class TestWaveformID:
     """Test the waveform id object"""

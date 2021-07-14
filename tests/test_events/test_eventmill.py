@@ -1,5 +1,7 @@
 """Tests for EventMill."""
 import numpy as np
+import obspy
+from collections import defaultdict
 
 import pandas as pd
 import pytest
@@ -8,7 +10,6 @@ import obsplus
 from obsplus import EventMill
 from obsplus.exceptions import InvalidModelAttribute
 from obsplus.utils.misc import register_func
-import obsplus.events.schema as eschema
 
 event_dataframes = []
 
@@ -33,6 +34,15 @@ def eventmill_dataframe(request):
     return request.getfixturevalue(request.param)
 
 
+@pytest.fixture(scope="class")
+def missing_origin_id_mill(bingham_event_missing_preferred_origin):
+    """Get a mill which has some preferred_origin_ids not set."""
+    # shuffle events just to make sure there isn't an order dependence
+    cat = bingham_event_missing_preferred_origin
+    cat.events = sorted(cat.events, key=lambda x: str(x.resource_id))
+    return EventMill(bingham_event_missing_preferred_origin)
+
+
 class TestEventMillBasics:
     """Tests for the EventMill."""
 
@@ -51,6 +61,35 @@ class TestEventMillBasics:
         """Ensure a sensible str rep is available."""
         str_rep = str(event_mill)
         assert "Mill with spec of" in str_rep
+
+    def test_copy(self, event_mill):
+        """Ensure copying eventmill creates a new mill."""
+        out = event_mill.copy()
+        # ensure managed dataframes are not identical
+        for table_name in out._get_table_dict():
+            df1 = out._get_table_dict()[table_name]
+            df2 = event_mill._get_table_dict()[table_name]
+            assert df1.equals(df2)
+            assert df1 is not df2
+
+    def test_scoping(self, event_mill):
+        """Ensure scoping is listed."""
+        df = event_mill.get_df("__structure__")
+        no_scope = df["scope_id"].isnull()
+        has_scope = ~no_scope
+        assert (has_scope.sum() / no_scope.sum()) > 0.9
+
+    def test_summary(self, event_mill, bingham_events):
+        """Ensure the summary dataframe is populated."""
+        df = event_mill.get_df("__summary__")
+        assert len(df) == len(bingham_events)
+        # ensure order is preserved
+        for (rid, ser), event in zip(df.iterrows(), bingham_events):
+            assert rid == str(event.resource_id)
+
+
+class TestLookUp:
+    """Tests for looking up objects by ID."""
 
     def test_lookup_homogeneous(self, event_mill):
         """Look up a resource id for objects of same type"""
@@ -73,25 +112,6 @@ class TestEventMillBasics:
         """Test looking up a missing ID."""
         with pytest.raises(KeyError):
             event_mill.lookup("not a real_id")
-
-
-class TestFillPreferred:
-    """Tests for ensuring preferred values are set."""
-
-    @pytest.fixture(scope="class")
-    def missing_origin_id_mill(self, bingham_events):
-        """Get a mill which has some preferred_origin_ids not set."""
-        cat = bingham_events.copy()
-        for num, eve in enumerate(cat):
-            if num % 2 == 0:
-                eve.preferred_origin_id = None
-        return EventMill(cat)
-
-    def test_fill_id(self, missing_origin_id_mill):
-        """Ensure all preferred origin/mag ids are set."""
-        out = missing_origin_id_mill.fill_preferred()
-        event_df = out._table_dict["Event"]
-        assert not event_df["preferred_origin_id"].isnull().any()
 
 
 class TestGetChildren:
@@ -126,6 +146,45 @@ class TestGetChildren:
         """Tests for accessing non-existent attributes"""
         with pytest.raises(InvalidModelAttribute, match="no model attributes"):
             event_mill.get_children("Event", "not_an_attr")
+
+    def test_bad_ids(self):
+        """Tests for getting child"""
+
+
+class TestFillPreferred:
+    """Tests for ensuring preferred values are set."""
+
+    @pytest.fixture(scope="class")
+    def bingham_event_missing_preferred_origin(self, bingham_events):
+        """return the bingham event missing preferred origin."""
+        cat = bingham_events.copy()
+        for num, eve in enumerate(cat):
+            if num % 2 == 0:
+                eve.preferred_origin_id = None
+        return cat
+
+    def test_fill_id(
+        self,
+        missing_origin_id_mill,
+        bingham_event_missing_preferred_origin,
+    ):
+        """Ensure all preferred origin/mag ids are set."""
+        cat_dict = {
+            str(e.resource_id): e for e in bingham_event_missing_preferred_origin
+        }
+        # ensure no ids are empty
+        out = missing_origin_id_mill.fill_preferred()
+        event_df = out.get_df("Event")
+        assert not event_df["preferred_origin_id"].isnull().any()
+        # make sure the same event_ids map to the original preferred
+        ser = event_df["preferred_origin_id"]
+        for event_id, origin_id in ser.items():
+            event = cat_dict[event_id]
+            if event.preferred_origin_id is not None:
+                assert str(event.preferred_origin_id) == origin_id
+            else:
+                last_origin = event.origins[-1]
+                assert str(last_origin.resource_id) == origin_id
 
 
 class TestGetParentIds:
@@ -179,6 +238,17 @@ class TestGetDF:
         """Tests for getting dataframes from mill."""
         assert isinstance(event_dataframe, pd.DataFrame)
 
+    def test_empty_str_default_resource_id(self, event_mill):
+        """Ensure missing ids are empty strings rather than 'None' or 'nan'"""
+        df = event_mill.get_df("StationMagnitude")
+        for col in ["amplitude_id", "method_id", "origin_id"]:
+            ser = df[col]
+            is_empty = ~ser.astype(bool)
+            len_gt_40 = ser.str.len() > 40
+            not_nan = ser != "nan"
+            assert (is_empty | len_gt_40).all()
+            assert not_nan.all()
+
 
 class TestEventDataframe:
     """Tests specifically for the event dataframe."""
@@ -227,6 +297,38 @@ class TestToModel:
         mod = event_mill.to_model()
         return mod
 
-    def test_model_conversion(self, model_from_mill):
+    def test_model_conversion(self, model_from_mill, bingham_model, event_mill):
         """ensure the model was losslessly converted."""
-        assert isinstance(model_from_mill, eschema.Catalog)
+        cat1 = model_from_mill.to_obspy()
+        cat2 = bingham_model.to_obspy()
+        assert len(cat1) == len(cat2)
+        assert cat1 == cat2
+
+
+class TestGetEvents:
+    """
+    Tests for extracting events from EventMill.
+
+    Note: since EventMill.get_events just uses well tested functions from
+    events.get_events we don't really need many tests here.
+    """
+
+    def test_simple(self, event_mill):
+        """Test get events with no params"""
+        out = event_mill.get_events()
+        assert isinstance(out, obspy.Catalog)
+        assert len(out) == len(event_mill.get_df("Event"))
+
+    def test_query_by_event_description(self, event_mill, bingham_events):
+        """Query by event description."""
+        expected = defaultdict(list)
+        for event in bingham_events:
+            if not event.event_descriptions:
+                continue
+            expected[event.event_descriptions[0].text].append(event)
+
+        out1 = event_mill.get_events(event_description="LR")
+        assert len(out1) == len(expected["LR"])
+
+        out2 = event_mill.get_events(event_description={"LR", "RQ"})
+        assert len(out2) == (len(expected["LR"]) + len(expected["RQ"]))

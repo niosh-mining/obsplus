@@ -287,6 +287,7 @@ def bingham_events(bingham_dataset):
     # add some event descriptions
     events[1].event_descriptions.append(ev.EventDescription("LR"))
     events[2].event_descriptions.append(ev.EventDescription("A Big One"))
+    events[3].event_descriptions.append(ev.EventDescription("RQ"))
     return events
 
 
@@ -301,6 +302,12 @@ def event_mill(bingham_events):
     """Init a mill from an event."""
     mill = EventMill(bingham_events)
     return mill
+
+
+@pytest.fixture(scope="class")
+def bingham_model(bingham_events):
+    """Init a mill from an event."""
+    return esch.Catalog.from_orm(bingham_events)
 
 
 @pytest.fixture(scope="class")

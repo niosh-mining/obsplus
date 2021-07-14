@@ -233,8 +233,8 @@ class WaveformStreamID(ObsPlusModel):
     station_code: Optional[str] = None
     location_code: Optional[str] = None
     channel_code: Optional[str] = None
-    resource_uri: Optional[ResourceIdentifier] = None
     seed_string: Optional[str] = None
+    # resource_uri: Optional[ResourceIdentifier] = None  # TODO why is this here?
 
     @root_validator()
     def parse_seed_id(cls, values):

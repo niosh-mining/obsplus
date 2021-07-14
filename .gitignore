@@ -54,6 +54,9 @@ prof
 # logs:
 *.log
 
+# profile
+*.prof
+
 # Sphinx documentation
 docs/_build/*
 

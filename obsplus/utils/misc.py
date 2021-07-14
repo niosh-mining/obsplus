@@ -599,7 +599,7 @@ def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
 
 def argisin(ar1: np.ndarray, ar2: np.ndarray) -> np.ndarray:
     """
-    Return indices for first occurence in ar2 of each element in ar1.
+    Return indices for first occurrence in ar2 of each element in ar1.
 
     Parameters
     ----------

@@ -116,6 +116,20 @@ class TestGetEvents:
             dist, _, _ = gps2dist_azimuth(*args)
             assert minrad < dist < maxrad
 
+    def test_event_description(self, catalog):
+        """
+        Catalogs should also be queryable by first event description string.
+
+        This accommodates using custom descriptions to classify events.
+        """
+        # ensure catalog has expected description
+        expected_description = "KYRGYZSTAN"
+        new = catalog.copy()
+        new[0].event_descriptions[0].text = expected_description
+        out = new.get_events(event_description=expected_description)
+        assert len(out) == 1
+        assert out[0].event_descriptions[0].text == expected_description
+
 
 class TestGetEventSummary:
     """tests for returning and event summary dataframe"""

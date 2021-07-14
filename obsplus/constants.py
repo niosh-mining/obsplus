@@ -369,7 +369,7 @@ READ_HDF5_KWARGS = frozenset(
 # keywords associated with get_events
 CIRCULAR_PARAMS = {"latitude", "longitude", "minradius", "maxradius", "degrees"}
 NONCIRCULAR_PARAMS = {"minlongitude", "maxlongitude", "minlatitude", "maxlatitude"}
-UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
+UNSUPPORTED_PARAMS = {"events", "contributor"}
 
 
 # ------------------- type aliases (aliai?)

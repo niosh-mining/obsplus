@@ -11,13 +11,14 @@ from obspy.core import event as ev
 from pydantic import root_validator, validator
 from pydantic.main import BaseModel, ModelMetaclass
 from pydantic.fields import SHAPE_NAME_LOOKUP
+from pydantic.utils import GetterDict
 
 from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import InvalidModelAttribute
 
 
 class ObsPlusMeta(ModelMetaclass):
-    """A mixing for the metaclass to add getitem."""
+    """A mixing for the metaclass to add getitem for defining specs."""
 
     def __getitem__(cls: Type["ObsPlusModel"], item):
         # item_name = str(getattr(item, "__name__", item))
@@ -48,13 +49,14 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     __version__ = "0.0.0"  # allows versioning of models
     __dtype__ = None  # obsplus dtype if not None
     __reference_type__ = None  # if this is a resource id, the type referred to
+    # the field which contains the objects unique id
     _id_field: str = "resource_id"
 
     class Config:
         """pydantic config for obsplus model."""
 
         validate_assignment = True
-        arbitrary_types_allowed = True
+        arbitrary_types_allowed = False
         orm_mode = True
         extra = "allow"
 
@@ -91,7 +93,6 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
         Return an ObsPlus Schema for this model and its children/parents.
         """
         return _get_obsplus_schema(cls)
-        # return _get_obsplus_schema(cls.schema())
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -104,9 +105,12 @@ class ResourceIdentifier(ObsPlusModel):
     @root_validator(pre=True)
     def get_id(cls, values):
         """Get the id string from the resource id"""
-        value = values.get("id")
-        if value is None:
-            value = str(uuid4())
+        if isinstance(values, GetterDict):
+            value = str(values._obj)
+        else:
+            value = values.get("id")
+        if value is None or value == "":
+            value = f"smi:local/{str(uuid4())}"
         return {"id": value}
 
     def __init_subclass__(cls, **kwargs):
@@ -130,7 +134,7 @@ class _ModelWithResourceID(ObsPlusModel):
     @validator("resource_id", always=True)
     def get_resource_id(cls, value):
         """Ensure a valid str is returned."""
-        if value is None:
+        if value is None:  # generate resource_id if empty
             return str(uuid4())
         return value
 
@@ -200,104 +204,6 @@ class _SpecGenerator:
         return self.__class__(new_ops, parent_model=self.parent_model)
 
     __repr__ = __str__
-
-
-# def _get_obsplus_schema(schema: ObsPlusModel) -> dict:
-#     """ "
-#     Return a dict used to characterize class hierarchies of models.
-#
-#     Notes
-#     -----
-#     The form of the output is internal to ObsPlus and could change anytime!
-#     """
-#     rid_str = "ResourceIdentifier"
-#
-#     def _init_empty():
-#         """Return an empty form of dict."""
-#         return {
-#             "address": [],
-#             "attr_type": {},
-#             "array_attrs": set(),
-#             "id_attrs": set(),  # attributes which are IDs
-#             "attr_ref": {},  # attributes which reference other types
-#             "attr_id_ref": {},  # types ids reference
-#         }
-#
-#     def _recurse(base, definitions, cls_dict=None, address=()):
-#         # init empty data structures or reuse
-#         cls_dict = cls_dict if cls_dict is not None else {}
-#         title = base.get("title", "")
-#         # get the class dictionary file
-#         current = _init_empty() if title not in cls_dict else cls_dict[title]
-#         # add address and return if attributes have already been parsed
-#         current["address"].append(tuple(address))
-#         if current["attr_type"]:
-#             return
-#         # next iterate attributes
-#         for attr, attr_dict in base["properties"].items():
-#             # this attribute has no linked items
-#             atype, ref, is_array = _get_attr_ref_type(attr_dict)
-#             current["attr_type"][attr] = atype
-#             if is_array:
-#                 current["array_attrs"].add(attr)
-#             # this is not object which should have a definition.
-#             if ref is None:
-#                 continue
-#             # add reference type
-#             current["attr_ref"][attr] = ref
-#             # add name resource_id points to, if resource_id
-#             new_address = list(address) + [attr]
-#             new_base = definitions[ref]
-#             _recurse(new_base, definitions, cls_dict, new_address)
-#             # add resource_id info
-#             if rid_str in ref:
-#                 current["id_attrs"].add(attr)
-#                 name = ref.replace(rid_str, "")
-#                 if name in definitions:
-#                     current["attr_id_ref"][attr] = name
-#         cls_dict[title] = current
-#         return cls_dict
-#
-#     def _dict_to_df(schema_dict):
-#         """Convert the schema dict to dataframes."""
-#         out = {}
-#         _structure = pd.DataFrame(index=list(schema_dict))
-#         for name in schema_dict:
-#             # cls =
-#             pass
-#
-#
-#
-#         breakpoint()
-#         return _structure
-#
-#
-#     dicts = _recurse(schema, schema["definitions"])
-#
-#     return _dict_to_df(dicts)
-
-
-def _get_attr_ref_type(attr_dict):
-    """
-    Determine the type and reference type of an attribute from a schema dict.
-
-    Returns a tuple of (
-    """
-    ref_str = "#/definitions/"
-    atype = attr_dict.get("type", "object")
-    is_array = atype == "array"
-    if is_array:  # dealing with array, find out sub-type
-        items = attr_dict.get("items", {})
-        ref = items.get("$ref", None)
-        atype = items.get("type", atype)
-    else:
-        ref = attr_dict.get("$ref", None)
-    if ref:  # there is a reference to a def, just get name
-        ref = ref.replace(ref_str, "")
-    # check if this is a datetime
-    if attr_dict.get("format", "") == "date-time":
-        atype = "datetime64[ns]"
-    return atype, ref, is_array
 
 
 def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
@@ -379,16 +285,3 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     }
     out["__meta__"] = pd.DataFrame(_meta)
     return out
-
-
-def spec_callable(func):
-    """
-    Register a function as a tree_spec callable.
-
-    These function are used to implement custom logic when navigating tree
-    structures.
-
-    Notes
-    -----
-    Spec callables implement the :class:`obsplus.interfaces.TreeSpecCallable`
-    """

@@ -2,12 +2,12 @@
 Module for converting tree-like structures into tables and visa-versa.
 """
 import copy
+from typing import Set
 from typing_extensions import Annotated, get_origin
-
 import uuid
 from collections import defaultdict
 from contextlib import suppress
-from functools import lru_cache
+from functools import lru_cache, wraps
 from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
 
 import numpy as np
@@ -17,10 +17,32 @@ import obsplus
 from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
 from obsplus.structures.model import ObsPlusModel, FunctionCall
-from obsplus.utils.pd import cast_dtypes, order_columns, get_index_group
-from obsplus.utils.misc import argisin, register_func, iterate
+from obsplus.utils.pd import (
+    cast_dtypes,
+    order_columns,
+    get_index_group,
+    int64_to_int_obj,
+)
+from obsplus.utils.misc import argisin, register_func
 
 MillType = TypeVar("MillType", bound="Mill")
+
+
+def _inplace_or_copy(func):
+    """Decorator for performing a function inplace or copying self."""
+
+    @wraps(func)
+    def _func(self, *args, **kwargs):
+        inplace = kwargs.get("inplace", False)
+        if inplace:
+            kwargs["inplace"] = False
+            new = self.copy()
+            new_func = getattr(new, func.__name__)
+            return new_func(*args, **kwargs)
+        else:
+            return func(self, *args, **kwargs)
+
+    return _func
 
 
 class Mill:
@@ -33,11 +55,11 @@ class Mill:
 
     _model: Type[ObsPlusModel] = ObsPlusModel
     _id_name: Optional[str] = None
-    _id_map: Dict[str, tuple]
     _data: dict
     _dataframers: Dict[str, Type["obsplus.DataFramer"]]
     _structure_key: str = "__structure__"
-    _df_dicts_ = None
+    _df_dicts = None
+    _scope_model_name = None
 
     def __init_subclass__(cls, **kwargs):
         """Ensure subclasses have their own framers dict."""
@@ -50,33 +72,39 @@ class Mill:
     def _from_df_dict(cls, df_dict) -> MillType:
         """init instance from df dict."""
         out = cls(None)
-        out._df_dicts_ = df_dict
+        out._df_dicts = df_dict
         return out
 
     @property
     @lru_cache()
     def _schema(self):
         """Get schema from model."""
-        return _get_schema_dicts(self._model.get_obsplus_schema())
+        return _get_schema_dicts(self._schema_df)
 
     @property
     @lru_cache()
-    def _table_dict(self):
-        if self._df_dicts_ is not None:
-            return self._df_dicts_
+    def _schema_df(self):
+        """Get schema from model."""
+        return self._model.get_obsplus_schema()
+
+    def _get_table_dict(self):
+        if self._df_dicts is not None:
+            return self._df_dicts
         df_dicts = _dict_to_tables(
             data=self._get_data(self._data),
             schema=self._schema,
             data_type=self._model.__name__,
+            scope_type=self._scope_model_name,
         )
         df_dicts = self._post_df_dict(df_dicts)
-        df_dicts["__summary__"] = self._add_df_summary(df_dicts)
+        self._df_dicts = df_dicts
+        df_dicts["__summary__"] = self._get_summary(df_dicts)
         return df_dicts
 
     @property
     def structure_df(self):
         """Get schema from model."""
-        return self._table_dict["__structure__"]
+        return self._get_table_dict()["__structure__"]
 
     def _get_data(self, data) -> dict:
         """Get the internal data structure."""
@@ -107,19 +135,23 @@ class Mill:
         name
             A string identifying the dataframe.
         """
-        if name in self._table_dict:
-            return self._table_dict[name]
+        if name in self._get_table_dict():
+            return self._get_table_dict()[name]
         try:
             Framer = self._dataframers[name]
         except KeyError:
             msg = (
                 f"Unknown dataframe: {name}, known dataframes are: \n"
-                f"{list(self._dataframers) + list(self._table_dict)}"
+                f"{list(self._dataframers) + list(self._get_table_dict())}"
             )
             raise KeyError(msg)
 
         framer = Framer()
         return self._get_df_from_framer(framer)
+
+    def get_summary_df(self):
+        """Return a dataframe which summarizes objects on defined level."""
+        return self.get_df("__summary__")
 
     def _get_df_from_framer(self, framer):
         out = {}
@@ -136,7 +168,7 @@ class Mill:
     def __str__(self):
         cls_name = self.__class__.__name__
         model_name = self._model.__name__
-        obj_count = len(self._table_dict[self._structure_key])
+        obj_count = len(self._get_table_dict()[self._structure_key])
         msg = (
             f"{cls_name} with spec of [{model_name}] and [{obj_count}] managed objects"
         )
@@ -166,7 +198,7 @@ class Mill:
         """
         if isinstance(ids, str):
             ids = [ids]
-        df = self._table_dict[self._structure_key].loc[ids]
+        df = self._get_table_dict()[self._structure_key].loc[ids]
         models = df["model"].unique()
         if len(models) > 1:
             msg = "Provided ids belong to multiple types of objects"
@@ -174,7 +206,7 @@ class Mill:
         elif not len(models):  # no objects with given ids
             return pd.DataFrame(), ""
         model_name = models[0]
-        new_table = self._table_dict[model_name]
+        new_table = self._get_table_dict()[model_name]
         return new_table.loc[ids], model_name
 
     def get_children(
@@ -265,24 +297,51 @@ class Mill:
         return out
 
     # methods for custom df_dict creations
-    def _add_df_summary(self, df_dicts):
+    def _get_summary(self, df_dicts):
         """Add a summary table to the dataframe dict for easy querying."""
         return pd.DataFrame()
+
+    def _get_structure_df(self, scope_ids=None):
+        """
+        Get the df defining object structure.
+
+        Optionally, filter structure based on scope_ids.
+        """
+        df = self._df_dicts["__structure__"]
+        if scope_ids is not None:
+            df = df[df["scope_id"].isin(scope_ids)]
+        return df
 
     def _post_df_dict(self, df_dicts):
         """This can be subclassed to run validators/checks on dataframes."""
         return df_dicts
 
-    def to_model(self):
+    def to_model(self, scope_ids=None):
         """Return a populated model with data from mill."""
         schema = self._schema
-        data = _table_to_dict(self._table_dict, self._model.__name__, schema)
-        return self._model(data)
+        data = _tables_to_dict(
+            table_dict=self._get_table_dict(),
+            cls_name=self._model.__name__,
+            schema=schema,
+            structure_df=self._get_structure_df(scope_ids=scope_ids),
+        )
+        return self._model(**data)
+
+    def get_scope_ids(self, **kwargs) -> Optional[Set[str]]:
+        """
+        Get scope ids given a query.
+
+        This only works if the summary dataframe is defined.
+        """
+
+    def copy(self, deep=False):
+        """Return a copy of the mill."""
+        return self.__class__._from_df_dict(copy.deepcopy(self._get_table_dict()))
 
 
 def _get_schema_dicts(df_schema):
     """Parses out dicts from dataframes for use in decomposition"""
-    rid_dict, model_dict, dtype_dict = {}, {}, {}
+    rid_dict, model_dict, dtype_dict, array_dict = {}, {}, {}, {}
     for name, df in df_schema.items():
         if name.startswith("__"):
             continue
@@ -296,10 +355,12 @@ def _get_schema_dicts(df_schema):
         # dtype
         has_dtype = df["dtype"].astype(bool)
         dtype_dict[new_name] = dict(df[has_dtype]["dtype"])
+        array_dict[new_name] = set(df.index[df["is_list"]])
     out = {
         "resource_ids": rid_dict,
         "models": model_dict,
         "dtypes": dtype_dict,
+        "arrays": array_dict,
     }
     return out
 
@@ -401,6 +462,7 @@ def _dict_to_tables(
                 pd.DataFrame(data)
                 .pipe(order_columns, sorted(dtypes))
                 .pipe(cast_dtypes, dtypes)
+                .replace({"nan": ""})  # TODO could make this a bit faster
                 .set_index(id_field)
             )
             out[class_name] = dff
@@ -417,15 +479,20 @@ def _dict_to_tables(
     _recurse(data, data_type)
     # convert list of dicts to dataframes
     out = _make_df_dict(object_lists)
-    out.update(schema)
     return out
 
 
-def _table_to_dict(table_dict, cls_name, schema, id_field="resource_id") -> dict:
+def _tables_to_dict(
+    table_dict,
+    cls_name,
+    schema,
+    structure_df,
+    id_field="resource_id",
+) -> dict:
     """
     Convert the table_dict back to json like structures.
 
-    This is a very naive, loopy implimentation.
+    This is a very naive, loopy implementation.
 
     Parameters
     ----------
@@ -433,30 +500,57 @@ def _table_to_dict(table_dict, cls_name, schema, id_field="resource_id") -> dict
         A dict of dataframes created by :func:`_dict_to_tables`.
     """
 
-    def _get_attrs(data, cls_name):
+    def _get_processed_df(table_dict, struct):
+        """Return a dict of {(parent_id, attr): [object]}"""
+        out = defaultdict(list)
+        rid_2_parent = struct["parent_id"]
+        rid_2_attr = struct["attr"]
+        for name, df in table_dict.items():
+            if name.startswith(("__", "schema")):
+                continue
+            # sort rows so that objects are reassembled correctly
+            sort_cols = ["parent_id", "attr", "index"]
+            inds = np.intersect1d(struct.index, df.index, assume_unique=True)
+            sub_struct = struct.loc[inds].sort_values(sort_cols)
+            df = df.loc[sub_struct.index]
+            # get values that should be None
+            con2 = (df.isnull() | (df == "").fillna(False)).astype(bool)
+            sub = (
+                df.pipe(int64_to_int_obj)
+                .astype(object)
+                .where(~con2, None)
+                .reset_index()
+            )
+            pid = sub[id_field].map(rid_2_parent)
+            attr = sub[id_field].map(rid_2_attr)
+            for (p, a), tup in zip(zip(pid, attr), sub.itertuples(index=False)):
+                out[(p, a)].append(tup._asdict())
+        return out
+
+    def _get_attrs(data, cls_name, obj_dict):
         """Get data from attributes in data."""
-        # get children to this element
-        children = struct[struct["parent_id"] == data[id_field]].sort_values(
-            ["attr", "index"]
-        )
-        # recursively create all child structures
-        for attr, sub_struct in children.groupby(["attr"]):
-            sub_model_name = sub_struct["model"].iloc[0]
-            sub_df = table_dict[sub_model_name].loc[sub_struct.index].reset_index()
-            sub_data_list = [
-                _get_attrs(x._asdict(), sub_model_name)
-                for x in sub_df.itertuples(index=False)
-            ]
-            breakpoint()
+        # determine attrs which are models
+        attrs = set(models[cls_name]) - rids[cls_name]
+        for attr in attrs:
+            sub_list = obj_dict[(data[id_field], attr)]
+            sub_cls_name = models[cls_name][attr]
+            sub_data_list = [_get_attrs(x, sub_cls_name, obj_dict) for x in sub_list]
+            # assign arrays back
+            if attr in arrays[cls_name]:  # this attr should be a list
+                data[attr] = sub_data_list
+            else:  # this should be a single instance
+                # TODO add check for optional rather than just assuming. Else skip
+                data[attr] = None if not len(sub_data_list) else sub_data_list[0]
         return data
 
     base_df = table_dict[cls_name]
-    struct = table_dict["__structure__"]
-    breakpoint()
+    struct = structure_df
     models, rids = schema["models"], schema["resource_ids"]
+    arrays = schema["arrays"]
     assert len(base_df) == 1, "base dataframe should have length of one"
     first = dict(base_df.reset_index().iloc[0])
-    out = _get_attrs(first, cls_name)
+    processed = _get_processed_df(table_dict, struct)
+    out = _get_attrs(first, cls_name, processed)
     return out
 
 
@@ -623,6 +717,8 @@ class _OperationResolver:
 
     def _follow_rid(self, op):
         """current should be a series of ids, simply look them up"""
+        # filter out any missing resource_ids
+        self.current_ = self.current_[self.current_.astype(bool)]
         out, cls = self.mill.lookup(self.current_.values)
         assert len(out) == len(self.current_)
         args = argisin(out.index.values, self.current_.values)
