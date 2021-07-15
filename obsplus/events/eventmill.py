@@ -3,6 +3,7 @@ Module for management of seismic events.
 """
 import obspy
 from typing_extensions import Annotated
+from typing import Optional, Set
 
 import numpy as np
 import obsplus.events.schema as eschema
@@ -54,7 +55,7 @@ class EventMill(Mill):
             if not missing_preferred.any():
                 continue
             # get model type from schema
-            event_schema = self._schema_df["schema_Event"]["referenced_model"]
+            event_schema = self._schema_df["Event"]["referenced_model"]
             model_name = event_schema[preferred_id_name]
             # get potential preferred objects
             sub_struct = struct[
@@ -76,6 +77,25 @@ class EventMill(Mill):
             event_df.loc[:, preferred_id_name] = new_id_series
         return self
 
+    def get_scope_ids(self, **kwargs) -> Optional[Set[str]]:
+        """
+        Given a scope query return ids which meet the requirements
+
+        Should  be implemented by subclass.
+        """
+        struct = self._get_table_dict()["__structure__"]
+        summary = self._get_table_dict()["__summary__"]
+
+        _validate_get_event_kwargs(kwargs, extra=set(summary.columns))
+        kwargs = _dict_times_to_npdatetimes(kwargs)
+        event_ids = _get_ids(summary, kwargs)
+        # get a series of rid: scope_id
+        scope_ids = struct["scope_id"]
+        # keep any ids which have scope in event_ids or an empty scope
+        is_good = (scope_ids.isin(event_ids)) | (~scope_ids.astype(bool))
+        out = scope_ids[is_good]
+        return out.index
+
     @compose_docstring(params=get_events_parameters)
     def get_events(self, **kwargs) -> obspy.Catalog:
         """
@@ -85,11 +105,7 @@ class EventMill(Mill):
         ----------
         {params}
         """
-        df = self.get_summary_df()
-        _validate_get_event_kwargs(kwargs, extra=set(df.columns))
-        kwargs = _dict_times_to_npdatetimes(kwargs)
-        event_ids = _get_ids(df, kwargs)
-        return self.to_model(scope_ids=event_ids).to_obspy()
+        return self.to_model(**kwargs).to_obspy()
 
     def _get_summary(self, df_dicts):
         """Add a summary table to the dataframe dict for easy querying."""

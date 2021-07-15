@@ -264,7 +264,7 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
                 _recurse(type_)
             attr_dict[name] = current
 
-        _tables[f"schema_{cls.__name__}"] = attr_dict
+        _tables[f"{cls.__name__}"] = attr_dict
         structure_dict = {
             "name": cls.__name__,
             "version": cls.__version__,

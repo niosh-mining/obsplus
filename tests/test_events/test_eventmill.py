@@ -2,6 +2,7 @@
 import numpy as np
 import obspy
 from collections import defaultdict
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -249,6 +250,20 @@ class TestGetDF:
             assert (is_empty | len_gt_40).all()
             assert not_nan.all()
 
+    def test_filter_on_scope_existing_table(self, event_mill, bingham_events):
+        """Ensure any supported scope kwargs can filter dfs."""
+        sub = bingham_events.get_events(minmagnitude=1)
+        pick_ids = {str(p.resource_id) for e in sub for p in e.picks}
+        df = event_mill.get_df("Pick", minmagnitude=1)
+        assert pick_ids == set(df.index)
+
+    def test_filter_on_dataframe_extractor_df(self, event_mill, bingham_events):
+        """Tests for filtering w/ dataframers"""
+        sub = bingham_events.get_events(minmagnitude=1)
+        pick_ids = {str(p.resource_id) for e in sub for p in e.picks}
+        out = event_mill.get_df("picks", minmagnitude=1)
+        assert set(out.index) == pick_ids
+
 
 class TestEventDataframe:
     """Tests specifically for the event dataframe."""
@@ -332,3 +347,28 @@ class TestGetEvents:
 
         out2 = event_mill.get_events(event_description={"LR", "RQ"})
         assert len(out2) == (len(expected["LR"]) + len(expected["RQ"]))
+
+
+class TestToParquet:
+    """Tests for dumping a mill to a parquet directory"""
+
+    @pytest.fixture(scope="class")
+    def saved_mill(self, event_mill, tmp_path_factory):
+        """Save the mill and return path."""
+        path = tmp_path_factory.mktemp("saved_mill") / "mill.zip"
+        event_mill.to_parquet(path)
+        return path
+
+    @pytest.fixture(scope="class")
+    def loaded_mill(self, saved_mill):
+        """Load mill into memory."""
+        return EventMill.from_parquet(saved_mill)
+
+    def test_file_created(self, saved_mill):
+        """Ensure the expected file now exists."""
+        assert Path(saved_mill).exists()
+
+    def test_loaded_mill(self, loaded_mill, event_mill):
+        """Ensure the mill is loaded and equal to input mill."""
+        assert str(loaded_mill) == str(event_mill)
+        # TODO need to implement proper equality checks for Mills

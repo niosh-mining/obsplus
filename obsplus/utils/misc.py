@@ -5,6 +5,7 @@ import contextlib
 import fnmatch
 import hashlib
 import os
+import shutil
 import warnings
 from functools import wraps, partial, singledispatch
 from os.path import join
@@ -638,3 +639,22 @@ class ObjectWrapper:
 
     def __init__(self, data):
         self.data = data
+
+
+def make_archive(source: Path, destination: Path):
+    """
+    Make an uncompressed zip archive.
+
+    Parameters
+    ----------
+    source
+        A directory path to the source files.
+    destination
+        The path to the zip file to create.
+    """
+    shutil.make_archive(
+        base_name=str(destination).split(".")[0],
+        format=destination.name.split(".")[-1],
+        root_dir=source,
+        base_dir=".",
+    )

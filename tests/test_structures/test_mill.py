@@ -16,8 +16,7 @@ from obsplus.utils.time import to_datetime64
 @pytest.fixture(scope="class")
 def event_op_resolver(event_mill):
     """Return a partial of the Operation resolver fixed on event level."""
-    df = event_mill.get_df("Event")
-    kwargs = {"mill": event_mill, "base_df": df, "base_cls_name": "Event"}
+    kwargs = {"mill": event_mill, "model_name": "Event"}
     op_res = partial(_OperationResolver, **kwargs)
     return op_res
 

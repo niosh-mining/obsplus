@@ -1,7 +1,6 @@
 """
 General utility functions which are not specific to one data type.
 """
-
 import copy
 import logging
 import warnings
