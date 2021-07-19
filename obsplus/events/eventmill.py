@@ -32,7 +32,6 @@ class EventMill(Mill):
 
     _model = eschema.Catalog
     _id_name = "ResourceIdentifier"
-    _index_group = ("parent_id", "attr")
     _scope_model_name = "Event"
 
     @_inplace_or_copy
@@ -51,7 +50,7 @@ class EventMill(Mill):
             preferred_id_name = f"preferred_{name}_id"
             id_column = event_df[preferred_id_name]
             # determine which columns are missing, if none just return
-            missing_preferred = ~id_column.astype(bool)
+            missing_preferred = pd.isnull(id_column)
             if not missing_preferred.any():
                 continue
             # get model type from schema

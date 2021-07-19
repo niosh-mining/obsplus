@@ -216,8 +216,8 @@ def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
     """
     DTYPES_MAP = {
         int: "Int64",
-        float: "float",
-        str: "str",
+        float: "float64",
+        str: "string",
         datetime.datetime: "datetime64[ns]",
     }
     COL_DTYPE = {

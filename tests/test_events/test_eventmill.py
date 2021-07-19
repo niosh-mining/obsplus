@@ -244,11 +244,9 @@ class TestGetDF:
         df = event_mill.get_df("StationMagnitude")
         for col in ["amplitude_id", "method_id", "origin_id"]:
             ser = df[col]
-            is_empty = ~ser.astype(bool)
+            is_empty = ser.isnull()
             len_gt_40 = ser.str.len() > 40
-            not_nan = ser != "nan"
             assert (is_empty | len_gt_40).all()
-            assert not_nan.all()
 
     def test_filter_on_scope_existing_table(self, event_mill, bingham_events):
         """Ensure any supported scope kwargs can filter dfs."""
@@ -316,6 +314,8 @@ class TestToModel:
         """ensure the model was losslessly converted."""
         cat1 = model_from_mill.to_obspy()
         cat2 = bingham_model.to_obspy()
+        # event resource ids should be unique
+        assert len(cat1) == len({str(x.resource_id) for x in cat1})
         assert len(cat1) == len(cat2)
         assert cat1 == cat2
 

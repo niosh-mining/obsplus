@@ -521,18 +521,17 @@ def _dict_to_tables(
     def _make_df_dict(object_list):
         """Convert a dist of lists of dicts into a dict of DFs."""
         out = {}
-        for class_name, data in object_list.items():
-            if class_name.startswith("ResourceIdentifier"):
+        for model_name, data in object_list.items():
+            if model_name.startswith("ResourceIdentifier"):
                 continue
-            dtypes = dtype_dict[class_name]
+            dtypes = dtype_dict[model_name]
             dff = (
                 pd.DataFrame(data)
                 .pipe(order_columns, sorted(dtypes))
                 .pipe(cast_dtypes, dtypes)
-                .replace({"nan": ""})  # TODO could make this a bit faster
                 .set_index(id_field)
             )
-            out[class_name] = dff
+            out[model_name] = dff
 
         out["__structure__"] = pd.DataFrame(structure_list).set_index(id_field)
         return out
@@ -573,7 +572,7 @@ def _tables_to_dict(
         rid_2_parent = struct["parent_id"]
         rid_2_attr = struct["attr"]
         for name, df in table_dict.items():
-            if name.startswith(("__", "schema")):
+            if name.startswith("_"):  # skip private df, like __structure__
                 continue
             # sort rows so that objects are reassembled correctly
             sort_cols = ["parent_id", "attr", "index"]
@@ -581,11 +580,10 @@ def _tables_to_dict(
             sub_struct = struct.loc[inds].sort_values(sort_cols)
             df = df.loc[sub_struct.index]
             # get values that should be None
-            con2 = (df.isnull() | (df == "").fillna(False)).astype(bool)
             sub = (
                 df.pipe(int64_to_int_obj)
                 .astype(object)
-                .where(~con2, None)
+                .where(~df.isnull(), None)
                 .reset_index()
             )
             pid = sub[id_field].map(rid_2_parent)
@@ -790,8 +788,8 @@ class _OperationResolver:
 
     def _follow_rid(self, op):
         """current should be a series of ids, simply look them up"""
-        # filter out any missing resource_ids
-        self.current_ = self.current_[self.current_.astype(bool)]
+        # filter out any missing resource_ids (pandas string dtype has nulls)
+        self.current_ = self.current_[~pd.isnull(self.current_)]
         out, cls = self.mill.lookup(self.current_.values)
         assert len(out) == len(self.current_)
         args = argisin(out.index.values, self.current_.values)
