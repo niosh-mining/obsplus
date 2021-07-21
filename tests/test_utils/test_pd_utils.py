@@ -10,7 +10,12 @@ import obsplus
 import obsplus.utils.pd as upd
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
-from obsplus.utils.pd import get_index_group, expand_loc, int64_to_int_obj
+from obsplus.utils.pd import (
+    get_index_group,
+    expand_loc,
+    int64_to_int_obj,
+    index_intersect,
+)
 from obsplus.utils.time import to_datetime64, to_timedelta64
 
 
@@ -320,5 +325,17 @@ class TestInt64toIntObj:
         assert out.loc[2, "col1"] is None
 
 
-#
-# class TestS
+class TestIndexIntersect:
+    """tests for finding objects with overlapping indices."""
+
+    def test_intersect(self):
+        """Ensure index intersection is retrievable"""
+        df = pd.DataFrame([1, 2, 3, 4], index=list("abcd"))
+        index = ["c", "d", "f"]
+        expected = {"c", "d"}
+        out = index_intersect(df, index)
+        assert set(out.index) == expected
+        out2 = index_intersect(df, pd.Index(index))
+        assert set(out2.index) == expected
+        out3 = index_intersect(df, pd.DataFrame(index=index))
+        assert set(out3.index) == expected

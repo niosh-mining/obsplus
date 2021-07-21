@@ -8,7 +8,7 @@ import uuid
 import zipfile
 from typing import Set, Union
 from typing_extensions import Annotated, get_origin
-from collections import defaultdict
+from collections import defaultdict, UserDict
 from contextlib import suppress
 from functools import lru_cache, wraps
 from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
@@ -23,9 +23,9 @@ from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribut
 from obsplus.structures.model import ObsPlusModel, FunctionCall
 from obsplus.utils.pd import (
     cast_dtypes,
-    order_columns,
     get_index_group,
     int64_to_int_obj,
+    index_intersect,
 )
 from obsplus.utils.misc import argisin, register_func, make_archive
 
@@ -51,10 +51,7 @@ def _inplace_or_copy(func):
 
 class Mill:
     """
-    A class for managing tree-like data structures with table slices.
-
-    Currently this just uses instances of ObsPlusModels but we plan to
-    switch to awkward array in the future.
+    A class for turning tree-like data structures into table slices.
     """
 
     _model: Type[ObsPlusModel] = ObsPlusModel
@@ -71,7 +68,7 @@ class Mill:
         cls._dataframers = {}
 
     def __init__(self, data):
-        self._data = data
+        self._data = self._get_data(data)
 
     @classmethod
     def _from_df_dict(cls, df_dict, meta_dict=None) -> MillType:
@@ -150,8 +147,7 @@ class Mill:
             df = self._get_table_dict()[name]
             if kwargs:
                 scope_ids = self.get_scope_ids(**kwargs)
-                inds = np.intersect1d(scope_ids, df.index, assume_unique=True)
-                df = df.loc[inds]
+                df = index_intersect(df, scope_ids)
             return df
         try:
             Framer = self._dataframers[name]
@@ -223,7 +219,7 @@ class Mill:
             msg = "Provided ids belong to multiple types of objects"
             raise IncompatibleDataFramesError(msg)
         elif not len(models):  # no objects with given ids
-            return pd.DataFrame(), ""
+            return pd.DataFrame(), pd.NA
         model_name = models[0]
         new_table = self._get_table_dict()[model_name]
         return new_table.loc[ids], model_name
@@ -259,10 +255,11 @@ class Mill:
             df = self.get_df(cls)
         try:
             model_name = self._schema["models"][cls][attr_name]
-            child_table = self.get_df(model_name)
         except KeyError:
             msg = f"{cls} has no model attributes of {attr_name}"
             raise InvalidModelAttribute(msg)
+        else:
+            child_table = self.get_df(model_name)
         structure = self.structure_df
 
         child_structure = structure.loc[child_table.index]
@@ -358,7 +355,7 @@ class Mill:
         """Return a copy of the mill."""
         return self.__class__._from_df_dict(copy.deepcopy(self._get_table_dict()))
 
-    def to_parquet(self, path: Union[str, Path]):
+    def to_parquet(self, path: Union[str, Path], write_schema=True):
         """
         Save the mill to a zipped directory of parquet files.
         """
@@ -371,9 +368,12 @@ class Mill:
         schema_path.mkdir(exist_ok=True, parents=True)
         # save data files and schemas
         for name, df in self._get_table_dict().items():
+            if not len(df):
+                continue
             func(df, data_path / name)
-        for name, df in self._schema_df.items():
-            df.to_parquet(schema_path / name)
+        if write_schema:
+            for name, df in self._schema_df.items():
+                df.to_parquet(schema_path / name)
         # zip everything up and delete tempdir.
         if not path.name.endswith(".zip"):
             path = Path(str(path) + ".zip")
@@ -407,27 +407,53 @@ class Mill:
         return out
 
 
-def _get_schema_dicts(df_schema):
+class _DFCache(UserDict):
+    """A simple cache for lazily loading tables and such."""
+
+    def __init__(self, schema, data=None):
+        self._schema = schema
+        # a dict of {key: (func, argument)} for lazy loading
+        self._load_funcs = {}
+        self.data = {}
+        super().__init__(data)
+
+    def __getitem__(self, key):
+        try:
+            return super().__getitem__(key)
+        except KeyError as e:
+            if key in self._load_funcs:
+                func, arg = self._load_funcs[key]
+                self[key] = func(arg)
+                return self[key]
+            raise e
+
+
+def _get_schema_dicts(df_schema_dict):
     """Parses out dicts from dataframes for use in decomposition"""
     rid_dict, model_dict, dtype_dict, array_dict = {}, {}, {}, {}
-    for name, df in df_schema.items():
+    model_names = set()
+    for name, df in df_schema_dict.items():
         if name.startswith("__"):
             continue
         # get set of attrs which are resource ids
-        is_rid = df["model"].str.startswith("ResourceIdentifier")
+        is_rid = ~df["referenced_model"].isnull()
         rid_dict[name] = set(df[is_rid].index)
         # get referenced model type
-        has_model = df["model"].astype(bool)
+        has_model = ~(df["model"].isnull() | is_rid)
         model_dict[name] = dict(df[has_model]["model"])
         # dtype
-        has_dtype = df["dtype"].astype(bool)
+        has_dtype = ~df["dtype"].isnull()
         dtype_dict[name] = dict(df[has_dtype]["dtype"])
         array_dict[name] = set(df.index[df["is_list"]])
+        # add any models to model_names
+        model_names |= set(df[has_model]["model"])
+
     out = {
         "resource_ids": rid_dict,
         "models": model_dict,
         "dtypes": dtype_dict,
         "arrays": array_dict,
+        "model_names": model_names,
     }
     return out
 
@@ -518,22 +544,26 @@ def _dict_to_tables(
         structure_list.append(structure)
         return obj
 
+    def _make_structure_df():
+        """Make a the structure dataframe"""
+        return pd.DataFrame(structure_list).set_index(id_field)
+
     def _make_df_dict(object_list):
         """Convert a dist of lists of dicts into a dict of DFs."""
         out = {}
-        for model_name, data in object_list.items():
-            if model_name.startswith("ResourceIdentifier"):
-                continue
-            dtypes = dtype_dict[model_name]
+
+        for model in schema["model_names"]:
+            data = object_list.get(model, {})
+            dtypes = dtype_dict[model]
+            columns = sorted(set([id_field] + list(dtypes)))
             dff = (
-                pd.DataFrame(data)
-                .pipe(order_columns, sorted(dtypes))
+                pd.DataFrame(data, columns=columns)
                 .pipe(cast_dtypes, dtypes)
                 .set_index(id_field)
             )
-            out[model_name] = dff
+            out[model] = dff
 
-        out["__structure__"] = pd.DataFrame(structure_list).set_index(id_field)
+        out["__structure__"] = _make_structure_df()
         return out
 
     dtype_dict = schema["dtypes"]
@@ -576,8 +606,7 @@ def _tables_to_dict(
                 continue
             # sort rows so that objects are reassembled correctly
             sort_cols = ["parent_id", "attr", "index"]
-            inds = np.intersect1d(struct.index, df.index, assume_unique=True)
-            sub_struct = struct.loc[inds].sort_values(sort_cols)
+            sub_struct = index_intersect(struct, df).sort_values(sort_cols)
             df = df.loc[sub_struct.index]
             # get values that should be None
             sub = (
@@ -637,8 +666,7 @@ class _OperationResolver:
         self._struc_df = mill.get_structure_df()
         base_df = mill.get_df(model_name)
         if scope_ids is not None:
-            ind = np.intersect1d(base_df.index, scope_ids, assume_unique=True)
-            base_df = base_df.loc[ind]
+            base_df = index_intersect(base_df, scope_ids)
             self._struc_df = self._struc_df.loc[scope_ids]
         # get base (starting place) info
         self._base_df = base_df
@@ -721,6 +749,9 @@ class _OperationResolver:
             self.dispatch(op)
             # ensure base_id map stays updated
             assert set(self.base_id_map_.values) == set(self.current_.index.values)
+            if len(self.current_) == 0:  # once we hit an empty state bail out
+                self.current_ = pd.Series(name=self.spec[-1], dtype=float)
+                break
         # join result to base
         assert self.base_id_map_.index.unique().all(), "index must now be unique"
         last = self.current_
@@ -732,8 +763,7 @@ class _OperationResolver:
         out = (
             pd.DataFrame(index=self._base_df.index)
             .join(re_map)
-            .pipe(cast_dtypes, dtype=dtype)[last.name]
-            .pipe(self._fill_null)
+            .pipe(cast_dtypes, dtype=dtype, inplace=True)[last.name]
         )
         return out
 
@@ -765,14 +795,14 @@ class _OperationResolver:
         # if a non-sliced series then follow resource_id
         elif isinstance(self.current_, pd.Series):  # assume we need to follow rid
             return self._follow_rid(op)
+        # try getting child of current stored in op (attribute name)
+        elif op in self.mill._schema["models"][self.cls_]:
+            return self._get_children(op)
         # try returning column
         with suppress(KeyError):
             return self._get_column(op)
-        # try getting child of current stored in op (attribute name)
-        with suppress(InvalidModelAttribute):
-            return self._get_children(op)
         # No idea, give up
-        raise NotImplementedError("How did you get here!?")
+        raise NotImplementedError(f"Parser failed on {op}")
 
     def _get_index(self):
         index = self.current_.index
@@ -818,8 +848,12 @@ class _OperationResolver:
     def _get_dtype(self, dtype):
         """Get the datatype."""
         if get_origin(dtype) is Annotated:
-            # just get raw dtype
+            # just get raw dtype if Annotated is used
             dtype = dtype.__origin__
         return dtype
 
     assert set(_funcs) == (set(SUPPORTED_MODEL_OPS)), "not all funcs supported"
+
+
+class _OperationSetter(_OperationResolver):
+    """Class for getting a callable to set value back to mill."""

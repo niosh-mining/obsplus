@@ -14,9 +14,9 @@ from obsplus.utils.time import to_datetime64
 
 
 @pytest.fixture(scope="class")
-def event_op_resolver(event_mill):
+def event_op_resolver(bing_eventmill):
     """Return a partial of the Operation resolver fixed on event level."""
-    kwargs = {"mill": event_mill, "model_name": "Event"}
+    kwargs = {"mill": bing_eventmill, "model_name": "Event"}
     op_res = partial(_OperationResolver, **kwargs)
     return op_res
 
@@ -127,3 +127,7 @@ class TestOperationResolver:
         assert np.all(out1.index.values == out2.index.values)
         mask = ~(np.isnan(out1.values) | np.isnan(out2.values))
         assert np.allclose(out1.values[mask], out2.values[mask])
+
+
+class TestOperationSetter:
+    """Tests for setting values to mill"""

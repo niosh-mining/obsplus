@@ -298,7 +298,7 @@ def bingham_events_df(bingham_events):
 
 
 @pytest.fixture(scope="class")
-def event_mill(bingham_events):
+def bing_eventmill(bingham_events):
     """Init a mill from an event."""
     mill = EventMill(bingham_events)
     return mill

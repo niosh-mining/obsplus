@@ -13,20 +13,21 @@ from obsplus.exceptions import InvalidModelAttribute
 from obsplus.utils.misc import register_func
 
 event_dataframes = []
+eventmills = ["bing_eventmill"]
 
 
 @pytest.fixture(scope="class")
 @register_func(event_dataframes)
-def event_dataframe(event_mill):
+def event_dataframe(bing_eventmill):
     """Return the event dataframe from event_mill."""
-    return event_mill.get_df("events")
+    return bing_eventmill.get_df("events")
 
 
 @pytest.fixture(scope="class")
 @register_func(event_dataframes)
-def pick_dataframe(event_mill):
+def pick_dataframe(bing_eventmill):
     """Get the pick dataframe."""
-    return event_mill.get_df("picks")
+    return bing_eventmill.get_df("picks")
 
 
 @pytest.fixture(scope="class", params=event_dataframes)
@@ -44,6 +45,29 @@ def missing_origin_id_mill(bingham_event_missing_preferred_origin):
     return EventMill(bingham_event_missing_preferred_origin)
 
 
+@pytest.fixture(scope="class")
+@register_func(eventmills)
+def eventmill_empty():
+    """Return an eventmill with no events."""
+    cat = obspy.Catalog()
+    return EventMill(cat)
+
+
+@pytest.fixture(scope="class")
+@register_func(eventmills)
+def eventmill_one_event(bingham_events):
+    """Return an eventmill with one event."""
+    cat = bingham_events.copy()
+    cat.events = [cat.events[0]]
+    return EventMill(cat)
+
+
+@pytest.fixture(scope="class", params=eventmills)
+def event_mill(request):
+    """Meta fixture to collect all eventmills."""
+    return request.getfixturevalue(request.param)
+
+
 class TestEventMillBasics:
     """Tests for the EventMill."""
 
@@ -58,31 +82,31 @@ class TestEventMillBasics:
         mill = EventMill(json)
         assert isinstance(mill, EventMill)
 
-    def test_str(self, event_mill):
+    def test_str(self, bing_eventmill):
         """Ensure a sensible str rep is available."""
-        str_rep = str(event_mill)
+        str_rep = str(bing_eventmill)
         assert "Mill with spec of" in str_rep
 
-    def test_copy(self, event_mill):
+    def test_copy(self, bing_eventmill):
         """Ensure copying eventmill creates a new mill."""
-        out = event_mill.copy()
+        out = bing_eventmill.copy()
         # ensure managed dataframes are not identical
         for table_name in out._get_table_dict():
             df1 = out._get_table_dict()[table_name]
-            df2 = event_mill._get_table_dict()[table_name]
+            df2 = bing_eventmill._get_table_dict()[table_name]
             assert df1.equals(df2)
             assert df1 is not df2
 
-    def test_scoping(self, event_mill):
+    def test_scoping(self, bing_eventmill):
         """Ensure scoping is listed."""
-        df = event_mill.get_df("__structure__")
+        df = bing_eventmill.get_df("__structure__")
         no_scope = df["scope_id"].isnull()
         has_scope = ~no_scope
         assert (has_scope.sum() / no_scope.sum()) > 0.9
 
-    def test_summary(self, event_mill, bingham_events):
+    def test_summary(self, bing_eventmill, bingham_events):
         """Ensure the summary dataframe is populated."""
-        df = event_mill.get_df("__summary__")
+        df = bing_eventmill.get_df("__summary__")
         assert len(df) == len(bingham_events)
         # ensure order is preserved
         for (rid, ser), event in zip(df.iterrows(), bingham_events):
@@ -92,45 +116,51 @@ class TestEventMillBasics:
 class TestLookUp:
     """Tests for looking up objects by ID."""
 
-    def test_lookup_homogeneous(self, event_mill):
+    def test_lookup_homogeneous(self, bing_eventmill):
         """Look up a resource id for objects of same type"""
-        pick_df = event_mill.get_df("Pick")
+        pick_df = bing_eventmill.get_df("Pick")
         some_rids = pick_df.index.values[::20]
         # lookup multiple dataframes of the same type
-        out, cls = event_mill.lookup(some_rids)
+        out, cls = bing_eventmill.lookup(some_rids)
         assert isinstance(out, pd.DataFrame)
         assert len(out) == len(some_rids)
         assert set(out.index.get_level_values("resource_id")) == set(some_rids)
         assert cls == "Pick"
         # lookup a single resource_id
-        out, cls = event_mill.lookup(some_rids[0])
+        out, cls = bing_eventmill.lookup(some_rids[0])
         assert isinstance(out, pd.DataFrame)
         assert len(out) == 1
         assert set(out.index.get_level_values("resource_id")) == set(some_rids[:1])
         assert cls == "Pick"
 
-    def test_lookup_missing(self, event_mill):
+    def test_lookup_missing(self, bing_eventmill):
         """Test looking up a missing ID."""
         with pytest.raises(KeyError):
-            event_mill.lookup("not a real_id")
+            bing_eventmill.lookup("not a real_id")
+
+    def test_empty_ids(self, bing_eventmill):
+        """Ensure empty ids returns emtpy df and NA for class name"""
+        df, cls = bing_eventmill.lookup([])
+        assert not len(df)
+        assert pd.isnull(cls)
 
 
 class TestGetChildren:
     """Tests for getting children of specific classes and attributes."""
 
-    def test_get_picks(self, event_mill, bingham_events):
+    def test_get_picks(self, bing_eventmill, bingham_events):
         """Get picks from event_mill."""
-        pdf, _ = event_mill.get_children("Event", "picks")
+        pdf, _ = bing_eventmill.get_children("Event", "picks")
         rids_mill = set(pdf.index)
         rids_cat = {
             str(pick.resource_id) for event in bingham_events for pick in event.picks
         }
         assert rids_mill == rids_cat
 
-    def test_get_picks_with_df(self, event_mill, bingham_events):
+    def test_get_picks_with_df(self, bing_eventmill, bingham_events):
         """Ensure a dataframe can be used to limit picks returned"""
-        df = event_mill.get_df("Event").iloc[0:2]
-        out, _ = event_mill.get_children("Event", "picks", df=df)
+        df = bing_eventmill.get_df("Event").iloc[0:2]
+        out, _ = bing_eventmill.get_children("Event", "picks", df=df)
         # get expected pick ids
         expected = set()
         for event in bingham_events[:2]:
@@ -138,15 +168,15 @@ class TestGetChildren:
                 expected.add(str(pick.resource_id))
         assert set(out.index) == expected
 
-    def test_bad_cls(self, event_mill):
+    def test_bad_cls(self, bing_eventmill):
         """Tests for class which don't exist."""
         with pytest.raises(KeyError, match="Unknown dataframe"):
-            event_mill.get_children("NotAClass", "bad_attr")
+            bing_eventmill.get_children("NotAClass", "bad_attr")
 
-    def test_bad_attr(self, event_mill):
+    def test_bad_attr(self, bing_eventmill):
         """Tests for accessing non-existent attributes"""
         with pytest.raises(InvalidModelAttribute, match="no model attributes"):
-            event_mill.get_children("Event", "not_an_attr")
+            bing_eventmill.get_children("Event", "not_an_attr")
 
     def test_bad_ids(self):
         """Tests for getting child"""
@@ -191,28 +221,28 @@ class TestFillPreferred:
 class TestGetParentIds:
     """Tests for finding parents of ids."""
 
-    def test_no_level_no_limit(self, event_mill, bingham_events):
+    def test_no_level_no_limit(self, bing_eventmill, bingham_events):
         """Tests for getting ids from default values."""
         catalog_id = str(bingham_events.resource_id)
         pick_ids = [str(pick.resource_id) for pick in bingham_events[0].picks]
-        parent_ids = event_mill.get_parent_ids(pick_ids)
+        parent_ids = bing_eventmill.get_parent_ids(pick_ids)
         # the result should simply be the catalog id
         assert (parent_ids == catalog_id).all()
 
-    def test_up_one_level(self, event_mill, bingham_events):
+    def test_up_one_level(self, bing_eventmill, bingham_events):
         """Tests getting ids for one level of parents up."""
         event_id = str(bingham_events[0].resource_id)
         pick_ids = [str(x.resource_id) for x in bingham_events[0].picks]
-        out = event_mill.get_parent_ids(pick_ids, level=1)
+        out = bing_eventmill.get_parent_ids(pick_ids, level=1)
         assert (out == event_id).all()
 
-    def test_target(self, event_mill, bingham_events):
+    def test_target(self, bing_eventmill, bingham_events):
         """Tests for stopping transverse at certain targets."""
         targets = {str(x.resource_id) for x in bingham_events}
         pick_ids = {
             str(pick.resource_id) for event in bingham_events for pick in event.picks
         }
-        out = event_mill.get_parent_ids(pick_ids, targets=targets)
+        out = bing_eventmill.get_parent_ids(pick_ids, targets=targets)
         assert set(out.values).issubset(targets)
 
 
@@ -224,42 +254,42 @@ class TestGetDF:
         assert isinstance(eventmill_dataframe, pd.DataFrame)
         assert len(eventmill_dataframe)
 
-    def test_get_contained_model(self, event_mill):
+    def test_get_contained_model(self, bing_eventmill):
         """The name of a model should return the contained df."""
-        out = event_mill.get_df("Event")
+        out = bing_eventmill.get_df("Event")
         assert isinstance(out, pd.DataFrame)
         assert len(out)
 
-    def test_raise_on_unknown(self, event_mill):
+    def test_raise_on_unknown(self, bing_eventmill):
         """Ensure unknown frames raise exception."""
         with pytest.raises(KeyError):
-            event_mill.get_df(name="not_a_valid_dataframer_name")
+            bing_eventmill.get_df(name="not_a_valid_dataframer_name")
 
     def test_get_event_dataframe(self, event_dataframe):
         """Tests for getting dataframes from mill."""
         assert isinstance(event_dataframe, pd.DataFrame)
 
-    def test_empty_str_default_resource_id(self, event_mill):
+    def test_empty_str_default_resource_id(self, bing_eventmill):
         """Ensure missing ids are empty strings rather than 'None' or 'nan'"""
-        df = event_mill.get_df("StationMagnitude")
+        df = bing_eventmill.get_df("StationMagnitude")
         for col in ["amplitude_id", "method_id", "origin_id"]:
             ser = df[col]
             is_empty = ser.isnull()
             len_gt_40 = ser.str.len() > 40
             assert (is_empty | len_gt_40).all()
 
-    def test_filter_on_scope_existing_table(self, event_mill, bingham_events):
+    def test_filter_on_scope_existing_table(self, bing_eventmill, bingham_events):
         """Ensure any supported scope kwargs can filter dfs."""
         sub = bingham_events.get_events(minmagnitude=1)
         pick_ids = {str(p.resource_id) for e in sub for p in e.picks}
-        df = event_mill.get_df("Pick", minmagnitude=1)
+        df = bing_eventmill.get_df("Pick", minmagnitude=1)
         assert pick_ids == set(df.index)
 
-    def test_filter_on_dataframe_extractor_df(self, event_mill, bingham_events):
+    def test_filter_on_dataframe_extractor_df(self, bing_eventmill, bingham_events):
         """Tests for filtering w/ dataframers"""
         sub = bingham_events.get_events(minmagnitude=1)
         pick_ids = {str(p.resource_id) for e in sub for p in e.picks}
-        out = event_mill.get_df("picks", minmagnitude=1)
+        out = bing_eventmill.get_df("picks", minmagnitude=1)
         assert set(out.index) == pick_ids
 
 
@@ -300,17 +330,26 @@ class TestEventDataframe:
             etime2 = obsplus.utils.time.to_utc(row["time"])
             assert np.isclose(float(etime1), float(etime2))
 
+    def test_one_event(self, bingham_events):
+        """Test getting event_df with a single event."""
+        events = bingham_events.copy()
+        events.events = list(events[:1])
+        mill = EventMill(events)
+        df = mill.get_summary_df()
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 1
+
 
 class TestToModel:
     """Tests converting mills back to models."""
 
     @pytest.fixture()
-    def model_from_mill(self, event_mill):
+    def model_from_mill(self, bing_eventmill):
         """Convert the event_mill to model."""
-        mod = event_mill.to_model()
+        mod = bing_eventmill.to_model()
         return mod
 
-    def test_model_conversion(self, model_from_mill, bingham_model, event_mill):
+    def test_model_conversion(self, model_from_mill, bingham_model, bing_eventmill):
         """ensure the model was losslessly converted."""
         cat1 = model_from_mill.to_obspy()
         cat2 = bingham_model.to_obspy()
@@ -328,13 +367,13 @@ class TestGetEvents:
     events.get_events we don't really need many tests here.
     """
 
-    def test_simple(self, event_mill):
+    def test_simple(self, bing_eventmill):
         """Test get events with no params"""
-        out = event_mill.get_events()
+        out = bing_eventmill.get_events()
         assert isinstance(out, obspy.Catalog)
-        assert len(out) == len(event_mill.get_df("Event"))
+        assert len(out) == len(bing_eventmill.get_df("Event"))
 
-    def test_query_by_event_description(self, event_mill, bingham_events):
+    def test_query_by_event_description(self, bing_eventmill, bingham_events):
         """Query by event description."""
         expected = defaultdict(list)
         for event in bingham_events:
@@ -342,10 +381,10 @@ class TestGetEvents:
                 continue
             expected[event.event_descriptions[0].text].append(event)
 
-        out1 = event_mill.get_events(event_description="LR")
+        out1 = bing_eventmill.get_events(event_description="LR")
         assert len(out1) == len(expected["LR"])
 
-        out2 = event_mill.get_events(event_description={"LR", "RQ"})
+        out2 = bing_eventmill.get_events(event_description={"LR", "RQ"})
         assert len(out2) == (len(expected["LR"]) + len(expected["RQ"]))
 
 

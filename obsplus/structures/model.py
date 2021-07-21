@@ -1,16 +1,14 @@
 """
 Logic for defining tree-like data structures.
 """
-import datetime
 from functools import lru_cache
-from typing import Optional, Union, Type, Sequence
+from typing import Optional, Union, Type, Sequence, Dict
 from uuid import uuid4
 
 import pandas as pd
 from obspy.core import event as ev
 from pydantic import root_validator, validator
 from pydantic.main import BaseModel, ModelMetaclass
-from pydantic.fields import SHAPE_NAME_LOOKUP
 from pydantic.utils import GetterDict
 
 from obsplus.constants import SUPPORTED_MODEL_OPS
@@ -92,7 +90,7 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
         """
         Return an ObsPlus Schema for this model and its children/parents.
         """
-        return _get_obsplus_schema(cls)
+        return _get_schema_df(cls.schema())
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -206,82 +204,76 @@ class _SpecGenerator:
     __repr__ = __str__
 
 
-def _get_obsplus_schema(cls: ObsPlusModel) -> dict:
+def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
     """ "
-    Return a dict used to characterize class hierarchies of models.
-
-    Notes
-    -----
-    The form of the output is internal to ObsPlus and could change anytime!
+    Convert schema pydnatic json schema to dict of dataframes.
     """
-    DTYPES_MAP = {
-        int: "Int64",
-        float: "float64",
-        str: "string",
-        datetime.datetime: "datetime64[ns]",
+    dtypes = {
+        "model": "string",
+        "dtype": "string",
+        "referenced_model": "string",
+        "required": "boolean",
+        "is_list": "boolean",
     }
-    COL_DTYPE = {
-        "model": str,
-        "dtype": str,
-        "referenced_model": str,
-        "optional": bool,
-        "is_list": bool,
-    }
+    rid_str = "ResourceIdentifier"
 
-    def _get_dtype(type_, is_model):
-        """Return pandas dtype of field"""
-        raw_dtype = getattr(type_, "__dtype__", type_)
-        dtype = DTYPES_MAP.get(raw_dtype, None)
-        model_name = type_.__name__ if is_model else None
-        return dtype, model_name
+    def _get_dtype(attr_dict):
+        """Get the type of the attr dict."""
+        type_ = attr_dict.get("type")
+        out = attr_dict.get("type", None)
+        if type_ == "number":
+            out = "float64"
+        elif type_ == "integer":
+            out = "Int64"
+        # check if this is a datetime
+        elif attr_dict.get("format") == "date-time":
+            out = "datetime64[ns]"
+        elif "enum" in attr_dict:
+            out = pd.CategoricalDtype(attr_dict["enum"])
+        elif out == "array":  # no array type
+            out = None
+        return out
 
-    def _is_list(shape):
-        if shape not in SHAPE_NAME_LOOKUP:
-            return False
-        value = SHAPE_NAME_LOOKUP.get(shape, "")
-        assert "List" in value
-        return True
+    def _get_series(attr_dict):
+        """
+        Determine the type and reference type of an attribute from a schema dict.
+        """
+        ref_str = "#/definitions/"
+        atype = attr_dict.get("type", "object")
+        is_array = atype == "array"
+        if is_array:  # dealing with array, find out sub-type
+            items = attr_dict.get("items", {})
+            ref = items.get("$ref", None)
+        else:
+            ref = attr_dict.get("$ref", None)
+        if ref:  # there is a reference to a def, just get name
+            ref = ref.replace(ref_str, "")
 
-    def _is_obsplus_model(cls):
-        """Return true if cls is an obsplus model subclass"""
-        try:
-            is_model = issubclass(cls, ObsPlusModel)
-        except TypeError:
-            is_model = False
-        return is_model
-
-    def _recurse(cls):
-        attr_dict = {}
-        for name, model_field in cls.__fields__.items():
-            current = {}
-            type_ = model_field.type_
-            is_model = _is_obsplus_model(type_)
-            current["dtype"], current["model"] = _get_dtype(type_, is_model)
-            current["referenced_model"] = getattr(type_, "__reference_type__", None)
-            current["optional"] = model_field.allow_none
-            current["is_list"] = _is_list(model_field.shape)
-            if is_model and cls.__name__ not in _tables:
-                _recurse(type_)
-            attr_dict[name] = current
-
-        _tables[f"{cls.__name__}"] = attr_dict
-        structure_dict = {
-            "name": cls.__name__,
-            "version": cls.__version__,
+        is_rid = ref is not None and ref.startswith(rid_str)
+        out = {
+            "model": ref if not is_rid else None,
+            "dtype": _get_dtype(attr_dict) if not is_rid else "string",
+            "referenced_model": ref if is_rid else None,
+            "is_list": is_array,
         }
-        _meta.append(structure_dict)
+        return out
 
-    _meta = []
-    _tables = {}
-    _recurse(cls)
+    def _get_dataframe(base):
+        """Create dataframe from class attributes."""
+        out = {}
+        required = base.get("required", {})
+        for name, prop in base["properties"].items():
+            out[name] = _get_series(prop)
+            out[name]["required"] = name in required
+        return pd.DataFrame(out).T.astype(dtypes)[list(dtypes)]
+
     out = {
-        n: (
-            pd.DataFrame(v)
-            .T.astype(dtype=COL_DTYPE)
-            .replace("nan", "")
-            .replace("None", "")
+        schema["title"]: _get_dataframe(
+            schema,
         )
-        for n, v in _tables.items()
     }
-    out["__meta__"] = pd.DataFrame(_meta)
+    for name, sub_schema in schema["definitions"].items():
+        out[name] = _get_dataframe(
+            sub_schema,
+        )
     return out

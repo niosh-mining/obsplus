@@ -6,11 +6,11 @@ import re
 from contextlib import suppress
 from functools import lru_cache, reduce
 from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
-from typing_extensions import Annotated, get_origin
 
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_string_dtype
+from typing_extensions import Annotated, get_origin
 
 from obsplus.constants import (
     column_function_map_type,
@@ -23,8 +23,8 @@ from obsplus.constants import (
     bulk_waveform_arg_type,
 )
 from obsplus.exceptions import DataFrameContentError
-from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obsplus.utils.geodetics import map_longitudes
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
 
 def _int_column_to_str(ser, width=2, fillchar="0"):
@@ -38,12 +38,16 @@ def _int_column_to_str(ser, width=2, fillchar="0"):
 
 
 # maps obsplus datatypes to functions to apply to columns to obtain dtype
+# Note: pandas now raises on np.datetime64 (since ns isn't specified) so
+# we add them as custom dtypes (since pandas only supports ns precision!)
 OPS_DTYPE_FUNCS = {
     "ops_datetime": to_datetime64,
     "ops_timedelta": to_timedelta64,
     "utcdatetime": to_utc,
     "nslc_code": _int_column_to_str,
     "longitude": map_longitudes,
+    np.datetime64: to_datetime64,
+    np.timedelta64: to_timedelta64,
 }
 
 # the dtype of the columns
@@ -53,6 +57,8 @@ OPS_DTYPES = {
     "utcdatetime": object,
     "nslc_code": str,
     "longitude": float,
+    np.datetime64: "datetime64[ns]",
+    np.timedelta64: "timedelta64[ns]",
 }
 
 
@@ -144,7 +150,7 @@ def cast_dtypes(
     inplace=False,
 ) -> pd.DataFrame:
     """
-    Cast data types for columns in dataframe, skip columns that doesn't exist.
+    Cast data types for columns in dataframe, skip columns that don't exist.
 
     The following obsplus specific datatypes are supported:
         'ops_datetime' - call :func:`obsplus.utils.time.to_datetime64` on column
@@ -609,3 +615,37 @@ def expand_loc(df, **kwargs):
     indexed_df = df.reset_index().set_index(key)
     assert indexed_df.index.is_unique, "must df must have unique indices"
     return indexed_df.reindex(kwargs[key])
+
+
+def index_intersect(
+    df: pd.DataFrame,
+    index: Union[pd.DataFrame, pd.Index, np.ndarray, Iterable],
+) -> pd.DataFrame:
+    """
+    Reduce the df to only include rows with indices also in index.
+
+    Parameters
+    ----------
+    df
+        The input dataframe.
+    index
+        A second object which conveys and index. Can be another dataframe,
+        index, or numpy array.
+
+    Returns
+    -------
+    A dataframe which has index values in index.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> df = pd.DataFrame([1, 2, 3], index=['a', 'b', 'c'])
+    >>> index2 = np.array(['b', 'c', 'd'])
+    >>> out = index_intersect(df, index2)
+    >>> assert set(out.index) == {'b', 'c'}
+    """
+    if isinstance(index, pd.DataFrame):
+        index = index.index
+    overlap = np.intersect1d(np.array(df.index), np.array(index))
+    return df.loc[overlap]
