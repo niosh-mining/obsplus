@@ -110,8 +110,8 @@ def check_duplicate_picks(event: Event):
             f"Duplicate {phase_hint} picks found\n" f"event_id: {event_id}, "
         )
 
-    # A dict of {phase: column that cant be duplicated}
-    phase_duplicates = {"IAML": None, "AML": None}
+    # A dict of {phase: column that cant be duplicated}  <- is this comment correct, and if so, is there a less confusing way to do this?
+    phase_duplicates = {"IAML": None, "AML": None, "?": None}
     # first get dataframe of picks, filter out rejected
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
