@@ -152,8 +152,24 @@ class TestValidateCatalog:
         """ Create duplicate picks with unknown phase hints"""
         cat = cat1.copy()
         eve = cat[0]
-        eve.picks.append(ev.Pick(time=obspy.UTCDateTime(), waveform_id=ev.WaveformStreamID(network_code="UK", station_code="STA", channel_code="HHZ"), phase_hint="?"))
-        eve.picks.append(ev.Pick(time=obspy.UTCDateTime(), waveform_id=ev.WaveformStreamID(network_code="UK", station_code="STA", channel_code="HHN"), phase_hint="?"))
+        eve.picks.append(
+            ev.Pick(
+                time=obspy.UTCDateTime(),
+                waveform_id=ev.WaveformStreamID(
+                    network_code="UK", station_code="STA", channel_code="HHZ"
+                ),
+                phase_hint="?",
+            )
+        )
+        eve.picks.append(
+            ev.Pick(
+                time=obspy.UTCDateTime(),
+                waveform_id=ev.WaveformStreamID(
+                    network_code="UK", station_code="STA", channel_code="HHN"
+                ),
+                phase_hint="?",
+            )
+        )
         return cat
 
     # tests
