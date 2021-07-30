@@ -49,6 +49,8 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
     __reference_type__ = None  # if this is a resource id, the type referred to
     # the field which contains the objects unique id
     _id_field: str = "resource_id"
+    # Name of id classes
+    _id_cls_name: str = "ResourceIdentifier"
 
     class Config:
         """pydantic config for obsplus model."""
@@ -90,7 +92,7 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
         """
         Return an ObsPlus Schema for this model and its children/parents.
         """
-        return _get_schema_df(cls.schema())
+        return _get_schema_df(cls.schema(), cls._id_cls_name)
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -204,7 +206,7 @@ class _SpecGenerator:
     __repr__ = __str__
 
 
-def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
+def _get_schema_df(schema: dict, rid_str: str) -> Dict[str, pd.DataFrame]:
     """ "
     Convert schema pydnatic json schema to dict of dataframes.
     """
@@ -215,7 +217,6 @@ def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
         "required": "boolean",
         "is_list": "boolean",
     }
-    rid_str = "ResourceIdentifier"
 
     def _get_dtype(attr_dict):
         """Get the type of the attr dict."""
@@ -228,8 +229,9 @@ def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
         # check if this is a datetime
         elif attr_dict.get("format") == "date-time":
             out = "datetime64[ns]"
-        elif "enum" in attr_dict:
-            out = pd.CategoricalDtype(attr_dict["enum"])
+        elif "anyOf" in attr_dict:
+            values = [x["const"] for x in attr_dict["anyOf"]]
+            out = pd.CategoricalDtype(values)
         elif out == "array":  # no array type
             out = None
         return out
@@ -250,10 +252,12 @@ def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
             ref = ref.replace(ref_str, "")
 
         is_rid = ref is not None and ref.startswith(rid_str)
+        ref_mod = ref.replace("ResourceIdentifier", "") if is_rid else None
+
         out = {
             "model": ref if not is_rid else None,
             "dtype": _get_dtype(attr_dict) if not is_rid else "string",
-            "referenced_model": ref if is_rid else None,
+            "referenced_model": ref_mod,
             "is_list": is_array,
         }
         return out
@@ -273,6 +277,8 @@ def _get_schema_df(schema: dict) -> Dict[str, pd.DataFrame]:
         )
     }
     for name, sub_schema in schema["definitions"].items():
+        if name.startswith(rid_str):
+            continue
         out[name] = _get_dataframe(
             sub_schema,
         )

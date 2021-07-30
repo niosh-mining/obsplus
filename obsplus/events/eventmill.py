@@ -54,8 +54,8 @@ class EventMill(Mill):
             if not missing_preferred.any():
                 continue
             # get model type from schema
-            event_schema = self._schema_df["Event"]["referenced_model"]
-            model_name = event_schema[preferred_id_name]
+            model_names = self._schema_df["Event"]["referenced_model"]
+            model_name = model_names[preferred_id_name]
             # get potential preferred objects
             sub_struct = struct[
                 (struct["scope_id"].isin(missing_preferred.index))

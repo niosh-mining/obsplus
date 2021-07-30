@@ -37,12 +37,24 @@ def eventmill_dataframe(request):
 
 
 @pytest.fixture(scope="class")
+def bingham_event_missing_preferred_origin(bingham_events):
+    """return the bingham event missing preferred origin."""
+    cat = bingham_events.copy()
+    for num, eve in enumerate(cat):
+        if num % 2 == 0:
+            eve.preferred_origin_id = None
+    return cat
+
+
+@pytest.fixture(scope="class")
 def missing_origin_id_mill(bingham_event_missing_preferred_origin):
     """Get a mill which has some preferred_origin_ids not set."""
     # shuffle events just to make sure there isn't an order dependence
     cat = bingham_event_missing_preferred_origin
     cat.events = sorted(cat.events, key=lambda x: str(x.resource_id))
-    return EventMill(bingham_event_missing_preferred_origin)
+    out = EventMill(bingham_event_missing_preferred_origin)
+    _ = out.get_summary_df()
+    return out
 
 
 @pytest.fixture(scope="class")
@@ -184,15 +196,6 @@ class TestGetChildren:
 
 class TestFillPreferred:
     """Tests for ensuring preferred values are set."""
-
-    @pytest.fixture(scope="class")
-    def bingham_event_missing_preferred_origin(self, bingham_events):
-        """return the bingham event missing preferred origin."""
-        cat = bingham_events.copy()
-        for num, eve in enumerate(cat):
-            if num % 2 == 0:
-                eve.preferred_origin_id = None
-        return cat
 
     def test_fill_id(
         self,

@@ -431,8 +431,8 @@ class _DFCache(UserDict):
 def _get_schema_dicts(df_schema_dict):
     """Parses out dicts from dataframes for use in decomposition"""
     rid_dict, model_dict, dtype_dict, array_dict = {}, {}, {}, {}
-    model_names = set()
     for name, df in df_schema_dict.items():
+
         if name.startswith("__"):
             continue
         # get set of attrs which are resource ids
@@ -445,15 +445,13 @@ def _get_schema_dicts(df_schema_dict):
         has_dtype = ~df["dtype"].isnull()
         dtype_dict[name] = dict(df[has_dtype]["dtype"])
         array_dict[name] = set(df.index[df["is_list"]])
-        # add any models to model_names
-        model_names |= set(df[has_model]["model"])
 
     out = {
         "resource_ids": rid_dict,
         "models": model_dict,
         "dtypes": dtype_dict,
         "arrays": array_dict,
-        "model_names": model_names,
+        "model_names": set(df_schema_dict),
     }
     return out
 
@@ -549,7 +547,7 @@ def _dict_to_tables(
         return pd.DataFrame(structure_list).set_index(id_field)
 
     def _make_df_dict(object_list):
-        """Convert a dist of lists of dicts into a dict of DFs."""
+        """Convert a dict of lists of dicts into a dict of DFs."""
         out = {}
 
         for model in schema["model_names"]:
@@ -802,7 +800,7 @@ class _OperationResolver:
         with suppress(KeyError):
             return self._get_column(op)
         # No idea, give up
-        raise NotImplementedError(f"Parser failed on {op}")
+        raise NotImplementedError(f"Operation Parser failed on {op}")
 
     def _get_index(self):
         index = self.current_.index
