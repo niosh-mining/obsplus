@@ -30,7 +30,7 @@ class EventMill(Mill):
     A class for managing Seismic events.
     """
 
-    _model = eschema.Catalog
+    model = eschema.Catalog
     _id_name = "ResourceIdentifier"
     _scope_model_name = "Event"
 
@@ -54,7 +54,7 @@ class EventMill(Mill):
             if not missing_preferred.any():
                 continue
             # get model type from schema
-            model_names = self._schema_df["Event"]["referenced_model"]
+            model_names = self.df_schema["Event"]["referenced_model"]
             model_name = model_names[preferred_id_name]
             # get potential preferred objects
             sub_struct = struct[

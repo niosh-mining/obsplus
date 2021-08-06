@@ -9,12 +9,6 @@ from obsplus.structures.model import _SpecGenerator
 from obsplus.utils.misc import register_func
 
 
-@pytest.fixture()
-def catalog_graph_dict():
-    """Return the graph dict for catalog."""
-    return Catalog.get_obsplus_schema()
-
-
 class TestSpecGenerator:
     """Tests for generating tree specs."""
 

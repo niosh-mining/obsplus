@@ -6,7 +6,9 @@ import fnmatch
 import hashlib
 import os
 import shutil
+import tempfile
 import warnings
+import zipfile
 from functools import wraps, partial, singledispatch
 from os.path import join
 from pathlib import Path, PurePosixPath
@@ -34,6 +36,7 @@ from obspy.io.quakeml.core import _read_quakeml
 
 import obsplus
 from obsplus.constants import NULL_SEED_CODES, NSLC
+
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
@@ -641,20 +644,54 @@ class ObjectWrapper:
         self.data = data
 
 
-def make_archive(source: Path, destination: Path):
+@contextlib.contextmanager
+def make_zip_archive(path: Path) -> Path:
     """
-    Make an uncompressed zip archive.
+    Context manager to make a zip archive.
 
     Parameters
     ----------
-    source
-        A directory path to the source files.
-    destination
+    path
         The path to the zip file to create.
     """
+    path = Path(path)
+    source = Path(tempfile.mkdtemp()) / path.name.split(".")[0]
+    yield source
     shutil.make_archive(
-        base_name=str(destination).split(".")[0],
-        format=destination.name.split(".")[-1],
+        base_name=str(path).split(".")[0],
+        format=path.name.split(".")[-1],
         root_dir=source,
         base_dir=".",
     )
+    shutil.rmtree(source)  # clean up temp dir explicitly
+
+
+@contextlib.contextmanager
+def extract_zip_archive(path) -> Path:
+    """
+    Extract a zip archive to temp location then cleanup.
+
+    Parameters
+    ----------
+    path
+        The path to the zip archive.
+    """
+    path = Path(path)
+    temp_dir = Path(tempfile.mkdtemp()) / path.name.split(".")[0]
+    with zipfile.ZipFile(path, "r") as zipy:
+        zipy.extractall(temp_dir)
+        yield temp_dir
+    shutil.rmtree(temp_dir)
+
+
+def property_cache(func):
+    """A decorator for caching properties as _{function name}"""
+
+    @wraps(func)
+    def _wrapper(self, *args, **kwargs):
+        name = f"_{getattr(func, '__name__')}"
+        if getattr(self, name, None) is None:
+            setattr(self, name, func(self, *args, **kwargs))
+        return getattr(self, name)
+
+    return _wrapper

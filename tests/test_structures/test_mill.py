@@ -21,8 +21,13 @@ def event_op_resolver(bing_eventmill):
     return op_res
 
 
-class TestDFMapper:
-    """tests for mapping dataframes to tree structures."""
+class TestBasicOperations:
+    """Tests for basic operations of Mill."""
+
+    def test_get_structure(self, bing_eventmill):
+        """Ensure structure is retrievable."""
+        out = bing_eventmill.get_structure_df()
+        assert len(out)
 
 
 class TestOperationResolver:

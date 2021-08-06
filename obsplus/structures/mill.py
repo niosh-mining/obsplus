@@ -2,32 +2,36 @@
 Module for converting tree-like structures into tables and visa-versa.
 """
 import copy
-import shutil
-import tempfile
+import json
 import uuid
-import zipfile
-from typing import Set, Union
-from typing_extensions import Annotated, get_origin
-from collections import defaultdict, UserDict
+from collections import defaultdict
 from contextlib import suppress
-from functools import lru_cache, wraps
-from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
+from functools import wraps
 from pathlib import Path
+from typing import Set, Union
+from typing import Type, Dict, Optional, Tuple, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
+from typing_extensions import Annotated, get_origin
 
 import obsplus
 from obsplus.constants import SUPPORTED_MODEL_OPS
 from obsplus.exceptions import IncompatibleDataFramesError, InvalidModelAttribute
 from obsplus.structures.model import ObsPlusModel, FunctionCall
+from obsplus.utils.misc import (
+    argisin,
+    register_func,
+    make_zip_archive,
+    extract_zip_archive,
+    property_cache,
+)
 from obsplus.utils.pd import (
     cast_dtypes,
     get_index_group,
     int64_to_int_obj,
     index_intersect,
 )
-from obsplus.utils.misc import argisin, register_func, make_archive
 
 MillType = TypeVar("MillType", bound="Mill")
 
@@ -54,7 +58,7 @@ class Mill:
     A class for turning tree-like data structures into table slices.
     """
 
-    _model: Type[ObsPlusModel] = ObsPlusModel
+    model: Type[ObsPlusModel] = ObsPlusModel
     _id_name: Optional[str] = None
     _data: dict
     _dataframers: Dict[str, Type["obsplus.DataFramer"]]
@@ -62,6 +66,12 @@ class Mill:
     _df_dicts: Dict[str, pd.DataFrame] = None
     _scope_model_name = None
     _meta_dicts: Dict[str, pd.DataFrame] = None
+    _schema: Optional[dict] = None
+    _schema_file_name = ".schema.json"
+    _meta_file_name = ".meta.json"
+    _id_cls_name = "ResourceIdentifier"
+    _rid_string = "resource_identifier"
+    __version__ = "0.0.0"
 
     def __init_subclass__(cls, **kwargs):
         """Ensure subclasses have their own framers dict."""
@@ -71,34 +81,39 @@ class Mill:
         self._data = self._get_data(data)
 
     @classmethod
-    def _from_df_dict(cls, df_dict, meta_dict=None) -> MillType:
+    def _from_df_dict(cls, df_dict, meta=None, schema=None) -> MillType:
         """init instance from df dict."""
         out = cls(None)
         out._df_dicts = df_dict
-        out._meta_dicts = meta_dict
+        out._meta = meta
+        out._raw_schema = schema
         return out
 
     @property
-    @lru_cache()
-    def _schema(self):
-        """Get schema from model."""
-        if self._meta_dicts is None:
-            self._meta_dicts = _get_schema_dicts(self._schema_df)
-        return self._meta_dicts
+    @property_cache
+    def schema(self):
+        """A reshaped version of raw schema for translating data to/from df."""
+        return _get_schema_dicts(self.df_schema)
 
     @property
-    @lru_cache()
-    def _schema_df(self):
-        """Get schema from model."""
-        return self._model.get_obsplus_schema()
+    @property_cache
+    def raw_schema(self):
+        """Simply returns the json schemas provided by the pydantic model."""
+        return self.model.schema()
+
+    @property
+    @property_cache
+    def df_schema(self):
+        """Simply returns the json schemas provided by the pydantic model."""
+        return _get_schema_df(self.raw_schema, self._id_cls_name)
 
     def _get_table_dict(self):
         if self._df_dicts is not None:
             return self._df_dicts
         df_dicts = _dict_to_tables(
             data=self._get_data(self._data),
-            schema=self._schema,
-            data_type=self._model.__name__,
+            schema=self.schema,
+            data_type=self.model.__name__,
             scope_type=self._scope_model_name,
         )
         df_dicts = self._post_df_dict_hook(df_dicts)
@@ -116,7 +131,7 @@ class Mill:
         if isinstance(data, dict):
             return data
         else:
-            return self._model.from_orm(data).dict()
+            return self.model.from_orm(data).dict()
 
     @classmethod
     def register_data_framer(cls, name):
@@ -182,7 +197,7 @@ class Mill:
 
     def __str__(self):
         cls_name = self.__class__.__name__
-        model_name = self._model.__name__
+        model_name = self.model.__name__
         obj_count = len(self._get_table_dict()[self._structure_key])
         msg = (
             f"{cls_name} with spec of [{model_name}] and [{obj_count}] managed objects"
@@ -254,7 +269,7 @@ class Mill:
         if df is None:
             df = self.get_df(cls)
         try:
-            model_name = self._schema["models"][cls][attr_name]
+            model_name = self.schema["models"][cls][attr_name]
         except KeyError:
             msg = f"{cls} has no model attributes of {attr_name}"
             raise InvalidModelAttribute(msg)
@@ -323,7 +338,7 @@ class Mill:
 
         Optionally, filter structure based on scope_ids.
         """
-        df = self._df_dicts["__structure__"]
+        df = self._get_table_dict()["__structure__"]
         if kwargs:
             df = df.loc[self.get_scope_ids(**kwargs)]
         return df
@@ -334,14 +349,14 @@ class Mill:
 
     def to_model(self, **kwargs):
         """Return a populated model with data from mill."""
-        schema = self._schema
+        schema = self.schema
         data = _tables_to_dict(
             table_dict=self._get_table_dict(),
-            cls_name=self._model.__name__,
+            cls_name=self.model.__name__,
             schema=schema,
             structure_df=self.get_structure_df(**kwargs),
         )
-        return self._model(**data)
+        return self.model(**data)
 
     def get_scope_ids(self, **kwargs) -> Optional[Set[str]]:
         """
@@ -355,30 +370,32 @@ class Mill:
         """Return a copy of the mill."""
         return self.__class__._from_df_dict(copy.deepcopy(self._get_table_dict()))
 
+    def get_meta_dict(self):
+        """Write meta json file."""
+        out = {
+            "version": self.__version__,
+        }
+        return out
+
     def to_parquet(self, path: Union[str, Path], write_schema=True):
         """
         Save the mill to a zipped directory of parquet files.
         """
         func = pd.DataFrame.to_parquet
         path = Path(path)
-        temp_dir = Path(tempfile.mkdtemp()) / path.name.split(".")[0]
-        data_path = temp_dir / "data"
-        schema_path = temp_dir / "meta"
-        data_path.mkdir(exist_ok=True, parents=True)
-        schema_path.mkdir(exist_ok=True, parents=True)
-        # save data files and schemas
-        for name, df in self._get_table_dict().items():
-            if not len(df):
-                continue
-            func(df, data_path / name)
-        if write_schema:
-            for name, df in self._schema_df.items():
-                df.to_parquet(schema_path / name)
-        # zip everything up and delete tempdir.
-        if not path.name.endswith(".zip"):
-            path = Path(str(path) + ".zip")
-        make_archive(temp_dir, path)
-        shutil.rmtree(temp_dir)
+        with make_zip_archive(path) as temp_path:
+            data_path = temp_path / "data"
+            data_path.mkdir(exist_ok=True, parents=True)
+            # save data files and schemas
+            for name, df in self._get_table_dict().items():
+                if not len(df):
+                    continue
+                func(df, data_path / name)
+            # write schema and meta files
+            with (temp_path / self._schema_file_name).open("w") as fi:
+                fi.write(self.model.schema_json())
+            with (temp_path / self._meta_file_name).open("w") as fi:
+                json.dump(self.get_meta_dict(), fi)
 
     @classmethod
     def from_parquet(cls: Type[MillType], path: Union[str, Path]) -> MillType:
@@ -391,48 +408,25 @@ class Mill:
             The path to the parquet directory.
         """
         func = pd.read_parquet
-        path = Path(path)
-        assert path.exists()
-        # extract zip file
-        temp_dir = Path(tempfile.mkdtemp()) / path.name.split(".")[0]
-        with zipfile.ZipFile(path, "r") as zipy:
-            zipy.extractall(temp_dir)
-        data, meta = {}, {}
-        for path in (temp_dir / "data").rglob("*"):
-            data[path.name] = func(path)
-        for path in (temp_dir / "meta").rglob("*"):
-            meta[path.name] = pd.read_parquet(path)
-        out = cls._from_df_dict(df_dict=data, meta_dict=meta)
-        shutil.rmtree(temp_dir)
+        with extract_zip_archive(path) as temp_path:
+            # extract zip file
+            data = {}
+            for path in (temp_path / "data").rglob("*"):
+                data[path.name] = func(path)
+
+            schema_path = temp_path / cls._schema_file_name
+            meta_path = temp_path / cls._meta_file_name
+            with open(schema_path, "r") as sf, open(meta_path, "r") as mf:
+                meta = json.load(mf)
+                schema = json.load(sf)
+        out = cls._from_df_dict(df_dict=data, meta=meta, schema=schema)
         return out
-
-
-class _DFCache(UserDict):
-    """A simple cache for lazily loading tables and such."""
-
-    def __init__(self, schema, data=None):
-        self._schema = schema
-        # a dict of {key: (func, argument)} for lazy loading
-        self._load_funcs = {}
-        self.data = {}
-        super().__init__(data)
-
-    def __getitem__(self, key):
-        try:
-            return super().__getitem__(key)
-        except KeyError as e:
-            if key in self._load_funcs:
-                func, arg = self._load_funcs[key]
-                self[key] = func(arg)
-                return self[key]
-            raise e
 
 
 def _get_schema_dicts(df_schema_dict):
     """Parses out dicts from dataframes for use in decomposition"""
     rid_dict, model_dict, dtype_dict, array_dict = {}, {}, {}, {}
     for name, df in df_schema_dict.items():
-
         if name.startswith("__"):
             continue
         # get set of attrs which are resource ids
@@ -454,6 +448,34 @@ def _get_schema_dicts(df_schema_dict):
         "model_names": set(df_schema_dict),
     }
     return out
+
+
+# def _get_schema_dicts(df_schema_dict):
+#     """Parses out dicts from dataframes for use in decomposition"""
+#     rid_dict, model_dict, dtype_dict, array_dict = {}, {}, {}, {}
+#     for name, df in df_schema_dict.items():
+#         if name.startswith("__"):
+#             continue
+#         # get set of attrs which are resource ids
+#         is_rid = ~df["referenced_model"].isnull()
+#         rid_dict[name] = set(df[is_rid].index)
+#         breakpoint()
+#         # get referenced model type
+#         has_model = ~(df["model"].isnull() | is_rid)
+#         model_dict[name] = dict(df[has_model]["model"])
+#         # dtype
+#         has_dtype = ~df["dtype"].isnull()
+#         dtype_dict[name] = dict(df[has_dtype]["dtype"])
+#         array_dict[name] = set(df.index[df["is_list"]])
+#
+#     out = {
+#         "resource_ids": rid_dict,
+#         "models": model_dict,
+#         "dtypes": dtype_dict,
+#         "arrays": array_dict,
+#         "model_names": set(df_schema_dict),
+#     }
+#     return out
 
 
 def _dict_to_tables(
@@ -544,7 +566,8 @@ def _dict_to_tables(
 
     def _make_structure_df():
         """Make a the structure dataframe"""
-        return pd.DataFrame(structure_list).set_index(id_field)
+        structure = pd.DataFrame(structure_list).set_index(id_field)
+        return structure
 
     def _make_df_dict(object_list):
         """Convert a dict of lists of dicts into a dict of DFs."""
@@ -646,6 +669,85 @@ def _tables_to_dict(
     return out
 
 
+def _get_schema_df(schema: dict, rid_str: str) -> Dict[str, pd.DataFrame]:
+    """ "
+    Convert schema pydnatic json schema to dict of dataframes.
+    """
+    dtypes = {
+        "model": "string",
+        "dtype": "string",
+        "referenced_model": "string",
+        "required": "boolean",
+        "is_list": "boolean",
+    }
+
+    def _get_dtype(attr_dict):
+        """Get the type of the attr dict."""
+        type_ = attr_dict.get("type")
+        out = attr_dict.get("type", None)
+        if type_ == "number":
+            out = "float64"
+        elif type_ == "integer":
+            out = "Int64"
+        # check if this is a datetime
+        elif attr_dict.get("format") == "date-time":
+            out = "datetime64[ns]"
+        elif "anyOf" in attr_dict:
+            values = [x["const"] for x in attr_dict["anyOf"]]
+            out = pd.CategoricalDtype(values)
+        elif out == "array":  # no array type
+            out = None
+        return out
+
+    def _get_series(attr_dict):
+        """
+        Determine the type and reference type of an attribute from a schema dict.
+        """
+        ref_str = "#/definitions/"
+        atype = attr_dict.get("type", "object")
+        is_array = atype == "array"
+        if is_array:  # dealing with array, find out sub-type
+            items = attr_dict.get("items", {})
+            ref = items.get("$ref", None)
+        else:
+            ref = attr_dict.get("$ref", None)
+        if ref:  # there is a reference to a def, just get name
+            ref = ref.replace(ref_str, "")
+
+        is_rid = ref is not None and ref.startswith(rid_str)
+        ref_mod = ref.replace("ResourceIdentifier", "") if is_rid else None
+
+        out = {
+            "model": ref if not is_rid else None,
+            "dtype": _get_dtype(attr_dict) if not is_rid else "string",
+            "referenced_model": ref_mod,
+            "is_list": is_array,
+        }
+        return out
+
+    def _get_dataframe(base):
+        """Create dataframe from class attributes."""
+        out = {}
+        required = base.get("required", {})
+        for name, prop in base["properties"].items():
+            out[name] = _get_series(prop)
+            out[name]["required"] = name in required
+        return pd.DataFrame(out).T.astype(dtypes)[list(dtypes)]
+
+    out = {
+        schema["title"]: _get_dataframe(
+            schema,
+        )
+    }
+    for name, sub_schema in schema["definitions"].items():
+        if name.startswith(rid_str):
+            continue
+        out[name] = _get_dataframe(
+            sub_schema,
+        )
+    return out
+
+
 class _OperationResolver:
     """
     A class for resolving operations specifying data access from models.
@@ -661,11 +763,11 @@ class _OperationResolver:
         self.mill = mill
         self.spec = spec if isinstance(spec, tuple) else spec.spec_tuple
         self._dtype = self._get_dtype(dtype)
-        self._struc_df = mill.get_structure_df()
+        self._struct_df = mill.get_structure_df()
         base_df = mill.get_df(model_name)
         if scope_ids is not None:
             base_df = index_intersect(base_df, scope_ids)
-            self._struc_df = self._struc_df.loc[scope_ids]
+            self._struct_df = self._struct_df.loc[scope_ids]
         # get base (starting place) info
         self._base_df = base_df
         self._base_cls = model_name
@@ -691,7 +793,7 @@ class _OperationResolver:
         self,
     ):
         """Get the parent of the current rows, expanding if needed."""
-        parents_id_map = self._struc_df.loc[self.current_.index, "parent_id"]
+        parents_id_map = self._struct_df.loc[self.current_.index, "parent_id"]
         parents, cls = self.mill.lookup(np.unique(parents_id_map.values))
         self.base_id_map_ = self.base_id_map_.map(parents_id_map)
         self.current_ = parents
@@ -718,7 +820,7 @@ class _OperationResolver:
     def _get_last(self):
         """return the last of each item (by index, attr, parent_id)."""
         df = self.current_
-        struct = self._struc_df.loc[df.index]
+        struct = self._struct_df.loc[df.index]
         last_ids = struct.groupby(["parent_id", "attr"])["index"].idxmax()
         self._reduce_current(df.loc[last_ids.values])
 
@@ -726,7 +828,7 @@ class _OperationResolver:
     def _get_first(self):
         """return the first of each item (by index, attr, parent_id)."""
         df = self.current_
-        struct = self._struc_df.loc[df.index]
+        struct = self._struct_df.loc[df.index]
         last_ids = struct.groupby(["parent_id", "attr"])["index"].idxmin()
         self._reduce_current(df.loc[last_ids.values])
 
@@ -794,7 +896,7 @@ class _OperationResolver:
         elif isinstance(self.current_, pd.Series):  # assume we need to follow rid
             return self._follow_rid(op)
         # try getting child of current stored in op (attribute name)
-        elif op in self.mill._schema["models"][self.cls_]:
+        elif op in self.mill.schema["models"][self.cls_]:
             return self._get_children(op)
         # try returning column
         with suppress(KeyError):
@@ -808,7 +910,7 @@ class _OperationResolver:
 
     def _apply_int_index(self, op):
         """Apply an int to aggregate list-like objects."""
-        sub_struct = self._struc_df.loc[self.current_.index]
+        sub_struct = self._struct_df.loc[self.current_.index]
         valid_indices = get_index_group(sub_struct, op)
         self.current_ = self.current_.loc[valid_indices]
         valid_base = self.base_id_map_.isin(valid_indices)
@@ -836,7 +938,7 @@ class _OperationResolver:
     def _get_children(self, op):
         """Get child objects of parent."""
         kids, cls = self.mill.get_children(self.cls_, op, df=self.current_)
-        parents = self._struc_df.loc[kids.index, "parent_id"]
+        parents = self._struct_df.loc[kids.index, "parent_id"]
         # update base_id to now point to children
         args = argisin(parents.values, self.base_id_map_.values)
         new = pd.Series(kids.index.values, index=self.base_id_map_.values[args])

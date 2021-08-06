@@ -1,11 +1,9 @@
 """
 Logic for defining tree-like data structures.
 """
-from functools import lru_cache
-from typing import Optional, Union, Type, Sequence, Dict
+from typing import Optional, Union, Type, Sequence
 from uuid import uuid4
 
-import pandas as pd
 from obspy.core import event as ev
 from pydantic import root_validator, validator
 from pydantic.main import BaseModel, ModelMetaclass
@@ -85,14 +83,6 @@ class ObsPlusModel(BaseModel, metaclass=ObsPlusMeta):
             else:
                 out[prop] = self._convert_to_obspy(val)
         return cls(**out)
-
-    @classmethod
-    @lru_cache()
-    def get_obsplus_schema(cls) -> dict:
-        """
-        Return an ObsPlus Schema for this model and its children/parents.
-        """
-        return _get_schema_df(cls.schema(), cls._id_cls_name)
 
 
 class ResourceIdentifier(ObsPlusModel):
@@ -204,82 +194,3 @@ class _SpecGenerator:
         return self.__class__(new_ops, parent_model=self.parent_model)
 
     __repr__ = __str__
-
-
-def _get_schema_df(schema: dict, rid_str: str) -> Dict[str, pd.DataFrame]:
-    """ "
-    Convert schema pydnatic json schema to dict of dataframes.
-    """
-    dtypes = {
-        "model": "string",
-        "dtype": "string",
-        "referenced_model": "string",
-        "required": "boolean",
-        "is_list": "boolean",
-    }
-
-    def _get_dtype(attr_dict):
-        """Get the type of the attr dict."""
-        type_ = attr_dict.get("type")
-        out = attr_dict.get("type", None)
-        if type_ == "number":
-            out = "float64"
-        elif type_ == "integer":
-            out = "Int64"
-        # check if this is a datetime
-        elif attr_dict.get("format") == "date-time":
-            out = "datetime64[ns]"
-        elif "anyOf" in attr_dict:
-            values = [x["const"] for x in attr_dict["anyOf"]]
-            out = pd.CategoricalDtype(values)
-        elif out == "array":  # no array type
-            out = None
-        return out
-
-    def _get_series(attr_dict):
-        """
-        Determine the type and reference type of an attribute from a schema dict.
-        """
-        ref_str = "#/definitions/"
-        atype = attr_dict.get("type", "object")
-        is_array = atype == "array"
-        if is_array:  # dealing with array, find out sub-type
-            items = attr_dict.get("items", {})
-            ref = items.get("$ref", None)
-        else:
-            ref = attr_dict.get("$ref", None)
-        if ref:  # there is a reference to a def, just get name
-            ref = ref.replace(ref_str, "")
-
-        is_rid = ref is not None and ref.startswith(rid_str)
-        ref_mod = ref.replace("ResourceIdentifier", "") if is_rid else None
-
-        out = {
-            "model": ref if not is_rid else None,
-            "dtype": _get_dtype(attr_dict) if not is_rid else "string",
-            "referenced_model": ref_mod,
-            "is_list": is_array,
-        }
-        return out
-
-    def _get_dataframe(base):
-        """Create dataframe from class attributes."""
-        out = {}
-        required = base.get("required", {})
-        for name, prop in base["properties"].items():
-            out[name] = _get_series(prop)
-            out[name]["required"] = name in required
-        return pd.DataFrame(out).T.astype(dtypes)[list(dtypes)]
-
-    out = {
-        schema["title"]: _get_dataframe(
-            schema,
-        )
-    }
-    for name, sub_schema in schema["definitions"].items():
-        if name.startswith(rid_str):
-            continue
-        out[name] = _get_dataframe(
-            sub_schema,
-        )
-    return out
