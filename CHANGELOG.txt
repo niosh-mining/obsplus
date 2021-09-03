@@ -5,6 +5,9 @@ obsplus master
   - obsplus.WaveBank
     * Refactored `get_waveforms_bulk` to allow a dataframe if required
       columns exist (#229).
+  - Dependencies
+    * Bumped pydantic min version to 1.8.2 and pandas min version to 1.0
+
 
 obsplus 0.2.0
   - obsplus.structures.fetcher
