@@ -1,4 +1,7 @@
-obsplus master
+obsplus 0.2.2
+  - Added support for python 3.9, dropped python 3.6
+
+obsplus 0.2.1
   - obsplus.utils
     * Handled edge case of a lower precision datetime64 causing an int64
       overflow in `obsplus.utils.time.to_datetime64` (#224).
