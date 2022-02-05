@@ -1,4 +1,8 @@
 obsplus master
+  - obsplus.events.validate
+    * Loosened check for duplicate pick ids to only check for duplicate
+      P and S phases
+    * Made amplitude time window check skip over rejected amplitudes
   - obsplus.utils
     * Handled edge case of a lower precision datetime64 causing an int64
       overflow in `obsplus.utils.time.to_datetime64` (#224).

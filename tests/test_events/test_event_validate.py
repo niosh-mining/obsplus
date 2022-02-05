@@ -149,7 +149,7 @@ class TestValidateCatalog:
 
     @pytest.fixture
     def cat_duplicate_unknown_phase_hints(self, cat1):
-        """ Create duplicate picks with unknown phase hints"""
+        """Create duplicate picks with unknown phase hints"""
         cat = cat1.copy()
         eve = cat[0]
         eve.picks.append(
