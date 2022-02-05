@@ -55,6 +55,7 @@ def attach_all_resource_ids(event: Event):
     for rid, parent, attr in yield_obj_parent_attr(event, ResourceIdentifier):
         if attr != "resource_id" and rid.id in rid_to_object:
             rid.set_referred_object(rid_to_object[rid.id])
+    event.scope_resource_ids()
 
 
 @validator("obsplus", Event)
