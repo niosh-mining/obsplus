@@ -147,6 +147,31 @@ class TestValidateCatalog:
         cat1[0].picks[1].waveform_id.location_code = None
         return validate_catalog(cat1)
 
+    @pytest.fixture
+    def cat_duplicate_unknown_phase_hints(self, cat1):
+        """Create duplicate picks with unknown phase hints"""
+        cat = cat1.copy()
+        eve = cat[0]
+        eve.picks.append(
+            ev.Pick(
+                time=obspy.UTCDateTime(),
+                waveform_id=ev.WaveformStreamID(
+                    network_code="UK", station_code="STA", channel_code="HHZ"
+                ),
+                phase_hint="?",
+            )
+        )
+        eve.picks.append(
+            ev.Pick(
+                time=obspy.UTCDateTime(),
+                waveform_id=ev.WaveformStreamID(
+                    network_code="UK", station_code="STA", channel_code="HHN"
+                ),
+                phase_hint="?",
+            )
+        )
+        return cat
+
     # tests
     def test_pcat1_cleared_preferreds(self, cat1_cleared_preferreds):
         """cleared preferreds should be reset to last in list"""
@@ -315,6 +340,13 @@ class TestValidateCatalog:
         cat[0].picks.append(pick)
         # this should not raise
         validate_catalog(cat)
+
+    def test_duplicate_unknown_picks_ok(self, cat_duplicate_unknown_phase_hints):
+        """
+        Picks that are unknown (have a "?" for the phase hint) shouldn't count as duplicated
+        """
+        # this should not raise
+        validate_catalog(cat_duplicate_unknown_phase_hints)
 
     def test_duplicate_station_different_network(self, cat1):
         """

@@ -3,11 +3,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - numpy
+  - numpy<1.21
   - scipy
   - obspy
   - pytables
-  - pandas
+  - pandas<1.4
   - pytest
   - pandoc
   - pydantic

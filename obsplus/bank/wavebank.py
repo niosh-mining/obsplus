@@ -421,7 +421,11 @@ class WaveBank(_Bank):
         """
 
         def _get_gap_dfs(df, min_gap):
-            """function to apply to each group of seed_id dataframes"""
+            """Apply me to each group of seed_id dataframes"""
+            if not len(df):
+                return pd.DataFrame(
+                    columns=df.columns.union(["starttime", "endtime", "gap_duration"])
+                )
             # get the min gap
             if min_gap is None:
                 min_gap = 1.5 * df["sampling_period"].iloc[0]

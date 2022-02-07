@@ -112,16 +112,18 @@ def check_duplicate_picks(event: Event):
         )
 
     # A dict of {phase: column that cant be duplicated}
-    phase_duplicates = {"IAML": None, "AML": None}
+    phase_duplicates = {"P": NSLC[:-1], "p": NSLC[:-1], "S": NSLC[:-1], "s": NSLC[:-1]}
     # first get dataframe of picks, filter out rejected
     pdf = obsplus.picks_to_df(event)
     pdf = pdf.loc[pdf.evaluation_status != "rejected"]
     # add column for network.station.location
     event_id = str(event.resource_id)
-    for phase_hint, sub_df in pdf.groupby("phase_hint"):
-        # default to comparing network, station, location
-        subset = phase_duplicates.get(phase_hint, NSLC[:-1])
-        dup_picks(sub_df, phase_hint, subset=subset)
+    # Go through each of phase duplicates and compare against the pick dataframe
+    pick_gb = pdf.groupby("phase_hint")
+    for ph, cols in phase_duplicates.items():
+        if ph not in pick_gb.groups:
+            continue
+        dup_picks(pick_gb.get_group(ph), ph, subset=cols)
 
 
 @validator("obsplus", Event)
@@ -260,8 +262,8 @@ def check_amp_times_contain_pick_time(event: Event):
     """
     bad = []
     for amp in event.amplitudes:
-        if amp.time_window is None:
-            continue
+        if (amp.time_window is None) or (amp.evaluation_status == "rejected"):
+            continue  # We don't care about it, skip it.
         amp_t = amp.time_window.reference
         pick = amp.pick_id.get_referred_object()
         if (amp_t is None) or (amp_t != pick.time):
