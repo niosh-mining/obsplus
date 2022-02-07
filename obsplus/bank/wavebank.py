@@ -421,7 +421,7 @@ class WaveBank(_Bank):
         """
 
         def _get_gap_dfs(df, min_gap):
-            """ Apply me to each group of seed_id dataframes"""
+            """Apply me to each group of seed_id dataframes"""
             if not len(df):
                 return pd.DataFrame(
                     columns=df.columns.union(["starttime", "endtime", "gap_duration"])

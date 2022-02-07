@@ -26,7 +26,7 @@ def _get_lil(mseed_object):
     selections = None
 
     length = os.path.getsize(mseed_object)
-    assert 128 < length < 2 ** 31, "data length is outside of the save range"
+    assert 128 < length < (2 ** 31), "data length is outside of the save range"
 
     # Assume a file was passed
     bfr_np = np.fromfile(mseed_object, dtype=np.int8)
