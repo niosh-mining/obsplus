@@ -108,7 +108,7 @@ class _InventoryConstructor:
             df["end_date"] = df["end_date"].fillna(default_end)
 
         for ind, df_sub in df.groupby(cols):
-            # replace NaN values
+            # replace NaN values  # this is causing a problem with pandas 1.4 for some reason
             if isnan.any().any():
                 df_sub[isnan.loc[df_sub.index]] = np.nan
             yield ind, df_sub
