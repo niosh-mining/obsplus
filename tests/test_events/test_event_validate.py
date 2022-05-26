@@ -343,7 +343,8 @@ class TestValidateCatalog:
 
     def test_duplicate_unknown_picks_ok(self, cat_duplicate_unknown_phase_hints):
         """
-        Picks that are unknown (have a "?" for the phase hint) shouldn't count as duplicated
+        Picks that are unknown (have a "?" for the phase hint) shouldn't count
+        as duplicated
         """
         # this should not raise
         validate_catalog(cat_duplicate_unknown_phase_hints)

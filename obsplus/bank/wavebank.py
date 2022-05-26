@@ -53,7 +53,7 @@ from obsplus.utils.waveforms import (
 )
 
 # No idea why but this needs to be here to avoid problems with pandas
-assert tables.get_hdf5_version()
+assert tables.hdf5_version
 
 
 # ------------------------ constants
