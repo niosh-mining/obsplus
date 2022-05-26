@@ -3,6 +3,9 @@ obsplus master
     * Loosened check for duplicate pick ids to only check for duplicate
       P and S phases
     * Made amplitude time window check skip over rejected amplitudes
+  - obsplus.utils
+    * Fix issue #249 to allow pandas 1.4+
+  - Dropped python 3.7 from test matrix to keep size managable.
 
 obsplus 0.2.2
   - Added support for python 3.9, dropped python 3.6
