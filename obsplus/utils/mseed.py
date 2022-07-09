@@ -27,7 +27,7 @@ def _get_lil(mseed_object):
 
     length = os.path.getsize(mseed_object)
     assert length > 128, "length too small"
-    assert length < (2 ** 31), "length too big"
+    assert length < 2147483648, "length too big"
 
     # Assume a file was passed
     bfr_np = np.fromfile(mseed_object, dtype=np.int8)
