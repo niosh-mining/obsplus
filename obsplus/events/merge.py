@@ -238,7 +238,7 @@ def associate_merge(
         """
         Return a (close enough) approximation of the median for datetimes in ns.
         """
-        int_median = int(time_ser.astype(np.int64).median())
+        int_median = int(time_ser.view(np.int64).median())
         return int_median
 
     def _get_associated_event_id(new_picks, old_picks):
