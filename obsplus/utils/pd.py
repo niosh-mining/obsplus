@@ -43,6 +43,7 @@ OPS_DTYPE_FUNCS = {
     "utcdatetime": to_utc,
     "nslc_code": _int_column_to_str,
     "longitude": map_longitudes,
+    "datetime64[ns]": to_datetime64,
 }
 
 # the dtype of the columns
