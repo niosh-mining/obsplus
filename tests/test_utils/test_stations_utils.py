@@ -37,7 +37,8 @@ class TestDfToInventory:
     @pytest.fixture
     def inv_from_df(self, df_from_inv):
         """convert the station df back into an inventory."""
-        return df_to_inventory(df_from_inv)
+        out = df_to_inventory(df_from_inv)
+        return out
 
     @pytest.fixture
     def df_from_inv_from_df(self, inv_from_df):
@@ -290,7 +291,7 @@ class TestDfToInventoryGetResponses:
         }
         old.update(new)
         ser = pd.Series(old)
-        return df.append(ser, ignore_index=True)
+        return pd.concat([df, ser.to_frame().T], axis=0).reset_index(drop=True)
 
     @pytest.fixture
     def df_with_partial_responses(self, df_with_nrl_response):
