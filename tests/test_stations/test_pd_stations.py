@@ -75,7 +75,6 @@ class TestInv2Df:
             invdf.loc[invdf["station"] == "RJOB", "location"] = input
         else:
             invdf.loc[invdf["station"] == "RJOB", "location"] = input
-        # breakpoint()
         invdf = stations_to_df(invdf)
         rjob = invdf.loc[invdf["station"] == "RJOB"]
         not_rjob = invdf.loc[invdf["station"] != "RJOB"]
