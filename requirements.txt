@@ -1,5 +1,5 @@
 numpy >= 1.13.0
-obspy >= 1.2.1
+obspy >= 1.3.0
 pandas >= 1.0
 progressbar2
 pydantic >= 1.8.2

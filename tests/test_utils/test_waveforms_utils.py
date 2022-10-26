@@ -366,11 +366,11 @@ class TestArchiveToSDS:
         # ensure starttimes are the same
         old_start = group_old.starttime.min()
         sds_start = group_sds.starttime.min()
-        assert np.allclose(old_start.astype(np.int64), sds_start.astype(np.int64))
+        assert np.allclose(old_start.view(np.int64), sds_start.view(np.int64))
         # ensure endtimes are the same
         old_end = group_old.endtime.max()
         sds_end = group_sds.endtime.max()
-        assert np.allclose(old_end.astype(np.int64), sds_end.astype(np.int64))
+        assert np.allclose(old_end.view(np.int64), sds_end.view(np.int64))
 
     def test_each_file_one_trace(self, sds_wavebank):
         """ensure each file in the sds has exactly one channel"""

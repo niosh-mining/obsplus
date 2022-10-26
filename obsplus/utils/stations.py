@@ -108,9 +108,12 @@ class _InventoryConstructor:
             df["end_date"] = df["end_date"].fillna(default_end)
 
         for ind, df_sub in df.groupby(cols):
-            # replace NaN values  # this is causing a problem with pandas 1.4
-            if isnan.any().any():
-                df_sub[isnan.loc[df_sub.index]] = np.nan
+            # replace NaN values
+            sub_nan = isnan.loc[df_sub.index]
+            has_nan = sub_nan.any(axis=0)
+            cols_with_nan = has_nan[has_nan].index
+            for col in cols_with_nan:
+                df_sub.loc[sub_nan[col].values, col] = np.nan
             yield ind, df_sub
 
     def _get_kwargs(self, series, key_mapping):

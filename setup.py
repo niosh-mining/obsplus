@@ -15,7 +15,7 @@ except ImportError:
 from setuptools import setup
 
 # define python versions
-python_version = (3, 7)  # tuple of major, minor version requirement
+python_version = (3, 8)  # tuple of major, minor version requirement
 python_version_str = str(python_version[0]) + "." + str(python_version[1])
 
 # produce an error message if the python version is less than required
@@ -120,9 +120,9 @@ setup(
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering",
     ],
     test_suite="tests",

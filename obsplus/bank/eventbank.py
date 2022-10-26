@@ -323,7 +323,7 @@ class EventBank(_Bank):
         Fill missing values and casting data types.
         """
         # replace "None" with empty string for str columns
-        str_cols = STR_COLUMNS & set(df.columns)
+        str_cols = list(STR_COLUMNS & set(df.columns))
         df.loc[:, str_cols] = df.loc[:, str_cols].replace(["None"], [""])
         # get expected datatypes
         assert set(INT_COLUMNS | STR_COLUMNS).issubset(set(dtypes))
