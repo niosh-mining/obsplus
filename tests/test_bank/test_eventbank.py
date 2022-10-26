@@ -149,7 +149,7 @@ class TestBankBasics:
 
     @pytest.fixture
     def legacy_path_index(self, ebank, monkeypatch):
-        """ Overwrite 'read_index' to return an index with leading '/'s in the file paths """
+        """Overwrite 'read_index' to return an index with leading '/'s in the file paths"""
         ind = ebank.read_index()
         ind["path"] = "/" + ind["path"]
 
@@ -380,7 +380,7 @@ class TestBankBasics:
         assert (bank_path / pth).is_file()
 
     def test_file_path_legacy_index(self, ebank, legacy_path_index):
-        """ Verify backwards compatibility for relative paths with leading '/' """
+        """Verify backwards compatibility for relative paths with leading '/'"""
         cat = ebank.get_events()
         assert len(cat)
 

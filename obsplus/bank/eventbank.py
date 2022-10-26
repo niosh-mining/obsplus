@@ -269,17 +269,13 @@ class EventBank(_Bank):
         {bar_parameter_description}
         {paths_description}
         """
-        bank_path = str(self.bank_path)
-
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
         update_file_feeder = self._measure_iterator(file_yielder, bar)
-        new_func = partial(
-            self._get_cat_update_time_path, format=self.format
-        )
+        new_func = partial(self._get_cat_update_time_path, format=self.format)
         # create iterator, loop over it in chunks until it is exhausted
         iterator = self._map(new_func, update_file_feeder)
         events_remain = True

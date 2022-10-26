@@ -147,7 +147,7 @@ class TestBankBasics:
 
     @pytest.fixture
     def legacy_path_index(self, default_wbank, monkeypatch):
-        """ Overwrite 'read_index' to return an index with leading '/'s in the file paths """
+        """Overwrite 'read_index' to return an index with leading '/'s in the file paths"""
         ind = default_wbank.read_index()
         ind["path"] = "/" + ind["path"]
 
@@ -157,7 +157,6 @@ class TestBankBasics:
         monkeypatch.setattr(default_wbank, "read_index", read_index)
         yield  # <- is this necessary? it's been a little while
         monkeypatch.undo()
-
 
     # tests
     def test_type(self, ta_bank):
@@ -338,7 +337,7 @@ class TestBankBasics:
         assert (bank_path / pth).is_file()
 
     def test_file_path_legacy_index(self, default_wbank, legacy_path_index):
-        """ Verify backwards compatibility for relative paths with leading '/' """
+        """Verify backwards compatibility for relative paths with leading '/'"""
         st = default_wbank.get_waveforms()
         assert len(st)
 
