@@ -376,7 +376,7 @@ class TestArchiveToSDS:
         """ensure each file in the sds has exactly one channel"""
         index = sds_wavebank.read_index()
         for fi in index.path.unique():
-            base = Path(sds_wavebank.bank_path) / fi[1:]
+            base = sds_wavebank.bank_path / fi
             st = obspy.read(str(base))
             assert len({tr.id for tr in st}) == 1
 

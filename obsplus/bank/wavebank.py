@@ -1,6 +1,7 @@
 """
 A local database for waveform formats.
 """
+import os
 import time
 from collections import defaultdict
 from concurrent.futures import Executor
@@ -667,7 +668,7 @@ class WaveBank(_Bank):
     def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
         """return the waveforms in the index"""
         # get abs path to each datafame
-        files: pd.Series = (str(self.bank_path) + index.path).unique()
+        files: pd.Series = (str(self.bank_path) + os.sep + index.path).unique()
         # make sure start and endtimes are in UTCDateTime
         starttime = to_utc(starttime) if starttime else None
         endtime = to_utc(endtime) if endtime else None
