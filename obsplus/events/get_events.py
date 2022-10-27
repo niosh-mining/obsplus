@@ -143,7 +143,7 @@ def _get_ids(df, kwargs) -> set:
                 filt &= df["event_id"] == str(value)
         df = df[filt]
     limit = kwargs.get("limit", len(df))
-    return set(df.event_id[:limit])
+    return set(df["event_id"].values[:limit])
 
 
 def _handle_dateline_transversal(filt, df, kwargs):

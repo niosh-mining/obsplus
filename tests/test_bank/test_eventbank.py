@@ -147,6 +147,22 @@ class TestBankBasics:
         # init, update, return bank
         return obsplus.EventBank(tmp_path).update_index()
 
+    @pytest.fixture
+    def legacy_path_index(self, ebank, monkeypatch):
+        """
+        Overwrite 'read_index' to return an index with leading '/'s in
+        the file paths.
+        """
+        ind = ebank.read_index()
+        ind["path"] = "/" + ind["path"]
+
+        def read_index(*args, **kwargs):
+            return ind
+
+        monkeypatch.setattr(ebank, "read_index", read_index)
+        yield
+        monkeypatch.undo()
+
     def test_has_attrs(self, bing_ebank):
         """ensure all the required attrs exist"""
         for attr in self.expected_attrs:
@@ -357,6 +373,21 @@ class TestBankBasics:
         bank = EventBank(path, path_structure="")
         assert bank.path_structure == ""
 
+    def test_file_path_reconstruction(self, ebank):
+        """
+        It should be possible to get the full path of a file in the index using
+        pathlib's "/" overloading
+        """
+        bank_path = ebank.bank_path
+        index = ebank.read_index()
+        pth = index.iloc[0].path
+        assert (bank_path / pth).is_file()
+
+    def test_file_path_legacy_index(self, ebank, legacy_path_index):
+        """Verify backwards compatibility for relative paths with leading '/'"""
+        cat = ebank.get_events()
+        assert len(cat)
+
 
 class TestEventIdInBank:
     """Tests for determining if ids are in the bank."""
@@ -531,7 +562,7 @@ class TestGetEvents:
         """Create an event bank and delete all but 1 qml."""
         df = ebank.read_index()
         for path in df["path"][:-1]:
-            file_path = Path(str(ebank.bank_path) + path)
+            file_path = ebank.bank_path / path
             assert file_path.exists()
             file_path.unlink()
         return ebank
@@ -695,7 +726,7 @@ class TestPutEvents:
         """Ensure events are not squashed when overwrite_existing=False"""
         # get mtimes of files in event bank
         df = ebank.read_index()
-        files = [ebank.bank_path / x[1:] for x in df["path"]]
+        files = [ebank.bank_path / x for x in df["path"]]
         assert all([x.exists() for x in files])
         mtimes_1 = [x.stat().st_mtime for x in files]
         # put the same events back into the bank

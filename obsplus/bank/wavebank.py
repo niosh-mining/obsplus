@@ -1,6 +1,7 @@
 """
 A local database for waveform formats.
 """
+import os
 import time
 from collections import defaultdict
 from concurrent.futures import Executor
@@ -450,7 +451,7 @@ class WaveBank(_Bank):
         # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
         group_names = list(NSLC) + ["sampling_period"]  # include period
-        group = index.groupby(group_names, as_index=False)
+        group = index.groupby(group_names, as_index=False, group_keys=False)
         out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
             return pd.DataFrame(columns=self._gap_columns)
@@ -480,7 +481,7 @@ class WaveBank(_Bank):
         # merge gap dataframe with availability dataframe, add uptime and %
         df = pd.merge(avail, gap_total_df, how="outer")
         # fill any Nan in gap_duration with empty timedelta
-        df.loc[:, "gap_duration"] = df["gap_duration"].fillna(EMPTYTD64)
+        df["gap_duration"] = df["gap_duration"].fillna(EMPTYTD64)
         df["uptime"] = df["duration"] - df["gap_duration"]
         df["availability"] = df["uptime"] / df["duration"]
         return df
@@ -667,7 +668,7 @@ class WaveBank(_Bank):
     def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
         """return the waveforms in the index"""
         # get abs path to each datafame
-        files: pd.Series = (str(self.bank_path) + index.path).unique()
+        files: pd.Series = (str(self.bank_path) + os.sep + index.path).unique()
         # make sure start and endtimes are in UTCDateTime
         starttime = to_utc(starttime) if starttime else None
         endtime = to_utc(endtime) if endtime else None

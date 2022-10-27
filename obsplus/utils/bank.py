@@ -140,7 +140,8 @@ def _remove_base_path(series: pd.Series, base="") -> pd.Series:
         return series
     unix_paths = series.str.replace(os.sep, "/", regex=False)
     unix_base_path = str(base).replace(os.sep, "/")
-    return unix_paths.str.replace(unix_base_path, "", regex=False)
+    # NOTE: this uses "/" not os.sep because we've already swapped out os.sep
+    return unix_paths.str.replace(unix_base_path + "/", "", regex=False)
 
 
 def _natify_paths(series: pd.Series) -> pd.Series:

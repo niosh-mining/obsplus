@@ -145,6 +145,22 @@ class TestBankBasics:
         assert Path(default_wbank.bank_path).exists()
         return default_wbank
 
+    @pytest.fixture
+    def legacy_path_index(self, default_wbank, monkeypatch):
+        """
+        Overwrite 'read_index' to return an index with leading '/'s in the
+        file paths.
+        """
+        ind = default_wbank.read_index()
+        ind["path"] = "/" + ind["path"]
+
+        def read_index(*args, **kwargs):
+            return ind
+
+        monkeypatch.setattr(default_wbank, "read_index", read_index)
+        yield
+        monkeypatch.undo()
+
     # tests
     def test_type(self, ta_bank):
         """make sure ta_test bank is a bank"""
@@ -165,10 +181,10 @@ class TestBankBasics:
         # make sure all file paths are in the index
         index = ta_bank_no_index.read_index()
         index_paths = _natify_paths(index["path"])
-        file_paths = set(str(ta_bank_no_index.bank_path) + index_paths)
+        file_paths = set([ta_bank_no_index.bank_path / pth for pth in index_paths])
         for file_path in iter_files(str(bank_path), ext="mseed"):
             # go up two levels to match path reference
-            file_path = os.path.abspath(file_path)
+            file_path = Path(file_path)
             assert file_path in file_paths
 
     def test_update_index_bumps_only_for_new_files(self, ta_bank_index):
@@ -313,6 +329,21 @@ class TestBankBasics:
         path = Path(tmpdir) / "path_structure"
         bank = WaveBank(path, path_structure="")
         assert bank.path_structure == ""
+
+    def test_file_path_reconstruction(self, default_wbank):
+        """
+        It should be possible to get the full path of a file in the
+        index using pathlib's "/" overloading
+        """
+        bank_path = default_wbank.bank_path
+        index = default_wbank.read_index()
+        pth = index.iloc[0].path
+        assert (bank_path / pth).is_file()
+
+    def test_file_path_legacy_index(self, default_wbank, legacy_path_index):
+        """Verify backwards compatibility for relative paths with leading '/'"""
+        st = default_wbank.get_waveforms()
+        assert len(st)
 
 
 class TestEmptyBank:

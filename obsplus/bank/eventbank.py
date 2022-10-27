@@ -2,6 +2,7 @@
 Class for interacting with events on a filesystem.
 """
 import inspect
+import os
 import time
 from concurrent.futures import Executor
 from functools import reduce, partial
@@ -268,17 +269,13 @@ class EventBank(_Bank):
         {bar_parameter_description}
         {paths_description}
         """
-        bank_path = str(self.bank_path)
-
         self._enforce_min_version()  # delete index if schema has changed
         # create iterator  and lists for storing output
         update_time = time.time()
         # create an iterator which yields files to update and updates bar
         file_yielder = self._unindexed_iterator(paths=paths)
         update_file_feeder = self._measure_iterator(file_yielder, bar)
-        new_func = partial(
-            self._get_cat_update_time_path, bank_path=bank_path, format=self.format
-        )
+        new_func = partial(self._get_cat_update_time_path, format=self.format)
         # create iterator, loop over it in chunks until it is exhausted
         iterator = self._map(new_func, update_file_feeder)
         events_remain = True
@@ -287,13 +284,12 @@ class EventBank(_Bank):
         return self
 
     @staticmethod
-    def _get_cat_update_time_path(path, bank_path, format):
+    def _get_cat_update_time_path(path, format):
         """Function to yield events, update_time and paths."""
         # NOTE: This function must be static to avoid pickling the attached
         # executor. (see #158).
         cat = try_read_catalog(path, format=format)
         update_time = getmtime(path)
-        path = path.replace(bank_path, "")
         return cat, update_time, path
 
     def _index_from_iterable(self, iterable, update_time):
@@ -315,7 +311,7 @@ class EventBank(_Bank):
         # add new events to database
         df = obsplus.events.pd._default_cat_to_df(events)
         df["updated"] = to_datetime64(update_times)
-        df["path"] = _remove_base_path(pd.Series(paths, dtype=object))
+        df["path"] = _remove_base_path(pd.Series(paths, dtype=object), self.bank_path)
         if len(df):
             df = _time_cols_to_ints(df)
             df_to_write = self._prepare_dataframe(df, EVENT_TYPES_INPUT)
@@ -397,7 +393,7 @@ class EventBank(_Bank):
         ind = self.read_index(**kwargs)
         eids = ind["event_id"]
         file_paths = ind["path"]
-        paths = str(self.bank_path) + _natify_paths(file_paths)
+        paths = str(self.bank_path) + os.sep + _natify_paths(file_paths)
         paths.drop_duplicates(inplace=True)
         read_func = partial(try_read_catalog, format=self.format)
         # Divide work evenly between workers, with a min chunksize of 1.
@@ -510,7 +506,7 @@ class EventBank(_Bank):
         rid = str(event.resource_id)
         if rid in df.index:  # event needs to be updated
             path = df.loc[rid, "path"]
-            save_path = bank_path + path
+            save_path = bank_path + os.sep + path
             if not overwrite_existing:  # dont update existing
                 return
         else:  # event file does not yet exist

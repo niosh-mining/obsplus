@@ -108,6 +108,10 @@ class _InventoryConstructor:
             df["end_date"] = df["end_date"].fillna(default_end)
 
         for ind, df_sub in df.groupby(cols):
+            # Pandas added an annoying warning about iterating groupbys with
+            # len one. In the future ind will be a tuple, so future proofing.
+            # See pandas/issues/42795
+            ind = ind[0] if isinstance(ind, tuple) and len(ind) == 1 else ind
             # replace NaN values
             sub_nan = isnan.loc[df_sub.index]
             has_nan = sub_nan.any(axis=0)
