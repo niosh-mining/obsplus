@@ -147,7 +147,10 @@ class TestBankBasics:
 
     @pytest.fixture
     def legacy_path_index(self, default_wbank, monkeypatch):
-        """Overwrite 'read_index' to return an index with leading '/'s in the file paths"""
+        """
+        Overwrite 'read_index' to return an index with leading '/'s in the
+        file paths.
+        """
         ind = default_wbank.read_index()
         ind["path"] = "/" + ind["path"]
 
@@ -155,7 +158,7 @@ class TestBankBasics:
             return ind
 
         monkeypatch.setattr(default_wbank, "read_index", read_index)
-        yield  # <- is this necessary? it's been a little while
+        yield
         monkeypatch.undo()
 
     # tests
@@ -329,7 +332,8 @@ class TestBankBasics:
 
     def test_file_path_reconstruction(self, default_wbank):
         """
-        It should be possible to get the full path of a file in the index using pathlib's "/" overloading
+        It should be possible to get the full path of a file in the
+        index using pathlib's "/" overloading
         """
         bank_path = default_wbank.bank_path
         index = default_wbank.read_index()

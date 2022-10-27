@@ -298,7 +298,7 @@ class TestReadDataFrame:
     @pytest.fixture
     def df_bad_location(self, inv_df):
         """make location codes nan, run through read_inventory"""
-        inv_df.loc[:, "location"] = np.NaN
+        inv_df["location"] = np.NaN
         return stations_to_df(inv_df)
 
     # tests

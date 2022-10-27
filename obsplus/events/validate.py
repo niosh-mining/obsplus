@@ -158,7 +158,7 @@ def check_pick_order(event: Event):
     # get series of network, station
     ns = get_seed_id_series(pdf, subset=NSLC[:3])
     # Checking that picks are in acceptable order
-    gb, sp, ap = pdf.groupby(ns), [], []
+    gb, sp, ap = pdf.groupby(ns, group_keys=False), [], []
     gb.apply(pick_order, sp, ap)
     assert len(sp) == 0, "S pick found before P pick:\n" f"station/s: {sp}"
     assert len(ap) == 0, "amplitude pick found before P pick:\n" f"seed_id/s: {ap}"

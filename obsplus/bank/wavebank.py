@@ -451,7 +451,7 @@ class WaveBank(_Bank):
         # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
         group_names = list(NSLC) + ["sampling_period"]  # include period
-        group = index.groupby(group_names, as_index=False)
+        group = index.groupby(group_names, as_index=False, group_keys=False)
         out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
             return pd.DataFrame(columns=self._gap_columns)
@@ -481,7 +481,7 @@ class WaveBank(_Bank):
         # merge gap dataframe with availability dataframe, add uptime and %
         df = pd.merge(avail, gap_total_df, how="outer")
         # fill any Nan in gap_duration with empty timedelta
-        df.loc[:, "gap_duration"] = df["gap_duration"].fillna(EMPTYTD64)
+        df["gap_duration"] = df["gap_duration"].fillna(EMPTYTD64)
         df["uptime"] = df["duration"] - df["gap_duration"]
         df["availability"] = df["uptime"] / df["duration"]
         return df
