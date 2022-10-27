@@ -196,8 +196,8 @@ class TestDfToInventory:
         df_from_inv["bob"] = 1
         with pytest.warns(UserWarning) as w:
             df_to_inventory(df_from_inv)
-        assert len(w) == 1
-        assert "found unexpected columns" in w.list[0].message.args[0]
+        messages = " ".join([x.message.args[0] for x in w.list])
+        assert "found unexpected columns" in messages
 
 
 @pytest.mark.requires_network

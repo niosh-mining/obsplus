@@ -28,7 +28,6 @@ from obsplus.interfaces import StationClient
 from obsplus.utils import get_nslc_series
 from obsplus.utils.docs import compose_docstring, format_dtypes
 from obsplus.utils.time import to_utc
-from obsplus.utils.misc import suppress_warnings
 
 LARGE_NUMBER = obspy.UTCDateTime("3000-01-01").timestamp
 
@@ -108,19 +107,18 @@ class _InventoryConstructor:
         if "end_date" in columns:
             df["end_date"] = df["end_date"].fillna(default_end)
 
-        with suppress_warnings(UserWarning):
-            for ind, df_sub in df.groupby(cols):
-                # Pandas added an annoying warning about iterating groupbys with
-                # len one. In the future ind will be a tuple, so future proofing.
-                # See pandas/issues/42795
-                ind = ind[0] if isinstance(ind, tuple) and len(ind) == 1 else ind
-                # replace NaN values
-                sub_nan = isnan.loc[df_sub.index]
-                has_nan = sub_nan.any(axis=0)
-                cols_with_nan = has_nan[has_nan].index
-                for col in cols_with_nan:
-                    df_sub.loc[sub_nan[col].values, col] = np.nan
-                yield ind, df_sub
+        for ind, df_sub in df.groupby(cols):
+            # Pandas added an annoying warning about iterating groupbys with
+            # len one. In the future ind will be a tuple, so future proofing.
+            # See pandas/issues/42795
+            ind = ind[0] if isinstance(ind, tuple) and len(ind) == 1 else ind
+            # replace NaN values
+            sub_nan = isnan.loc[df_sub.index]
+            has_nan = sub_nan.any(axis=0)
+            cols_with_nan = has_nan[has_nan].index
+            for col in cols_with_nan:
+                df_sub.loc[sub_nan[col].values, col] = np.nan
+            yield ind, df_sub
 
     def _get_kwargs(self, series, key_mapping):
         """create the kwargs from a series and key mapping."""
