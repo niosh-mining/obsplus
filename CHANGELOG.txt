@@ -1,6 +1,6 @@
-obsplus master
+obsplus 0.2.3
   - obsplus.bank
-    Better support for bank paths on Windows See # 256.
+    * Better support for bank paths on Windows See # 256.
   - obsplus.events.validate
     * Loosened check for duplicate pick ids to only check for duplicate
       P and S phases
@@ -8,8 +8,8 @@ obsplus master
   - obsplus.utils
     * Fix issue #249 to allow pandas 1.4+
   - versions
-    Dropped python 3.7 from test matrix to keep size managable.
-    Added python 3.10 to test matrix.
+    * Dropped python 3.7 from test matrix to keep size manageable.
+    * Added python 3.10 to test matrix.
 
 obsplus 0.2.2
   - Added support for python 3.9, dropped python 3.6
