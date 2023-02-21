@@ -21,8 +21,6 @@ exclude_lines =
 omit =
     # Dont include local tests dataset runs (these only run once)
     obsplus/datasets/*test.py
-    # dont include versioneer's version script (testing that is on them)
-    obsplus/_version.py
 
 ignore_errors = True
 
