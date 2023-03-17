@@ -569,7 +569,7 @@ def _get_seed_id(obj):
 
 # --- monkey patch events/event classes to have to_df methods.
 
-# event_to_dataframe
+
 def event_to_dataframe(cat_or_event):
     """
     Given a catalog or event, return a DataFrame summary.
