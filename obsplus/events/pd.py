@@ -122,7 +122,7 @@ class _OriginQualityExtractor:
         """Get information from uncertainty."""
         uncert_attrs = (("horizontal_uncertainty", np.NaN),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
-        for (attr, default) in uncert_attrs:
+        for attr, default in uncert_attrs:
             out[attr] = getattr(uncert, attr, default) or default
 
     def _get_depth_uncertainty_info(self, origin, out):
