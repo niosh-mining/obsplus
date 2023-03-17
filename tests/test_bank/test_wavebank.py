@@ -16,6 +16,7 @@ from os.path import join
 from pathlib import Path
 
 import numpy as np
+from numpy.testing import assert_allclose as np_assert
 import obspy
 import obspy.clients.fdsn
 import pandas as pd
@@ -1005,7 +1006,7 @@ class TestBadWaveforms:
 
     # tests
     def test_bad_file_emits_warning(self, ta_bank_bad_file):
-        """ensure an unreadable waveform file will emmit a warning"""
+        """ensure an unreadable waveform file will emit a warning"""
 
         with pytest.warns(UserWarning) as record:
             ta_bank_bad_file.update_index()
@@ -1204,7 +1205,7 @@ class TestGetGaps:
 
     @pytest.fixture(scope="class")
     def empty_bank(self):
-        """create a Sbank object initated on an empty directory"""
+        """create a bank object initiated on an empty directory"""
         with tempfile.TemporaryDirectory() as td:
             bank = WaveBank(td)
             yield bank
@@ -1219,10 +1220,20 @@ class TestGetGaps:
         """return the uptime dataframe from the gappy bank"""
         return gappy_bank.get_uptime_df()
 
+    @pytest.fixture(scope="class")
+    def detailed_uptime_df(self, gappy_bank):
+        """return the deatiled uptime dataframe from the gappy bank"""
+        return gappy_bank.get_uptime_df(detailed=True)
+
     @pytest.fixture()
     def uptime_default(self, default_wbank):
         """return the uptime from the default stream bank."""
         return default_wbank.get_uptime_df()
+
+    @pytest.fixture()
+    def detailed_uptime_default(self, default_wbank):
+        """return the detailed uptime from the default stream bank"""
+        return default_wbank.get_uptime_df(detailed=True)
 
     @pytest.fixture()
     def small_overlap_gaps(self, tmpdir):
@@ -1252,7 +1263,7 @@ class TestGetGaps:
         return bank
 
     # tests
-    def test_gaps_length(self, gap_df, gappy_bank):
+    def test_gaps_length(self, gap_df):  # , gappy_bank):
         """ensure each of the gaps shows up in df"""
         assert isinstance(gap_df, pd.DataFrame)
         assert not gap_df.empty
@@ -1269,7 +1280,33 @@ class TestGetGaps:
         gap_duration = sum([x[1] - x[0] for x in self.gaps])
         duration = self.end - self.start
         uptime_percent = (duration - gap_duration) / duration
-        assert (abs(uptime_df["availability"] - uptime_percent) < 0.001).all()
+        np_assert(uptime_df["availability"], uptime_percent, atol=0.001)
+
+    def test_gappy_detailed_uptime_df(self, detailed_uptime_df):
+        """ensure the detailed uptime df is the correct type and accurate"""
+        assert isinstance(detailed_uptime_df, pd.DataFrame)
+        # There should be one entry for each continuous data segment
+        # (will be 2 longer than the corresponding gap df)
+        assert (
+            len(detailed_uptime_df) - 2 == len(self.gaps) * 2
+        )  # The gaps are at the same times for both channels
+        # There should be a predictable amount of data
+        gap_duration = sum([x[1] - x[0] for x in self.gaps])
+        duration = self.end - self.start
+        # Explanation of the corrections to uptime:
+        #  There are two channels in the archive and each has a gap, so things
+        #  need to be doubled
+        #  The uptimes are going to be 1 sample shorter than what is calculated
+        #  due to not including the starttime of the gap
+        #  There is one more entry for each channel than there is gaps
+        uptime = (
+            duration - gap_duration - (len(self.gaps) + 1) * 1 / self.sampling_rate
+        ) * 2
+        np_assert(
+            detailed_uptime_df["duration"].dt.total_seconds().sum(),
+            uptime,
+            atol=1 / self.sampling_rate,
+        )
 
     def test_uptime_default(self, uptime_default):
         """
@@ -1282,6 +1319,15 @@ class TestGetGaps:
         assert {tr.id for tr in st} == set(obsplus.utils.pd.get_seed_id_series(df))
         assert (df["gap_duration"] == EMPTYTD64).all()
 
+    def test_detailed_uptime_default(self, detailed_uptime_default):
+        """Ensure  detailed summary of bank w/o gaps has expected info"""
+        # Should essentially match the summary uptime dataframe
+        st = obspy.read()
+        assert len(detailed_uptime_default) == len(st)
+        assert {tr.id for tr in st} == set(
+            obsplus.utils.pd.get_seed_id_series(detailed_uptime_default)
+        )
+
     def test_empty_directory(self, empty_bank):
         """
         Ensure an empty bank get_gaps returns and empty df with expected
@@ -1290,6 +1336,14 @@ class TestGetGaps:
         gaps = empty_bank.get_gaps_df()
         assert not len(gaps)
         assert set(WaveBank._gap_columns).issubset(set(gaps.columns))
+
+    def test_empty_directory_detailed_uptime(self, empty_bank):
+        """
+        Ensure empty bank returns an empty df with expected columns
+        """
+        uptime = empty_bank.get_uptime_df(detailed=True)
+        assert not len(uptime)
+        assert set(uptime.columns) == set(empty_bank._detailed_uptime_columns)
 
     def test_ta_uptime(self, ta_dataset):
         """ensure the ta bank returns an uptime df"""
@@ -1313,12 +1367,36 @@ class TestGetGaps:
         assert seeds_from_index == seeds_from_uptime
         assert not uptime.isnull().any().any()
 
+    def test_gappy_and_contiguous_detailed_uptime(self, gappy_and_contiguous_bank):
+        """
+        Ensure a combo of gappy and contiguous streams returns
+        the correct result
+        """
+        index = gappy_and_contiguous_bank.read_index()
+        uptime = gappy_and_contiguous_bank.get_uptime_df()
+        detailed_uptime = gappy_and_contiguous_bank.get_uptime_df(detailed=True)
+        # More records than default uptime summary, but condenses contents
+        #  of the index
+        assert len(uptime) < len(detailed_uptime) < len(index)
+
     def test_no_gaps_on_continuous_dataset(self, ta_dataset):
         """test no gaps on ta dataset."""
         ds = ta_dataset
         wbank = ds.waveform_client
         gap_df = wbank.get_gaps_df()
         assert len(gap_df) == 0
+
+    def test_no_detailed_uptime_gaps_on_continuous_dataset(self, ta_dataset):
+        """Detailed uptime report should match normal uptime report"""
+        wbank = ta_dataset.waveform_client
+        uptime = wbank.get_uptime_df()
+        detailed_uptime = wbank.get_uptime_df(detailed=True)
+        assert len(detailed_uptime) == len(uptime)
+        seeds_from_uptime = set(obsplus.utils.pd.get_seed_id_series(uptime))
+        seeds_from_detailed = set(obsplus.utils.pd.get_seed_id_series(detailed_uptime))
+        assert seeds_from_detailed == seeds_from_uptime
+        assert (detailed_uptime.starttime == uptime.starttime).all()
+        assert (detailed_uptime.endtime == uptime.endtime).all()
 
     def test_gaps_small_overlaps(self, small_overlap_gaps):
         """
@@ -1327,6 +1405,18 @@ class TestGetGaps:
         """
         gap_df = small_overlap_gaps.get_gaps_df()
         assert len(gap_df) == 0
+
+    def test_detailed_uptime_small_overlaps(self, small_overlap_gaps):
+        """Make sure small overlaps are handled correctly"""
+        uptime = small_overlap_gaps.get_uptime_df()
+        detailed_uptime = small_overlap_gaps.get_uptime_df(detailed=False)
+        # Once again should match the uptime df
+        assert len(detailed_uptime) == len(uptime)
+        seeds_from_uptime = set(obsplus.utils.pd.get_seed_id_series(uptime))
+        seeds_from_detailed = set(obsplus.utils.pd.get_seed_id_series(detailed_uptime))
+        assert seeds_from_detailed == seeds_from_uptime
+        assert (detailed_uptime.starttime == uptime.starttime).all()
+        assert (detailed_uptime.endtime == uptime.endtime).all()
 
     def test_min_gap_param(self, gappy_bank):
         """Ensure the min gap parameter works."""
