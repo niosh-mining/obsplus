@@ -535,7 +535,7 @@ class WaveBank(_Bank):
                 return pd.DataFrame(columns=self._detailed_uptime_columns)
             return pd.concat(
                 [_get_details(row) for _, row in avail.iterrows()]
-            ).reset_index()
+            ).reset_index(drop=True)
 
         avail = self.get_availability_df(*args, **kwargs)
         gaps_df = self.get_gaps_df(*args, **kwargs)
