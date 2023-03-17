@@ -160,7 +160,7 @@ class ArchiveDirectory:
         # ensure directory exists
         path = Path(self.path)
         path.mkdir(exist_ok=True, parents=True)
-        for (net, sta, loc, chan, t1, t2) in bulk_args:
+        for net, sta, loc, chan, t1, t2 in bulk_args:
             nslc = ".".join([net, sta, loc, chan])
             st = self.create_stream(t1, t2, (nslc,))
             time_name = str(t1).split(".")[0].replace(":", "-") + ".mseed"

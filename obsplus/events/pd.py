@@ -115,7 +115,7 @@ class _OriginQualityExtractor:
             ("used_phase_count", out.get("used_phase_count", 0)),
         )
         quality = getattr(origin, "quality", ev.OriginQuality())
-        for (attr, default) in quality_attrs:
+        for attr, default in quality_attrs:
             out[attr] = getattr(quality, attr, None) or default
 
     def _get_origin_uncertainty(self, origin, out):
