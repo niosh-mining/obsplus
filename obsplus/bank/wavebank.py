@@ -158,6 +158,7 @@ class WaveBank(_Bank):
     index_columns = tuple(list(index_str) + list(index_ints) + ["path"])
     columns_no_path = index_columns[:-1]
     _gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
+    _segment_columns = tuple(list(index_str) + ["starttime", "endtime", "duration"])
     namespace = "/waveforms"
     buffer = np.timedelta64(1_000_000_000, "ns")
     # dict defining lengths of str columns (after seed spec)
@@ -417,8 +418,7 @@ class WaveBank(_Bank):
         {get_waveforms_params}
         min_gap
             The minimum gap to report in seconds or as a timedelta64.
-             If None, use 1.5 x sampling rate for
-            each channel.
+             If None, use 1.5 x sampling rate for each channel.
         """
 
         def _get_gap_dfs(df, min_gap):
@@ -439,7 +439,9 @@ class WaveBank(_Bank):
                 .reset_index(drop=True)
             )
             shifted_starttimes = dd.starttime.shift(-1)
-            cum_max = np.maximum.accumulate(dd["endtime"] + min_gap)
+            cum_max = np.maximum.accumulate(
+                dd["endtime"] + min_gap
+            )  # Handles data overlaps
             gap_index = cum_max < shifted_starttimes
             # create a dataframe of gaps
             df = dd[gap_index]
@@ -458,20 +460,28 @@ class WaveBank(_Bank):
         return out.reset_index(drop=True)
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
-    def get_uptime_df(self, *args, **kwargs) -> pd.DataFrame:
+    def get_uptime_df(
+        self,
+        *args,
+        **kwargs,
+    ) -> pd.DataFrame:
         """
         Return a dataframe with uptime stats for selected channels.
 
         Parameters
         ----------
         {get_waveforms_params}
-
+        min_gap
+            The minimum gap to report in seconds or as a timedelta64.
+            If None, use 1.5 x sampling rate for each channel.
         """
-        # get total number of seconds bank spans for each seed id
+
         avail = self.get_availability_df(*args, **kwargs)
+        gaps_df = self.get_gaps_df(*args, **kwargs)
+
+        # get total number of seconds bank spans for each seed id
         avail["duration"] = avail["endtime"] - avail["starttime"]
         # get total duration of gaps by seed id
-        gaps_df = self.get_gaps_df(*args, **kwargs)
         if gaps_df.empty:
             gap_total_df = pd.DataFrame(avail[list(NSLC)])
             gap_total_df["gap_duration"] = EMPTYTD64
@@ -485,6 +495,60 @@ class WaveBank(_Bank):
         df["uptime"] = df["duration"] - df["gap_duration"]
         df["availability"] = df["uptime"] / df["duration"]
         return df
+
+    @compose_docstring(get_waveforms_params=get_waveforms_parameters)
+    def get_segments_df(
+        self,
+        *args,
+        **kwargs,
+    ) -> pd.DataFrame:
+        """
+        Return a dataframe of contiguous segments for the selected channels
+
+        Parameters
+        ----------
+        {get_waveforms_params}
+        min_gap
+            The minimum gap to report in seconds or as a timedelta64.
+            If None, use 1.5 x sampling rate for each channel.
+        """
+
+        def _get_details(ser):
+            # Get the gap report for the seed id
+            seed_id = tuple(ser[list(NSLC)].values)
+            if seed_id in gps.groups:
+                df = gps.get_group(seed_id).reset_index(drop=True)
+                df.loc[max(df.index) + 1, :] = None
+                starttime = df["endtime"].shift(
+                    1
+                )  # End of the gap is the start of the next data segment
+                starttime.name = "starttime"
+                endtime = df["starttime"]  # Start of the gap is end of the data segment
+                endtime.name = "endtime"
+                # Fill in the missing values
+                starttime[0] = ser.starttime
+                endtime[max(endtime.index)] = ser.endtime
+                # Build the dataframe
+                uptime = pd.concat([starttime, endtime], axis=1)
+            else:
+                df = pd.DataFrame(columns=gaps_df.columns)
+                uptime = pd.DataFrame(
+                    [[ser["starttime"], ser["endtime"]]],
+                    columns=["starttime", "endtime"],
+                )
+            uptime["duration"] = uptime["endtime"] - uptime["starttime"]
+            for x in NSLC:
+                uptime[x] = ser[x]
+            return uptime
+
+        avail = self.get_availability_df(*args, **kwargs)
+        gaps_df = self.get_gaps_df(*args, **kwargs)
+        gps = gaps_df.groupby(list(NSLC))
+        if not len(avail):
+            return pd.DataFrame(columns=self._segment_columns)
+        return pd.concat(
+            [_get_details(row) for _, row in avail.iterrows()]
+        ).reset_index(drop=True)
 
     # ------------------------ get waveform related methods
 

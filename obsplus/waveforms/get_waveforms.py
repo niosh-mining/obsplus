@@ -78,7 +78,7 @@ def get_waveforms_bulk(
     # get unique times and check conditions for string columns
     unique_times = np.unique(request_df[["starttime", "endtime"]].values, axis=0)
     traces = []
-    for (t1, t2) in unique_times:
+    for t1, t2 in unique_times:
         sub = _filter_index_to_bulk((t1, t2), index_df=index, bulk_df=request_df)
         new = obspy.Stream(traces=[x.data for x in sub["trace"]]).slice(
             starttime=to_utc(t1), endtime=to_utc(t2)

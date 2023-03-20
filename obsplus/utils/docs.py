@@ -33,7 +33,6 @@ def compose_docstring(**kwargs: Union[str, Sequence[str]]):
     """
 
     def _wrap(func):
-
         docstring = func.__doc__
         # iterate each provided value and look for it in the docstring
         for key, value in kwargs.items():

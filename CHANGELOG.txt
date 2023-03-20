@@ -1,3 +1,8 @@
+master
+  - obsplus.bank.wavebank
+    * Added a method called "get_segments_df" to return each segment of
+      contiguous data.
+
 obsplus 0.2.3
   - obsplus.bank
     * Better support for bank paths on Windows See # 256.
@@ -29,7 +34,7 @@ obsplus 0.2.0
   - obsplus.structures.fetcher
     * fixed an edge case were banks with only one file failed to return
        streams (#186).
-  - obsplus.structures.dxfextractor
+  - obsplus.structures.dfextractor
     * Handled the case of null integers in the NSLC columns and added a logic
       to force the seed_id column to match the other NSLC columns(#199)
   - obsplus.utils

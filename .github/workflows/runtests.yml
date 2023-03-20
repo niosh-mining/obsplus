@@ -12,7 +12,7 @@ jobs:
       - name: Setup conda
         uses: s-weigand/setup-conda@v1
         with:
-          python-version: 3.7
+          python-version: "3.10"
 
       - name: install linting packages
         run: pip install pre-commit

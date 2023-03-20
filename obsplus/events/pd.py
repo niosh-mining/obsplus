@@ -115,14 +115,14 @@ class _OriginQualityExtractor:
             ("used_phase_count", out.get("used_phase_count", 0)),
         )
         quality = getattr(origin, "quality", ev.OriginQuality())
-        for (attr, default) in quality_attrs:
+        for attr, default in quality_attrs:
             out[attr] = getattr(quality, attr, None) or default
 
     def _get_origin_uncertainty(self, origin, out):
         """Get information from uncertainty."""
         uncert_attrs = (("horizontal_uncertainty", np.NaN),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
-        for (attr, default) in uncert_attrs:
+        for attr, default in uncert_attrs:
             out[attr] = getattr(uncert, attr, default) or default
 
     def _get_depth_uncertainty_info(self, origin, out):
@@ -569,7 +569,7 @@ def _get_seed_id(obj):
 
 # --- monkey patch events/event classes to have to_df methods.
 
-# event_to_dataframe
+
 def event_to_dataframe(cat_or_event):
     """
     Given a catalog or event, return a DataFrame summary.
