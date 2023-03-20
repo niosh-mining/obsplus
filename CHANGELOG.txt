@@ -1,7 +1,7 @@
 master
   - obsplus.bank.wavebank
-    * Added an optional 'detailed' flag to get_uptime_df to return each segment
-      of contiguous data rather than just stats for each seed id.
+    * Added a method called "get_segments_df" to return each segment of
+      contiguous data.
 
 obsplus 0.2.3
   - obsplus.bank
