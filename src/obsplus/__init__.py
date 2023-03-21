@@ -55,13 +55,4 @@ from obsplus.utils.events import get_event_client
 from obsplus.utils.stations import get_station_client
 
 # Get version versioneer
-from ._version import get_versions
-
-version_dict = get_versions()
-__version__ = version_dict["version"]
-__last_version__ = __version__.split("+")[0].split("-")[0].replace("v", "")
-
-assert len(__last_version__.split(".")) == 3, "wrong version found!"
-
-
-del get_versions
+from .version import __version__, __last_version__

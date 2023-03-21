@@ -11,9 +11,11 @@ from os.path import basename
 from os.path import join, dirname, abspath
 from pathlib import Path
 
+import matplotlib
 import numpy as np
 import obspy
 import pytest
+import tables
 from obspy.core.event.base import ResourceIdentifier
 
 import obsplus.utils.dataset
@@ -58,6 +60,22 @@ def _func(*args, **kwargs):
 
 
 ResourceIdentifier._get_similar_referred_object = _func
+
+
+def pytest_sessionstart(session):
+    """
+    Hook to run before any other tests.
+
+    Used to ensure a non-visual backend is used so plots don't pop up
+    and to set debug hook to True to avoid showing progress bars,
+    except when explicitly being tested.
+    """
+    # If running in CI make sure to turn off matplotlib.
+    if os.environ.get("CI", False):
+        matplotlib.use("Agg")
+
+    # need to set nodes to 32 to avoid crash on p3.11. See pytables#977.
+    tables.parameters.NODE_CACHE_SLOTS = 32
 
 
 # ------------------------------ helper functions
