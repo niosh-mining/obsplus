@@ -1423,6 +1423,12 @@ class TestGetGaps:
         with_gap = gappy_bank.get_gaps_df()
         assert len(no_gap) < len(with_gap)
 
+    def test_segments_min_gap_param(self, gappy_bank):
+        """Ensure the min gap parameter works for get_segments_df"""
+        wo_min_gap = gappy_bank.get_segments_df()
+        w_min_gap = gappy_bank.get_segments_df(min_gap=10000000)
+        assert len(w_min_gap) < len(wo_min_gap)
+
 
 class TestBadInputs:
     """ensure wavebank handles bad inputs correctly"""
