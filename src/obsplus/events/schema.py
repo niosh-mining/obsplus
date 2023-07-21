@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import obspy.core.event as ev
 from obsplus.constants import NSLC
-from pydantic import BaseModel, validator, root_validator
+from pydantic import model_validator, ConfigDict, BaseModel, field_validator
 from typing_extensions import Literal
 
 # ----- Type Literals (enum like)
@@ -129,14 +129,12 @@ SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
 
 class _ObsPyModel(BaseModel):
-    # extra: Optional[Dict[str, Any]] = None
-
-    class Config:
-        pass
-        validate_assignment = True
-        arbitrary_types_allowed = True
-        orm_mode = True
-        extra = "allow"
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        from_attributes=True,
+        extra="allow",
+    )
 
     @staticmethod
     def _convert_to_obspy(value):
@@ -169,7 +167,7 @@ class ResourceIdentifier(_ObsPyModel):
 
     id: Optional[str] = None
 
-    @root_validator(pre=True)
+    @field_validator("id", mode="before")
     def get_id(cls, values):
         """Get the id string from the resource id"""
         value = values.get("id")
@@ -181,9 +179,9 @@ class ResourceIdentifier(_ObsPyModel):
 class _ModelWithResourceID(_ObsPyModel):
     """A model which has a resource ID"""
 
-    resource_id: Optional[ResourceIdentifier]
+    resource_id: Optional[ResourceIdentifier] = None
 
-    @validator("resource_id", always=True)
+    @field_validator("resource_id", mode="before")
     def get_resource_id(cls, value):
         """Ensure a valid str is returned."""
         if value is None:
@@ -222,18 +220,18 @@ class TimeWindow(_ObsPyModel):
 class CompositeTime(_ObsPyModel):
     """Composite Time"""
 
-    year: Optional[int]
-    year_errors: Optional[QuantityError]
-    month: Optional[int]
-    month_errors: Optional[QuantityError]
-    day: Optional[int]
-    day_errors: Optional[QuantityError]
-    hour: Optional[int]
-    hour_errors: Optional[QuantityError]
-    minute: Optional[int]
-    minute_errors: Optional[QuantityError]
-    second: Optional[float]
-    second_errors: Optional[QuantityError]
+    year: Optional[int] = None
+    year_errors: Optional[QuantityError] = None
+    month: Optional[int] = None
+    month_errors: Optional[QuantityError] = None
+    day: Optional[int] = None
+    day_errors: Optional[QuantityError] = None
+    hour: Optional[int] = None
+    hour_errors: Optional[QuantityError] = None
+    minute: Optional[int] = None
+    minute_errors: Optional[QuantityError] = None
+    second: Optional[float] = None
+    second_errors: Optional[QuantityError] = None
 
 
 class Comment(_ModelWithResourceID):
@@ -253,7 +251,8 @@ class WaveformStreamID(_ObsPyModel):
     resource_uri: Optional[ResourceIdentifier] = None
     seed_string: Optional[str] = None
 
-    @root_validator()
+    @model_validator(mode="before")
+    @classmethod
     def parse_seed_id(cls, values):
         """Parse seed IDs if needed."""
         seed_str = values.get("seed_string", None)
@@ -436,7 +435,7 @@ class Origin(_ModelWithResourceID):
     earth_model_id: Optional[ResourceIdentifier] = None
     quality: Optional[OriginQuality] = None
     origin_type: Optional[OriginType] = None
-    origin_uncertainty: Optional[OriginUncertainty]
+    origin_uncertainty: Optional[OriginUncertainty] = None
     region: Optional[str] = None
     evaluation_mode: Optional[EvaluationMode] = None
     evaluation_status: Optional[EvaluationStatus] = None

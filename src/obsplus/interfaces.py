@@ -123,9 +123,3 @@ class ProgressBar(Protocol):
     @abstractmethod
     def finish(self, **kwargs):
         """Puts the progress bar in the finished state."""
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
