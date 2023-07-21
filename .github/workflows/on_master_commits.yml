@@ -39,15 +39,14 @@ jobs:
         run: |
           pytest -s --cov obsplus --cov-report=xml
 
+      # upload coverage
       - name: upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
-          name: codecov-umbrella
-          yml: ./codecov.yml
-          fail_ci_if_error: true
+          name: PR_tests
+          fail_ci_if_error: false
 
 
   update_gh_pages:
@@ -55,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
