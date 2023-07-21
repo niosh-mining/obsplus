@@ -1,7 +1,13 @@
-master
+obsplus 0.2.5
+  - obsplus
+    * Modernized packaging, including src file and pyrpoject.toml (#259)
   - obsplus.bank.wavebank
     * Added a method called "get_segments_df" to return each segment of
-      contiguous data.
+      contiguous data (#260).
+ - CI
+    * Implimented conda env caching, swtiched to use mamba
+ - Dependencies 
+    * pinned pydantic < 2.0 until we support 2.0.
 
 obsplus 0.2.3
   - obsplus.bank
@@ -28,7 +34,6 @@ obsplus 0.2.1
       columns exist (#229).
   - Dependencies
     * Bumped pydantic min version to 1.8.2 and pandas min version to 1.0
-
 
 obsplus 0.2.0
   - obsplus.structures.fetcher
