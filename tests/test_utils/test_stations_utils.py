@@ -340,6 +340,7 @@ class TestDfToInventoryGetResponses:
         missing_seed_ids = set(get_seed_id_series(df[missing]))
         assert self.has_valid_response(inv, missing_seed_ids)
 
+    @pytest.mark.skip("Response malformed when fetched from GH actions.")
     def test_get_stations_client(self, df_with_get_stations_kwargs):
         """Ensure get_station_kwargs results responses."""
         df = df_with_get_stations_kwargs
