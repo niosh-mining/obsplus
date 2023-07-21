@@ -653,6 +653,7 @@ class TestPutEvents:
         new_lat = old_lat + 0.15
         eve.origins[0].latitude = new_lat
         # check event back in
+        # breakpoint()
         bing_ebank.put_events(eve)
         # read index, ensure event_ids are unique and have correct values
         index2 = bing_ebank.read_index()
