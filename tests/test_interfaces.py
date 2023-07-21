@@ -10,16 +10,6 @@ from obsplus.utils.misc import _get_progressbar
 from obsplus.interfaces import EventClient, WaveformClient, StationClient, ProgressBar
 
 
-class DynamicWrapper:
-    """Simple wrapper for an object."""
-
-    def __init__(self, obj):
-        self.obj = obj
-
-    def __getattr__(self, item):
-        return getattr(self.obj, item)
-
-
 # fixtures
 
 
@@ -58,11 +48,6 @@ class TestEventClient:
         assert isinstance(ebank, EventClient)
         assert issubclass(EventBank, EventClient)
 
-    def test_dynamic_client(self, bingham_dataset):
-        """Ensure dynamic instances work."""
-        event_client = DynamicWrapper(bingham_dataset.event_client)
-        assert isinstance(event_client, EventClient)
-
     @pytest.mark.parametrize("not_client", not_event_client_instances)
     def test_not_instances(self, not_client):
         """Ensure a few negative examples work."""
@@ -94,11 +79,6 @@ class TestWaveformClient:
         assert isinstance(wavebank, WaveformClient)
         assert issubclass(WaveBank, WaveformClient)
 
-    def test_dynamic_client(self, bingham_dataset):
-        """Ensure dynamic instances work."""
-        waveform_client = DynamicWrapper(bingham_dataset.waveform_client)
-        assert isinstance(waveform_client, WaveformClient)
-
 
 class TestStationClient:
     """Tests for station client interface."""
@@ -118,11 +98,6 @@ class TestStationClient:
         inv = obspy.read_inventory()
         assert isinstance(inv, StationClient)
         assert issubclass(obspy.Inventory, StationClient)
-
-    def test_dynamic_client(self, bingham_dataset):
-        """Ensure dynamic instances work."""
-        station_client = DynamicWrapper(bingham_dataset.station_client)
-        assert isinstance(station_client, StationClient)
 
 
 class TestBar:

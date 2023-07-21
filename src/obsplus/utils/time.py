@@ -314,6 +314,9 @@ def _list_tuple_to_timedelta(value, default=None):
 @to_timedelta64.register(pd.Series)
 def _series_to_timedelta(ser) -> pd.Series:
     """Convert a series to a timedelta."""
+    if np.issubdtype(ser.dtype, np.timedelta64):
+        return ser.astype("timedelta64[ns]")  # convert to ns precision
+    # or iterate all elements of series.
     return ser.apply(to_timedelta64)
 
 
@@ -321,8 +324,10 @@ def _series_to_timedelta(ser) -> pd.Series:
 def _array_to_timedelta(obj):
     """Convert a series to a timedelta."""
     if np.issubdtype(obj.dtype, np.timedelta64):
-        return obj
-    return np.array([to_timedelta64(x) for x in obj])
+        array = obj
+    else:
+        array = np.array([to_timedelta64(x) for x in obj])
+    return array.astype("timedelta64[ns]")
 
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))

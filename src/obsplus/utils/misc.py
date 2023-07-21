@@ -570,6 +570,9 @@ def validate_version_str(version_str: str):
     if not (is_str and len(version_str.split(".")) == 3):
         msg = f"version must be a string of the form x.y.z, not {version_str}"
         raise ValueError(msg)
+    # this will split out the dev version tags to just get latest version
+    out = version_str.split("dev")[0].split("+")[0]
+    return out
 
 
 def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
@@ -582,7 +585,7 @@ def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
         A version of the form "x.y.z". Google semantic versioning for more
         details.
     """
-    validate_version_str(version_str)
+    version_str = validate_version_str(version_str)
     split = version_str.split(".")
     return int(split[0]), int(split[1]), int(split[2])
 
