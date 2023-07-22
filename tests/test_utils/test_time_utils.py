@@ -161,7 +161,9 @@ class TestTimeDelta:
         deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
         ser = pd.Series(deltas)
         out = to_timedelta64(ser)
-        assert ser.equals(out)
+        # however, after apply to_timedelta64 the precision should always be ns
+        assert np.dtype("timedelta64[ns]") == out.dtype
+        assert ser.astype("timedelta64[ns]").equals(out)
         assert out is not ser
 
     def test_tuple_and_list(self):

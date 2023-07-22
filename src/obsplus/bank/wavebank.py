@@ -542,7 +542,7 @@ class WaveBank(_Bank):
             return uptime
 
         min_gap = kwargs.pop("min_gap", None)
-        
+
         avail = self.get_availability_df(*args, **kwargs)
         gaps_df = self.get_gaps_df(*args, min_gap=min_gap, **kwargs)
         gps = gaps_df.groupby(list(NSLC))

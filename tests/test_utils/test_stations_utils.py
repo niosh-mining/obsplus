@@ -1,6 +1,8 @@
 """
 Tests for station utilities.
 """
+import os
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -342,6 +344,9 @@ class TestDfToInventoryGetResponses:
 
     def test_get_stations_client(self, df_with_get_stations_kwargs):
         """Ensure get_station_kwargs results responses."""
+        if os.environ.get("CI", False):
+            msg = "Response malformed when fetched from GH actions."
+            pytest.skip(msg)
         df = df_with_get_stations_kwargs
         col = "get_station_kwargs"
         missing = df[col].isnull() | (df[col] == "")

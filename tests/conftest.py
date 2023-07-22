@@ -16,13 +16,11 @@ import numpy as np
 import obspy
 import pytest
 import tables
-from obspy.core.event.base import ResourceIdentifier
 
 import obsplus.utils.dataset
 import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
 from obsplus.utils.testing import instrument_methods
-from obsplus.utils.misc import suppress_warnings
 
 # ------------------------- define constants
 
@@ -48,18 +46,6 @@ eve_id_cache = {}
 
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
-
-# Monkey patch the resource_id to avoid emitting millions of warnings
-# TODO Remove this when obspy 1.2 is released
-old_func = ResourceIdentifier._get_similar_referred_object
-
-
-def _func(*args, **kwargs):
-    with suppress_warnings():
-        return old_func(*args, **kwargs)
-
-
-ResourceIdentifier._get_similar_referred_object = _func
 
 
 def pytest_sessionstart(session):
