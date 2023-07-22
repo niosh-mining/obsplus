@@ -26,7 +26,7 @@ def _events_to_model(
         catalog = Catalog(events=[catalog])
     elif not isinstance(catalog, Catalog):  # sequence was passed
         catalog = Catalog(events=catalog)
-    model = event_schema.Catalog.from_orm(catalog)
+    model = event_schema.Catalog.model_validate(catalog)
     return model
 
 

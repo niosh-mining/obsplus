@@ -9,9 +9,16 @@ from typing import Optional, List
 from uuid import uuid4
 
 import obspy.core.event as ev
+from obspy.core.util.attribdict import AttribDict
 from obsplus.constants import NSLC
-from pydantic import model_validator, ConfigDict, BaseModel, field_validator
-from typing_extensions import Literal
+from pydantic import (
+    model_validator,
+    ConfigDict,
+    BaseModel,
+    field_validator,
+    PlainValidator,
+)
+from typing_extensions import Literal, Annotated
 
 # ----- Type Literals (enum like)
 
@@ -125,6 +132,17 @@ PickPolarity = Literal["positive", "negative", "undecidable"]
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
 
+def _recursive_dict(attrib):
+    """recursively turn all AttribDict s into normal dicts."""
+    out = dict(attrib)
+    for i, v in out.items():
+        if isinstance(v, AttribDict):
+            out[i] = _recursive_dict(v)
+    return out
+
+
+AttribDictType = Annotated[AttribDict, PlainValidator(_recursive_dict)]
+
 # ----- Type Models
 
 
@@ -133,8 +151,10 @@ class _ObsPyModel(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
         from_attributes=True,
-        extra="allow",
+        extra="ignore",
     )
+
+    # extra: Optional[AttribDictType] = None
 
     @staticmethod
     def _convert_to_obspy(value):
@@ -149,7 +169,7 @@ class _ObsPyModel(BaseModel):
         cls = getattr(ev, name)
         out = {}
         # get schema and properties
-        schema = self.schema()
+        schema = self.model_json_schema()
         props = schema["properties"]
         array_props = {x for x, y in props.items() if y.get("type") == "array"}
         # iterate each property and convert back to obspy
@@ -170,10 +190,10 @@ class ResourceIdentifier(_ObsPyModel):
     @field_validator("id", mode="before")
     def get_id(cls, values):
         """Get the id string from the resource id"""
-        value = values.get("id")
+        value = values.get("id") if hasattr(values, "get") else values
         if value is None:
             value = str(uuid4())
-        return {"id": value}
+        return value
 
 
 class _ModelWithResourceID(_ObsPyModel):
