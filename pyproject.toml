@@ -54,6 +54,7 @@ dependencies = [
     "scipy",
     "tables",
     "typing-extensions",
+    "packaging",
 ]
 
 [project.optional-dependencies]
