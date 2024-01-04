@@ -88,8 +88,9 @@ class TestDfToInventory:
         # first add duplicates of fur with different start/end times
         df_from_inv["end_date"] = np.datetime64("2020-01-01")
         sub_fur = df_from_inv[df_from_inv["station"] == "FUR"]
-        sub_fur["end_date"] = sub_fur["start_date"] - np.timedelta64(1, "Y")
-        sub_fur["start_date"] = sub_fur["end_date"] - np.timedelta64(3, "Y")
+        year = np.timedelta64(365, "D")
+        sub_fur["end_date"] = sub_fur["start_date"] - year
+        sub_fur["start_date"] = sub_fur["end_date"] - 3 * year
         new_df = pd.concat([df_from_inv, sub_fur], ignore_index=True).reset_index(
             drop=True
         )
