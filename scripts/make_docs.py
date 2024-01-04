@@ -28,6 +28,7 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
     Path to created html directory.
 
     """
+    doc_path = Path(doc_path)
     # clean out all the old docs
     clean_docs()
     # execute all the notebooks
