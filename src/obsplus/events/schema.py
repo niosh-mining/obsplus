@@ -5,20 +5,23 @@ ObsPlus Event Model is a superset of, and compatible with, ObsPy's Event
 model.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 from uuid import uuid4
+from typing_extensions import Literal, Annotated
+
 
 import obspy.core.event as ev
 from obspy.core.util.attribdict import AttribDict
-from obsplus.constants import NSLC
+from obspy import UTCDateTime
 from pydantic import (
     model_validator,
     ConfigDict,
     BaseModel,
-    field_validator,
     PlainValidator,
+    Field,
 )
-from typing_extensions import Literal, Annotated
+
+from obsplus.constants import NSLC
 
 # ----- Type Literals (enum like)
 
@@ -143,6 +146,14 @@ def _recursive_dict(attrib):
 
 AttribDictType = Annotated[AttribDict, PlainValidator(_recursive_dict)]
 
+
+def _to_datetime(dt: Union[datetime, UTCDateTime]) -> datetime:
+    """Convert object to datatime."""
+    return UTCDateTime(dt).datetime
+
+
+UTCDateTimeFormat = Annotated[UTCDateTime, PlainValidator(_to_datetime)]
+
 # ----- Type Models
 
 
@@ -167,46 +178,31 @@ class _ObsPyModel(BaseModel):
         """Convert to obspy objects."""
         name = self.__class__.__name__
         cls = getattr(ev, name)
+        # Note: converting to a dict is deprecated, but we don't want
+        # to model dump because that is recursive, so we use this
+        # ugly hack to just get all attributes
         out = {}
-        # get schema and properties
-        schema = self.model_json_schema()
-        props = schema["properties"]
-        array_props = {x for x, y in props.items() if y.get("type") == "array"}
-        # iterate each property and convert back to obspy
-        for prop in props:
-            val = getattr(self, prop)
-            if prop in array_props:
-                out[prop] = [self._convert_to_obspy(x) for x in val]
+        for i in self.model_fields:
+            val = getattr(self, i)
+            if isinstance(val, (list, tuple)):
+                out[i] = [self._convert_to_obspy(x) for x in val]
             else:
-                out[prop] = self._convert_to_obspy(val)
+                out[i] = self._convert_to_obspy(val)
         return cls(**out)
 
 
 class ResourceIdentifier(_ObsPyModel):
     """Resource ID"""
 
-    id: Optional[str] = None
-
-    @field_validator("id", mode="before")
-    def get_id(cls, values):
-        """Get the id string from the resource id"""
-        value = values.get("id") if hasattr(values, "get") else values
-        if value is None:
-            value = str(uuid4())
-        return value
+    id: str = Field(default_factory=lambda: str(uuid4()))
 
 
 class _ModelWithResourceID(_ObsPyModel):
     """A model which has a resource ID"""
 
-    resource_id: Optional[ResourceIdentifier] = None
-
-    @field_validator("resource_id", mode="before")
-    def get_resource_id(cls, value):
-        """Ensure a valid str is returned."""
-        if value is None:
-            return str(uuid4())
-        return value
+    resource_id: ResourceIdentifier = Field(
+        default_factory=lambda: ResourceIdentifier()
+    )
 
 
 class QuantityError(_ObsPyModel):
@@ -225,7 +221,7 @@ class CreationInfo(_ObsPyModel):
     agency_uri: Optional[ResourceIdentifier] = None
     author: Optional[str] = None
     author_uri: Optional[ResourceIdentifier] = None
-    creation_time: Optional[datetime] = None
+    creation_time: Optional[UTCDateTimeFormat] = None
     version: Optional[str] = None
 
 
@@ -234,7 +230,7 @@ class TimeWindow(_ObsPyModel):
 
     begin: Optional[float] = None
     end: Optional[float] = None
-    reference: Optional[datetime] = None
+    reference: Optional[UTCDateTimeFormat] = None
 
 
 class CompositeTime(_ObsPyModel):
@@ -350,7 +346,7 @@ class Amplitude(_ModelWithResourceID):
     pick_id: Optional[ResourceIdentifier] = None
     waveform_id: Optional[WaveformStreamID] = None
     filter_id: Optional[ResourceIdentifier] = None
-    scaling_time: Optional[datetime] = None
+    scaling_time: Optional[UTCDateTimeFormat] = None
     scaling_time_errors: Optional[QuantityError] = None
     magnitude_hint: Optional[str] = None
     evaluation_mode: Optional[EvaluationMode] = None
@@ -394,7 +390,7 @@ class OriginQuality(_ObsPyModel):
 class Pick(_ModelWithResourceID):
     """Pick"""
 
-    time: Optional[datetime] = None
+    time: Optional[UTCDateTimeFormat] = None
     time_errors: Optional[QuantityError] = None
     waveform_id: Optional[WaveformStreamID] = None
     filter_id: Optional[ResourceIdentifier] = None
@@ -439,7 +435,7 @@ class Arrival(_ModelWithResourceID):
 class Origin(_ModelWithResourceID):
     """Origin"""
 
-    time: datetime
+    time: UTCDateTimeFormat
     time_errors: Optional[QuantityError] = None
     longitude: Optional[float] = None
     longitude_errors: Optional[QuantityError] = None

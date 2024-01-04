@@ -174,7 +174,7 @@ class _InventoryConstructor:
                 f"More than one channel returned by client with kwargs:"
                 f"{kwargs}, add constraints to resolve the issue"
             )
-            raise AmbiguousResponseError(msg)
+            warnings.warn(msg)
         return sub_inv[0][0][0].response
 
     def _update_nrl_response(self, response, df):

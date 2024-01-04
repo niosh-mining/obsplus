@@ -16,12 +16,18 @@ class TestResourceID:
 
     def test_null(self):
         """Ensure Null generates a resource ID a la ObsPy"""
+
+        import obspy
+
+        obspy._debug = True
+
         rid = esc.ResourceIdentifier()
         assert isinstance(rid.id, str)
         assert len(rid.id)
 
     def test_defined_resource_id(self):
         """Ensure the defined resource_id sticks."""
+
         rid = str(ev.ResourceIdentifier())
         out = esc.ResourceIdentifier(id=rid)
         assert out.id == rid

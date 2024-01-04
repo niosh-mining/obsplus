@@ -3,6 +3,7 @@ Tests for station utilities.
 """
 import os
 
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -284,11 +285,11 @@ class TestDfToInventoryGetResponses:
         # now add a row with an empty get_station_kwargs column
         old = dict(df.iloc[0])
         new = {
-            "station": "CWU",
-            "network": "UU",
-            "channel": "EHZ",
-            "location": "01",
-            "seed_id": "UU.CWU.01.EHZ",
+            "station": "P20A",
+            "network": "TA",
+            "channel": "BHZ",
+            "location": "",
+            "seed_id": "TA.P20A..BHZ",
             "get_station_kwargs": "{}",
         }
         old.update(new)
@@ -365,11 +366,12 @@ class TestDfToInventoryGetResponses:
         with pytest.raises(AmbiguousResponseError):
             df_to_inventory(df)
 
-    def test_ambiguous_query_raises(self, df_ambiguous_client_query):
-        """Ensure a query that returns multiple channels will raise."""
+    def test_ambiguous_query_warns(self, df_ambiguous_client_query):
+        """Ensure a query that returns multiple channels will warn."""
 
         df = df_ambiguous_client_query
-        with pytest.raises(AmbiguousResponseError):
+        msg = "More than one channel returned by client"
+        with pytest.warns(UserWarning, match=msg):
             df_to_inventory(df)
 
 
