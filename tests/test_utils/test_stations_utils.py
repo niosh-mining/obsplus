@@ -18,6 +18,7 @@ from obsplus.utils.stations import df_to_inventory, get_station_client
 from obsplus.utils.time import to_utc
 from obsplus.interfaces import StationClient
 from obsplus.exceptions import AmbiguousResponseError
+from obsplus.utils.time import to_timedelta64
 
 
 class TestDfToInventory:
@@ -86,13 +87,14 @@ class TestDfToInventory:
         start/end dates.
         """
         # first add duplicates of fur with different start/end times
-        df_from_inv["end_date"] = np.datetime64("2020-01-01")
+        df_from_inv["end_date"] = np.datetime64("2020-01-01", "ns")
         sub_fur = df_from_inv[df_from_inv["station"] == "FUR"]
-        year = np.timedelta64(365, "D")
+        year = to_timedelta64(3600) * 24 * 365
         sub_fur["end_date"] = sub_fur["start_date"] - year
         sub_fur["start_date"] = sub_fur["end_date"] - 3 * year
-        new_df = pd.concat([df_from_inv, sub_fur], ignore_index=True).reset_index(
-            drop=True
+        new_df = (
+            pd.concat([df_from_inv, sub_fur], axis=0)
+            .reset_index(drop=True)
         )
         return new_df
 
