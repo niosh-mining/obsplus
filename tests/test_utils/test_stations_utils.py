@@ -92,10 +92,7 @@ class TestDfToInventory:
         year = to_timedelta64(3600) * 24 * 365
         sub_fur["end_date"] = sub_fur["start_date"] - year
         sub_fur["start_date"] = sub_fur["end_date"] - 3 * year
-        new_df = (
-            pd.concat([df_from_inv, sub_fur], axis=0)
-            .reset_index(drop=True)
-        )
+        new_df = pd.concat([df_from_inv, sub_fur], axis=0).reset_index(drop=True)
         return new_df
 
     def test_type(self, inv_from_df):

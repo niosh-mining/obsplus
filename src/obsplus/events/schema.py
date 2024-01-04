@@ -11,7 +11,6 @@ from typing_extensions import Literal, Annotated
 
 
 import obspy.core.event as ev
-from obspy.core.util.attribdict import AttribDict
 from obspy import UTCDateTime
 from pydantic import (
     model_validator,
@@ -133,18 +132,6 @@ PickOnset = Literal["emergent", "impulsive", "questionable"]
 PickPolarity = Literal["positive", "negative", "undecidable"]
 
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
-
-
-def _recursive_dict(attrib):
-    """recursively turn all AttribDict s into normal dicts."""
-    out = dict(attrib)
-    for i, v in out.items():
-        if isinstance(v, AttribDict):
-            out[i] = _recursive_dict(v)
-    return out
-
-
-AttribDictType = Annotated[AttribDict, PlainValidator(_recursive_dict)]
 
 
 def _to_datetime(dt: Union[datetime, UTCDateTime]) -> datetime:
