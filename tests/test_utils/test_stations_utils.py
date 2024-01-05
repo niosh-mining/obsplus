@@ -3,6 +3,7 @@ Tests for station utilities.
 """
 import os
 
+
 import numpy as np
 import obspy
 import pandas as pd
@@ -17,6 +18,7 @@ from obsplus.utils.stations import df_to_inventory, get_station_client
 from obsplus.utils.time import to_utc
 from obsplus.interfaces import StationClient
 from obsplus.exceptions import AmbiguousResponseError
+from obsplus.utils.time import to_timedelta64
 
 
 class TestDfToInventory:
@@ -85,13 +87,12 @@ class TestDfToInventory:
         start/end dates.
         """
         # first add duplicates of fur with different start/end times
-        df_from_inv["end_date"] = np.datetime64("2020-01-01")
+        df_from_inv["end_date"] = np.datetime64("2020-01-01", "ns")
         sub_fur = df_from_inv[df_from_inv["station"] == "FUR"]
-        sub_fur["end_date"] = sub_fur["start_date"] - np.timedelta64(1, "Y")
-        sub_fur["start_date"] = sub_fur["end_date"] - np.timedelta64(3, "Y")
-        new_df = pd.concat([df_from_inv, sub_fur], ignore_index=True).reset_index(
-            drop=True
-        )
+        year = to_timedelta64(3600) * 24 * 365
+        sub_fur["end_date"] = sub_fur["start_date"] - year
+        sub_fur["start_date"] = sub_fur["end_date"] - 3 * year
+        new_df = pd.concat([df_from_inv, sub_fur], axis=0).reset_index(drop=True)
         return new_df
 
     def test_type(self, inv_from_df):
@@ -284,11 +285,11 @@ class TestDfToInventoryGetResponses:
         # now add a row with an empty get_station_kwargs column
         old = dict(df.iloc[0])
         new = {
-            "station": "CWU",
-            "network": "UU",
-            "channel": "EHZ",
-            "location": "01",
-            "seed_id": "UU.CWU.01.EHZ",
+            "station": "P20A",
+            "network": "TA",
+            "channel": "BHZ",
+            "location": "",
+            "seed_id": "TA.P20A..BHZ",
             "get_station_kwargs": "{}",
         }
         old.update(new)
@@ -365,11 +366,12 @@ class TestDfToInventoryGetResponses:
         with pytest.raises(AmbiguousResponseError):
             df_to_inventory(df)
 
-    def test_ambiguous_query_raises(self, df_ambiguous_client_query):
-        """Ensure a query that returns multiple channels will raise."""
+    def test_ambiguous_query_warns(self, df_ambiguous_client_query):
+        """Ensure a query that returns multiple channels will warn."""
 
         df = df_ambiguous_client_query
-        with pytest.raises(AmbiguousResponseError):
+        msg = "More than one channel returned by client"
+        with pytest.warns(UserWarning, match=msg):
             df_to_inventory(df)
 
 

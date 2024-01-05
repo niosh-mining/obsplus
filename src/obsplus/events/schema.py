@@ -5,13 +5,22 @@ ObsPlus Event Model is a superset of, and compatible with, ObsPy's Event
 model.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 from uuid import uuid4
+from typing_extensions import Literal, Annotated
+
 
 import obspy.core.event as ev
+from obspy import UTCDateTime
+from pydantic import (
+    model_validator,
+    ConfigDict,
+    BaseModel,
+    PlainValidator,
+    Field,
+)
+
 from obsplus.constants import NSLC
-from pydantic import BaseModel, validator, root_validator
-from typing_extensions import Literal
 
 # ----- Type Literals (enum like)
 
@@ -125,18 +134,25 @@ PickPolarity = Literal["positive", "negative", "undecidable"]
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
 
+def _to_datetime(dt: Union[datetime, UTCDateTime]) -> datetime:
+    """Convert object to datatime."""
+    return UTCDateTime(dt).datetime
+
+
+UTCDateTimeFormat = Annotated[UTCDateTime, PlainValidator(_to_datetime)]
+
 # ----- Type Models
 
 
 class _ObsPyModel(BaseModel):
-    # extra: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        from_attributes=True,
+        extra="ignore",
+    )
 
-    class Config:
-        pass
-        validate_assignment = True
-        arbitrary_types_allowed = True
-        orm_mode = True
-        extra = "allow"
+    # extra: Optional[AttribDictType] = None
 
     @staticmethod
     def _convert_to_obspy(value):
@@ -149,46 +165,31 @@ class _ObsPyModel(BaseModel):
         """Convert to obspy objects."""
         name = self.__class__.__name__
         cls = getattr(ev, name)
+        # Note: converting to a dict is deprecated, but we don't want
+        # to model dump because that is recursive, so we use this
+        # ugly hack to just get all attributes
         out = {}
-        # get schema and properties
-        schema = self.schema()
-        props = schema["properties"]
-        array_props = {x for x, y in props.items() if y.get("type") == "array"}
-        # iterate each property and convert back to obspy
-        for prop in props:
-            val = getattr(self, prop)
-            if prop in array_props:
-                out[prop] = [self._convert_to_obspy(x) for x in val]
+        for i in self.model_fields:
+            val = getattr(self, i)
+            if isinstance(val, (list, tuple)):
+                out[i] = [self._convert_to_obspy(x) for x in val]
             else:
-                out[prop] = self._convert_to_obspy(val)
+                out[i] = self._convert_to_obspy(val)
         return cls(**out)
 
 
 class ResourceIdentifier(_ObsPyModel):
     """Resource ID"""
 
-    id: Optional[str] = None
-
-    @root_validator(pre=True)
-    def get_id(cls, values):
-        """Get the id string from the resource id"""
-        value = values.get("id")
-        if value is None:
-            value = str(uuid4())
-        return {"id": value}
+    id: str = Field(default_factory=lambda: str(uuid4()))
 
 
 class _ModelWithResourceID(_ObsPyModel):
     """A model which has a resource ID"""
 
-    resource_id: Optional[ResourceIdentifier]
-
-    @validator("resource_id", always=True)
-    def get_resource_id(cls, value):
-        """Ensure a valid str is returned."""
-        if value is None:
-            return str(uuid4())
-        return value
+    resource_id: ResourceIdentifier = Field(
+        default_factory=lambda: ResourceIdentifier()
+    )
 
 
 class QuantityError(_ObsPyModel):
@@ -207,7 +208,7 @@ class CreationInfo(_ObsPyModel):
     agency_uri: Optional[ResourceIdentifier] = None
     author: Optional[str] = None
     author_uri: Optional[ResourceIdentifier] = None
-    creation_time: Optional[datetime] = None
+    creation_time: Optional[UTCDateTimeFormat] = None
     version: Optional[str] = None
 
 
@@ -216,24 +217,24 @@ class TimeWindow(_ObsPyModel):
 
     begin: Optional[float] = None
     end: Optional[float] = None
-    reference: Optional[datetime] = None
+    reference: Optional[UTCDateTimeFormat] = None
 
 
 class CompositeTime(_ObsPyModel):
     """Composite Time"""
 
-    year: Optional[int]
-    year_errors: Optional[QuantityError]
-    month: Optional[int]
-    month_errors: Optional[QuantityError]
-    day: Optional[int]
-    day_errors: Optional[QuantityError]
-    hour: Optional[int]
-    hour_errors: Optional[QuantityError]
-    minute: Optional[int]
-    minute_errors: Optional[QuantityError]
-    second: Optional[float]
-    second_errors: Optional[QuantityError]
+    year: Optional[int] = None
+    year_errors: Optional[QuantityError] = None
+    month: Optional[int] = None
+    month_errors: Optional[QuantityError] = None
+    day: Optional[int] = None
+    day_errors: Optional[QuantityError] = None
+    hour: Optional[int] = None
+    hour_errors: Optional[QuantityError] = None
+    minute: Optional[int] = None
+    minute_errors: Optional[QuantityError] = None
+    second: Optional[float] = None
+    second_errors: Optional[QuantityError] = None
 
 
 class Comment(_ModelWithResourceID):
@@ -253,7 +254,8 @@ class WaveformStreamID(_ObsPyModel):
     resource_uri: Optional[ResourceIdentifier] = None
     seed_string: Optional[str] = None
 
-    @root_validator()
+    @model_validator(mode="before")
+    @classmethod
     def parse_seed_id(cls, values):
         """Parse seed IDs if needed."""
         seed_str = values.get("seed_string", None)
@@ -331,7 +333,7 @@ class Amplitude(_ModelWithResourceID):
     pick_id: Optional[ResourceIdentifier] = None
     waveform_id: Optional[WaveformStreamID] = None
     filter_id: Optional[ResourceIdentifier] = None
-    scaling_time: Optional[datetime] = None
+    scaling_time: Optional[UTCDateTimeFormat] = None
     scaling_time_errors: Optional[QuantityError] = None
     magnitude_hint: Optional[str] = None
     evaluation_mode: Optional[EvaluationMode] = None
@@ -375,7 +377,7 @@ class OriginQuality(_ObsPyModel):
 class Pick(_ModelWithResourceID):
     """Pick"""
 
-    time: Optional[datetime] = None
+    time: Optional[UTCDateTimeFormat] = None
     time_errors: Optional[QuantityError] = None
     waveform_id: Optional[WaveformStreamID] = None
     filter_id: Optional[ResourceIdentifier] = None
@@ -420,7 +422,7 @@ class Arrival(_ModelWithResourceID):
 class Origin(_ModelWithResourceID):
     """Origin"""
 
-    time: datetime
+    time: UTCDateTimeFormat
     time_errors: Optional[QuantityError] = None
     longitude: Optional[float] = None
     longitude_errors: Optional[QuantityError] = None
@@ -436,7 +438,7 @@ class Origin(_ModelWithResourceID):
     earth_model_id: Optional[ResourceIdentifier] = None
     quality: Optional[OriginQuality] = None
     origin_type: Optional[OriginType] = None
-    origin_uncertainty: Optional[OriginUncertainty]
+    origin_uncertainty: Optional[OriginUncertainty] = None
     region: Optional[str] = None
     evaluation_mode: Optional[EvaluationMode] = None
     evaluation_status: Optional[EvaluationStatus] = None

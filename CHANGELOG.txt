@@ -6,7 +6,7 @@ obsplus 0.2.5
       contiguous data (#260).
  - CI
     * Implimented conda env caching, swtiched to use mamba
- - Dependencies 
+ - Dependencies
     * pinned pydantic < 2.0 until we support 2.0.
 
 obsplus 0.2.3

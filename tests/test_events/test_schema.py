@@ -16,12 +16,18 @@ class TestResourceID:
 
     def test_null(self):
         """Ensure Null generates a resource ID a la ObsPy"""
+
+        import obspy
+
+        obspy._debug = True
+
         rid = esc.ResourceIdentifier()
         assert isinstance(rid.id, str)
         assert len(rid.id)
 
     def test_defined_resource_id(self):
         """Ensure the defined resource_id sticks."""
+
         rid = str(ev.ResourceIdentifier())
         out = esc.ResourceIdentifier(id=rid)
         assert out.id == rid
@@ -90,7 +96,7 @@ class TestConversions:
 
     def test_from_obspy_catalog(self, test_catalog):
         """Ensure pydantic models can be generated from Obspy objects"""
-        out = esc.Catalog.from_orm(test_catalog)
+        out = esc.Catalog.model_validate(test_catalog)
         assert isinstance(out, esc.Catalog)
         assert len(out.events) == len(test_catalog.events)
         self.assert_lens_equal(out, test_catalog)
@@ -98,12 +104,12 @@ class TestConversions:
     def test_from_json(self, test_catalog):
         """Ensure the catalog can be created from json."""
         catalog_dict = cat_to_dict(test_catalog)
-        out = esc.Catalog.parse_obj(catalog_dict)
+        out = esc.Catalog.model_validate(catalog_dict)
         assert isinstance(out, esc.Catalog)
         assert len(out.events) == len(catalog_dict["events"])
 
     def test_round_trip(self, test_catalog):
         """Test converting from pydantic models to ObsPy."""
-        pycat = esc.Catalog.from_orm(test_catalog)
+        pycat = esc.Catalog.model_validate(test_catalog)
         out = pycat.to_obspy()
         assert out == test_catalog

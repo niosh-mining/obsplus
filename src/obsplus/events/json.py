@@ -26,7 +26,7 @@ def _events_to_model(
         catalog = Catalog(events=[catalog])
     elif not isinstance(catalog, Catalog):  # sequence was passed
         catalog = Catalog(events=catalog)
-    model = event_schema.Catalog.from_orm(catalog)
+    model = event_schema.Catalog.model_validate(catalog, from_attributes=True)
     return model
 
 
@@ -40,10 +40,9 @@ def cat_to_json(catalog: Union[Catalog, Event, Iterable[Event]]) -> str:
 
 def cat_to_dict(catalog: Union[Catalog, Event, Iterable[Event]]) -> dict:
     """
-    Convert an event object to a
+    Convert an event object to a dictionary.
     """
-    model = _events_to_model(catalog)
-    return model.dict()
+    return _events_to_model(catalog).model_dump()
 
 
 def dict_to_cat(cjson: Union[dict, str]) -> Catalog:
