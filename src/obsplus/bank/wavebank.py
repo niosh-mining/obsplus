@@ -142,7 +142,7 @@ class WaveBank(_Bank):
 
     >>> # --- Put a new stream and into the bank
     >>> # get an event from another dataset, keep track of its id
-    >>> ds = obsplus.load_dataset('bingham_test')
+    >>> ds = obsplus.load_dataset('bingham_test').copy_to()
     >>> query_kwargs = dict (station='NOQ', channel='*Z')
     >>> new_st = ds.waveform_client.get_waveforms(**query_kwargs)
     >>> assert len(new_st)

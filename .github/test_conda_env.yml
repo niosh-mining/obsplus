@@ -10,4 +10,4 @@ dependencies:
   - pandas
   - pytest
   - pandoc
-  - pydantic
+  - pydantic >2.0,<3.0

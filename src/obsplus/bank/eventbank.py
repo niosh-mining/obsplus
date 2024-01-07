@@ -134,7 +134,7 @@ class EventBank(_Bank):
 
     >>> # --- Put event files bank into the bank.
     >>> # get an event from another dataset, keep track of its id
-    >>> ds = obsplus.load_dataset('bingham_test')
+    >>> ds = obsplus.load_dataset('bingham_test').copy_to()
     >>> new_events = ds.event_client.get_events(limit=1)
     >>> new_event_id = str(new_events[0].resource_id)
     >>> # put the event into the EventBank

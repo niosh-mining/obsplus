@@ -587,7 +587,7 @@ def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
     """
     version_str = validate_version_str(version_str)
     split = version_str.split(".")
-    return int(split[0]), int(split[1]), int(split[2])
+    return int(split[0] or 0), int(split[1] or 0), int(split[2] or 0)
 
 
 def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
