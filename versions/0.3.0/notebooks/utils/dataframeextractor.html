@@ -1,0 +1,636 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>DataFrameExtractor &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    
+    <script src="../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DataFrameExtractor</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="DataFrameExtractor">
+<h1>DataFrameExtractor<a class="headerlink" href="#DataFrameExtractor" title="Link to this heading">¶</a></h1>
+<div class="admonition warning">
+<p><strong>Warning</strong>: This section is a bit technical and many users won’t need this functionality. Also, it is a bit experimental and the API may change in future versions. Proceed with caution.</p>
+</div>
+<p>The callables <code class="docutils literal notranslate"><span class="pre">`picks_to_df</span></code>, <code class="docutils literal notranslate"><span class="pre">events_to_df</span></code> &lt;../datastructures/events_to_pandas.ipynb&gt;`__, and <code class="docutils literal notranslate"><span class="pre">`inventory_to_df</span></code> &lt;../datastructures/stations_to_pandas.ipynb&gt;`__ are instances of <code class="docutils literal notranslate"><span class="pre">DataFrameExtractor</span></code>, which provides an extensible and customizable way for creating callables that extract <code class="docutils literal notranslate"><span class="pre">DataFrames</span></code> from arbitrary objects.</p>
+<p>To demonstrate, let’s create a new extractor to put arrival objects in the Crandall catalog into a dataframe. The table can be joined together with the picks table to do some (possibly) interesting things.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">obspy</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span><span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+8 Event(s) in Catalog:
+2007-08-06T08:48:40.010000Z | +39.464, -111.228 | 4.2  mb
+2007-08-07T02:14:24.080000Z | +39.463, -111.223 | 1.17 ml
+2007-08-07T03:44:18.470000Z | +39.462, -111.215 | 1.68 ml
+2007-08-07T07:13:05.760000Z | +39.461, -111.224 | 2.55 ml
+2007-08-07T02:05:04.490000Z | +39.465, -111.225 | 2.44 ml
+2007-08-06T10:47:25.600000Z | +39.462, -111.232 | 1.92 ml
+2007-08-07T21:42:51.130000Z | +39.463, -111.220 | 1.88 ml
+2007-08-06T01:44:48.810000Z | +39.462, -111.238 | 2.32 ml
+</pre></div></div>
+</div>
+<p>Start by initializing the extractor with a list of expected columns and data types. This is optional, but helps ensure the output dataframe has a consistent shape and data type. The <a class="reference external" href="https://docs.obspy.org/packages/autogen/obspy.core.event.origin.Arrival.html">arrival documentation</a> may be useful to understand these. Rather than collecting all the data contained in the <code class="docutils literal notranslate"><span class="pre">Arrival</span></code> instances, only a few columns of interest will be created.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">obspy.core.event</span> <span class="k">as</span> <span class="nn">ev</span>
+
+<span class="c1"># declare datatypes (order to double as required columns)</span>
+<span class="n">dtypes</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+    <span class="n">resource_id</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">pick_id</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">event_id</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">origin_id</span><span class="o">=</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">phase</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">time_correction</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">distance</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">time_residual</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="n">time_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># init the DataFrameExtractor</span>
+<span class="n">arrivals_to_df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">DataFrameExtractor</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Arrival</span><span class="p">,</span> <span class="n">required_columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">dtypes</span><span class="p">),</span>
+                                            <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The next step it to define some “extractors”. These are callables that will take an <code class="docutils literal notranslate"><span class="pre">Arrival</span></code> instance and return the desired data. The extractors can return:</p>
+<ol class="arabic simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">dict</span></code> of values where each key corresponds to a column name and each value is the row value of that column for the current object.</p></li>
+<li><p>Anything else, which is interpreted as the row value, and the column name is obtained from the function name.</p></li>
+</ol>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># an extractor which returns a dictionary</span>
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span> <span class="nf">_get_basic</span><span class="p">(</span><span class="n">arrival</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">resource_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">arrival</span><span class="o">.</span><span class="n">resource_id</span><span class="p">),</span>
+        <span class="n">pick_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">arrival</span><span class="o">.</span><span class="n">pick_id</span><span class="p">),</span>
+        <span class="n">time_correction</span><span class="o">=</span><span class="n">arrival</span><span class="o">.</span><span class="n">time_correction</span><span class="p">,</span>
+        <span class="n">distance</span><span class="o">=</span><span class="n">arrival</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+        <span class="n">time_residual</span><span class="o">=</span><span class="n">arrival</span><span class="o">.</span><span class="n">time_residual</span><span class="p">,</span>
+        <span class="n">time_weight</span><span class="o">=</span><span class="n">arrival</span><span class="o">.</span><span class="n">time_weight</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1"># an extractor which returns a single value</span>
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span> <span class="nf">_get_phase</span><span class="p">(</span><span class="n">arrival</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">arrival</span><span class="o">.</span><span class="n">phase</span>
+</pre></div>
+</div>
+</div>
+<p>Notice that there is no way of extracting information from the parent <code class="docutils literal notranslate"><span class="pre">Origin</span></code> or <code class="docutils literal notranslate"><span class="pre">Event</span></code> objects. The extractor also doesn’t know how to find the arrivals in a <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> object. Defining the types of data the extractor can operate on, and injecting the event and origin data into arrival rows will accomplish both of these tasks.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_get_arrivals_from_catalogs</span><span class="p">(</span><span class="n">cat</span><span class="p">):</span>
+    <span class="n">arrivals</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># a list of arrivals</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># dict of data to inject to arrival level</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
+            <span class="n">arrivals</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">event_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">,</span> <span class="n">origin_id</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+            <span class="c1"># use arrival id to inject extra to each arrival row</span>
+            <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="nb">id</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="n">data</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">arrivals</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The next step is to initiate the extractor.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>resource_id</th>
+      <th>pick_id</th>
+      <th>event_id</th>
+      <th>origin_id</th>
+      <th>phase</th>
+      <th>time_correction</th>
+      <th>distance</th>
+      <th>time_residual</th>
+      <th>time_weight</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>smi:local/6a7f7180-21e5-4bbf-9a4e-20755d212437</td>
+      <td>smi:local/21691352</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404328</td>
+      <td>Pg</td>
+      <td>NaN</td>
+      <td>0.384</td>
+      <td>0.258</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>smi:local/5e517baf-02ec-4a33-9225-7233dc109628</td>
+      <td>smi:local/21691353</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404328</td>
+      <td>Pg</td>
+      <td>NaN</td>
+      <td>0.356</td>
+      <td>1.334</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>smi:local/83a9d3ca-415d-470b-93bb-34677e9f64af</td>
+      <td>smi:local/21691354</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404328</td>
+      <td>Pg</td>
+      <td>NaN</td>
+      <td>0.550</td>
+      <td>0.158</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>smi:local/6593b4e2-8cd1-4ea0-85d7-7c67a0759a3d</td>
+      <td>smi:local/21691355</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404328</td>
+      <td>Sg</td>
+      <td>NaN</td>
+      <td>0.384</td>
+      <td>-1.695</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>smi:local/7ee1ae58-d3aa-442c-ad1e-ca2bd9ca56d8</td>
+      <td>smi:local/21691356</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404328</td>
+      <td>Sg</td>
+      <td>NaN</td>
+      <td>0.356</td>
+      <td>0.038</td>
+      <td>-1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">phase</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+phase
+pPn    238
+P      224
+Pb     129
+Sb      87
+Pg      79
+S       66
+Sg      53
+Pn      53
+Sn      22
+pPb      3
+Name: count, dtype: int64
+</pre></div></div>
+</div>
+<p>If only the P phases were needed, the easiest thing to do is filter the dataframe. For demonstration let’s modify our phase extractor so that any row that is not a P phase is skipped. This is done by raising a <code class="docutils literal notranslate"><span class="pre">SkipRow</span></code> exception which is an attribute of the <code class="docutils literal notranslate"><span class="pre">DataFrameExtractor</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span> <span class="nf">_get_phase</span><span class="p">(</span><span class="n">arrival</span><span class="p">):</span>
+    <span class="n">phase</span> <span class="o">=</span> <span class="n">arrival</span><span class="o">.</span><span class="n">phase</span>
+    <span class="k">if</span> <span class="n">phase</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">arrivals_to_df</span><span class="o">.</span><span class="n">SkipRow</span>
+    <span class="k">return</span> <span class="n">phase</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/runner/work/obsplus/obsplus/src/obsplus/structures/dfextractor.py:118: UserWarning: _get_phase is already a registered extractor, overwriting
+  warnings.warn(msg)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">phase</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+phase
+P    224
+Name: count, dtype: int64
+</pre></div></div>
+</div>
+<p>Get a picks dataframe and perform a left join on the phases:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get picks and filter out non-P phases</span>
+<span class="n">picks</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+<span class="n">picks</span> <span class="o">=</span> <span class="n">picks</span><span class="p">[</span><span class="n">picks</span><span class="o">.</span><span class="n">phase_hint</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_merged</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">picks</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="s1">&#39;resource_id&#39;</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">&#39;pick_id&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_merged</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>resource_id_x</th>
+      <th>pick_id</th>
+      <th>event_id_x</th>
+      <th>origin_id</th>
+      <th>phase</th>
+      <th>time_correction</th>
+      <th>distance</th>
+      <th>time_residual</th>
+      <th>time_weight</th>
+      <th>resource_id_y</th>
+      <th>...</th>
+      <th>agency_id</th>
+      <th>event_id_y</th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>uncertainty</th>
+      <th>lower_uncertainty</th>
+      <th>upper_uncertainty</th>
+      <th>confidence_level</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>smi:local/ed8b0924-a569-4a9b-be1a-9e837cbaf91e</td>
+      <td>smi:local/21691352</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404330</td>
+      <td>P</td>
+      <td>NaN</td>
+      <td>0.319</td>
+      <td>0.437</td>
+      <td>-1.0</td>
+      <td>smi:local/21691352</td>
+      <td>...</td>
+      <td></td>
+      <td>smi:local/248839</td>
+      <td>TA</td>
+      <td>P17A</td>
+      <td></td>
+      <td>BHZ</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>smi:local/14bccf6c-a0ec-4805-9469-a11c7704aafe</td>
+      <td>smi:local/21691353</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404330</td>
+      <td>P</td>
+      <td>NaN</td>
+      <td>0.407</td>
+      <td>-0.705</td>
+      <td>-1.0</td>
+      <td>smi:local/21691353</td>
+      <td>...</td>
+      <td></td>
+      <td>smi:local/248839</td>
+      <td>TA</td>
+      <td>P16A</td>
+      <td></td>
+      <td>BHZ</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>smi:local/a1c56c67-4c6f-4f4a-af55-c886007821dc</td>
+      <td>smi:local/21691354</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404330</td>
+      <td>P</td>
+      <td>NaN</td>
+      <td>0.585</td>
+      <td>-1.596</td>
+      <td>-1.0</td>
+      <td>smi:local/21691354</td>
+      <td>...</td>
+      <td></td>
+      <td>smi:local/248839</td>
+      <td>TA</td>
+      <td>Q16A</td>
+      <td></td>
+      <td>BHZ</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>smi:local/4f383f7b-56d3-4305-8754-f93e26230698</td>
+      <td>smi:local/21691357</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404330</td>
+      <td>P</td>
+      <td>NaN</td>
+      <td>0.624</td>
+      <td>-0.518</td>
+      <td>-1.0</td>
+      <td>smi:local/21691357</td>
+      <td>...</td>
+      <td></td>
+      <td>smi:local/248839</td>
+      <td>UU</td>
+      <td>SRU</td>
+      <td></td>
+      <td>BHZ</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>smi:local/fbb1b19a-5c2b-44bc-a4bf-7e4edfbbe1d9</td>
+      <td>smi:local/21691358</td>
+      <td>smi:local/248839</td>
+      <td>smi:local/404330</td>
+      <td>P</td>
+      <td>NaN</td>
+      <td>0.755</td>
+      <td>-0.598</td>
+      <td>-1.0</td>
+      <td>smi:local/21691358</td>
+      <td>...</td>
+      <td></td>
+      <td>smi:local/248839</td>
+      <td>TA</td>
+      <td>O16A</td>
+      <td></td>
+      <td>BHZ</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 34 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_merged</span><span class="o">.</span><span class="n">columns</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Index([&#39;resource_id_x&#39;, &#39;pick_id&#39;, &#39;event_id_x&#39;, &#39;origin_id&#39;, &#39;phase&#39;,
+       &#39;time_correction&#39;, &#39;distance&#39;, &#39;time_residual&#39;, &#39;time_weight&#39;,
+       &#39;resource_id_y&#39;, &#39;time&#39;, &#39;seed_id&#39;, &#39;filter_id&#39;, &#39;method_id&#39;,
+       &#39;horizontal_slowness&#39;, &#39;backazimuth&#39;, &#39;onset&#39;, &#39;phase_hint&#39;, &#39;polarity&#39;,
+       &#39;evaluation_mode&#39;, &#39;event_time&#39;, &#39;evaluation_status&#39;, &#39;creation_time&#39;,
+       &#39;author&#39;, &#39;agency_id&#39;, &#39;event_id_y&#39;, &#39;network&#39;, &#39;station&#39;, &#39;location&#39;,
+       &#39;channel&#39;, &#39;uncertainty&#39;, &#39;lower_uncertainty&#39;, &#39;upper_uncertainty&#39;,
+       &#39;confidence_level&#39;],
+      dtype=&#39;object&#39;)
+</pre></div></div>
+</div>
+<p>Calculate how often the <code class="docutils literal notranslate"><span class="pre">phase</span></code> attribute in the arrival is different from the <code class="docutils literal notranslate"><span class="pre">phase_hint</span></code> in the pick, which could indicate a quality issue.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># calculate fraction of phase_hints that match phase</span>
+<span class="p">(</span><span class="n">df_merged</span><span class="p">[</span><span class="s1">&#39;phase&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">df_merged</span><span class="p">[</span><span class="s1">&#39;phase_hint&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_merged</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+1.0
+</pre></div></div>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/utils/dataframeextractor.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DataFrameExtractor</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

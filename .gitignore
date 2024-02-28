@@ -66,6 +66,9 @@ target/
 # pycharm
 .idea
 
+# vscode
+.vscode/
+
 # Ipython stuff
 .ipynb_checkpoints
 
@@ -87,8 +90,11 @@ obsplus/datasets/**/stations
 obsplus/datasets/**/events
 obsplus/datasets/**/.index
 obsplus/datasets/**/readme.txt
+obsplus/datasets/**/.version
 obsplus/**/*.mseed
-docs/profiling/**/*.mseed
+profiling/**/*.mseed
+tests/test_data/test_grid_inputs/.~*
+
 
 # shelve stuff
 *.dat
@@ -98,6 +104,9 @@ docs/profiling/**/*.mseed
 # copied datasets in directory folder
 docs/api
 docs/quickref/stubs
+
+# dataset path files
+.dataset_data_path.txt
 
 # mypy
 .mypy_cache

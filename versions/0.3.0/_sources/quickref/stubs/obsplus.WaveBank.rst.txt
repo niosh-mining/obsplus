@@ -1,0 +1,61 @@
+﻿obsplus.WaveBank
+================
+
+.. currentmodule:: obsplus
+
+.. autoclass:: WaveBank
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WaveBank.__init__
+      ~WaveBank.availability
+      ~WaveBank.clear_cache
+      ~WaveBank.ensure_bank_path_exists
+      ~WaveBank.get_availability_df
+      ~WaveBank.get_gaps_df
+      ~WaveBank.get_progress_bar
+      ~WaveBank.get_segments_df
+      ~WaveBank.get_service_version
+      ~WaveBank.get_uptime_df
+      ~WaveBank.get_waveforms
+      ~WaveBank.get_waveforms_bulk
+      ~WaveBank.load_example_bank
+      ~WaveBank.put_waveforms
+      ~WaveBank.read_index
+      ~WaveBank.update_index
+      ~WaveBank.yield_waveforms
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WaveBank.bank_path
+      ~WaveBank.buffer
+      ~WaveBank.columns_no_path
+      ~WaveBank.executor
+      ~WaveBank.ext
+      ~WaveBank.hdf_kwargs
+      ~WaveBank.index_columns
+      ~WaveBank.index_ints
+      ~WaveBank.index_name
+      ~WaveBank.index_path
+      ~WaveBank.index_str
+      ~WaveBank.last_updated
+      ~WaveBank.last_updated_timestamp
+      ~WaveBank.metadata_columns
+      ~WaveBank.min_itemsize
+      ~WaveBank.name_structure
+      ~WaveBank.namespace
+      ~WaveBank.path_structure
+   
+   

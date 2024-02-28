@@ -1,0 +1,381 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Working with Catalogs &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    
+    <script src="../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Working with Catalogs</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Working-with-Catalogs">
+<h1>Working with Catalogs<a class="headerlink" href="#Working-with-Catalogs" title="Link to this heading">¶</a></h1>
+<p><a class="reference external" href="https://docs.obspy.org/packages/obspy.core.html#event-metadata">Obspy’s event representation</a> is based on the <a class="reference external" href="http://www.fdsn.org/">FDSN</a> <a class="reference external" href="https://quake.ethz.ch/quakeml/">QuakeML standard</a>, which is very comprehensive, and arguably the best standard available. However, It can be a bit difficult to work with the <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> object (and friends) for a few reasons:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>1. Often the desired data is deeply nested and hard to aggregate
+
+2. Identifying data relations depends on the complex behavior of Obspy&#39;s `ResourceIdentifier`
+
+3. Preferred objects (eg origin, magnitude, etc.) are often not set
+</pre></div>
+</div>
+<p>ObsPlus tries to solve all of these problems. The first is addressed by the <a class="reference internal" href="dataframeextractor.html"><span class="doc">DataFrame Extractor</span></a> and other tree transversal tools. The second and third are addressed by a collection of catalog validators</p>
+<section id="Catalog-Navigation">
+<h2>Catalog Navigation<a class="headerlink" href="#Catalog-Navigation" title="Link to this heading">¶</a></h2>
+<p>If you only need to extract information contained in a catalog there are various examples of creating dataframes from different parts of the catalog in the <a class="reference internal" href="../datastructures/events_to_pandas.html"><span class="doc">events_to_pandas section</span></a>.</p>
+<p>If the tree structure needs to be maintained, the <code class="docutils literal notranslate"><span class="pre">yield_object_parent_attr</span></code> function can be very useful. For example, let’s assume we want to sabotage a seismic analyst by adding noise to his/her pick times. We could do that like so:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obspy.core.event</span> <span class="k">as</span> <span class="nn">ev</span>
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils</span> <span class="kn">import</span> <span class="n">yield_obj_parent_attr</span>
+
+<span class="n">cat</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># iterate picks, add noise to pick time (-1 to 1 seconds, uniform dist.)</span>
+<span class="k">for</span> <span class="n">pick</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">):</span>
+    <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+</div>
+<p>Or, a less malicious example, perhaps we want to count all the <code class="docutils literal notranslate"><span class="pre">ResourceIdentifier</span></code> instances and ensure they have some minimum length. If they don’t we want to regenerate them.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">replaced</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">ResourceIdentifier</span><span class="p">):</span>
+    <span class="c1"># increment counter</span>
+    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1"># if the resource id is longer than twenty keep going</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">rid</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
+        <span class="k">continue</span>
+    <span class="c1"># else create a new resource_id and bind it to the parent</span>
+    <span class="n">new_rid</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">ResourceIdentifier</span><span class="p">(</span><span class="n">referred_object</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">new_rid</span><span class="p">)</span>
+    <span class="n">replaced</span> <span class="o">+=</span> <span class="mi">1</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There are </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> resource ids in the catalog. </span><span class="si">{</span><span class="n">replaced</span><span class="si">}</span><span class="s2"> were replaced.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+There are 2807 resource ids in the catalog. 1407 were replaced.
+</pre></div></div>
+</div>
+</section>
+<section id="Catalog-Validation">
+<h2>Catalog Validation<a class="headerlink" href="#Catalog-Validation" title="Link to this heading">¶</a></h2>
+<p>In addition to being difficult to navigate (point 1), validating and ensuring catalogs work as expected (points 2-3) is non-trivial. ObsPlus’s <code class="docutils literal notranslate"><span class="pre">validate_catalog</span></code> helps by ensuring all resource_ids point to the correct objects, preferred objects are set, and preforming other sanity checks. The default event validation function in ObsPlus is a bit opinionated and was built specifically for the NIOSH style of QuakeML, but you may still find it useful. Additionally, you can create your own
+validation namespace and define validators for your own data/schema as described by the <a class="reference internal" href="validators.html"><span class="doc">validators documentation</span></a>.</p>
+</section>
+<section id="Catalog-setup">
+<h2>Catalog setup<a class="headerlink" href="#Catalog-setup" title="Link to this heading">¶</a></h2>
+<p>Let’s create a catalog that has the following problems:</p>
+<ul class="simple">
+<li><p>resource_id on arrivals no longer point to the correct picks (only possible to break on Obspy versions &lt;= 1.1.0)</p></li>
+<li><p>no preferred origin/magnitudes are set</p></li>
+</ul>
+<p>ObsPlus will go through and set the resource_ids to point to the correct objects, and set all the preferred_{whatever} to the last element in the {whatever}s list (for whatever in [‘magnitude’, ‘origin’, ‘focal_mechanism’]).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="c1"># create catalog 1</span>
+<span class="k">def</span> <span class="nf">create_cat1</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; a catalog with an arrival that doesn&#39;t refer to any pick &quot;&quot;&quot;</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s1">&#39;2017-09-22T08:35:00&#39;</span><span class="p">)</span>
+    <span class="n">wid</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">WaveformStreamID</span><span class="p">(</span><span class="n">network_code</span><span class="o">=</span><span class="s1">&#39;UU&#39;</span><span class="p">,</span> <span class="n">station_code</span><span class="o">=</span><span class="s1">&#39;TMU&#39;</span><span class="p">,</span>
+                              <span class="n">location_code</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">channel_code</span><span class="o">=</span><span class="s1">&#39;HHZ&#39;</span><span class="p">)</span>
+    <span class="n">pick</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">phase_hint</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">waveform_id</span><span class="o">=</span><span class="n">wid</span><span class="p">)</span>
+    <span class="n">arrival</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Arrival</span><span class="p">(</span><span class="n">pick_id</span><span class="o">=</span><span class="n">pick</span><span class="o">.</span><span class="n">resource_id</span><span class="p">,</span> <span class="n">waveform_id</span><span class="o">=</span><span class="n">wid</span><span class="p">)</span>
+    <span class="n">origin</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">arrivals</span><span class="o">=</span><span class="p">[</span><span class="n">arrival</span><span class="p">],</span> <span class="n">latitude</span><span class="o">=</span><span class="mf">45.5</span><span class="p">,</span>
+                       <span class="n">longitude</span><span class="o">=-</span><span class="mf">111.1</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">EventDescription</span><span class="p">(</span><span class="n">create_cat1</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">)</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">origins</span><span class="o">=</span><span class="p">[</span><span class="n">origin</span><span class="p">],</span> <span class="n">picks</span><span class="o">=</span><span class="p">[</span><span class="n">pick</span><span class="p">],</span>
+                     <span class="n">event_descriptions</span><span class="o">=</span><span class="p">[</span><span class="n">description</span><span class="p">])</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="p">[</span><span class="n">event</span><span class="p">])</span>
+    <span class="c1"># create a copy of the catalog. In older versions this would screw up</span>
+    <span class="c1"># the resource ids, but the issue seems to be fixed now.</span>
+    <span class="n">cat</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cat</span>
+
+
+<span class="n">cat</span> <span class="o">=</span> <span class="n">create_cat1</span><span class="p">()</span>
+<span class="n">event</span> <span class="o">=</span> <span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">arrival</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">pick</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Validate">
+<h2>Validate<a class="headerlink" href="#Validate" title="Link to this heading">¶</a></h2>
+<p>These two problems can be fixed in place with the validate_catalog function</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">obsplus</span><span class="o">.</span><span class="n">validate_catalog</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+1 Event(s) in Catalog:
+2017-09-22T08:35:00.000000Z | +45.500, -111.100
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">())</span>
+<span class="n">arrival</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># now we will get the correct pick through the arrival object, even on older versions of obspy</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">arrival</span><span class="o">.</span><span class="n">pick_id</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Origin
+         resource_id: ResourceIdentifier(id=&#34;smi:local/0a5ed84d-731b-4c8c-8fc0-ac94935647d3&#34;)
+                time: UTCDateTime(2017, 9, 22, 8, 35)
+           longitude: -111.1
+            latitude: 45.5
+                ---------
+            arrivals: 1 Elements
+Pick
+         resource_id: ResourceIdentifier(id=&#34;smi:local/def478c2-847d-4636-80ba-5aa8c1a890e1&#34;)
+                time: UTCDateTime(2017, 9, 22, 8, 35)
+         waveform_id: WaveformStreamID(network_code=&#39;UU&#39;, station_code=&#39;TMU&#39;, channel_code=&#39;HHZ&#39;, location_code=&#39;&#39;)
+          phase_hint: &#39;P&#39;
+</pre></div></div>
+</div>
+</section>
+<section id="Fail-fast">
+<h2>Fail fast<a class="headerlink" href="#Fail-fast" title="Link to this heading">¶</a></h2>
+<p>For issues that obsplus doesn’t know how to fix, an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> will be raised. If you are generating or downloading catalogs it may be useful to run them through the validation function right away so that you know there is an issue before trying to perform any meaningful analysis.</p>
+<p>For example, if there was an arrival that didn’t refer to any known pick this could be a quality issue that you might like to know about.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a problem with the catalog</span>
+<span class="n">old_pick_id</span> <span class="o">=</span> <span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pick_id</span>
+<span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pick_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">obsplus</span><span class="o">.</span><span class="n">validate_catalog</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;something is wrong with this catalog&#39;</span><span class="p">)</span>
+
+<span class="c1"># undo the problem</span>
+<span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">arrivals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pick_id</span> <span class="o">=</span> <span class="n">old_pick_id</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+something is wrong with this catalog
+</pre></div></div>
+</div>
+</section>
+<section id="Adding-custom-validators">
+<h2>Adding custom validators<a class="headerlink" href="#Adding-custom-validators" title="Link to this heading">¶</a></h2>
+<p>See the <a class="reference internal" href="validators.html"><span class="doc">validators section</span></a> to learn how to create your own validators. The following example shows how to use a subset of ObsPlus validators.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import the validators that are desired</span>
+<span class="kn">import</span> <span class="nn">obspy.core.event</span> <span class="k">as</span> <span class="nn">ev</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.validate</span> <span class="kn">import</span> <span class="n">validator</span><span class="p">,</span> <span class="n">validate</span>
+<span class="kn">from</span> <span class="nn">obsplus.events.validate</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">attach_all_resource_ids</span><span class="p">,</span>
+    <span class="n">check_arrivals_pick_id</span><span class="p">,</span>
+    <span class="n">check_duplicate_picks</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># create new validator namespace</span>
+<span class="n">namespace</span> <span class="o">=</span> <span class="s1">&#39;_new_test&#39;</span>
+<span class="n">validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)(</span><span class="n">attach_all_resource_ids</span><span class="p">)</span>
+<span class="n">validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)(</span><span class="n">check_arrivals_pick_id</span><span class="p">)</span>
+<span class="n">validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)(</span><span class="n">check_duplicate_picks</span><span class="p">)</span>
+
+<span class="c1"># run the new validator</span>
+<span class="n">validate</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Working with Catalogs</a><ul>
+<li><a class="reference internal" href="#Catalog-Navigation">Catalog Navigation</a></li>
+<li><a class="reference internal" href="#Catalog-Validation">Catalog Validation</a></li>
+<li><a class="reference internal" href="#Catalog-setup">Catalog setup</a></li>
+<li><a class="reference internal" href="#Validate">Validate</a></li>
+<li><a class="reference internal" href="#Fail-fast">Fail fast</a></li>
+<li><a class="reference internal" href="#Adding-custom-validators">Adding custom validators</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/utils/working_with_catalogs.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Working with Catalogs</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>
