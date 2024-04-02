@@ -132,7 +132,7 @@ def internet_available():
     import socket
 
     address = "8.8.8.8"
-    port = 53
+    port = 53  # TODO: This isn't a consistent way to determine if there's internet, especially behind a corporate firewall
     try:
         socket.setdefaulttimeout(1)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
