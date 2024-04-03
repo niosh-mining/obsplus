@@ -12,7 +12,10 @@ import numpy as np
 import obspy
 import pandas as pd
 
+from obsplus.bank.core import _Bank
 from obsplus.constants import NSLC, utc_able_type
+from obsplus.utils.bank import _natify_paths
+from obsplus.utils.misc import iter_files
 from obsplus.utils.time import make_time_chunks, to_utc
 
 
@@ -302,3 +305,22 @@ class _StreamEqualTester:
         for tr1, tr2 in zip(st1, st2):
             self._assert_stats_equal(tr1, tr2)
             self._assert_arrays_almost_equal(tr1, tr2)
+
+
+def check_index_paths(bank: _Bank):
+    """
+    Make sure the paths in a bank's index can be resolved correctly
+
+    Parameters
+    ----------
+    bank:
+        A Bank (either WaveBank or EventBank) to verify
+    """
+    bank_path = bank.bank_path
+    index = bank.read_index()
+    index_paths = _natify_paths(index["path"])
+    file_paths = set([bank.bank_path / pth for pth in index_paths])
+    for file_path in iter_files(str(bank_path), ext="mseed"):
+        # go up two levels to match path reference
+        file_path = Path(file_path)
+        assert file_path in file_paths

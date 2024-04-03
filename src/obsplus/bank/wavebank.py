@@ -9,7 +9,7 @@ from contextlib import suppress
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import obspy
@@ -90,6 +90,9 @@ class WaveBank(_Bank):
         variables but requires a period as the separation character. The
         default extension (.mseed) will be added. The default is {time}
         example : {seedid}.{time}
+    index_path : str
+        The path to the index file containing the contents of the directory.
+        By default it will be created in the top-level of the data directory.
     cache_size : int
         The number of queries to store. Avoids having to read the index of
         the bank multiple times for queries involving the same start and end
@@ -175,6 +178,7 @@ class WaveBank(_Bank):
         base_path: Union[str, Path, "WaveBank"] = ".",
         path_structure: Optional[str] = None,
         name_structure: Optional[str] = None,
+        index_path: Optional[Union[str, Path]] = None,
         cache_size: int = 5,
         format="mseed",
         ext=None,
@@ -191,6 +195,7 @@ class WaveBank(_Bank):
             path_structure if path_structure is not None else WAVEFORM_STRUCTURE
         )
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
+        self._index_path = index_path
         self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
@@ -227,7 +232,7 @@ class WaveBank(_Bank):
         bar_description=bar_parameter_description, paths_description=paths_description
     )
     def update_index(
-        self, bar: Optional = None, paths: Optional[bank_subpaths_type] = None
+        self, bar: Optional[Any] = None, paths: Optional[bank_subpaths_type] = None
     ) -> "WaveBank":
         """
         Iterate files in bank and add any modified since last update to index.

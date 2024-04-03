@@ -38,7 +38,8 @@ class _Bank(ABC):
     ext = ""
     bank_path: Path = ""
     namespace = ""
-    index_name = ".index.h5"  # name of index file
+    index_name = ".index.h5"  # default name of index file
+    _index_path: Path = None  # Override for the index path
     executor = None  # an executor for using parallelism
     # optional str defining the directory structure and file name schemes
     path_structure = None
@@ -89,7 +90,7 @@ class _Bank(ABC):
     @property
     def index_path(self):
         """Return the expected path to the index file."""
-        return Path(self.bank_path) / self.index_name
+        return self._index_path or Path(self.bank_path) / self.index_name
 
     @property
     def _index_node(self):

@@ -31,9 +31,8 @@ import obsplus.utils.pd
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
 from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeyword
-from obsplus.utils.misc import iter_files
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
-from obsplus.utils.bank import _natify_paths
+from obsplus.utils.testing import check_index_paths
 from obsplus import get_reference_time
 
 # ----------------------------------- Helper functions
@@ -147,6 +146,19 @@ class TestBankBasics:
         return default_wbank
 
     @pytest.fixture
+    def cust_wbank_index_path(self, tmpdir_factory):
+        """Path for a custom index location"""
+        return tmpdir_factory.mktemp("custom_index") / ".index.h5"
+
+    @pytest.fixture
+    def cust_index_wbank(self, tmp_ta_dir, cust_wbank_index_path):
+        """WaveBank that uses a custom index path"""
+        bank_path = os.path.join(tmp_ta_dir, "waveforms")
+        bank = WaveBank(bank_path, index_path=cust_wbank_index_path)
+        bank.update_index()
+        return bank
+
+    @pytest.fixture
     def legacy_path_index(self, default_wbank, monkeypatch):
         """
         Overwrite 'read_index' to return an index with leading '/'s in the
@@ -172,21 +184,24 @@ class TestBankBasics:
         assert os.path.exists(ta_bank_index.index_path)
         assert isinstance(ta_bank_index.last_updated_timestamp, float)
 
+    def test_custom_index_path(self, cust_index_wbank, cust_wbank_index_path):
+        """ensure a custom index path can be used"""
+        index_path = cust_index_wbank.index_path
+        # Make sure the new path got passed correctly
+        assert index_path == cust_wbank_index_path
+        assert os.path.exists(index_path)
+        assert isinstance(cust_index_wbank.last_updated_timestamp, float)
+        # Make sure paths got written to the index properly
+        check_index_paths(cust_index_wbank)
+
     def test_create_index(self, ta_bank_no_index):
         """make sure a fresh index can be created"""
         # test that just trying to get an index that doesnt exists creates it
         ta_bank_no_index.read_index()
         index_path = ta_bank_no_index.index_path
-        bank_path = ta_bank_no_index.bank_path
         assert os.path.exists(index_path)
         # make sure all file paths are in the index
-        index = ta_bank_no_index.read_index()
-        index_paths = _natify_paths(index["path"])
-        file_paths = set([ta_bank_no_index.bank_path / pth for pth in index_paths])
-        for file_path in iter_files(str(bank_path), ext="mseed"):
-            # go up two levels to match path reference
-            file_path = Path(file_path)
-            assert file_path in file_paths
+        check_index_paths(ta_bank_no_index)
 
     def test_update_index_bumps_only_for_new_files(self, ta_bank_index):
         """
