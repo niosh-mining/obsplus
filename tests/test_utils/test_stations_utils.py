@@ -2,6 +2,7 @@
 Tests for station utilities.
 """
 import os
+from pathlib import Path
 
 
 import numpy as np
@@ -207,6 +208,11 @@ class TestDfToInventory:
 class TestDfToInventoryGetResponses:
     """Tests for getting responses with the df_to_inventory function."""
 
+    @pytest.fixture(scope="class")
+    def mini_NRL(self, data_path):
+        """Return a path to a miniaturized NRL for df_to_inventory tests"""
+        return Path(data_path) / "mini_nrl"
+
     def has_valid_response(self, inventory, expected_missing=None):
         """
         Return True if the inventory has expected responses.
@@ -239,15 +245,15 @@ class TestDfToInventoryGetResponses:
             df = obsplus.stations_to_df(inv)
 
         # set instrument str
-        sensor_keys = ("Nanometrics", "Trillium 120 Horizon", "Trillium 120 Horizon")
+        sensor_keys = ("Nanometrics", "TrilliumHorizon120", "120 s")
         # get digitizer keys
         datalogger_keys = (
             "Nanometrics",
             "Centaur",
-            "1 Vpp (40)",
+            "1Vpp",
+            "40 Hz",
             "Off",
-            "Linear phase",
-            "100",
+            "Linear",
         )
         # keep one as a tuple and convert the other to str
         df["sensor_keys"] = [sensor_keys for _ in range(len(df))]
@@ -327,21 +333,26 @@ class TestDfToInventoryGetResponses:
         df.loc[1, "get_station_kwargs"]["channel"] = "*"
         return df
 
-    def test_nrl_responses(self, df_with_nrl_response):
+    def test_nrl_responses(self, df_with_nrl_response, mini_NRL):
         """Ensure the NRL is used to pull responses."""
         with suppress_warnings():
-            inv = df_to_inventory(df_with_nrl_response)
+            inv = df_to_inventory(df_with_nrl_response, nrl_path=mini_NRL)
         assert self.has_valid_response(inv)
 
-    def test_response_one_missing(self, df_with_partial_responses):
+    def test_response_one_missing(self, df_with_partial_responses, mini_NRL):
         """Ensure responses which can be got are fetched."""
         df = df_with_partial_responses
         with suppress_warnings():
-            inv = df_to_inventory(df)
+            inv = df_to_inventory(df, nrl_path=mini_NRL)
 
         missing = df["sensor_keys"].isnull() | df["datalogger_keys"].isnull()
         missing_seed_ids = set(get_seed_id_series(df[missing]))
         assert self.has_valid_response(inv, missing_seed_ids)
+
+    def test_nrl_path_not_provided(self, df_with_nrl_response):
+        """Ensure raise expectedly if no NRL library path specified"""
+        with pytest.raises(AttributeError, match="nrl_path"):
+            df_to_inventory(df_with_nrl_response)
 
     def test_get_stations_client(self, df_with_get_stations_kwargs):
         """Ensure get_station_kwargs results responses."""

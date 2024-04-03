@@ -1,3 +1,8 @@
+master
+  - obsplus.utils.stations
+    * Fixed df_to_inventory to use a local copy of the NRL for compatibility
+      with ObsPy and NRLv2 (Note that NRLv1 is no longer accessible)
+
 obsplus 0.2.5
   - obsplus
     * Modernized packaging, including src file and pyrpoject.toml (#259)
