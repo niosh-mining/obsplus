@@ -102,6 +102,9 @@ class EventBank(_Bank):
         variables and a slash cannot be used in a file name on most operating
         systems. The default extension (.xml) will be added.
         The default is {time}_{event_id_short}.
+    index_path
+        The path to the index file containing the contents of the directory.
+        By default it will be created in the top-level of the data directory.
     format
         The anticipated format of the event files. Any format supported by the
         obspy.read_events function is permitted.
@@ -160,6 +163,7 @@ class EventBank(_Bank):
         base_path: Union[str, Path, "EventBank"] = ".",
         path_structure: Optional[str] = None,
         name_structure: Optional[str] = None,
+        index_path: Optional[Union[str, Path]] = None,
         format="quakeml",
         ext=".xml",
         executor: Optional[Executor] = None,
@@ -181,6 +185,7 @@ class EventBank(_Bank):
         self.path_structure = ps
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns
+        self._index_path = index_path
         self.executor = executor
         # enforce min version and warn on newer
         self._enforce_min_version()
