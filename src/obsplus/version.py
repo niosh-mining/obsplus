@@ -1,4 +1,5 @@
 """Module for reporting the package version."""
+
 from contextlib import suppress
 from importlib.metadata import PackageNotFoundError, version
 
