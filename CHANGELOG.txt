@@ -1,7 +1,9 @@
 master
+  - obsplus.bank
+    * Tweaked the banks to allow for custom index paths. See #258.
   - obsplus.utils.stations
     * Fixed df_to_inventory to use a local copy of the NRL for compatibility
-      with ObsPy and NRLv2 (Note that NRLv1 is no longer accessible)
+      with ObsPy and NRLv2 (Note that NRLv1 is no longer accessible) (#271)
 
 obsplus 0.2.5
   - obsplus

@@ -320,6 +320,6 @@ class _Bank(ABC):
     def __repr__(self):
         """Return the class name with bank path."""
         name = type(self).__name__
-        return f"{name}(base_path={self.bank_path})"
+        return f"{name}(base_path={self.bank_path}, index_path={self.index_path})"
 
     __str__ = __repr__

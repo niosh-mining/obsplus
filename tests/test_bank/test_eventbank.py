@@ -20,7 +20,7 @@ from obsplus import EventBank, copy_dataset
 from obsplus.constants import EVENT_DTYPES
 from obsplus.exceptions import UnsupportedKeyword
 from obsplus.utils.events import get_preferred
-from obsplus.utils.testing import instrument_methods
+from obsplus.utils.testing import check_index_paths, instrument_methods
 from obsplus.utils.misc import suppress_warnings, get_progressbar
 
 
@@ -130,6 +130,24 @@ class TestBankBasics:
         assert obsplus.__last_version__ != self.low_version_str
         return ebank
 
+    @pytest.fixture
+    def cust_ebank_index_path(self, tmpdir_factory):
+        """Path for a custom index location"""
+        return tmpdir_factory.mktemp("custom_index") / ".index.db"
+
+    @pytest.fixture
+    def cust_index_ebank(self, tmpdir_factory, cust_ebank_index_path):
+        """
+        Create a copy of the bingham_test data set. Then return an inited event bank
+        using the temporary bingham_test bank
+        """
+        new = Path(str(tmpdir_factory.mktemp("bingham_test")))
+        copy_dataset("bingham_test", new)
+        path = new / "bingham_test" / "events"
+        ebank = EventBank(path, index_path=cust_ebank_index_path)
+        ebank.update_index()
+        return ebank
+
     @pytest.fixture(scope="class")
     def ebank_with_event_no_time(self, tmp_path_factory):
         """Create an event bank which has one file with no time."""
@@ -174,6 +192,24 @@ class TestBankBasics:
         equal.
         """
         df = bing_ebank.read_index()
+        assert isinstance(df, pd.DataFrame)
+        assert len(bingham_catalog) == len(df)
+
+    def test_custom_index_path(
+        self, cust_index_ebank, cust_ebank_index_path, bingham_catalog
+    ):
+        """
+        Read index, ensure its length matches events and id sets are
+        equal.
+        """
+        index_path = cust_index_ebank.index_path
+        # Make sure the new path got passed correctly
+        assert index_path == cust_ebank_index_path
+        assert os.path.exists(index_path)
+        # Make sure paths got written to the index properly
+        check_index_paths(cust_index_ebank)
+        # As an extra check, verify the length of the index matches the data catalog
+        df = cust_index_ebank.read_index()
         assert isinstance(df, pd.DataFrame)
         assert len(bingham_catalog) == len(df)
 
