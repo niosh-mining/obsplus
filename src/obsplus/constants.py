@@ -1,4 +1,5 @@
 """Constants used throughout obsplus."""
+
 from collections import OrderedDict
 from os import cpu_count
 from pathlib import Path

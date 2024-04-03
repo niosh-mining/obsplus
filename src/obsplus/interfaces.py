@@ -4,6 +4,7 @@ Some common interfaces for event/client types.
 Note: These are used instead of the ones in obspy.clients.base so the subclass
 hooks can be used.
 """
+
 from abc import abstractmethod
 from typing_extensions import Protocol, runtime_checkable
 

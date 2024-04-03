@@ -131,6 +131,8 @@ def internet_available():
     """Test if internet resources are available."""
     import socket
 
+    # TODO: This isn't a consistent way to determine if there's internet, especially
+    #  behind a corporate firewall
     address = "8.8.8.8"
     port = 53
     try:
@@ -162,6 +164,12 @@ event_cache_obj = ObspyCache("qml_files", obspy.read_events)
 test_catalog_cache_obj = ObspyCache(CATALOG_DIRECTORY, obspy.read_events)
 station_cache_obj = ObspyCache(INVENTORY_DIRECTORY, obspy.read_inventory)
 has_internet = internet_available()
+
+
+@pytest.fixture(scope="session")
+def data_path():
+    """For scenarios when you really just need a path to test data"""
+    return TEST_DATA_PATH
 
 
 # -------------------- collection of test cases

@@ -1,6 +1,5 @@
 """A collection of ObsPlus Exceptions and Warnings."""
 
-
 # --- Exceptions
 
 

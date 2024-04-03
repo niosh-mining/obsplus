@@ -5,7 +5,7 @@ import json
 import warnings
 from functools import singledispatch, lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import obspy
@@ -88,8 +88,9 @@ class _InventoryConstructor:
         channel=("channel", "location", "start_date", "end_date"),
     )
 
-    def __init__(self, station_client=None):
+    def __init__(self, station_client=None, nrl_path=None):
         self._client = station_client
+        self._nrl_path = nrl_path
 
     def _groupby_if_exists(self, df, level):
         """Groupby columns if they exist on dataframe, else return empty."""
@@ -136,13 +137,12 @@ class _InventoryConstructor:
 
         return out
 
-    @property
     @lru_cache()
-    def nrl_client(self):
+    def nrl_client(self, path):
         """Initiate a nominal response library object."""
         from obspy.clients.nrl import NRL
 
-        return NRL()
+        return NRL(str(path))
 
     @property
     @lru_cache()
@@ -159,8 +159,8 @@ class _InventoryConstructor:
         return client
 
     @lru_cache()
-    def get_nrl_response(self, datalogger_keys, sensor_keys):
-        nrl = self.nrl_client
+    def get_nrl_response(self, path, datalogger_keys, sensor_keys):
+        nrl = self.nrl_client(path)
         kwargs = dict(datalogger_keys=datalogger_keys, sensor_keys=sensor_keys)
         return nrl.get_response(**kwargs)
 
@@ -182,8 +182,12 @@ class _InventoryConstructor:
         # df doesn't have needed columns, just exit
         logger_keys, sensor_keys = df["datalogger_keys"], df["sensor_keys"]
         valid = (~logger_keys.isna()) & (~sensor_keys.isna())
+        if valid.any() and self._nrl_path is None:
+            raise AttributeError(
+                "nrl_path must be specified if using NRL to get instrument responses"
+            )
         response[valid] = [
-            self.get_nrl_response(tuple(x), tuple(y))
+            self.get_nrl_response(self._nrl_path, tuple(x), tuple(y))
             for x, y in zip(logger_keys[valid], sensor_keys[valid])
         ]
 
@@ -319,7 +323,9 @@ class _InventoryConstructor:
 
 @compose_docstring(station_columns=station_col_str)
 def df_to_inventory(
-    df: pd.DataFrame, client: Optional[StationClient] = None
+    df: pd.DataFrame,
+    client: Optional[StationClient] = None,
+    nrl_path: Optional[Union[Path, str]] = None,
 ) -> obspy.Inventory:
     """
     Create an inventory from a dataframe.
@@ -334,6 +340,10 @@ def df_to_inventory(
     client
         Any client with a `get_stations` method. Only used if the dataframe
         contains special columns for retrieving channel responses.
+    nrl_path
+        The path to a local copy of the Nominal Response Library. Only used
+        if the dataframe contains special columns for retrieving channel
+        responses.
 
     Notes
     -----
@@ -344,12 +354,15 @@ def df_to_inventory(
     If the dataframe has columns named "sensor_keys" and "datalogger_keys"
     these will indicate the response information should be fetched using
     ObsPy's NRL client. Each of these columns should either contain lists
-    or josn-loadable strings.
+    or json-loadable strings.
     For example, to specify sensor keys:
     ["Nanometrics", "Trillium 120 Horizon"]
     or
     '["Nanometrics", "Trillium 120 Horizon"]'
     are both valid.
+
+    Note that the capability of ObsPy's NRL client to parse the online NRL has
+    been deprecated and it is now necessary to download and use a local copy.
 
     2. Using a station client:
     If the dataframe contains a column get_stations_kwargs it indicates that
@@ -375,7 +388,7 @@ def df_to_inventory(
     - If both NRL and client methods are indicated by column contents an
       AmbiguousResponseError will be raised.
     """
-    inv_constructor = _InventoryConstructor(station_client=client)
+    inv_constructor = _InventoryConstructor(station_client=client, nrl_path=nrl_path)
     return inv_constructor(df)
 
 
