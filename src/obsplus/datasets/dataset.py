@@ -1,6 +1,9 @@
 """
 Module for loading, (and downloading) data sets.
 """
+
+from __future__ import annotations
+
 import abc
 import copy
 import inspect
@@ -13,7 +16,7 @@ from distutils.dir_util import copy_tree
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType as MapProxy
-from typing import Union, Optional, Tuple, TypeVar
+from typing import ClassVar, TypeVar
 from warnings import warn
 
 from obspy.clients.fdsn import Client
@@ -23,17 +26,17 @@ import obsplus
 from obsplus import copy_dataset
 from obsplus.constants import DATA_TYPES
 from obsplus.exceptions import (
+    DataVersionError,
     FileHashChangedError,
     MissingDataFileError,
-    DataVersionError,
 )
-from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.interfaces import EventClient, StationClient, WaveformClient
 from obsplus.utils.dataset import _create_opsdata
 from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import (
+    get_version_tuple,
     hash_directory,
     iterate,
-    get_version_tuple,
     validate_version_str,
 )
 from obsplus.utils.stations import get_station_client
@@ -84,8 +87,8 @@ class DataSet(abc.ABC):
         by setting the OPSDATA_PATH environmental variable.
     """
 
-    _entry_points = {}
-    _datasets = {}
+    _entry_points: ClassVar = {}
+    _datasets: ClassVar = {}
     data_loaded = False
     # variables for hashing datafiles and versioning
     _version_filename = "dataset_version.txt"
@@ -111,7 +114,7 @@ class DataSet(abc.ABC):
     _load_stations = True
     _load_events = True
     # cache for instantiated datasets
-    _loaded_datasets = {}
+    _loaded_datasets: ClassVar = {}
     _verbose = True
 
     def __init_subclass__(cls, **kwargs):
@@ -124,7 +127,7 @@ class DataSet(abc.ABC):
     # --- logic for loading and caching data
 
     def __init__(self, base_path=None):
-        """download and load data into memory."""
+        """Download and load data into memory."""
         self.base_path = self._get_opsdata_path(base_path)
         # create the dataset's base directory
         self.data_path.mkdir(exist_ok=True, parents=True)
@@ -135,7 +138,7 @@ class DataSet(abc.ABC):
         if not base_path and self.name not in self._loaded_datasets:
             self._loaded_datasets[self.name] = self.copy(deep=True)
 
-    def _get_opsdata_path(self, opsdata_path: Optional[Path] = None) -> Path:
+    def _get_opsdata_path(self, opsdata_path: Path | None = None) -> Path:
         """
         Get the location where datasets are stored.
 
@@ -213,7 +216,7 @@ class DataSet(abc.ABC):
         return copy.deepcopy(self) if deep else copy.copy(self)
 
     def copy_to(
-        self: DataSetType, destination: Optional[Union[str, Path]] = None
+        self: DataSetType, destination: str | Path | None = None
     ) -> DataSetType:
         """
         Copy the dataset to a destination.
@@ -233,7 +236,7 @@ class DataSet(abc.ABC):
         """
         return copy_dataset(self, destination)
 
-    def get_fetcher(self, **kwargs) -> "obsplus.Fetcher":
+    def get_fetcher(self, **kwargs) -> obsplus.Fetcher:
         """
         Return a Fetcher from the data.
 
@@ -268,7 +271,7 @@ class DataSet(abc.ABC):
 
     @classmethod
     def load_dataset(
-        cls: DataSetType, name: Union[str, "DataSet"], silent=False
+        cls: DataSetType, name: str | DataSet, silent=False
     ) -> DataSetType:
         """
         Get a loaded dataset.
@@ -403,8 +406,8 @@ class DataSet(abc.ABC):
         return self.data_path / self._version_filename
 
     @property
-    @lru_cache()
-    def data_files(self) -> Tuple[Path, ...]:
+    @lru_cache
+    def data_files(self) -> tuple[Path, ...]:
         """
         Return a list of top-level files associated with the dataset.
 
@@ -453,25 +456,25 @@ class DataSet(abc.ABC):
         return not self.station_path.exists()
 
     @property
-    @lru_cache()
-    def waveform_client(self) -> Optional[WaveformClient]:
+    @lru_cache
+    def waveform_client(self) -> WaveformClient | None:
         """A cached property for a waveform client"""
         return self._load("waveform", self.waveform_path)
 
     @property
-    @lru_cache()
-    def event_client(self) -> Optional[EventClient]:
+    @lru_cache
+    def event_client(self) -> EventClient | None:
         """A cached property for an event client"""
         return self._load("event", self.event_path)
 
     @property
-    @lru_cache()
-    def station_client(self) -> Optional[StationClient]:
+    @lru_cache
+    def station_client(self) -> StationClient | None:
         """A cached property for a station client"""
         return self._load("station", self.station_path)
 
     @property
-    @lru_cache()
+    @lru_cache
     def _download_client(self):
         """
         Return an instance of the IRIS client, subclasses can override
@@ -481,12 +484,11 @@ class DataSet(abc.ABC):
 
     @_download_client.setter
     def _download_client(self, item):
-        """just allow this to be overwritten"""
+        """Just allow this to be overwritten"""
         self.__dict__["client"] = item
 
     def _log(self, msg):
         """Simple way to customize dataset logging."""
-        print(msg)
 
     def create_sha256_hash(self, path=None, hidden=False) -> dict:
         """
@@ -591,13 +593,13 @@ class DataSet(abc.ABC):
             warn(msg + redownload_msg)
         return True  # All is well. Continue.
 
-    def write_version(self, path: Optional[Union[Path, str]] = None):
+    def write_version(self, path: Path | str | None = None):
         """Write the version string to disk."""
         version_path = path or self._version_path
         with version_path.open("w") as fi:
             fi.write(self.version)
 
-    def read_data_version(self, path: Optional[Union[Path, str]] = None) -> str:
+    def read_data_version(self, path: Path | str | None = None) -> str:
         """
         Read the data version from disk.
 
@@ -628,7 +630,7 @@ class DataSet(abc.ABC):
         """
 
     @property
-    def version_tuple(self) -> Tuple[int, int, int]:
+    def version_tuple(self) -> tuple[int, int, int]:
         """
         Return a tuple of the version string.
         """
@@ -677,7 +679,7 @@ class DataSet(abc.ABC):
         return f"Dataset: {self.name}"
 
     def __repr__(self):
-        return f"{str(self)} with description: {self.__doc__}"
+        return f"{self!s} with description: {self.__doc__}"
 
 
 load_dataset = DataSet.load_dataset

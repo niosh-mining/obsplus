@@ -1,13 +1,13 @@
 """
 The Crandall Canyon dataset
 """
+
 import numpy as np
 import obspy
-from obspy import UTCDateTime as UTC
 from obspy.clients.fdsn.mass_downloader import (
     CircularDomain,
-    Restrictions,
     MassDownloader,
+    Restrictions,
 )
 from obspy.geodetics import kilometers2degrees
 
@@ -49,7 +49,7 @@ class Crandall(DataSet):
         obsplus.EventBank(self.event_path).put_events(cat)
 
     def _download_crandall(self):
-        """download waveform/station info for dataset."""
+        """Download waveform/station info for dataset."""
         bank = WaveBank(self.waveform_path)
         domain = CircularDomain(
             self.latitude,
@@ -63,8 +63,8 @@ class Crandall(DataSet):
             starttime = row.time - self.time_before
             endtime = row.time + self.time_after
             restrictions = Restrictions(
-                starttime=UTC(starttime),
-                endtime=UTC(endtime),
+                starttime=obspy.UTCDateTime(starttime),
+                endtime=obspy.UTCDateTime(endtime),
                 minimum_length=0.90,
                 minimum_interstation_distance_in_m=100,
                 channel_priorities=["HH[ZNE]", "BH[ZNE]"],

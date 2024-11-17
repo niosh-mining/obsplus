@@ -1,8 +1,11 @@
 """
 Module for generating a pandas dataframe from an obspy events.
 """
+
+from __future__ import annotations
+
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 import numpy as np
 import obspy
@@ -12,29 +15,28 @@ import pandas as pd
 import obsplus
 import obsplus.utils.time
 from obsplus.constants import (
-    EVENT_COLUMNS,
-    EVENT_DTYPES,
-    PICK_COLUMNS,
-    PICK_DTYPES,
     AMPLITUDE_COLUMNS,
     AMPLITUDE_DTYPES,
-    STATION_MAGNITUDE_COLUMNS,
-    STATION_MAGNITUDE_DTYPES,
-    MAGNITUDE_COLUMNS,
-    MAGNITUDE_DTYPES,
     ARRIVAL_COLUMNS,
     ARRIVAL_DTYPES,
-    NSLC,
+    EVENT_COLUMNS,
+    EVENT_DTYPES,
     MAGNITUDE_COLUMN_TYPES,
+    MAGNITUDE_COLUMNS,
+    MAGNITUDE_DTYPES,
+    NSLC,
+    PICK_COLUMNS,
+    PICK_DTYPES,
+    STATION_MAGNITUDE_COLUMNS,
+    STATION_MAGNITUDE_DTYPES,
 )
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils.events import get_preferred
-from obsplus.utils.events import get_seed_id
-from obsplus.utils.misc import get_instances_from_tree, read_file, getattrs
+from obsplus.utils.events import get_preferred, get_seed_id
+from obsplus.utils.misc import get_instances_from_tree, getattrs, read_file
 from obsplus.utils.time import get_reference_time
 
 # -------------------- init extractors
@@ -87,7 +89,7 @@ class _OriginQualityExtractor:
         return pick_dict
 
     def _get_pick_count(self, phase, pict_dict):
-        """count the number of non-rejected picks with given phase"""
+        """Count the number of non-rejected picks with given phase"""
         out = {
             i
             for i, v in pict_dict.items()
@@ -96,7 +98,7 @@ class _OriginQualityExtractor:
         return len(out)
 
     def _get_phase_count(self, ori: ev.Origin, phase_type: str):
-        """return the number of phases with phase_type found in origin"""
+        """Return the number of phases with phase_type found in origin"""
         count = 0
         for ar in ori.arrivals:
             # if phase is not specified dont count it
@@ -109,9 +111,9 @@ class _OriginQualityExtractor:
     def _get_origin_quality_info(self, origin, out):
         """Get information from quality info."""
         quality_attrs = (
-            ("standard_error", np.NaN),
+            ("standard_error", np.nan),
             ("associated_phase_count", out.get("associated_phase_count", 0)),
-            ("azimuthal_gap", np.NaN),
+            ("azimuthal_gap", np.nan),
             ("used_phase_count", out.get("used_phase_count", 0)),
         )
         quality = getattr(origin, "quality", ev.OriginQuality())
@@ -120,7 +122,7 @@ class _OriginQualityExtractor:
 
     def _get_origin_uncertainty(self, origin, out):
         """Get information from uncertainty."""
-        uncert_attrs = (("horizontal_uncertainty", np.NaN),)
+        uncert_attrs = (("horizontal_uncertainty", np.nan),)
         uncert = getattr(origin, "origin_uncertainty", ev.OriginUncertainty())
         for attr, default in uncert_attrs:
             out[attr] = getattr(uncert, attr, default) or default
@@ -128,7 +130,7 @@ class _OriginQualityExtractor:
     def _get_depth_uncertainty_info(self, origin, out):
         """Get info from depth info."""
         depth_uncert = origin.depth_errors
-        out["vertical_uncertainty"] = getattr(depth_uncert, "uncertainty", np.NaN)
+        out["vertical_uncertainty"] = getattr(depth_uncert, "uncertainty", np.nan)
 
     def _get_phase_and_pick_counts(self, origin, out):
         # get a dict of picks
@@ -161,9 +163,9 @@ class _OriginQualityExtractor:
         return out
 
 
-def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: Optional[str] = None):
+def _get_last_magnitude(mags: Sequence[ev.Magnitude], mag_type: str | None = None):
     """Get the value of the last magnitude, optionally of a given type."""
-    out = np.NaN
+    out = np.nan
     for mag in mags:
         if mag_type is not None:
             mtype = (mag.magnitude_type or "").upper()
@@ -184,7 +186,7 @@ def _path_or_event_bank(path):
 
 @events_to_df.extractor
 def _get_event_description(event):
-    """return a string of the first event description."""
+    """Return a string of the first event description."""
     try:
         return event.event_descriptions[0].text
     except (AttributeError, IndexError, TypeError):
@@ -198,14 +200,14 @@ def _get_event_id(event):
 
 @events_to_df.extractor
 def _get_author(event):
-    """get the name of the analyst as a string, or return empty str"""
+    """Get the name of the analyst as a string, or return empty str"""
     ci = getattr(event, "creation_info", None)
     return getattr(ci, "author", "")
 
 
 @events_to_df.extractor
 def _get_eve_creation_info(event):
-    """pull out information from the event level creation_info"""
+    """Pull out information from the event level creation_info"""
     keys = ("author", "agency_id", "creation_time", "version")
     out = {}
     cinfo = getattr(event, "creation_info", None)
@@ -216,10 +218,10 @@ def _get_eve_creation_info(event):
 
 @events_to_df.extractor()
 def _get_update_time(eve):
-    """return the most recent time anything was updated in event"""
+    """Return the most recent time anything was updated in event"""
     creations = get_instances_from_tree(eve, cls=ev.CreationInfo)
     timestamps = [getattr(x.creation_time, "timestamp", None) or 0 for x in creations]
-    return {"updated": max(timestamps) if timestamps else np.NaN}
+    return {"updated": max(timestamps) if timestamps else np.nan}
 
 
 loc_dtypes = {x: EVENT_DTYPES[x] for x in ("latitude", "longitude", "depth")}
@@ -227,7 +229,7 @@ loc_dtypes = {x: EVENT_DTYPES[x] for x in ("latitude", "longitude", "depth")}
 
 @events_to_df.extractor(dtypes=loc_dtypes)
 def _get_origin_basic(eve):
-    """extract basic info from origin."""
+    """Extract basic info from origin."""
     ori = get_preferred(eve, "origin", init_empty=True)
     return getattrs(ori, set(loc_dtypes))
 
@@ -242,7 +244,7 @@ def _get_time(event):
 
 @events_to_df.extractor
 def _get_origin_quality(eve: ev.Event):
-    """get information from origin quality"""
+    """Get information from origin quality"""
     return _OriginQualityExtractor(eve)()
 
 
@@ -299,7 +301,7 @@ def _file_to_picks_df(path):
 @picks_to_df.register(ev.Event)
 @picks_to_df.register(ev.Catalog)
 def _picks_from_event(event: ev.Event):
-    """return a dataframe of picks from a pick list"""
+    """Return a dataframe of picks from a pick list"""
     return _objs_from_event(event, "picks", picks_to_df)
 
 
@@ -331,7 +333,7 @@ def _file_to_arrivals_df(path):
 @arrivals_to_df.register(ev.Event)
 @arrivals_to_df.register(ev.Catalog)
 def _arrivals_from_event(event: ev.Event):
-    """return a dataframe of arrivals from an event"""
+    """Return a dataframe of arrivals from an event"""
     cat = [event] if isinstance(event, ev.Event) else event
     origins = [e.preferred_origin() for e in cat if e.preferred_origin()]
     arr_list = []
@@ -386,7 +388,7 @@ def _file_to_amplitudes_df(path):
 @amplitudes_to_df.register(ev.Event)
 @amplitudes_to_df.register(ev.Catalog)
 def _amplitudes_from_event(event: ev.Event):
-    """return a dataframe of amplitudes from an amplitude list"""
+    """Return a dataframe of amplitudes from an amplitude list"""
     return _objs_from_event(event, "amplitudes", amplitudes_to_df)
 
 
@@ -423,13 +425,13 @@ def _file_to_station_magnitudes_df(path):
 @station_magnitudes_to_df.register(ev.Event)
 @station_magnitudes_to_df.register(ev.Catalog)
 def _station_magnitudes_from_event(event: ev.Event):
-    """return a dataframe of station_magnitudes from a station_magnitude list"""
+    """Return a dataframe of station_magnitudes from a station_magnitude list"""
     return _objs_from_event(event, "station_magnitudes", station_magnitudes_to_df)
 
 
 @station_magnitudes_to_df.register(ev.Magnitude)  # This may not work nicely...
 def _station_magnitudes_from_magnitude(mag: ev.Magnitude):
-    """return a dataframe of station magnitudes from a Magnitude"""
+    """Return a dataframe of station magnitudes from a Magnitude"""
     sms = []
     for smc in mag.station_magnitude_contributions:
         if smc.station_magnitude_id:
@@ -464,7 +466,7 @@ def _file_to_magnitudes_df(path):
 @magnitudes_to_df.register(ev.Event)
 @magnitudes_to_df.register(ev.Catalog)
 def _magnitudes_from_event(event: ev.Event):
-    """return a dataframe of magnitudes from a magnitude list"""
+    """Return a dataframe of magnitudes from a magnitude list"""
     return _objs_from_event(event, "magnitudes", magnitudes_to_df)
 
 
@@ -491,7 +493,7 @@ def _file_to_df(path, extractor):
 
 
 def _objs_from_event(event, attr, extractor):
-    """return a dataframe of an obj type from an event"""
+    """Return a dataframe of an obj type from an event"""
     # ensure we have an iterable and flatten station_magnitudes
     cat = [event] if isinstance(event, ev.Event) else event
     objs = [obj for e in cat for obj in getattr(e, attr)]
@@ -499,13 +501,13 @@ def _objs_from_event(event, attr, extractor):
 
 
 def _objs_from_event_bank(event_bank, extractor):
-    """return a dataframe of a set obj type from an event bank"""
+    """Return a dataframe of a set obj type from an event bank"""
     assert isinstance(event_bank, EventClient)
     return extractor(event_bank.get_events())
 
 
 def _obj_extractor(obj, dtypes, seed_id=True, error_obj=None):
-    """extract common information from event object"""
+    """Extract common information from event object"""
     # extract attributes that are floats/str
     overlap = set(obj.__dict__) & set(dtypes)
     base = {i: getattr(obj, i) for i in overlap}

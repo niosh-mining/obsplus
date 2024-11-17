@@ -1,15 +1,18 @@
 """
 Class for interacting with events on a filesystem.
 """
+
+from __future__ import annotations
+
 import inspect
 import os
 import time
+from collections.abc import Sequence
 from concurrent.futures import Executor
-from functools import reduce, partial
+from functools import partial, reduce
 from operator import add
 from os.path import getmtime
 from pathlib import Path
-from typing import Optional, Union, Sequence, Set
 
 import numpy as np
 import obspy
@@ -19,41 +22,41 @@ import pandas as pd
 import obsplus
 import obsplus.events.pd
 from obsplus.bank.core import _Bank
-from obsplus.utils.bank import (
-    sql_connection,
-    _read_table,
-    _get_tables,
-    _drop_rows,
-    _remove_base_path,
-    _natify_paths,
-)
-from obsplus.utils.pd import (
-    cast_dtypes,
-    order_columns,
-    _time_cols_to_ints,
-    _ints_to_time_columns,
-)
-from obsplus.utils.events import _summarize_event, get_event_client
 from obsplus.constants import (
-    EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
-    get_events_parameters,
-    bar_parameter_description,
-    EVENT_TYPES_OUTPUT,
+    EVENT_PATH_STRUCTURE,
     EVENT_TYPES_INPUT,
+    EVENT_TYPES_OUTPUT,
     bank_subpaths_type,
+    bar_parameter_description,
+    get_events_parameters,
     paths_description,
 )
 from obsplus.events.get_events import (
-    _sanitize_circular_search,
     _get_ids,
+    _sanitize_circular_search,
     _validate_get_event_kwargs,
 )
 from obsplus.exceptions import BankDoesNotExistError
-from obsplus.interfaces import ProgressBar, EventClient
+from obsplus.interfaces import EventClient, ProgressBar
 from obsplus.utils import iterate
-from obsplus.utils.misc import try_read_catalog, suppress_warnings
+from obsplus.utils.bank import (
+    _drop_rows,
+    _get_tables,
+    _natify_paths,
+    _read_table,
+    _remove_base_path,
+    sql_connection,
+)
 from obsplus.utils.docs import compose_docstring
+from obsplus.utils.events import _summarize_event, get_event_client
+from obsplus.utils.misc import suppress_warnings, try_read_catalog
+from obsplus.utils.pd import (
+    _ints_to_time_columns,
+    _time_cols_to_ints,
+    cast_dtypes,
+    order_columns,
+)
 from obsplus.utils.time import _dict_times_to_npdatetimes, to_datetime64
 
 # --- define static types
@@ -160,13 +163,13 @@ class EventBank(_Bank):
 
     def __init__(
         self,
-        base_path: Union[str, Path, "EventBank"] = ".",
-        path_structure: Optional[str] = None,
-        name_structure: Optional[str] = None,
-        index_path: Optional[Union[str, Path]] = None,
+        base_path: str | Path | EventBank = ".",
+        path_structure: str | None = None,
+        name_structure: str | None = None,
+        index_path: str | Path | None = None,
         format="quakeml",
         ext=".xml",
-        executor: Optional[Executor] = None,
+        executor: Executor | None = None,
     ):
         """Initialize an instance."""
         if isinstance(base_path, EventBank):
@@ -202,7 +205,7 @@ class EventBank(_Bank):
 
     @property
     def _path_structure(self):
-        """return the path structure stored in memory"""
+        """Return the path structure stored in memory"""
         try:
             return self._read_metadata()["path_structure"][0]
         except (pd.io.sql.DatabaseError, BankDoesNotExistError):
@@ -210,7 +213,7 @@ class EventBank(_Bank):
 
     @property
     def _name_structure(self):
-        """return the name structure stored in memory"""
+        """Return the name structure stored in memory"""
         try:
             return self._read_metadata()["name_structure"][0]
         except (pd.io.sql.DatabaseError, BankDoesNotExistError):
@@ -263,9 +266,9 @@ class EventBank(_Bank):
     )
     def update_index(
         self,
-        bar: Optional[ProgressBar] = None,
-        paths: Optional[bank_subpaths_type] = None,
-    ) -> "EventBank":
+        bar: ProgressBar | None = None,
+        paths: bank_subpaths_type | None = None,
+    ) -> EventBank:
         """
         Iterate files in bank and add any modified since last update to index.
 
@@ -346,7 +349,7 @@ class EventBank(_Bank):
         return out
 
     def _write_update(self, df: pd.DataFrame, update_time=None):
-        """convert updates to dataframe, then append to index table"""
+        """Convert updates to dataframe, then append to index table"""
         # read in dataframe and cast to correct types
         assert not df.duplicated().any(), "update index has duplicate entries"
 
@@ -377,7 +380,7 @@ class EventBank(_Bank):
     # --- meta table
 
     def _read_metadata(self):
-        """return the meta table"""
+        """Return the meta table"""
         self.ensure_bank_path_exists()
         with sql_connection(self.index_path) as con:
             sql = f'SELECT * FROM "{self._meta_node}";'
@@ -414,7 +417,7 @@ class EventBank(_Bank):
         events = [eve for eve in cat if eve.resource_id.id in eids.values]
         return obspy.Catalog(events=events)
 
-    def ids_in_bank(self, event_id: Union[str, Sequence[str]]) -> Set[str]:
+    def ids_in_bank(self, event_id: str | Sequence[str]) -> set[str]:
         """
         Determine if one or more event_ids are used by the bank.
 
@@ -437,11 +440,11 @@ class EventBank(_Bank):
     @compose_docstring(bar_parameter_description=bar_parameter_description)
     def put_events(
         self,
-        events: Union[ev.Event, ev.Catalog, EventClient],
+        events: ev.Event | ev.Catalog | EventClient,
         update_index: bool = True,
-        bar: Optional[ProgressBar] = None,
+        bar: ProgressBar | None = None,
         overwrite_existing=True,
-    ) -> "EventBank":
+    ) -> EventBank:
         """
         Put events into the EventBank.
 

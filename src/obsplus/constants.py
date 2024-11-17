@@ -1,27 +1,19 @@
 """Constants used throughout obsplus."""
 
 from collections import OrderedDict
+from collections.abc import Callable, Iterable, Mapping, MutableSequence, Sequence
 from os import cpu_count
 from pathlib import Path
 from types import MappingProxyType as MapProxy
 from typing import (
-    Callable,
-    Union,
-    Mapping,
-    List,
-    Tuple,
     TypeVar,
-    MutableSequence,
-    Iterable,
-    Sequence,
 )
-
 
 import numpy as np
 import obspy
 import pandas as pd
-from obspy import Stream, Trace, UTCDateTime, Inventory
-from obspy.core.event import Event, Catalog
+from obspy import Inventory, Stream, Trace, UTCDateTime
+from obspy.core.event import Catalog, Event
 from obspy.core.util import AttribDict
 
 from obsplus.interfaces import EventClient, WaveformClient
@@ -376,35 +368,35 @@ UNSUPPORTED_PARAMS = {"magnitude_type", "events", "contributor"}
 # ------------------- type aliases (aliai?)
 
 # Path types
-path_types = Union[str, Path]
+path_types = str | Path
 
 # number types
 # number_type = Union[float, int, np.float, np.int, np.complex]  # deprecated
-number_type = Union[float, int]
+number_type = float | int
 
 # The waveforms processor type
 stream_proc_type = Callable[[Stream], Stream]
 
 # The obspy types for waveform data
-wave_type = Union[Stream, Trace]
+wave_type = Stream | Trace
 
 # Type can can be turned into a UTCDateTime
-utc_able_type = Union[str, UTCDateTime, float, np.datetime64, pd.Timestamp]
+utc_able_type = str | UTCDateTime | float | np.datetime64 | pd.Timestamp
 
 # waveform request type (args for get_waveforms)
 waveform_request_type = Sequence[
-    Tuple[str, str, str, str, utc_able_type, utc_able_type]
+    tuple[str, str, str, str, utc_able_type, utc_able_type]
 ]
 
 # the signature of obspy fdsn client
 wfcli_type = Callable[[str, str, str, str, UTCDateTime, UTCDateTime], Stream]
-waveform_clientable_type = Union[WaveformClient, str, Path, Trace, Stream]
+waveform_clientable_type = WaveformClient | str | Path | Trace | Stream
 
 # types accepted by DataFetcher for event info
-event_type = Union[Catalog, pd.DataFrame, Event]
+event_type = Catalog | pd.DataFrame | Event
 
 # types from which and event client can be created
-event_clientable_type = Union[Path, str, Catalog, Event, EventClient]
+event_clientable_type = Path | str | Catalog | Event | EventClient
 
 # a events or event type var
 catalog_or_event = TypeVar("catalog_or_event", Catalog, Event)
@@ -416,52 +408,52 @@ trace_sequence = TypeVar("trace_sequence", Stream, MutableSequence[Trace])
 catalog_component = AttribDict
 
 # types accepted by DataFetcher for stations info
-inventory_type = Union[Inventory, pd.DataFrame]
+inventory_type = Inventory | pd.DataFrame
 
 # types that can be a station client
-station_clientable_type = Union[str, Path, Inventory]
+station_clientable_type = str | Path | Inventory
 
 # types accepted by DataFetcher
-fetch_type = Union[wfcli_type, str]
+fetch_type = wfcli_type | str
 
 # time type (anything that can be fed to UTCDateTime)
-utc_time_type = Union[UTCDateTime, str, float, np.datetime64, pd.Timestamp]
+utc_time_type = UTCDateTime | str | float | np.datetime64 | pd.Timestamp
 
 # types that can be used to indicate when an event waveform should start
-event_time_type = Union[UTCDateTime, Catalog, Event, float]
+event_time_type = UTCDateTime | Catalog | Event | float
 
 # availability output type (return from obspy earthworm client availability)
-availability_type = List[Tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
+availability_type = list[tuple[str, str, str, str, UTCDateTime, UTCDateTime]]
 
 # series to series or ndarray func
-series_func_type = Callable[[pd.Series], Union[pd.Series, np.ndarray]]
+series_func_type = Callable[[pd.Series], pd.Series | np.ndarray]
 
 # type for mapping of functions to apply over callables
 column_function_map_type = Mapping[str, series_func_type]
 
 # subpaths type
-bank_subpaths_type = Union[path_types, Iterable[path_types]]
+bank_subpaths_type = path_types | Iterable[path_types]
 
 # types for bulk waveform requests
-bulk_waveform_arg_type = Union[waveform_request_type, pd.DataFrame]
+bulk_waveform_arg_type = waveform_request_type | pd.DataFrame
 
 # types which can be used to slice a numpy array
-slice_types = Union[int, slice, List[int], Tuple[int, ...]]
+slice_types = int | slice | list[int] | tuple[int, ...]
 
 # types that indicate time
 pd_time_types = (pd.Timestamp, np.datetime64)
 
 # types used to represent an absolute point in time.
-absolute_time_types = Union[UTCDateTime, pd.Timestamp, np.datetime64]
+absolute_time_types = UTCDateTime | pd.Timestamp | np.datetime64
 
 # types used to represent relative time
-relative_time_types = Union[np.timedelta64, int, float]
+relative_time_types = np.timedelta64 | int | float
 
 # combine the two
-time_types = Union[absolute_time_types, relative_time_types]
+time_types = absolute_time_types | relative_time_types
 
 # time types accepted by trim
-trim_time_types = Union[time_types, np.ndarray]
+trim_time_types = time_types | np.ndarray
 
 # -------------------------- events validation constants
 
@@ -475,7 +467,7 @@ ORIGIN_FLOATS = {"latitude", "longitude", "depth"}
 QUANTITY_ERRORS = {"depth_errors", "latitude_errors", "longitude_errors", "time_errors"}
 
 # columns needed for bulk waveform request
-BULK_WAVEFORM_COLUMNS = tuple(list(NSLC) + ["starttime", "endtime"])
+BULK_WAVEFORM_COLUMNS = tuple([*list(NSLC), "starttime", "endtime"])
 
 # resource_ids that are linked to other resource ids
 LINKED_RESOURCE_IDS = {

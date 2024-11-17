@@ -1,32 +1,32 @@
 """
 Tests for waveform utilities.
 """
-import copy
 
+import copy
 import inspect
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
+import obsplus
 import obspy
 import pandas as pd
 import pytest
-from obspy import UTCDateTime
-
-import obsplus
 from obsplus.constants import NSLC, WAVEFORM_REQUEST_DTYPES
 from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
+from obsplus.utils.testing import assert_streams_almost_equal
 from obsplus.utils.time import to_timedelta64
 from obsplus.utils.waveforms import (
-    trim_event_stream,
-    stream2contiguous,
     archive_to_sds,
-    merge_traces,
-    stream_bulk_split,
-    get_waveform_client,
     get_waveform_bulk_df,
+    get_waveform_client,
+    merge_traces,
+    stream2contiguous,
+    stream_bulk_split,
+    trim_event_stream,
 )
-from obsplus.utils.testing import assert_streams_almost_equal
+from obspy import UTCDateTime
 
 
 class TestGetWaveformClient:
@@ -90,7 +90,7 @@ class TestTrimEventStream:
         assert "trim tolerance" in str(e.value.args[0])
 
     def test_fragmented_stream(self, fragmented_stream):
-        """test with streams that are fragmented"""
+        """Test with streams that are fragmented"""
         with pytest.warns(UserWarning) as w:
             st = trim_event_stream(fragmented_stream)
         assert "seconds long" in str(w[0].message)
@@ -120,6 +120,7 @@ class TestMergeStream:
         Create a stream which has two overlapping traces with high sampling
         rates.
         """
+        rnd = np.random.default_rng(99)
         # first trace
         stats1 = {
             "sampling_rate": 6000.0,
@@ -130,7 +131,7 @@ class TestMergeStream:
             "location": "00",
             "channel": "FL1",
         }
-        data1 = np.random.rand(12624)
+        data1 = rnd.random(12624)
         tr1 = obspy.Trace(data=data1, header=stats1)
         # second trace
         stat2 = {
@@ -145,7 +146,7 @@ class TestMergeStream:
             "location": "00",
             "channel": "FL1",
         }
-        data2 = np.random.rand(930)
+        data2 = rnd.random(930)
         tr2 = obspy.Trace(data=data2, header=stat2)
         return obspy.Stream(traces=[tr1, tr2])
 
@@ -158,7 +159,7 @@ class TestMergeStream:
         return st
 
     def test_identical_streams(self):
-        """ensure passing identical streams performs de-duplication."""
+        """Ensure passing identical streams performs de-duplication."""
         st = obspy.read()
         st2 = obspy.read() + st + obspy.read()
         st_out = merge_traces(st2)
@@ -188,7 +189,7 @@ class TestMergeStream:
         assert out == st_in.merge(1).split()
 
     def test_traces_with_different_sampling_rates(self):
-        """traces with different sampling_rates should be left alone."""
+        """Traces with different sampling_rates should be left alone."""
         st1 = obspy.read()
         st2 = obspy.read()
         for tr in st2:
@@ -223,7 +224,7 @@ class TestMergeStream:
     def test_merge_bingham_st(self, bingham_stream):
         """Ensure the bingham stream can be merged"""
         out = merge_traces(bingham_stream, inplace=False)
-        cols = list(NSLC) + ["starttime", "endtime", "gap_time", "gap_samps"]
+        cols = [*list(NSLC), "starttime", "endtime", "gap_time", "gap_samps"]
         gaps_df = pd.DataFrame(out.get_gaps(), columns=cols)
         # overlaps are indicated by negative gap times
         assert (gaps_df["gap_time"] > 0).all()
@@ -346,18 +347,18 @@ class TestArchiveToSDS:
 
     @pytest.fixture(scope="class")
     def old_wavebank(self, ta_dataset):
-        """get the wavebank of the archive before converting to sds"""
+        """Get the wavebank of the archive before converting to sds"""
         bank = ta_dataset.waveform_client
         assert isinstance(bank, obsplus.WaveBank)
         return bank
 
     def test_path_exists(self, converted_archive):
-        """ensure the path to the new SDS exists"""
+        """Ensure the path to the new SDS exists"""
         path = Path(converted_archive)
         assert path.exists()
 
     def test_directory_not_empty(self, sds_wavebank, old_wavebank):
-        """ensure the same date range is found in the new archive"""
+        """Ensure the same date range is found in the new archive"""
         sds_index = sds_wavebank.read_index()
         old_index = old_wavebank.read_index()
         # start times and endtimes for old and new should be the same
@@ -366,14 +367,14 @@ class TestArchiveToSDS:
         # ensure starttimes are the same
         old_start = group_old.starttime.min()
         sds_start = group_sds.starttime.min()
-        assert np.allclose(old_start.view(np.int64), sds_start.view(np.int64))
+        assert np.allclose(old_start.astype(np.int64), sds_start.astype(np.int64))
         # ensure endtimes are the same
         old_end = group_old.endtime.max()
         sds_end = group_sds.endtime.max()
-        assert np.allclose(old_end.view(np.int64), sds_end.view(np.int64))
+        assert np.allclose(old_end.astype(np.int64), sds_end.astype(np.int64))
 
     def test_each_file_one_trace(self, sds_wavebank):
-        """ensure each file in the sds has exactly one channel"""
+        """Ensure each file in the sds has exactly one channel"""
         index = sds_wavebank.read_index()
         for fi in index.path.unique():
             base = sds_wavebank.bank_path / fi
@@ -404,7 +405,7 @@ class TestStreamBulkSplit:
             nslc = tr.id.split(".")
             t1 = tr.stats.starttime + times[0]
             t2 = tr.stats.endtime + times[1]
-            out.append(tuple(nslc + [t1, t2]))
+            out.append(tuple([*nslc, t1, t2]))
         return out
 
     def test_stream_bulk_split(self):
@@ -413,7 +414,7 @@ class TestStreamBulkSplit:
         st = obspy.read()
         t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
         nslc = st[0].id.split(".")
-        bulk = [tuple(nslc + [t1, t2])]
+        bulk = [tuple([*nslc, t1, t2])]
         # create traces, check len
         streams = stream_bulk_split(st, bulk)
         assert len(streams) == 1
@@ -434,7 +435,7 @@ class TestStreamBulkSplit:
         st = obspy.read()
         t1, t2 = st[0].stats.starttime + 1, st[0].stats.endtime - 1
         nslc = st[0].id.split(".")
-        bulk = [tuple(nslc + [t1, t2])]
+        bulk = [tuple([*nslc, t1, t2])]
         out = stream_bulk_split(obspy.Stream(), bulk)
         assert len(out) == 0
 
@@ -445,7 +446,7 @@ class TestStreamBulkSplit:
         for tr in st:
             utc = obspy.UTCDateTime("2017-09-18")
             t1, t2 = utc, utc
-            bulk.append(tuple([*tr.id.split(".") + [t1, t2]]))
+            bulk.append(tuple([*[*tr.id.split("."), t1, t2]]))
         out = stream_bulk_split(st, bulk)
         assert len(out) == len(bulk)
         for tr in out:
@@ -503,7 +504,7 @@ class TestStreamBulkSplit:
             assert_streams_almost_equal(st1, st2, allow_off_by_one=True)
 
     def test_fill_value(self):
-        """test for filling values."""
+        """Test for filling values."""
         st_client = obspy.read()
         bulk = self.get_bulk_from_stream(st_client, [0], [[-10, -20]])
         out = stream_bulk_split(st_client, bulk, fill_value=0)[0]
@@ -522,7 +523,7 @@ class TestGetWaveformBulk:
         obspy.UTCDateTime("2010-12-20").timestamp,
     )
 
-    bulk1 = [
+    bulk1: ClassVar = [
         ("UU", "TMU", "01", "HHZ", times[0], times[1]),
         ("UU", "NOQ", "01", "ENZ", times[2], times[3]),
     ]

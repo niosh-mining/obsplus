@@ -3,6 +3,7 @@ Slimmed down bits of obspy's mseed module.
 
 Copyrights to ObsPy developers still apply.
 """
+
 import os
 
 import numpy as np
@@ -104,8 +105,8 @@ def summarize_mseed(mseed_object):
         except ValueError:
             break
 
-    clibmseed.lil_free(lil)  # NOQA
-    del lil  # NOQA
+    clibmseed.lil_free(lil)
+    del lil
     if not traces:
-        raise IOError(f"could not read {mseed_object}")
+        raise OSError(f"could not read {mseed_object}")
     return traces

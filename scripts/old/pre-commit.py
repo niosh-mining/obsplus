@@ -2,8 +2,9 @@
 """
 Pre-commit hook for ensuring files have been black formatted.
 """
+
 from pathlib import Path
-from subprocess import run, PIPE
+from subprocess import PIPE, run
 
 here = Path(__file__).parent.absolute()
 

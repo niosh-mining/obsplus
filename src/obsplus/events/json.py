@@ -2,11 +2,13 @@
 Module for converting obspy object to json format
 """
 
+from __future__ import annotations
+
 import json
-from typing import Union, Iterable
+from collections.abc import Iterable
 
 import obspy
-from obspy.core.event import Event, Catalog
+from obspy.core.event import Catalog, Event
 
 import obsplus.events.schema as event_schema
 
@@ -17,7 +19,7 @@ JSON_SERIALIZER_VERSION = "0.0.0"  # increment when serialization changes
 
 
 def _events_to_model(
-    catalog: Union[Catalog, Event, Iterable[Event]]
+    catalog: Catalog | Event | Iterable[Event],
 ) -> event_schema.Catalog:
     """
     Convert ObsPy events to Pydantic models.
@@ -30,22 +32,22 @@ def _events_to_model(
     return model
 
 
-def cat_to_json(catalog: Union[Catalog, Event, Iterable[Event]]) -> str:
+def cat_to_json(catalog: Catalog | Event | Iterable[Event]) -> str:
     """
     Convert events (catalog or event) to json string.
     """
     model = _events_to_model(catalog)
-    return model.json()
+    return model.model_dump_json()
 
 
-def cat_to_dict(catalog: Union[Catalog, Event, Iterable[Event]]) -> dict:
+def cat_to_dict(catalog: Catalog | Event | Iterable[Event]) -> dict:
     """
     Convert an event object to a dictionary.
     """
     return _events_to_model(catalog).model_dump()
 
 
-def dict_to_cat(cjson: Union[dict, str]) -> Catalog:
+def dict_to_cat(cjson: dict | str) -> Catalog:
     """Convert a dictionary to a catalog"""
     if isinstance(cjson, str):
         cjson = json.loads(cjson)

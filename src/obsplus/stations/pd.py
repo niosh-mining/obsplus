@@ -1,23 +1,24 @@
 """
 Pandas functionality for stations stuff.
 """
+
 import os
 from pathlib import Path
 
 import numpy as np
 import obspy
 import pandas as pd
-from obspy.core.event import Event, Catalog, WaveformStreamID
+from obspy.core.event import Catalog, Event, WaveformStreamID
 from obspy.core.inventory import Channel
 
 import obsplus
-from obsplus.constants import STATION_COLUMNS, NSLC, STATION_DTYPES
+from obsplus.constants import NSLC, STATION_COLUMNS, STATION_DTYPES
 from obsplus.interfaces import BankType, EventClient
 from obsplus.structures.dfextractor import (
     DataFrameExtractor,
     standard_column_transforms,
 )
-from obsplus.utils.misc import get_instances_from_tree, apply_to_files_or_skip
+from obsplus.utils.misc import apply_to_files_or_skip, get_instances_from_tree
 
 # attributes from channel to extract
 
@@ -31,7 +32,7 @@ stations_to_df = DataFrameExtractor(
 
 @stations_to_df.extractor()
 def _extract_from_channels(channel):
-    """extract info from channels."""
+    """Extract info from channels."""
     out = {x: getattr(channel, x) for x in STATION_COLUMNS[5:]}
     return out
 
@@ -52,7 +53,7 @@ def _extract_channel(inventory: obspy.Inventory):
                     "channel": chan.code,
                     "location": chan.location_code,
                 }
-                chan_dict["seed_id"] = ".".join((chan_dict[x] for x in NSLC))
+                chan_dict["seed_id"] = ".".join(chan_dict[x] for x in NSLC)
                 extras[id(chan)] = chan_dict
                 chans.append(chan)
     return stations_to_df(chans, extras=extras)
@@ -61,7 +62,7 @@ def _extract_channel(inventory: obspy.Inventory):
 @stations_to_df.register(str)
 @stations_to_df.register(Path)
 def _str_inv_to_df(path):
-    """read stations object from file or directory structure"""
+    """Read stations object from file or directory structure"""
     path = str(path)
     # if applied to directory, recurse
     if os.path.isdir(path):
@@ -112,7 +113,7 @@ def _bank_to_df(bank):
 def _stream_to_station_df(st):
     """Convert a stream/trace to station dataframe."""
     st = [st] if isinstance(st, obspy.Trace) else st
-    attrs = list(NSLC) + ["starttime", "endtime"]
+    attrs = [*list(NSLC), "starttime", "endtime"]
     stats_summary = []
     for tr in st:
         stats_summary.append({at: getattr(tr.stats, at, None) for at in attrs})

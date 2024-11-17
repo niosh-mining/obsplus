@@ -1,25 +1,23 @@
 """
 Tests for station utilities.
 """
+
+import json
 import os
 from pathlib import Path
 
-
 import numpy as np
+import obsplus
 import obspy
 import pandas as pd
 import pytest
-import json
-
-import obsplus
-from obsplus.constants import NSLC, DF_TO_INV_COLUMNS
+from obsplus.constants import DF_TO_INV_COLUMNS, NSLC
+from obsplus.exceptions import AmbiguousResponseError
+from obsplus.interfaces import StationClient
 from obsplus.utils import get_seed_id_series
 from obsplus.utils.misc import suppress_warnings
 from obsplus.utils.stations import df_to_inventory, get_station_client
-from obsplus.utils.time import to_utc
-from obsplus.interfaces import StationClient
-from obsplus.exceptions import AmbiguousResponseError
-from obsplus.utils.time import to_timedelta64
+from obsplus.utils.time import to_timedelta64, to_utc
 
 
 class TestDfToInventory:
@@ -27,7 +25,7 @@ class TestDfToInventory:
 
     @staticmethod
     def _assert_dates_are_utc_or_none(obj):
-        """assert the start_date and end_date are UTC instances or None"""
+        """Assert the start_date and end_date are UTC instances or None"""
         start = getattr(obj, "start_date", None)
         end = getattr(obj, "end_date", None)
         for attr in [start, end]:
@@ -35,13 +33,13 @@ class TestDfToInventory:
 
     @pytest.fixture
     def df_from_inv(self):
-        """convert the default inventory to a df and return."""
+        """Convert the default inventory to a df and return."""
         inv = obspy.read_inventory()
         return obsplus.stations_to_df(inv)
 
     @pytest.fixture
     def inv_from_df(self, df_from_inv):
-        """convert the station df back into an inventory."""
+        """Convert the station df back into an inventory."""
         out = df_to_inventory(df_from_inv)
         return out
 
@@ -66,8 +64,8 @@ class TestDfToInventory:
             0,
             250,
         ]
-        row1 = common + ["2019-01-01", "2020-01-01"]
-        row2 = common + ["2020-01-01", "2020-01-01"]
+        row1 = [*common, "2019-01-01", "2020-01-01"]
+        row2 = [*common, "2020-01-01", "2020-01-01"]
         return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS), request.param[1]
 
     @pytest.fixture(params=range(4))
@@ -77,8 +75,8 @@ class TestDfToInventory:
         """
         common = ["a", "b", "c", "d", 50.0, -111.0, 2000, 0, 250]
         common[request.param] = "1.0"
-        row1 = common + ["2019-01-01", "2020-01-01"]
-        row2 = common + ["2020-01-01", "2020-01-01"]
+        row1 = [*common, "2019-01-01", "2020-01-01"]
+        row2 = [*common, "2020-01-01", "2020-01-01"]
         return pd.DataFrame([row1, row2], columns=DF_TO_INV_COLUMNS)
 
     @pytest.fixture
@@ -138,13 +136,13 @@ class TestDfToInventory:
                 for cha in sta:
                     self._assert_dates_are_utc_or_none(cha)
 
-    def test_NaN_in_non_time_columns(self, df_from_inv):
+    def test_nan_in_non_time_columns(self, df_from_inv):
         """
         If there are NaN values in non-time these should just be interp.
         as None.
         """
-        df_from_inv.loc[2, "dip"] = np.NaN
-        df_from_inv.loc[3, "azimuth"] = np.NaN
+        df_from_inv.loc[2, "dip"] = np.nan
+        df_from_inv.loc[3, "azimuth"] = np.nan
         # convert to inv
         inv = df_to_inventory(df_from_inv)
         # make sure dip is None
@@ -209,7 +207,7 @@ class TestDfToInventoryGetResponses:
     """Tests for getting responses with the df_to_inventory function."""
 
     @pytest.fixture(scope="class")
-    def mini_NRL(self, data_path):
+    def mini_nrl(self, data_path):
         """Return a path to a miniaturized NRL for df_to_inventory tests"""
         return Path(data_path) / "mini_nrl"
 
@@ -304,7 +302,7 @@ class TestDfToInventoryGetResponses:
 
     @pytest.fixture
     def df_with_partial_responses(self, df_with_nrl_response):
-        """test creating inv with partial responses."""
+        """Test creating inv with partial responses."""
         # set one row to None
         df_with_nrl_response.loc[0, "sensor_keys"] = None
         return df_with_nrl_response
@@ -333,17 +331,17 @@ class TestDfToInventoryGetResponses:
         df.loc[1, "get_station_kwargs"]["channel"] = "*"
         return df
 
-    def test_nrl_responses(self, df_with_nrl_response, mini_NRL):
+    def test_nrl_responses(self, df_with_nrl_response, mini_nrl):
         """Ensure the NRL is used to pull responses."""
         with suppress_warnings():
-            inv = df_to_inventory(df_with_nrl_response, nrl_path=mini_NRL)
+            inv = df_to_inventory(df_with_nrl_response, nrl_path=mini_nrl)
         assert self.has_valid_response(inv)
 
-    def test_response_one_missing(self, df_with_partial_responses, mini_NRL):
+    def test_response_one_missing(self, df_with_partial_responses, mini_nrl):
         """Ensure responses which can be got are fetched."""
         df = df_with_partial_responses
         with suppress_warnings():
-            inv = df_to_inventory(df, nrl_path=mini_NRL)
+            inv = df_to_inventory(df, nrl_path=mini_nrl)
 
         missing = df["sensor_keys"].isnull() | df["datalogger_keys"].isnull()
         missing_seed_ids = set(get_seed_id_series(df[missing]))
@@ -379,7 +377,6 @@ class TestDfToInventoryGetResponses:
 
     def test_ambiguous_query_warns(self, df_ambiguous_client_query):
         """Ensure a query that returns multiple channels will warn."""
-
         df = df_ambiguous_client_query
         msg = "More than one channel returned by client"
         with pytest.warns(UserWarning, match=msg):
@@ -403,6 +400,6 @@ class TestGetStationClient:
         assert isinstance(client, obspy.Inventory)
 
     def test_not_a_client(self):
-        """ensure a non station-client-able object raises."""
+        """Ensure a non station-client-able object raises."""
         with pytest.raises(TypeError):
             get_station_client(1)

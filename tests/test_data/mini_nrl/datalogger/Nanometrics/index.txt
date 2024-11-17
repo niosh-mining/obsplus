@@ -39,4 +39,3 @@ path="Centaur.txt"
 
 [CentaurHighGain]
 path="CentaurHighGain.txt"
-

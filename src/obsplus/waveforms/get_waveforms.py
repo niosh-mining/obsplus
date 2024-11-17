@@ -1,18 +1,19 @@
 """
 Module for adding the client-like "get_waveforms" to the Stream class
 """
-from typing import Optional
+
+from __future__ import annotations
 
 import numpy as np
 import obspy
-from obspy import Stream, UTCDateTime as UTC
+from obspy import Stream, UTCDateTime
 
-from obsplus.constants import SMALLDT64, LARGEDT64, NSLC, bulk_waveform_arg_type
+from obsplus.constants import LARGEDT64, NSLC, SMALLDT64, bulk_waveform_arg_type
 from obsplus.utils.time import to_utc
 from obsplus.utils.waveforms import (
+    _filter_index_to_bulk,
     _get_waveform_df,
     get_waveform_bulk_df,
-    _filter_index_to_bulk,
     merge_traces,
 )
 
@@ -23,8 +24,8 @@ def get_waveforms(
     station: str = "*",
     location: str = "*",
     channel: str = "*",
-    starttime: Optional[UTC] = None,
-    endtime: Optional[UTC] = None,
+    starttime: UTCDateTime | None = None,
+    endtime: UTCDateTime | None = None,
 ) -> obspy.Stream:
     """
     A subset of the Client.get_waveforms method.

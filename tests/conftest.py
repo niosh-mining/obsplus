@@ -1,24 +1,23 @@
 """
 pytest configuration for obsplus
 """
+
 import copy
 import glob
 import os
 import shutil
 import typing
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from os.path import basename
-from os.path import join, dirname, abspath
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from os.path import abspath, basename, dirname, join
 from pathlib import Path
 
 import matplotlib
 import numpy as np
+import obsplus.utils.dataset
+import obsplus.utils.events
 import obspy
 import pytest
 import tables
-
-import obsplus.utils.dataset
-import obsplus.utils.events
 from obsplus.constants import CPU_COUNT
 from obsplus.utils.testing import instrument_methods
 
@@ -108,7 +107,6 @@ def collect_catalogs():
     a dictionary of catalogs by file name, useful for tests that
     target a specific cat_name
     """
-
     out = {}
     for cat_path in catalogs:
         cat = obspy.read_events(cat_path)
@@ -140,7 +138,7 @@ def internet_available():
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((address, port))
         return True
-    except socket.error:
+    except OSError:
         return False
 
 
@@ -191,7 +189,6 @@ class StreamTester:
         st2
             The second stream.
         """
-
         stats_attrs = (
             "starttime",
             "endtime",
@@ -229,16 +226,16 @@ class DataSet(typing.NamedTuple):
 
 @pytest.fixture(scope="class")
 def thread_executor():
-    """return a thread pool"""
+    """Return a thread pool"""
     with ThreadPoolExecutor(CPU_COUNT) as executor:
         yield executor
 
 
 @pytest.fixture(scope="class")
 def process_executor():
-    """return a process pool"""
+    """Return a process pool"""
     # in order to avoid sapping too many resources, just use 1/2 CPU count
-    with ProcessPoolExecutor((CPU_COUNT // 2)) as executor:
+    with ProcessPoolExecutor(CPU_COUNT // 2) as executor:
         yield executor
 
 
@@ -276,14 +273,14 @@ def ta_wavebank(ta_dataset):
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
-    """load the bingham_test dataset"""
+    """Load the bingham_test dataset"""
     ds = load_and_update_dataset("bingham_test")
     return ds
 
 
 @pytest.fixture()
 def bingham_catalog(bingham_dataset):
-    """load the bingham_test tests case"""
+    """Load the bingham_test tests case"""
     cat = bingham_dataset.event_client.get_events()
     assert len(cat), "catalog is empty"
     return cat
@@ -291,13 +288,13 @@ def bingham_catalog(bingham_dataset):
 
 @pytest.fixture()
 def bingham_stream(bingham_dataset):
-    """load the bingham_test tests case"""
+    """Load the bingham_test tests case"""
     return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
 @pytest.fixture(scope="session")
 def bingham_stream_dict(bingham_dataset):
-    """return a dict where keys are event_id, vals are streams"""
+    """Return a dict where keys are event_id, vals are streams"""
     fetcher = bingham_dataset.get_fetcher()
     return dict(fetcher.yield_event_waveforms(10, 50))
 
@@ -461,7 +458,7 @@ def basic_stream_with_gap(waveform_cache):
 
 @pytest.fixture(scope="class")
 def disjointed_stream():
-    """return a waveforms that has parts with no overlaps"""
+    """Return a waveforms that has parts with no overlaps"""
     st = obspy.read()
     st[0].stats.starttime += 3600
     return st
@@ -469,7 +466,7 @@ def disjointed_stream():
 
 @pytest.fixture
 def fragmented_stream():
-    """create a waveforms that has been fragemented"""
+    """Create a waveforms that has been fragemented"""
     st = obspy.read()
     # make streams with new stations that are disjointed
     st2 = st.copy()
@@ -486,7 +483,7 @@ def fragmented_stream():
 
 @pytest.fixture(scope="class")
 def default_wbank(tmp_path_factory):
-    """create a  directory out of the traces in default waveforms, init bank"""
+    """Create a  directory out of the traces in default waveforms, init bank"""
     base = Path(tmp_path_factory.mktemp("default_wbank"))
     st = obspy.read()
     for num, tr in enumerate(st):

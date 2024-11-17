@@ -1,10 +1,10 @@
 """
 A script to publush a new version of Obsplus to pypi.
 """
+
 import shutil
 from pathlib import Path
 from subprocess import run
-
 
 if __name__ == "__main__":
     base = Path(__file__).parent.parent

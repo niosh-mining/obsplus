@@ -1,22 +1,26 @@
 """
 DataFrameExtractor class and friends.
 """
+
+from __future__ import annotations
+
 import copy
 import warnings
 from collections import UserDict
-from functools import singledispatch, reduce
-from typing import Mapping, Sequence, Optional, Dict
+from collections.abc import Mapping, Sequence
+from functools import reduce, singledispatch
+from typing import ClassVar
 
 import pandas as pd
 
-from obsplus.constants import column_function_map_type, TIME_COLUMNS, NSLC
-from obsplus.utils.time import to_datetime64
+from obsplus.constants import NSLC, TIME_COLUMNS, column_function_map_type
 from obsplus.utils.pd import (
     apply_funcs_to_columns,
-    order_columns,
     cast_dtypes,
+    order_columns,
     replace_or_swallow,
 )
+from obsplus.utils.time import to_datetime64
 
 # Create a dictionary of standard column_name: funcs to apply
 standard_column_transforms = {x: to_datetime64 for x in TIME_COLUMNS}
@@ -32,7 +36,7 @@ def _merge_dicts(dict1: Mapping, dict2: Mapping) -> Mapping:
 
 
 def _get_output_dict(obj, name, func):
-    """return an output dict."""
+    """Return an output dict."""
     out = func(obj)
     # a dict was returned, each key, value maps to a column, value
     if isinstance(out, dict):
@@ -71,16 +75,16 @@ class DataFrameExtractor(UserDict):
         UTCDateTime-able objects (like date-time strings, floats, etc).
     """
 
-    nslc = set(NSLC)
+    nslc: ClassVar = set(NSLC)
     nslc.add("seed_id")
 
     def __init__(
         self,
         cls,
-        required_columns: Sequence[str] = None,
+        required_columns: Sequence[str] | None = None,
         dtypes=None,
         pass_dataframe=True,
-        column_funcs: Optional[column_function_map_type] = None,
+        column_funcs: column_function_map_type | None = None,
     ):
         super().__init__()
         self.cls = cls
@@ -91,7 +95,7 @@ class DataFrameExtractor(UserDict):
         if pass_dataframe:
             self._func.register(pd.DataFrame)(_pass_through_dataframe)
 
-    def extractor(self, dtypes: Optional[Dict[str, type]] = None):
+    def extractor(self, dtypes: dict[str, type] | None = None):
         """
         Register an extractor.
 
@@ -145,7 +149,7 @@ class DataFrameExtractor(UserDict):
         return register_single_dispatch
 
     def _get_name(self, func):
-        """get the name of a callable."""
+        """Get the name of a callable."""
         try:
             return func.__name__
         except AttributeError:  # if this is an instance
@@ -184,7 +188,7 @@ class DataFrameExtractor(UserDict):
 
         return pd.DataFrame(rows)
 
-    def copy(self) -> "DataFrameExtractor":
+    def copy(self) -> DataFrameExtractor:
         """Return a deep copy of the fetcher."""
         return copy.deepcopy(self)
 
@@ -233,5 +237,5 @@ class DataFrameExtractor(UserDict):
 
     @property
     def dtypes(self):
-        """return a dictionary of datatypes."""
+        """Return a dictionary of datatypes."""
         return reduce(_merge_dicts, self._dtypes)

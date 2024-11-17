@@ -1,20 +1,22 @@
 """
 Core modules for validate.
 """
+
+from __future__ import annotations
+
 import inspect
 from collections import defaultdict
 from contextlib import contextmanager, suppress
 from functools import singledispatch
 from itertools import product
-from typing import Optional, Dict
 
 import pandas as pd
-from obspy import Stream, Trace, Catalog, Inventory
+from obspy import Catalog, Inventory, Stream, Trace
 from obspy.core.inventory.util import BaseNode
 from obspy.core.util import AttribDict
 
 from obsplus.exceptions import ValidationNameError
-from obsplus.utils.misc import yield_obj_parent_attr, iterate
+from obsplus.utils.misc import iterate, yield_obj_parent_attr
 
 # The validator state is of the form:
 # {"namespace": {cls: {id1: validator1, id2: validator2, ...], ...}, ...}
@@ -71,10 +73,6 @@ def decomposer(cls):
     cls
         The class the registered decomposer is to act on. Can be a tuple
         of classes.
-
-    Returns
-    -------
-
     """
 
     def _wrap(func):
@@ -89,16 +87,6 @@ def decomposer(cls):
 def validator(namespace: str, cls: type):
     """
     Register a callable to a given namespace to operate on type cls.
-
-    Parameters
-    ----------
-    namespace
-
-    cls
-
-    Returns
-    -------
-
     """
 
     def _wrap(func):
@@ -127,7 +115,7 @@ def _get_decomposer():
 
 
 def _get_validate_obj_intersection(validators, obj_tree):
-    """get the intersection between validators and obj_tree."""
+    """Get the intersection between validators and obj_tree."""
     validators_to_run = defaultdict(dict)
     for cls1, cls2 in product(obj_tree, validators):
         if issubclass(cls1, cls2):
@@ -136,7 +124,7 @@ def _get_validate_obj_intersection(validators, obj_tree):
 
 
 def _make_validator_report(validator, obj, kwargs):
-    """run a validator against an object and make a report."""
+    """Run a validator against an object and make a report."""
     val_name = getattr(validator, "__name__", validator)
     out = {"validator": val_name, "object": obj, "message": ""}
     try:
@@ -165,7 +153,7 @@ def _run_validator(validator, obj, kwargs):
 
 def validate(
     obj, namespace: str, report: bool = False, **kwargs
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
     Validate an object using validators in specified namespace.
 
@@ -204,7 +192,7 @@ def validate(
     return pd.DataFrame(reports)
 
 
-def decompose(obj) -> Dict[type, object]:
+def decompose(obj) -> dict[type, object]:
     """
     Decompose an object into a dict of {class: [instance1, instance2, ...]}.
 

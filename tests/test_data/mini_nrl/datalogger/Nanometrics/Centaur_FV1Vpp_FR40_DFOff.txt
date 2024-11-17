@@ -9,4 +9,3 @@ xml = "Centaur_FV1Vpp_FR40_DFOff_FPMinimum.xml"
 [Linear]
 description = "Nanometrics; Centaur; Full-Scale_Voltage 1Vpp; Final_Sample_Rate 40 Hz; DC_Filter Off; Final_Filter_Phase Linear"
 xml = "Centaur_FV1Vpp_FR40_DFOff_FPLinear.xml"
-

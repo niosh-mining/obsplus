@@ -1,7 +1,11 @@
 """Obsplus utilities for working with times."""
+
+from __future__ import annotations
+
 import warnings
+from collections.abc import Generator, Sequence
 from functools import singledispatch
-from typing import Union, Optional, Sequence, Dict, Any, TypeVar, Generator, Tuple
+from typing import Any, TypeVar
 
 import numpy as np
 import obspy
@@ -9,14 +13,14 @@ import pandas as pd
 from obspy.core import event as ev
 
 from obsplus.constants import (
-    event_time_type,
-    wave_type,
-    utc_able_type,
     DEFAULT_TIME,
     LARGEDT64,
     SMALLDT64,
     TIME_COLUMNS,
+    event_time_type,
     relative_time_types,
+    utc_able_type,
+    wave_type,
 )
 from obsplus.exceptions import TimeOverflowWarning
 from obsplus.utils.docs import compose_docstring
@@ -26,8 +30,8 @@ rtype = relative_time_types
 
 @singledispatch
 def get_reference_time(
-    obj: Optional[Union[event_time_type, wave_type]],
-) -> Optional[obspy.UTCDateTime]:
+    obj: event_time_type | wave_type | None,
+) -> obspy.UTCDateTime | None:
     """
     Get a reference time inferred from an object.
 
@@ -72,7 +76,7 @@ def get_reference_time(
 
 @get_reference_time.register(ev.Event)
 def _get_event_origin_time(event):
-    """get the time from preferred origin from the event"""
+    """Get the time from preferred origin from the event"""
     # try to get origin
     try:
         por = event.preferred_origin() or event.origins[-1]
@@ -111,27 +115,27 @@ def _from_list(input_list):
 
 @get_reference_time.register(obspy.Catalog)
 def _get_first_event(catalog):
-    """ensure the events is length one, return event"""
+    """Ensure the events is length one, return event"""
     assert len(catalog) == 1, f"{catalog} has more than one event"
     return _get_event_origin_time(catalog[0])
 
 
 @get_reference_time.register(obspy.Stream)
 def _get_stream_time(st):
-    """return the earliest start time for stream."""
+    """Return the earliest start time for stream."""
     return min([get_reference_time(tr) for tr in st])
 
 
 @get_reference_time.register(obspy.Trace)
 def _get_trace_time(tr):
-    """return starttime of trace."""
+    """Return starttime of trace."""
     return tr.stats.starttime
 
 
 @singledispatch
 def to_datetime64(
-    value: Optional[Union[utc_able_type, Sequence[utc_able_type]]], default=DEFAULT_TIME
-) -> Union[np.datetime64, np.ndarray, pd.Series]:
+    value: utc_able_type | Sequence[utc_able_type] | None, default=DEFAULT_TIME
+) -> np.datetime64 | np.ndarray | pd.Series:
     """
     Convert time value to a numpy datetime64, or array of such.
 
@@ -230,8 +234,8 @@ def _sequence_to_datetime64(value, default=DEFAULT_TIME):
 
 
 def to_utc(
-    value: Union[utc_able_type, Sequence[utc_able_type]]
-) -> Union[obspy.UTCDateTime, np.ndarray]:
+    value: utc_able_type | Sequence[utc_able_type],
+) -> obspy.UTCDateTime | np.ndarray:
     """
     Convert an object or sequence to a UTCDateTime object.
 
@@ -269,9 +273,9 @@ def to_utc(
 
 @singledispatch
 def to_timedelta64(
-    value: Optional[Union[rtype, Sequence[rtype], np.ndarray, pd.Series]],
+    value: rtype | Sequence[rtype] | np.ndarray | pd.Series | None,
     default: Any = np.timedelta64(0, "s"),
-) -> Union[np.timedelta64, np.ndarray, pd.Series]:
+) -> np.timedelta64 | np.ndarray | pd.Series:
     """
     Convert a value to a timedelta[ns].
 
@@ -332,8 +336,8 @@ def _array_to_timedelta(obj):
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))
 def _dict_times_to_npdatetimes(
-    input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
-) -> Dict[str, Any]:
+    input_dict: dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
+) -> dict[str, Any]:
     """
     Ensure time values in input_dict are converted to np.datetime64.
 
@@ -354,8 +358,8 @@ def _dict_times_to_npdatetimes(
 
 @compose_docstring(time_keys=str(TIME_COLUMNS))
 def _dict_times_to_ns(
-    input_dict: Dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
-) -> Dict[str, Any]:
+    input_dict: dict[str, Any], time_keys: Sequence[str] = TIME_COLUMNS
+) -> dict[str, Any]:
     """
     Ensure time values in input_dict are converted to ints (ns).
 
@@ -381,9 +385,9 @@ utc_var = TypeVar("utc_var", utc_able_type, Sequence[utc_able_type])
 def make_time_chunks(
     utc1: utc_able_type,
     utc2: utc_able_type,
-    duration: Union[float, int],
-    overlap: Union[float, int] = 0.0,
-) -> Generator[Tuple[obspy.UTCDateTime, obspy.UTCDateTime], None, None]:
+    duration: float | int,
+    overlap: float | int = 0.0,
+) -> Generator[tuple[obspy.UTCDateTime, obspy.UTCDateTime], None, None]:
     """
     Yield time intervals fitting in given datetime range.
 

@@ -1,4 +1,5 @@
-""" test for core functionality of wavebank """
+"""test for core functionality of wavebank"""
+
 import copy
 import functools
 import glob
@@ -9,34 +10,32 @@ import shutil
 import tempfile
 import time
 import types
-from concurrent.futures import as_completed, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import suppress
-
 from os.path import join
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
-from numpy.testing import assert_allclose as np_assert
-import obspy
-import obspy.clients.fdsn
-import pandas as pd
-import pytest
-from obspy import UTCDateTime as UTC
-
 import obsplus
 import obsplus.utils.bank
 import obsplus.utils.dataset
 import obsplus.utils.misc
 import obsplus.utils.pd
-from obsplus.bank.wavebank import WaveBank
-from obsplus.constants import NSLC, EMPTYTD64, WAVEFORM_DTYPES
-from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeyword
-from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
-from obsplus.utils.testing import check_index_paths
+import obspy
+import obspy.clients.fdsn
+import pandas as pd
+import pytest
+from numpy.testing import assert_allclose as np_assert
 from obsplus import get_reference_time
+from obsplus.bank.wavebank import WaveBank
+from obsplus.constants import EMPTYTD64, NSLC, WAVEFORM_DTYPES
+from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeywordError
 
 # ----------------------------------- Helper functions
-from obsplus.utils.testing import ArchiveDirectory
+from obsplus.utils.testing import ArchiveDirectory, check_index_paths
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obspy import UTCDateTime
 
 
 def count_calls(instance, bound_method, counter_attr):
@@ -58,7 +57,7 @@ def count_calls(instance, bound_method, counter_attr):
 
 
 def strip_processing(st: obspy.Stream) -> obspy.Stream:
-    """strip out processing from stats"""
+    """Strip out processing from stats"""
     # TODO replace this when ObsPy #2286 gets merged
     for tr in st:
         tr.stats.pop("processing")
@@ -70,21 +69,21 @@ def strip_processing(st: obspy.Stream) -> obspy.Stream:
 
 @pytest.fixture(scope="class")
 def ta_bank(tmp_ta_dir):
-    """init a bank on the test ta_test dataset"""
+    """Init a bank on the test ta_test dataset"""
     bank_path = os.path.join(tmp_ta_dir, "waveforms")
     return WaveBank(bank_path)
 
 
 @pytest.fixture(scope="function")
 def ta_bank_index(ta_bank):
-    """return the ta bank, but first update index"""
+    """Return the ta bank, but first update index"""
     ta_bank.update_index()
     return ta_bank
 
 
 @pytest.fixture(scope="function")
 def ta_bank_no_index(ta_bank):
-    """return the ta bank, but first delete the index"""
+    """Return the ta bank, but first delete the index"""
     path = Path(ta_bank.index_path)
     if path.exists():
         os.remove(path)
@@ -93,19 +92,19 @@ def ta_bank_no_index(ta_bank):
 
 @pytest.fixture(scope="function")
 def ta_index(ta_bank_index):
-    """return the ta index"""
+    """Return the ta index"""
     return ta_bank_index.read_index()
 
 
 @pytest.fixture
 def empty_bank(tmp_path):
-    """init a bank with an empty directory, return"""
+    """Init a bank with an empty directory, return"""
     return WaveBank(tmp_path)
 
 
 @pytest.fixture
 def duplicate_bank(tmp_path):
-    """init a bank with duplicate waveforms."""
+    """Init a bank with duplicate waveforms."""
     # create two overlapping traces for each stream
     st1 = obspy.read()
     st1.trim(endtime=st1[0].stats.endtime - 10)
@@ -132,7 +131,7 @@ class TestBankBasics:
     # fixtures
     @pytest.fixture
     def default_bank_low_version(self, default_wbank, monkeypatch):
-        """return the default bank with a negative version number."""
+        """Return the default bank with a negative version number."""
         # monkey patch obsplus version
         monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         # write index with negative version
@@ -176,16 +175,16 @@ class TestBankBasics:
 
     # tests
     def test_type(self, ta_bank):
-        """make sure ta_test bank is a bank"""
+        """Make sure ta_test bank is a bank"""
         assert isinstance(ta_bank, WaveBank)
 
     def test_index(self, ta_bank_index):
-        """ensure the index exists"""
+        """Ensure the index exists"""
         assert os.path.exists(ta_bank_index.index_path)
         assert isinstance(ta_bank_index.last_updated_timestamp, float)
 
     def test_custom_index_path(self, cust_index_wbank, cust_wbank_index_path):
-        """ensure a custom index path can be used"""
+        """Ensure a custom index path can be used"""
         index_path = cust_index_wbank.index_path
         # Make sure the new path got passed correctly
         assert index_path == cust_wbank_index_path
@@ -195,7 +194,7 @@ class TestBankBasics:
         check_index_paths(cust_index_wbank)
 
     def test_create_index(self, ta_bank_no_index):
-        """make sure a fresh index can be created"""
+        """Make sure a fresh index can be created"""
         # test that just trying to get an index that doesnt exists creates it
         ta_bank_no_index.read_index()
         index_path = ta_bank_no_index.index_path
@@ -215,7 +214,7 @@ class TestBankBasics:
         assert last_updated1 == last_updated2
 
     def test_pathlib_object(self, tmp_ta_dir):
-        """ensure a pathlib object can be passed as first arg"""
+        """Ensure a pathlib object can be passed as first arg"""
         bank = WaveBank(pathlib.Path(tmp_ta_dir) / "waveforms")
         ind = bank.read_index()
         min_start = ind.starttime.min()
@@ -234,7 +233,7 @@ class TestBankBasics:
         assert "starttime cannot be greater than endtime" in e_msg
 
     def test_correct_endtime_in_index(self, default_wbank):
-        """ensure the index has times consistent with traces in waveforms"""
+        """Ensure the index has times consistent with traces in waveforms"""
         index = default_wbank.read_index()
         st = obspy.read()
         starttimes = [to_datetime64(tr.stats.starttime) for tr in st]
@@ -292,7 +291,7 @@ class TestBankBasics:
         assert len(bank.read_index()) == 3
 
     def test_update_index_returns_self(self, default_wbank):
-        """ensure update index returns the instance for chaining."""
+        """Ensure update index returns the instance for chaining."""
         out = default_wbank.update_index()
         assert out is default_wbank
 
@@ -367,7 +366,7 @@ class TestEmptyBank:
 
     @pytest.fixture()
     def empty_read_index_bank(self, empty_bank):
-        """return the result of the empty read_index"""
+        """Return the result of the empty read_index"""
         return empty_bank.read_index()
 
     @pytest.fixture()
@@ -382,7 +381,7 @@ class TestEmptyBank:
 
     # tests
     def test_empty_index_returned(self, empty_read_index_bank):
-        """ensure an empty index (df) was returned"""
+        """Ensure an empty index (df) was returned"""
         assert isinstance(empty_read_index_bank, pd.DataFrame)
         assert empty_read_index_bank.empty
         assert set(empty_read_index_bank.columns).issuperset(WaveBank.index_columns)
@@ -400,31 +399,31 @@ class TestReadIndex:
 
     # tests
     def test_attr(self, ta_bank_index):
-        """test that the get index attribute exists"""
+        """Test that the get index attribute exists"""
         assert hasattr(ta_bank_index, "read_index")
 
     def test_basic_filters1(self, ta_bank_index):
-        """test exact matches work"""
+        """Test exact matches work"""
         index = ta_bank_index.read_index(station="M11A")
         assert set(index.station) == {"M11A"}
 
     def test_basic_filters2(self, ta_bank_index):
-        """that ? work in search"""
+        """That ? work in search"""
         index = ta_bank_index.read_index(station="M11?")
         assert set(index.station) == {"M11A"}
 
     def test_basic_filters3(self, ta_bank_index):
-        """general wildcard searches work"""
+        """General wildcard searches work"""
         index = ta_bank_index.read_index(station="*")
         assert set(index.station) == {"M11A", "M14A"}
 
     def test_basic_filters4(self, ta_bank_index):
-        """test combinations of wildcards work"""
+        """Test combinations of wildcards work"""
         index = ta_bank_index.read_index(station="M*4?")
         assert set(index.station) == {"M14A"}
 
     def test_time_queries(self, ta_bank_index):
-        """test that time queries return all data in range"""
+        """Test that time queries return all data in range"""
         t1 = np.datetime64("2007-02-15T00:00:00")
         t2 = t1 + np.timedelta64(3600 * 60, "s")
         one_hour = np.timedelta64(1, "h")
@@ -435,7 +434,7 @@ class TestReadIndex:
         assert (index.starttime > (t2 + one_hour)).sum() == 0
 
     def test_time_queries2(self, ta_bank_index):
-        """test that queries that are less than a file size work"""
+        """Test that queries that are less than a file size work"""
         t1 = np.datetime64("2007-02-16T01:01:01")
         t2 = np.datetime64("2007-02-16T01:01:15")
         index = ta_bank_index.read_index(starttime=t1, endtime=t2)
@@ -470,7 +469,7 @@ class TestReadIndex:
         """Ensure Nullish Values return all streams"""
         bank = default_wbank
         df1 = bank.read_index(starttime=None, endtime=None)
-        df2 = bank.read_index(starttime=pd.NaT, endtime=np.NaN)
+        df2 = bank.read_index(starttime=pd.NaT, endtime=np.nan)
         assert df1.equals(df2)
 
     def test_handles_pd_read_hdf_raises(self, default_wbank, monkeypatch):
@@ -494,18 +493,18 @@ class TestReadIndex:
 
     def test_read_index_raises_on_bad_param(self, default_wbank):
         """Ensure an unsupported kwarg raises. See #207."""
-        with pytest.raises(UnsupportedKeyword, match="startime"):
+        with pytest.raises(UnsupportedKeywordError, match="startime"):
             default_wbank.read_index(startime="2012-01-01")
 
 
 class TestYieldStreams:
     """tests for yielding streams from the bank"""
 
-    query1 = {
+    query1: ClassVar = {
         "starttime": obspy.UTCDateTime("2007-02-15T00-00-10"),
         "endtime": obspy.UTCDateTime("2007-02-20T00-00-00"),
     }
-    query2 = {
+    query2: ClassVar = {
         "starttime": obspy.UTCDateTime("2007-02-15T00-00-10"),
         "endtime": obspy.UTCDateTime("2007-02-20T00-00-00"),
         "duration": 3600,
@@ -515,7 +514,7 @@ class TestYieldStreams:
     # fixtures
     @pytest.fixture(scope="function")
     def yield1(self, ta_bank_index):
-        """the first yield set of parameters, duration not defined"""
+        """The first yield set of parameters, duration not defined"""
         return ta_bank_index.yield_waveforms(**self.query1)
 
     @pytest.fixture(scope="function")
@@ -527,7 +526,7 @@ class TestYieldStreams:
 
     # tests
     def test_type(self, yield1):
-        """test that calling yield_waveforms returns a generator"""
+        """Test that calling yield_waveforms returns a generator"""
         assert isinstance(yield1, types.GeneratorType)
         count = 0
         for st in yield1:
@@ -561,7 +560,7 @@ class TestGetWaveforms:
     """tests for getting waveforms from the index"""
 
     # fixture params
-    query1 = {
+    query1: ClassVar = {
         "starttime": obspy.UTCDateTime("2007-02-15T00-00-10"),
         "endtime": obspy.UTCDateTime("2007-02-20T00-00-00"),
         "station": "*",
@@ -569,7 +568,7 @@ class TestGetWaveforms:
         "channel": "VHE",
     }
 
-    query2 = {
+    query2: ClassVar = {
         "starttime": obspy.UTCDateTime("2007-02-15T00-00-10"),
         "endtime": obspy.UTCDateTime("2007-02-20T00-00-00"),
         "station": "*",
@@ -577,7 +576,7 @@ class TestGetWaveforms:
         "channel": "VH[NE]",
     }
 
-    query3 = {
+    query3: ClassVar = {
         "station": ["SPS", "WTU", "CFS"],
         "channel": ["HHZ", "ENZ"],
         "starttime": obspy.UTCDateTime("2013-04-11T05:07:26.330000Z"),
@@ -587,24 +586,24 @@ class TestGetWaveforms:
     # fixtures
     @pytest.fixture(scope="class")
     def stream1(self, ta_bank):
-        """return the waveforms using query1 as params"""
+        """Return the waveforms using query1 as params"""
         out = ta_bank.get_waveforms(**self.query1)
         return out
 
     @pytest.fixture(scope="class")
     def stream2(self, ta_bank):
-        """return the waveforms using query2 as params"""
+        """Return the waveforms using query2 as params"""
         return ta_bank.get_waveforms(**self.query2)
 
     @pytest.fixture(scope="class")
     def stream3(self, bingham_dataset):
-        """return a waveforms from query params 3 on bingham_test dataset"""
+        """Return a waveforms from query params 3 on bingham_test dataset"""
         bank = bingham_dataset.waveform_client
         return bank.get_waveforms(**self.query3)
 
     @pytest.fixture
     def bank49(self, tmpdir):
-        """setup a WaveBank to test issue #49."""
+        """Setup a WaveBank to test issue #49."""
         path = Path(tmpdir)
         # create two traces with a slight gap between the two
         st1 = obspy.read()
@@ -620,7 +619,7 @@ class TestGetWaveforms:
 
     @pytest.fixture
     def bank_null_loc_codes(self, tmpdir):
-        """create a bank that has nullish location codes in its streams."""
+        """Create a bank that has nullish location codes in its streams."""
         st = obspy.read()
         path = Path(tmpdir)
         for tr in st:
@@ -634,11 +633,11 @@ class TestGetWaveforms:
 
     # tests
     def test_attr(self, ta_bank_index):
-        """test that the bank class has the get_waveforms attr"""
+        """Test that the bank class has the get_waveforms attr"""
         assert hasattr(ta_bank_index, "get_waveforms")
 
     def test_stream1(self, stream1):
-        """make sure stream1 has all the expected features"""
+        """Make sure stream1 has all the expected features"""
         assert isinstance(stream1, obspy.Stream)
         assert len(stream1) == 2
         # get some stats from waveforms
@@ -670,7 +669,7 @@ class TestGetWaveforms:
             assert tr.stats.channel == "BHZ"
 
     def test_list_params(self, stream3):
-        """ensure parameters can be passed as lists"""
+        """Ensure parameters can be passed as lists"""
         # get a list of seed ids and ensure they are the same in the query
         sids = {tr.id for tr in stream3}
         for sid in sids:
@@ -713,18 +712,21 @@ class TestGetBulkWaveforms:
     """tests for pulling multiple waveforms using get_bulk_waveforms"""
 
     t1, t2 = obspy.UTCDateTime("2007-02-16"), obspy.UTCDateTime("2007-02-18")
-    bulk1 = [("TA", "M11A", "*", "*", t1, t2), ("TA", "M14A", "*", "*", t1, t2)]
-    standard_query1 = {"station": "M1?A", "starttime": t1, "endtime": t2}
+    bulk1: ClassVar = [
+        ("TA", "M11A", "*", "*", t1, t2),
+        ("TA", "M14A", "*", "*", t1, t2),
+    ]
+    standard_query1: ClassVar = {"station": "M1?A", "starttime": t1, "endtime": t2}
 
     # fixtures
     @pytest.fixture(scope="class")
     def ta_bulk_1(self, ta_bank):
-        """perform the first bulk query and return the result"""
+        """Perform the first bulk query and return the result"""
         return strip_processing(ta_bank.get_waveforms_bulk(self.bulk1))
 
     @pytest.fixture(scope="class")
     def ta_standard_1(self, ta_bank):
-        """perform the standard query, return the result"""
+        """Perform the standard query, return the result"""
         st = ta_bank.get_waveforms(**self.standard_query1)
         return strip_processing(st)
 
@@ -746,11 +748,11 @@ class TestGetBulkWaveforms:
 
     # tests
     def test_equal_results(self, ta_bulk_1, ta_standard_1):
-        """the two queries should return the same streams"""
+        """The two queries should return the same streams"""
         assert ta_bulk_1 == ta_standard_1
 
     def test_bulk3_no_matches(self, bank_3):
-        """tests for bizarre wildcard usage. Should not return no data."""
+        """Tests for bizarre wildcard usage. Should not return no data."""
         bulk = [
             ("TA", "*", "*", "HHZ", self.t1, self.t2),
             ("*", "MOB", "*", "*", self.t1, self.t2),
@@ -796,7 +798,7 @@ class TestGetBulkWaveforms:
     def test_no_duplicate_traces(self, duplicate_bank):
         """Ensure overlap in bulk args doesn't result in overlapping traces."""
         st = duplicate_bank.get_waveforms()
-        args = list(NSLC) + ["starttime", "endtime"]
+        args = [*list(NSLC), "starttime", "endtime"]
         bulk = [{i: tr.stats[i] for i in args} for tr in st]
         # create overlaps
         new = copy.deepcopy(bulk)
@@ -818,7 +820,7 @@ class TestBankCache:
     # fixtures
     @pytest.fixture(scope="class")
     def mp_ta_bank(self, ta_bank):
-        """monkey patch the ta_bank instance to count how many times the .h5
+        """Monkey patch the ta_bank instance to count how many times the .h5
         index is accessed, store it on the accessed_times in the ._cache.times
         """
         func = count_calls(ta_bank, ta_bank._index_cache._get_index, "index_calls")
@@ -827,14 +829,14 @@ class TestBankCache:
 
     @pytest.fixture(scope="class")
     def query_twice_mp_ta(self, mp_ta_bank):
-        """query the instrumented ta_test bank twice"""
+        """Query the instrumented ta_test bank twice"""
         _ = mp_ta_bank.read_index(**self.query_1)
         _ = mp_ta_bank.read_index(**self.query_1)
         return mp_ta_bank
 
     # tests
     def test_query_twice(self, query_twice_mp_ta):
-        """make sure a double query only accesses index once"""
+        """Make sure a double query only accesses index once"""
         assert query_twice_mp_ta.index_calls == 1
 
 
@@ -846,7 +848,7 @@ class TestBankCacheWithKwargs:
 
     @pytest.fixture
     def got_gaps_bank(self, ta_bank):
-        """call get_gaps on bank (to populate cache) and return"""
+        """Call get_gaps on bank (to populate cache) and return"""
         ta_bank.get_gaps_df()
         return ta_bank
 
@@ -865,7 +867,7 @@ class TestPutWaveforms:
     # fixtures
     @pytest.fixture(scope="class")
     def add_stream(self, ta_bank):
-        """add the default obspy waveforms to the bank, return the bank"""
+        """Add the default obspy waveforms to the bank, return the bank"""
         st = obspy.read()
         ta_bank.update_index()  # make sure index cache is set
         ta_bank.put_waveforms(st, update_index=True)
@@ -873,7 +875,7 @@ class TestPutWaveforms:
 
     @pytest.fixture(scope="class")
     def default_stations(self):
-        """return the default stations on the default waveforms as a set"""
+        """Return the default stations on the default waveforms as a set"""
         return set([x.stats.station for x in obspy.read()])
 
     @pytest.fixture(scope="class")
@@ -890,11 +892,11 @@ class TestPutWaveforms:
 
     # tests
     def test_deposited_waveform(self, add_stream, default_stations):
-        """make sure the waveform was added to the bank"""
+        """Make sure the waveform was added to the bank"""
         assert default_stations.issubset(add_stream.read_index().station)
 
     def test_retrieve_stream(self, add_stream):
-        """ensure the default waveforms can be pulled out of the archive"""
+        """Ensure the default waveforms can be pulled out of the archive"""
         st1 = add_stream.get_waveforms(station="RJOB").sort()
         st2 = obspy.read().sort()
         assert len(st1) == 3
@@ -932,12 +934,12 @@ class TestPutMultipleTracesOneFile:
     st_mod = st.copy()
     for tr in st_mod:
         tr.stats.station = "PS"
-    expected_seeds = {tr.id for tr in st + st_mod}
+    expected_seeds: ClassVar = {tr.id for tr in st + st_mod}
 
     # fixtures
     @pytest.fixture(scope="class")
     def bank(self):
-        """return an empty bank for depositing waveforms"""
+        """Return an empty bank for depositing waveforms"""
         bd = dict(path_structure="streams/network", name_structure="time")
         with tempfile.TemporaryDirectory() as tempdir:
             out = os.path.join(tempdir, "temp")
@@ -945,14 +947,14 @@ class TestPutMultipleTracesOneFile:
 
     @pytest.fixture(scope="class")
     def deposited_bank(self, bank: obsplus.WaveBank):
-        """deposit the waveforms in the bank, return the bank"""
+        """Deposit the waveforms in the bank, return the bank"""
         bank.put_waveforms(self.st_mod, update_index=True)
         bank.put_waveforms(self.st, update_index=True)
         return bank
 
     @pytest.fixture(scope="class")
     def mseed_files(self, deposited_bank):
-        """count the number of files"""
+        """Count the number of files"""
         bfile = deposited_bank.bank_path
         glo = glob.glob(os.path.join(bfile, "**", "*.mseed"), recursive=True)
         return glo
@@ -967,12 +969,12 @@ class TestPutMultipleTracesOneFile:
 
     @pytest.fixture(scope="class")
     def number_of_files(self, mseed_files):
-        """count the number of files"""
+        """Count the number of files"""
         return len(mseed_files)
 
     # tests
     def test_one_file(self, number_of_files):
-        """ensure only one file was written"""
+        """Ensure only one file was written"""
         assert number_of_files == 1
 
     def test_all_streams(self, banked_stream):
@@ -990,7 +992,7 @@ class TestBadWaveforms:
     # fixtures
     @pytest.fixture(scope="class")
     def ta_bank_bad_file(self, ta_bank):
-        """add an unreadable file to the wave bank, then return new bank"""
+        """Add an unreadable file to the wave bank, then return new bank"""
         path = ta_bank.bank_path
         new_file_path = os.path.join(path, "bad_file.mseed")
         with open(new_file_path, "w") as fi:
@@ -1002,7 +1004,7 @@ class TestBadWaveforms:
 
     @pytest.fixture
     def ta_bank_empty_files(self, ta_bank, tmpdir):
-        """add many empty files to bank, ensure index still reads all files"""
+        """Add many empty files to bank, ensure index still reads all files"""
         old_path = Path(ta_bank.bank_path)
         new_path = Path(tmpdir) / "waveforms"
         shutil.copytree(old_path, new_path)
@@ -1021,8 +1023,7 @@ class TestBadWaveforms:
 
     # tests
     def test_bad_file_emits_warning(self, ta_bank_bad_file):
-        """ensure an unreadable waveform file will emit a warning"""
-
+        """Ensure an unreadable waveform file will emit a warning"""
         with pytest.warns(UserWarning) as record:
             ta_bank_bad_file.update_index()
         assert len(record)
@@ -1030,7 +1031,7 @@ class TestBadWaveforms:
         assert any([expected_str in r.message.args[0] for r in record])
 
     def test_read_index(self, ta_bank_empty_files, ta_bank):
-        """tests for bank with many empty files"""
+        """Tests for bank with many empty files"""
         df1 = ta_bank_empty_files.read_index()
         df2 = ta_bank.read_index()
         assert (df1 == df2).all().all()
@@ -1050,7 +1051,7 @@ class TestFilesWithMultipleChannels:
     # fixtures
     @pytest.fixture(autouse=True, scope="class")
     def count_read_executions(self, bank):
-        """patch read to make sure it is called correct number of times"""
+        """Patch read to make sure it is called correct number of times"""
 
         def count_decorator(func):
             def wrapper(*args, **kwargs):
@@ -1071,7 +1072,7 @@ class TestFilesWithMultipleChannels:
 
     @pytest.fixture(scope="class")
     def multichannel_bank(self):
-        """return a directory with a mseed that has multiple channels"""
+        """Return a directory with a mseed that has multiple channels"""
         st = obspy.read()
         with tempfile.TemporaryDirectory() as tdir:
             path = join(tdir, "test.mseed")
@@ -1082,12 +1083,12 @@ class TestFilesWithMultipleChannels:
 
     @pytest.fixture(scope="class")
     def bank(self, multichannel_bank):
-        """return a wavefetcher using multichannel bank"""
+        """Return a wavefetcher using multichannel bank"""
         return WaveBank(multichannel_bank)
 
     @pytest.fixture(scope="class")
     def bulk_args(self):
-        """return bulk args for default waveforms"""
+        """Return bulk args for default waveforms"""
         st = obspy.read()
         out = []
         for tr in st:
@@ -1099,21 +1100,21 @@ class TestFilesWithMultipleChannels:
 
     @pytest.fixture(scope="class")
     def bulk_st(self, bank, bulk_args):
-        """return the result of getting bulk args"""
+        """Return the result of getting bulk args"""
         return bank.get_waveforms_bulk(bulk_args)
 
     @pytest.fixture(scope="class")
     def number_of_calls(self, bulk_st):
-        """return the nubmer of calls made to read"""
+        """Return the nubmer of calls made to read"""
         return self.counter
 
     # tests
     def test_stream_len(self, bulk_st):
-        """ensure exactly 3 channels are in waveforms"""
+        """Ensure exactly 3 channels are in waveforms"""
         assert len(bulk_st) == 3
 
     def test_read_stream_called_once(self, number_of_calls):
-        """assert the read function was called exactly once"""
+        """Assert the read function was called exactly once"""
         assert number_of_calls == 1
 
 
@@ -1123,22 +1124,22 @@ class TestGetAvailability:
     # fixtures
     @pytest.fixture(scope="class")
     def avail_df(self, ta_bank):
-        """return the availability dataframe"""
+        """Return the availability dataframe"""
         return ta_bank.get_availability_df()
 
     @pytest.fixture(scope="class")
     def avail(self, ta_bank):
-        """return availability"""
+        """Return availability"""
         return ta_bank.availability()
 
     # test
     def test_availability_df(self, avail_df):
-        """test the availability property returns a dataframe"""
+        """Test the availability property returns a dataframe"""
         assert isinstance(avail_df, pd.DataFrame)
         assert not avail_df.empty
 
     def test_avail_df_filter(self, ta_bank):
-        """ensure specifying a network/station argument filters df"""
+        """Ensure specifying a network/station argument filters df"""
         df = ta_bank.get_availability_df(station="M14*", channel="*Z")
         assert len(df) == 1
         assert df.iloc[0].station == "M14A"
@@ -1160,15 +1161,15 @@ class TestGetAvailability:
 class TestGetGaps:
     """test that the get_gaps method returns info about gaps"""
 
-    start = UTC("2017-09-18")
-    end = UTC("2017-09-28")
+    start = UTCDateTime("2017-09-18")
+    end = UTCDateTime("2017-09-28")
     sampling_rate = 1
 
-    gaps = [
-        (UTC("2017-09-18T18-00-00"), UTC("2017-09-18T19-00-00")),
-        (UTC("2017-09-18T20-00-00"), UTC("2017-09-18T20-00-15")),
-        (UTC("2017-09-20T01-25-35"), UTC("2017-09-20T01-25-40")),
-        (UTC("2017-09-21T05-25-35"), UTC("2017-09-25T10-36-42")),
+    gaps: ClassVar = [
+        (UTCDateTime("2017-09-18T18-00-00"), UTCDateTime("2017-09-18T19-00-00")),
+        (UTCDateTime("2017-09-18T20-00-00"), UTCDateTime("2017-09-18T20-00-15")),
+        (UTCDateTime("2017-09-20T01-25-35"), UTCDateTime("2017-09-20T01-25-40")),
+        (UTCDateTime("2017-09-21T05-25-35"), UTCDateTime("2017-09-25T10-36-42")),
     ]
 
     durations = np.array([y - x for x, y in gaps])
@@ -1192,13 +1193,13 @@ class TestGetGaps:
     # fixtures
     @pytest.fixture(scope="class")
     def gappy_dir(self, class_tmp_dir):
-        """create a directory that has gaps in it"""
+        """Create a directory that has gaps in it"""
         self._make_gappy_archive(join(class_tmp_dir, "temp1"))
         return class_tmp_dir
 
     @pytest.fixture(scope="class")
     def gappy_bank(self, gappy_dir):
-        """init a WaveBank on the gappy data"""
+        """Init a WaveBank on the gappy data"""
         bank = WaveBank(gappy_dir)
         # make sure index is updated after gaps are introduced
         if os.path.exists(bank.index_path):
@@ -1220,19 +1221,19 @@ class TestGetGaps:
 
     @pytest.fixture(scope="class")
     def empty_bank(self):
-        """create a bank object initiated on an empty directory"""
+        """Create a bank object initiated on an empty directory"""
         with tempfile.TemporaryDirectory() as td:
             bank = WaveBank(td)
             yield bank
 
     @pytest.fixture(scope="class")
     def gap_df(self, gappy_bank):
-        """return a gap df from the gappy bank"""
+        """Return a gap df from the gappy bank"""
         return gappy_bank.get_gaps_df()
 
     @pytest.fixture(scope="class")
     def uptime_df(self, gappy_bank):
-        """return the uptime dataframe from the gappy bank"""
+        """Return the uptime dataframe from the gappy bank"""
         return gappy_bank.get_uptime_df()
 
     @pytest.fixture(scope="class")
@@ -1242,7 +1243,7 @@ class TestGetGaps:
 
     @pytest.fixture()
     def uptime_default(self, default_wbank):
-        """return the uptime from the default stream bank."""
+        """Return the uptime from the default stream bank."""
         return default_wbank.get_uptime_df()
 
     @pytest.fixture()
@@ -1258,8 +1259,9 @@ class TestGetGaps:
 
         def create_trace(row):
             """Create a trace in the middle of a row of the index."""
+            rnd = np.random.default_rng(20)
             t1 = to_utc(row["starttime"]) + 10
-            data = np.random.rand(10)
+            data = rnd.random(10)
             header = dict(starttime=t1, sampling_rate=1)
             for code in NSLC:
                 header[code] = row[code]
@@ -1279,7 +1281,7 @@ class TestGetGaps:
 
     # tests
     def test_gaps_length(self, gap_df):  # , gappy_bank):
-        """ensure each of the gaps shows up in df"""
+        """Ensure each of the gaps shows up in df"""
         assert isinstance(gap_df, pd.DataFrame)
         assert not gap_df.empty
         group = gap_df.groupby(["network", "station", "location", "channel"])
@@ -1290,7 +1292,7 @@ class TestGetGaps:
             assert (dif < (1.5 * sampling_period)).all()
 
     def test_gappy_uptime_df(self, uptime_df):
-        """ensure the uptime df is of correct type and accurate"""
+        """Ensure the uptime df is of correct type and accurate"""
         assert isinstance(uptime_df, pd.DataFrame)
         gap_duration = sum([x[1] - x[0] for x in self.gaps])
         duration = self.end - self.start
@@ -1298,7 +1300,7 @@ class TestGetGaps:
         np_assert(uptime_df["availability"], uptime_percent, atol=0.001)
 
     def test_gappy_segment_df(self, segment_df):
-        """ensure the segment df is the correct type and accurate"""
+        """Ensure the segment df is the correct type and accurate"""
         assert isinstance(segment_df, pd.DataFrame)
         # There should be one entry for each continuous data segment
         #  (will be 2 longer than the corresponding gap df)
@@ -1360,7 +1362,7 @@ class TestGetGaps:
         assert set(segments.columns) == set(empty_bank._segment_columns)
 
     def test_ta_uptime(self, ta_dataset):
-        """ensure the ta bank returns an uptime df"""
+        """Ensure the ta bank returns an uptime df"""
         bank = ta_dataset.waveform_client
         df = bank.get_uptime_df()
         diff = abs(df["uptime"] - df["duration"])
@@ -1394,7 +1396,7 @@ class TestGetGaps:
         assert len(uptime) < len(segments) < len(index)
 
     def test_no_gaps_on_continuous_dataset(self, ta_dataset):
-        """test no gaps on ta dataset."""
+        """Test no gaps on ta dataset."""
         ds = ta_dataset
         wbank = ds.waveform_client
         gap_df = wbank.get_gaps_df()
@@ -1450,7 +1452,7 @@ class TestBadInputs:
 
     # tests
     def test_bad_inventory(self, tmp_ta_dir):
-        """ensure giving a bad stations str raises"""
+        """Ensure giving a bad stations str raises"""
         with pytest.raises(Exception):
             WaveBank(tmp_ta_dir, inventory="some none existent file")
 
@@ -1491,7 +1493,7 @@ class TestConcurrentBank:
     new_files = 1
 
     def func(self, wbank):
-        """add new files to the wavebank then update index, return index."""
+        """Add new files to the wavebank then update index, return index."""
         try:
             wbank.read_index()
         except Exception as e:
@@ -1522,7 +1524,7 @@ class TestConcurrentBank:
 
     @pytest.fixture(scope="class")
     def process_pool(self):
-        """return a thread pool"""
+        """Return a thread pool"""
         with ProcessPoolExecutor(self.worker_count) as executor:
             yield executor
 
@@ -1581,7 +1583,7 @@ class TestSelectDoesntReturnSuperset:
     # fixtures
     @pytest.fixture(scope="class")
     def df_index(self):
-        """return a dataframe index for testing"""
+        """Return a dataframe index for testing"""
         stations = [str(x) for x in [2, 2, 2, 22, 22, 22, 222, 222, 222]]
         df = pd.DataFrame(index=range(9), columns=WaveBank.index_columns)
         df["station"] = stations
@@ -1594,7 +1596,7 @@ class TestSelectDoesntReturnSuperset:
 
     @pytest.fixture(scope="class")
     def modified_index_wbank(self, df_index, ta_archive, tmp_path_factory):
-        """return a wbank with station names that have been modified"""
+        """Return a wbank with station names that have been modified"""
         wbank = WaveBank(ta_archive)
         # Point the bank path to a temporary directory
         path = tmp_path_factory.mktemp("temp_waveforms")
@@ -1605,7 +1607,7 @@ class TestSelectDoesntReturnSuperset:
 
     # test
     def test_only_one_station_returned(self, modified_index_wbank):
-        """ensure selecting station 2 only returns one station"""
+        """Ensure selecting station 2 only returns one station"""
         station = "2"
         df = modified_index_wbank.read_index(station=station)
         stations = df.station.unique()
@@ -1619,11 +1621,11 @@ class TestFilesWithDifferentFormats:
     should still be readable.
     """
 
-    start = UTC("2017-09-18")
-    end = UTC("2017-09-19")
+    start = UTCDateTime("2017-09-18")
+    end = UTCDateTime("2017-09-19")
     seed_ids = ("TA.M17A..VHZ", "TA.BOB..VHZ")
     sampling_rate = 1
-    format_key = dict(SAC="TA.SAC..VHZ")
+    format_key: ClassVar = dict(SAC="TA.SAC..VHZ")
 
     # fixtures
     @pytest.fixture(scope="class")
@@ -1644,7 +1646,7 @@ class TestFilesWithDifferentFormats:
         return obsplus.WaveBank(ardir.path)
 
     def test_all_files_read_warning_issued(self, het_bank_path):
-        """ensure all the files are read in and a warning issued."""
+        """Ensure all the files are read in and a warning issued."""
         with pytest.warns(UserWarning) as w:
             bank = obsplus.WaveBank(het_bank_path).update_index()
         df = bank.read_index()

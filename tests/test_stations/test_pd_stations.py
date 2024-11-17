@@ -1,16 +1,17 @@
 """
 Tests for gettting station dataframes from objects.
 """
+
 import os
 import tempfile
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
+import obsplus
 import obspy
 import pandas as pd
 import pytest
-
-import obsplus
 from obsplus import stations_to_df
 from obsplus.constants import STATION_COLUMNS, pd_time_types
 from obsplus.utils.misc import register_func, suppress_warnings
@@ -29,12 +30,12 @@ class TestInv2Df:
     # fixtures
     @pytest.fixture(scope="class")
     def invdf(self, test_inventory):
-        """return the dataframe produced from stations"""
+        """Return the dataframe produced from stations"""
         return stations_to_df(test_inventory)
 
     # tests
     def test_method_exits(self, test_inventory):
-        """make sure stations has the catalog2df method"""
+        """Make sure stations has the catalog2df method"""
         assert hasattr(test_inventory, "to_df")
 
     def test_output(self, invdf):
@@ -48,7 +49,7 @@ class TestInv2Df:
             assert isinstance(row.seed_id, str)
 
     def test_to_df_method(self):
-        """ensure the to_df method is attached and works."""
+        """Ensure the to_df method is attached and works."""
         inv = obspy.read_inventory()
         chans = inv.get_contents()["channels"]
         df = inv.to_df()
@@ -56,7 +57,7 @@ class TestInv2Df:
         assert len(chans) == len(df)
 
     def test_time_columns(self, invdf):
-        """ensure the times are np.datetime instances."""
+        """Ensure the times are np.datetime instances."""
         assert invdf["start_date"].dt  # if not dt this will raise
         assert invdf["end_date"].dt
 
@@ -64,7 +65,7 @@ class TestInv2Df:
         "input,expected", [(1, "01"), (1.0, "01"), ("01", "01"), ("1", "1")]
     )
     def test_location_codes(self, invdf, input, expected):
-        """make sure location codes are handled nicely"""
+        """Make sure location codes are handled nicely"""
         invdf = invdf.copy()
         if isinstance(input, int):
             invdf = invdf.loc[invdf["station"] == "RJOB"]
@@ -88,13 +89,13 @@ class TestInv2Df:
 class TestReadInventory:
     """ensure inventories can be read in"""
 
-    fixtures = []
+    fixtures: ClassVar = []
 
     # fixtures
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def df_from_inv(self):
-        """read events from a events object"""
+        """Read events from a events object"""
         inv = obspy.read_inventory()
         return stations_to_df(inv)
 
@@ -119,12 +120,12 @@ class TestReadInventory:
 
     @pytest.fixture(scope="class", params=fixtures)
     def read_inventory_output(self, request):
-        """the parametrized output of read_events fixtures"""
+        """The parametrized output of read_events fixtures"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture
     def numeric_csv(self, tmpdir):
-        """write a csv with numeric net/sta/loc codes, return path"""
+        """Write a csv with numeric net/sta/loc codes, return path"""
         f1 = Path(tmpdir.mkdir("data")) / "stations.csv"
         t1 = obspy.UTCDateTime("2012-01-01").timestamp
         t2 = t1 + 3600
@@ -151,7 +152,7 @@ class TestReadInventory:
 
     # tests
     def test_basics(self, read_inventory_output):
-        """make sure a dataframe is returned"""
+        """Make sure a dataframe is returned"""
         assert isinstance(read_inventory_output, pd.DataFrame)
         assert len(read_inventory_output)
 
@@ -177,7 +178,7 @@ class TestReadDirectoryOfInventories:
 
     # help functions
     def nest_directly(self, nested_times, path):
-        """make a directory nested n times"""
+        """Make a directory nested n times"""
         nd_name = Path(path) / self.nest_name
         if not Path(nd_name).exists() and nested_times:
             os.makedirs(nd_name)
@@ -188,7 +189,7 @@ class TestReadDirectoryOfInventories:
     # fixtures
     @pytest.fixture()
     def inventory(self, bingham_dataset):
-        """read the stations"""
+        """Read the stations"""
         # get sub-inventory
         client = bingham_dataset.station_client
         stations = ["COY", "FFT", "RIV"]
@@ -199,7 +200,7 @@ class TestReadDirectoryOfInventories:
 
     @pytest.fixture()
     def inv_directory(self, inventory):
-        """create a nested directory of inventories"""
+        """Create a nested directory of inventories"""
         chans = inventory.get_contents()["channels"]
         # make a silly nested directory
         with tempfile.TemporaryDirectory() as tempdir:
@@ -232,7 +233,7 @@ class TestReadDirectoryOfInventories:
 class TestReadTAInventory:
     """read the ta_test inventories (csv and xml) and run tests"""
 
-    fixtures = []
+    fixtures: ClassVar = []
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
@@ -264,18 +265,18 @@ class TestReadTAInventory:
 
     @pytest.fixture(scope="class", params=fixtures)
     def inv_df(self, request):
-        """collect all the supported inputs are parametrize"""
+        """Collect all the supported inputs are parametrize"""
         value = request.getfixturevalue(request.param)
         return stations_to_df(value)
 
     # tests
     def test_size(self, inv_df, ta_inventory):
-        """ensure the correct number of items is in df"""
+        """Ensure the correct number of items is in df"""
         channel_count = len(ta_inventory.get_contents()["channels"])
         assert len(inv_df) == channel_count
 
     def test_column_order(self, inv_df):
-        """ensure the order of the columns is correct"""
+        """Ensure the order of the columns is correct"""
         cols = list(inv_df.columns)
         assert list(STATION_COLUMNS) == cols[: len(STATION_COLUMNS)]
 
@@ -291,25 +292,25 @@ class TestReadDataFrame:
     # fixtures
     @pytest.fixture
     def inv_df(self):
-        """return a small dataframe for manipulating"""
+        """Return a small dataframe for manipulating"""
         df = stations_to_df(obspy.read_inventory())
         return df
 
     @pytest.fixture
     def df_bad_location(self, inv_df):
-        """make location codes nan, run through read_inventory"""
-        inv_df["location"] = np.NaN
+        """Make location codes nan, run through read_inventory"""
+        inv_df["location"] = np.nan
         return stations_to_df(inv_df)
 
     # tests
     def test_idempotency(self, inv_df):
-        """ensure the inv_df function is idempotent"""
+        """Ensure the inv_df function is idempotent"""
         inv_df2 = stations_to_df(inv_df)
         assert inv_df2.equals(inv_df)
         assert inv_df2 is not inv_df
 
     def test_bad_locations_handled(self, df_bad_location):
-        """ensure the NaN location codes are changed to blank str"""
+        """Ensure the NaN location codes are changed to blank str"""
         assert (df_bad_location.loc[:, "location"] == "").all()
 
 
@@ -324,7 +325,7 @@ class TestStationDfFromCatalog:
         assert not df.empty
 
     def test_kem_catalog(self, bingham_dataset):
-        """test converting the kemmerer catalog to an inv dataframe."""
+        """Test converting the kemmerer catalog to an inv dataframe."""
         df = stations_to_df(bingham_dataset.event_client.get_events())
         assert isinstance(df, pd.DataFrame)
         assert not df.empty
@@ -339,7 +340,7 @@ class TestStationDfFromWaveBank:
         return stations_to_df(crandall_bank)
 
     def test_df_returned(self, wavebank_station_df):
-        """a df should be returned and not empty."""
+        """A df should be returned and not empty."""
         assert isinstance(wavebank_station_df, pd.DataFrame)
         assert len(wavebank_station_df)
 

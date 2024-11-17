@@ -2,7 +2,7 @@
 Utilities for calculating spatial relationships.
 """
 
-from typing import Union
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -12,14 +12,14 @@ from obspy.taup.taup_geo import calc_dist
 
 import obsplus
 from obsplus.constants import (
-    event_type,
-    inventory_type,
+    ALT_DISTANCE_COLUMN_DTYPES,
     DISTANCE_COLUMN_DTYPES,
     LOCATION_DTYPE,
-    ALT_DISTANCE_COLUMN_DTYPES,
+    event_type,
+    inventory_type,
 )
-from obsplus.utils.docs import compose_docstring
 from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.docs import compose_docstring
 
 
 class SpatialCalculator:
@@ -180,8 +180,8 @@ class SpatialCalculator:
     )
     def __call__(
         self,
-        entity_1: Union[event_type, inventory_type, pd.DataFrame, tuple],
-        entity_2: Union[event_type, inventory_type, pd.DataFrame, tuple],
+        entity_1: event_type | inventory_type | pd.DataFrame | tuple,
+        entity_2: event_type | inventory_type | pd.DataFrame | tuple,
     ) -> pd.DataFrame:
         """
         Calculate spatial relationship(s) between two entities.
@@ -220,7 +220,7 @@ class SpatialCalculator:
         return pd.DataFrame(out, columns=list(DISTANCE_COLUMN_DTYPES), index=index)
 
 
-def map_longitudes(angle_array: Union[np.ndarray, pd.Series]) -> pd.Series:
+def map_longitudes(angle_array: np.ndarray | pd.Series) -> pd.Series:
     """
     Map longitudes to -180 to 180 domain.
 

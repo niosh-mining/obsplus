@@ -48,29 +48,23 @@ jobs:
         with:
           fetch-depth: 0  # need this so tags are pulled and versions work
 
-      - name: Get year week
-        id: date
-        run: echo "date=$(date +'%Y:%U')" >> $GITHUB_STATE
-
-      - name: setup conda env
-        uses: conda-incubator/setup-miniconda@v2.2.0
+      - uses: mamba-org/setup-micromamba@v1
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          activate-environment: test
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
+          micromamba-version: '1.5.8-0' # versions: https://github.com/mamba-org/micromamba-releases
+          environment-file: .github/workflows/test_conda_env.yml
+          init-shell: >-
+            bash
+            powershell
+          cache-environment: true
+          post-cleanup: 'all'
 
-      - name: Cache conda env
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.prefix }}
-          key: ${{ env.cache_key }}-hash${{ hashFiles(env.env_file) }}-${{ steps.date.outputs.date }}-${{ env.CACHE_NUMBER }}
-        id: cache
-
-      - name: Update environment
-        run: mamba env update -n test -f ${{ env.env_file }}
-        if: steps.cache.outputs.cache-hit != 'true'
+      # Not sure why this is needed but it appears to be the case
+      - name: fix env
+        shell: bash -l {0}
+        run: |
+          micromamba shell init --shell bash --root-prefix=~/micromamba
+          eval "$(micromamba shell hook --shell bash)"
+          micromamba activate test
 
       - name: install obsplus
         shell: bash -l {0}

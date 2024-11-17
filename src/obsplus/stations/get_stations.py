@@ -1,6 +1,7 @@
 """
 A Client.get_stations like interface for obspy stations objects
 """
+
 import copy
 import fnmatch
 import inspect
@@ -8,7 +9,7 @@ import operator as op
 
 import obspy
 from obspy.clients.fdsn import Client
-from obspy.core.inventory import Network, Channel, Station
+from obspy.core.inventory import Channel, Network, Station
 
 from obsplus.utils.misc import get_instances_from_tree
 
@@ -19,7 +20,7 @@ SUPPORTED_ARGS = CLIENT_ARGS - UNSUPPORTED
 
 
 def match(name, patern):
-    """perform case in-sensitive unix style matches with fnmatch"""
+    """Perform case in-sensitive unix style matches with fnmatch"""
     return fnmatch.fnmatch(name.upper(), patern.upper())
 
 
@@ -60,7 +61,7 @@ OPERATORS = dict(
 
 
 def _add_codes(inv):
-    """add network, station, location, channel codes where applicable"""
+    """Add network, station, location, channel codes where applicable"""
     for network in inv:
         net_code = network.code
         network.network_code = net_code
@@ -134,7 +135,7 @@ def get_stations(inv: obspy.Inventory, **kwargs) -> obspy.Inventory:
 
 
 def get_stations_bulk(inv: obspy.Inventory, bulk_args) -> obspy.Inventory:
-    """return bulk station request"""
+    """Return bulk station request"""
     raise NotImplementedError("working on it")
 
 

@@ -1,29 +1,33 @@
 """
 Generic Utilities for Pandas
 """
+
+from __future__ import annotations
+
 import fnmatch
 import re
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from contextlib import suppress
 from functools import lru_cache, reduce
-from typing import Any, Optional, Sequence, Mapping, Collection, Iterable, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_string_dtype
 
 from obsplus.constants import (
-    column_function_map_type,
-    NULL_SEED_CODES,
-    NSLC,
-    SMALLDT64,
-    LARGEDT64,
-    utc_time_type,
     BULK_WAVEFORM_COLUMNS,
+    LARGEDT64,
+    NSLC,
+    NULL_SEED_CODES,
+    SMALLDT64,
     bulk_waveform_arg_type,
+    column_function_map_type,
+    utc_time_type,
 )
 from obsplus.exceptions import DataFrameContentError
-from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obsplus.utils.geodetics import map_longitudes
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
 
 def _int_column_to_str(ser, width=2, fillchar="0"):
@@ -82,7 +86,7 @@ def convert_bytestrings(df, columns, inplace=False):
 
 
 def apply_funcs_to_columns(
-    df: pd.DataFrame, funcs: Optional[column_function_map_type], inplace: bool = False
+    df: pd.DataFrame, funcs: column_function_map_type | None, inplace: bool = False
 ) -> pd.DataFrame:
     """
     Apply callables to columns.
@@ -117,8 +121,8 @@ def _time_cols_to_ints(df, columns=None, nat_value=SMALLDT64):
     We need, therefore, to designate a time that will be used as NaT.
     """
     cols = columns or df.select_dtypes(include=["datetime64"]).columns
-    df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
-    return df
+    new_cols = {col: df[col].fillna(nat_value).astype(np.int64) for col in cols}
+    return df.assign(**new_cols)
 
 
 def _ints_to_time_columns(df, columns=None, nat_value=SMALLDT64):
@@ -140,7 +144,7 @@ def _ints_to_time_columns(df, columns=None, nat_value=SMALLDT64):
 
 def cast_dtypes(
     df: pd.DataFrame,
-    dtype: Optional[Mapping[str, Union[type, str]]] = None,
+    dtype: Mapping[str, type | str] | None = None,
     inplace=False,
 ) -> pd.DataFrame:
     """
@@ -256,8 +260,8 @@ def join_str_columns(
 
 def get_seed_id_series(
     df: pd.DataFrame,
-    null_codes: Optional[Any] = NULL_SEED_CODES,
-    subset: Optional[Sequence[str]] = None,
+    null_codes: Any | None = NULL_SEED_CODES,
+    subset: Sequence[str] | None = None,
 ) -> pd.Series:
     """
     Create a series of seed_ids from a dataframe with required columns.
@@ -314,12 +318,12 @@ def get_seed_id_series(
 
 def filter_index(
     index: pd.DataFrame,
-    network: Optional = None,
-    station: Optional = None,
-    location: Optional = None,
-    channel: Optional = None,
-    starttime: Optional[utc_time_type] = None,
-    endtime: Optional[utc_time_type] = None,
+    network: str | None = None,
+    station: str | None = None,
+    location: str | None = None,
+    channel: str | None = None,
+    starttime: utc_time_type | None = None,
+    endtime: utc_time_type | None = None,
     **kwargs,
 ) -> np.array:
     """
@@ -454,7 +458,7 @@ def get_waveforms_bulk_args(
     """
 
     def rename_startdate_enddate(df):
-        """rename startdate, enddate to starttime endtime"""
+        """Rename startdate, enddate to starttime endtime"""
         col_set = set(df.columns)
         if "startdate" in col_set and "starttime" not in col_set:
             df = df.rename(columns={"startdate": "starttime"})

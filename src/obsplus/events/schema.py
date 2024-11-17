@@ -4,20 +4,21 @@ Pydantic schema for ObsPlus event model.
 ObsPlus Event Model is a superset of, and compatible with, ObsPy's Event
 model.
 """
-from datetime import datetime
-from typing import Optional, List, Union
-from uuid import uuid4
-from typing_extensions import Literal, Annotated
 
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Annotated, Literal
+from uuid import uuid4
 
 import obspy.core.event as ev
 from obspy import UTCDateTime
 from pydantic import (
-    model_validator,
-    ConfigDict,
     BaseModel,
-    PlainValidator,
+    ConfigDict,
     Field,
+    PlainValidator,
+    model_validator,
 )
 
 from obsplus.constants import NSLC
@@ -134,7 +135,7 @@ PickPolarity = Literal["positive", "negative", "undecidable"]
 SourceTimeFunctionType = Literal["box car", "triangle", "trapezoid", "unknown"]
 
 
-def _to_datetime(dt: Union[datetime, UTCDateTime]) -> datetime:
+def _to_datetime(dt: datetime | UTCDateTime) -> datetime:
     """Convert object to datatime."""
     return UTCDateTime(dt).datetime
 
@@ -171,7 +172,7 @@ class _ObsPyModel(BaseModel):
         out = {}
         for i in self.model_fields:
             val = getattr(self, i)
-            if isinstance(val, (list, tuple)):
+            if isinstance(val, list | tuple):
                 out[i] = [self._convert_to_obspy(x) for x in val]
             else:
                 out[i] = self._convert_to_obspy(val)
@@ -195,64 +196,64 @@ class _ModelWithResourceID(_ObsPyModel):
 class QuantityError(_ObsPyModel):
     """Quantity Error"""
 
-    uncertainty: Optional[float] = None
-    lower_uncertainty: Optional[float] = None
-    upper_uncertainty: Optional[float] = None
-    confidence_level: Optional[float] = None
+    uncertainty: float | None = None
+    lower_uncertainty: float | None = None
+    upper_uncertainty: float | None = None
+    confidence_level: float | None = None
 
 
 class CreationInfo(_ObsPyModel):
     """Creation info"""
 
-    agency_id: Optional[str] = None
-    agency_uri: Optional[ResourceIdentifier] = None
-    author: Optional[str] = None
-    author_uri: Optional[ResourceIdentifier] = None
-    creation_time: Optional[UTCDateTimeFormat] = None
-    version: Optional[str] = None
+    agency_id: str | None = None
+    agency_uri: ResourceIdentifier | None = None
+    author: str | None = None
+    author_uri: ResourceIdentifier | None = None
+    creation_time: UTCDateTimeFormat | None = None
+    version: str | None = None
 
 
 class TimeWindow(_ObsPyModel):
     """Time Window"""
 
-    begin: Optional[float] = None
-    end: Optional[float] = None
-    reference: Optional[UTCDateTimeFormat] = None
+    begin: float | None = None
+    end: float | None = None
+    reference: UTCDateTimeFormat | None = None
 
 
 class CompositeTime(_ObsPyModel):
     """Composite Time"""
 
-    year: Optional[int] = None
-    year_errors: Optional[QuantityError] = None
-    month: Optional[int] = None
-    month_errors: Optional[QuantityError] = None
-    day: Optional[int] = None
-    day_errors: Optional[QuantityError] = None
-    hour: Optional[int] = None
-    hour_errors: Optional[QuantityError] = None
-    minute: Optional[int] = None
-    minute_errors: Optional[QuantityError] = None
-    second: Optional[float] = None
-    second_errors: Optional[QuantityError] = None
+    year: int | None = None
+    year_errors: QuantityError | None = None
+    month: int | None = None
+    month_errors: QuantityError | None = None
+    day: int | None = None
+    day_errors: QuantityError | None = None
+    hour: int | None = None
+    hour_errors: QuantityError | None = None
+    minute: int | None = None
+    minute_errors: QuantityError | None = None
+    second: float | None = None
+    second_errors: QuantityError | None = None
 
 
 class Comment(_ModelWithResourceID):
     """Comment"""
 
-    text: Optional[str] = None
-    creation_info: Optional[CreationInfo] = None
+    text: str | None = None
+    creation_info: CreationInfo | None = None
 
 
 class WaveformStreamID(_ObsPyModel):
     """Waveform stream ID"""
 
-    network_code: Optional[str] = None
-    station_code: Optional[str] = None
-    location_code: Optional[str] = None
-    channel_code: Optional[str] = None
-    resource_uri: Optional[ResourceIdentifier] = None
-    seed_string: Optional[str] = None
+    network_code: str | None = None
+    station_code: str | None = None
+    location_code: str | None = None
+    channel_code: str | None = None
+    resource_uri: ResourceIdentifier | None = None
+    seed_string: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -274,22 +275,22 @@ class WaveformStreamID(_ObsPyModel):
 class ConfidenceEllipsoid(_ObsPyModel):
     """Confidence Ellipsoid"""
 
-    semi_major_axis_length: Optional[float] = None
-    semi_minor_axis_length: Optional[float] = None
-    semi_intermediate_axis_length: Optional[float] = None
-    major_axis_plunge: Optional[float] = None
-    major_axis_azimuth: Optional[float] = None
-    major_axis_rotation: Optional[float] = None
+    semi_major_axis_length: float | None = None
+    semi_minor_axis_length: float | None = None
+    semi_intermediate_axis_length: float | None = None
+    major_axis_plunge: float | None = None
+    major_axis_azimuth: float | None = None
+    major_axis_rotation: float | None = None
 
 
 class DataUsed(_ObsPyModel):
     """Data Used"""
 
-    wave_type: Optional[DataUsedWaveType] = None
-    station_count: Optional[int] = None
-    component_count: Optional[int] = None
-    shortest_period: Optional[float] = None
-    longest_period: Optional[float] = None
+    wave_type: DataUsedWaveType | None = None
+    station_count: int | None = None
+    component_count: int | None = None
+    shortest_period: float | None = None
+    longest_period: float | None = None
 
 
 # --- Magnitude classes
@@ -298,48 +299,48 @@ class DataUsed(_ObsPyModel):
 class StationMagnitude(_ModelWithResourceID):
     """Station Magnitude."""
 
-    origin_id: Optional[ResourceIdentifier] = None
-    mag: Optional[float] = None
-    mag_errors: Optional[QuantityError] = None
-    station_magnitude_type: Optional[str] = None
-    amplitude_id: Optional[ResourceIdentifier] = None
-    method_id: Optional[ResourceIdentifier] = None
-    waveform_id: Optional[WaveformStreamID] = None
-    creation_info: Optional[CreationInfo] = None
-    comments: List[Comment] = []
+    origin_id: ResourceIdentifier | None = None
+    mag: float | None = None
+    mag_errors: QuantityError | None = None
+    station_magnitude_type: str | None = None
+    amplitude_id: ResourceIdentifier | None = None
+    method_id: ResourceIdentifier | None = None
+    waveform_id: WaveformStreamID | None = None
+    creation_info: CreationInfo | None = None
+    comments: list[Comment] = []
 
 
 class StationMagnitudeContribution(_ObsPyModel):
     """Station Magnitude Contribution"""
 
-    station_magnitude_id: Optional[ResourceIdentifier] = None
-    residual: Optional[float] = None
-    weight: Optional[float] = None
+    station_magnitude_id: ResourceIdentifier | None = None
+    residual: float | None = None
+    weight: float | None = None
 
 
 class Amplitude(_ModelWithResourceID):
     """Amplitude"""
 
-    generic_amplitude: Optional[float] = None
-    generic_amplitude_errors: Optional[QuantityError] = None
-    type: Optional[str] = None
-    category: Optional[AmplitudeCategory] = None
-    unit: Optional[AmplitudeUnit] = None
-    method_id: Optional[ResourceIdentifier] = None
-    period: Optional[float] = None
-    period_errors: Optional[QuantityError] = None
-    snr: Optional[float] = None
-    time_window: Optional[TimeWindow] = None
-    pick_id: Optional[ResourceIdentifier] = None
-    waveform_id: Optional[WaveformStreamID] = None
-    filter_id: Optional[ResourceIdentifier] = None
-    scaling_time: Optional[UTCDateTimeFormat] = None
-    scaling_time_errors: Optional[QuantityError] = None
-    magnitude_hint: Optional[str] = None
-    evaluation_mode: Optional[EvaluationMode] = None
-    evaluation_status: Optional[EvaluationStatus] = None
-    creation_info: Optional[CreationInfo] = None
-    comments: List[Comment] = []
+    generic_amplitude: float | None = None
+    generic_amplitude_errors: QuantityError | None = None
+    type: str | None = None
+    category: AmplitudeCategory | None = None
+    unit: AmplitudeUnit | None = None
+    method_id: ResourceIdentifier | None = None
+    period: float | None = None
+    period_errors: QuantityError | None = None
+    snr: float | None = None
+    time_window: TimeWindow | None = None
+    pick_id: ResourceIdentifier | None = None
+    waveform_id: WaveformStreamID | None = None
+    filter_id: ResourceIdentifier | None = None
+    scaling_time: UTCDateTimeFormat | None = None
+    scaling_time_errors: QuantityError | None = None
+    magnitude_hint: str | None = None
+    evaluation_mode: EvaluationMode | None = None
+    evaluation_status: EvaluationStatus | None = None
+    creation_info: CreationInfo | None = None
+    comments: list[Comment] = []
 
 
 # --- Origin classes
@@ -348,122 +349,122 @@ class Amplitude(_ModelWithResourceID):
 class OriginUncertainty(_ObsPyModel):
     """Origin Uncertainty"""
 
-    horizontal_uncertainty: Optional[float] = None
-    min_horizontal_uncertainty: Optional[float] = None
-    max_horizontal_uncertainty: Optional[float] = None
-    azimuth_max_horizontal_uncertainty: Optional[float] = None
-    confidence_ellipsoid: Optional[ConfidenceEllipsoid] = None
-    preferred_description: Optional[OriginUncertaintyDescription] = None
-    confidence_level: Optional[float] = None
+    horizontal_uncertainty: float | None = None
+    min_horizontal_uncertainty: float | None = None
+    max_horizontal_uncertainty: float | None = None
+    azimuth_max_horizontal_uncertainty: float | None = None
+    confidence_ellipsoid: ConfidenceEllipsoid | None = None
+    preferred_description: OriginUncertaintyDescription | None = None
+    confidence_level: float | None = None
 
 
 class OriginQuality(_ObsPyModel):
     """Origin Quality"""
 
-    associated_phase_count: Optional[int] = None
-    used_phase_count: Optional[int] = None
-    associated_station_count: Optional[int] = None
-    used_station_count: Optional[int] = None
-    depth_phase_count: Optional[int] = None
-    standard_error: Optional[float] = None
-    azimuthal_gap: Optional[float] = None
-    secondary_azimuthal_gap: Optional[float] = None
-    ground_truth_level: Optional[str] = None
-    minimum_distance: Optional[float] = None
-    maximum_distance: Optional[float] = None
-    median_distance: Optional[float] = None
+    associated_phase_count: int | None = None
+    used_phase_count: int | None = None
+    associated_station_count: int | None = None
+    used_station_count: int | None = None
+    depth_phase_count: int | None = None
+    standard_error: float | None = None
+    azimuthal_gap: float | None = None
+    secondary_azimuthal_gap: float | None = None
+    ground_truth_level: str | None = None
+    minimum_distance: float | None = None
+    maximum_distance: float | None = None
+    median_distance: float | None = None
 
 
 class Pick(_ModelWithResourceID):
     """Pick"""
 
-    time: Optional[UTCDateTimeFormat] = None
-    time_errors: Optional[QuantityError] = None
-    waveform_id: Optional[WaveformStreamID] = None
-    filter_id: Optional[ResourceIdentifier] = None
-    method_id: Optional[ResourceIdentifier] = None
-    horizontal_slowness: Optional[float] = None
-    horizontal_slowness_errors: Optional[QuantityError] = None
-    backazimuth: Optional[float] = None
-    backazimuth_errors: Optional[QuantityError] = None
-    slowness_method_id: Optional[ResourceIdentifier] = None
-    onset: Optional[PickOnset] = None
-    phase_hint: Optional[str] = None
-    polarity: Optional[PickPolarity] = None
-    evaluation_mode: Optional[EvaluationMode] = None
-    evaluation_status: Optional[EvaluationStatus] = None
-    creation_info: Optional[CreationInfo] = None
+    time: UTCDateTimeFormat | None = None
+    time_errors: QuantityError | None = None
+    waveform_id: WaveformStreamID | None = None
+    filter_id: ResourceIdentifier | None = None
+    method_id: ResourceIdentifier | None = None
+    horizontal_slowness: float | None = None
+    horizontal_slowness_errors: QuantityError | None = None
+    backazimuth: float | None = None
+    backazimuth_errors: QuantityError | None = None
+    slowness_method_id: ResourceIdentifier | None = None
+    onset: PickOnset | None = None
+    phase_hint: str | None = None
+    polarity: PickPolarity | None = None
+    evaluation_mode: EvaluationMode | None = None
+    evaluation_status: EvaluationStatus | None = None
+    creation_info: CreationInfo | None = None
 
-    comments: List[Comment] = []
+    comments: list[Comment] = []
 
 
 class Arrival(_ModelWithResourceID):
     """Arrival"""
 
-    pick_id: Optional[ResourceIdentifier] = None
-    phase: Optional[str] = None
-    time_correction: Optional[float] = None
-    azimuth: Optional[float] = None
-    distance: Optional[float] = None
-    takeoff_angle: Optional[float] = None
-    takeoff_angle_errors: Optional[QuantityError] = None
-    time_residual: Optional[float] = None
-    horizontal_slowness_residual: Optional[float] = None
-    backazimuth_residual: Optional[float] = None
-    time_weight: Optional[float] = None
-    horizontal_slowness_weight: Optional[float] = None
-    backazimuth_weight: Optional[float] = None
-    earth_model_id: Optional[ResourceIdentifier] = None
-    creation_info: Optional[CreationInfo] = None
+    pick_id: ResourceIdentifier | None = None
+    phase: str | None = None
+    time_correction: float | None = None
+    azimuth: float | None = None
+    distance: float | None = None
+    takeoff_angle: float | None = None
+    takeoff_angle_errors: QuantityError | None = None
+    time_residual: float | None = None
+    horizontal_slowness_residual: float | None = None
+    backazimuth_residual: float | None = None
+    time_weight: float | None = None
+    horizontal_slowness_weight: float | None = None
+    backazimuth_weight: float | None = None
+    earth_model_id: ResourceIdentifier | None = None
+    creation_info: CreationInfo | None = None
 
-    comments: List[Comment] = []
+    comments: list[Comment] = []
 
 
 class Origin(_ModelWithResourceID):
     """Origin"""
 
     time: UTCDateTimeFormat
-    time_errors: Optional[QuantityError] = None
-    longitude: Optional[float] = None
-    longitude_errors: Optional[QuantityError] = None
-    latitude: Optional[float] = None
-    latitude_errors: Optional[QuantityError] = None
-    depth: Optional[float] = None
-    depth_errors: Optional[QuantityError] = None
-    depth_type: Optional[OriginDepthType] = None
-    time_fixed: Optional[bool] = None
-    epicenter_fixed: Optional[bool] = None
-    reference_system_id: Optional[ResourceIdentifier] = None
-    method_id: Optional[ResourceIdentifier] = None
-    earth_model_id: Optional[ResourceIdentifier] = None
-    quality: Optional[OriginQuality] = None
-    origin_type: Optional[OriginType] = None
-    origin_uncertainty: Optional[OriginUncertainty] = None
-    region: Optional[str] = None
-    evaluation_mode: Optional[EvaluationMode] = None
-    evaluation_status: Optional[EvaluationStatus] = None
-    creation_info: Optional[CreationInfo] = None
+    time_errors: QuantityError | None = None
+    longitude: float | None = None
+    longitude_errors: QuantityError | None = None
+    latitude: float | None = None
+    latitude_errors: QuantityError | None = None
+    depth: float | None = None
+    depth_errors: QuantityError | None = None
+    depth_type: OriginDepthType | None = None
+    time_fixed: bool | None = None
+    epicenter_fixed: bool | None = None
+    reference_system_id: ResourceIdentifier | None = None
+    method_id: ResourceIdentifier | None = None
+    earth_model_id: ResourceIdentifier | None = None
+    quality: OriginQuality | None = None
+    origin_type: OriginType | None = None
+    origin_uncertainty: OriginUncertainty | None = None
+    region: str | None = None
+    evaluation_mode: EvaluationMode | None = None
+    evaluation_status: EvaluationStatus | None = None
+    creation_info: CreationInfo | None = None
 
-    comments: List[Comment] = []
-    arrivals: List[Arrival] = []
-    composite_times: List[CompositeTime] = []
+    comments: list[Comment] = []
+    arrivals: list[Arrival] = []
+    composite_times: list[CompositeTime] = []
 
 
 class Magnitude(_ModelWithResourceID):
     """Magnitude"""
 
-    mag: Optional[float] = None
-    mag_errors: Optional[QuantityError] = None
-    magnitude_type: Optional[str] = None
-    origin_id: Optional[ResourceIdentifier] = None
-    method_id: Optional[ResourceIdentifier] = None
-    station_count: Optional[int] = None
-    azimuthal_gap: Optional[float] = None
-    evaluation_mode: Optional[EvaluationMode] = None
-    evaluation_status: Optional[EvaluationStatus] = None
-    creation_info: Optional[CreationInfo] = None
-    comments: List[Comment] = []
-    station_magnitude_contributions: List[StationMagnitudeContribution] = []
+    mag: float | None = None
+    mag_errors: QuantityError | None = None
+    magnitude_type: str | None = None
+    origin_id: ResourceIdentifier | None = None
+    method_id: ResourceIdentifier | None = None
+    station_count: int | None = None
+    azimuthal_gap: float | None = None
+    evaluation_mode: EvaluationMode | None = None
+    evaluation_status: EvaluationStatus | None = None
+    creation_info: CreationInfo | None = None
+    comments: list[Comment] = []
+    station_magnitude_contributions: list[StationMagnitudeContribution] = []
 
 
 # --- Source objects
@@ -472,102 +473,102 @@ class Magnitude(_ModelWithResourceID):
 class Axis(_ObsPyModel):
     """Axis"""
 
-    azimuth: Optional[float] = None
-    plunge: Optional[float] = None
-    length: Optional[float] = None
+    azimuth: float | None = None
+    plunge: float | None = None
+    length: float | None = None
 
 
 class NodalPlane(_ObsPyModel):
     """Nodal Plane"""
 
-    strike: Optional[float] = None
-    dip: Optional[float] = None
-    rake: Optional[float] = None
+    strike: float | None = None
+    dip: float | None = None
+    rake: float | None = None
 
 
 class NodalPlanes(_ObsPyModel):
     """Nodal Planes"""
 
-    nodal_plane_1: Optional[NodalPlane] = None
-    nodal_plane_2: Optional[NodalPlane] = None
-    preferred_plane: Optional[int] = None
+    nodal_plane_1: NodalPlane | None = None
+    nodal_plane_2: NodalPlane | None = None
+    preferred_plane: int | None = None
 
 
 class PrincipalAxes(_ObsPyModel):
     """Principal Axes"""
 
-    t_axis: Optional[Axis] = None
-    p_axis: Optional[Axis] = None
-    n_axis: Optional[Axis] = None
+    t_axis: Axis | None = None
+    p_axis: Axis | None = None
+    n_axis: Axis | None = None
 
 
 class Tensor(_ObsPyModel):
     """Tensor"""
 
-    m_rr: Optional[float] = None
-    m_rr_errors: Optional[QuantityError] = None
-    m_tt: Optional[float] = None
-    m_tt_errors: Optional[QuantityError] = None
-    m_pp: Optional[float] = None
-    m_pp_errors: Optional[QuantityError] = None
-    m_rt: Optional[float] = None
-    m_rt_errors: Optional[QuantityError] = None
-    m_rp: Optional[float] = None
-    m_rp_errors: Optional[QuantityError] = None
-    m_tp: Optional[float] = None
-    m_tp_errors: Optional[QuantityError] = None
+    m_rr: float | None = None
+    m_rr_errors: QuantityError | None = None
+    m_tt: float | None = None
+    m_tt_errors: QuantityError | None = None
+    m_pp: float | None = None
+    m_pp_errors: QuantityError | None = None
+    m_rt: float | None = None
+    m_rt_errors: QuantityError | None = None
+    m_rp: float | None = None
+    m_rp_errors: QuantityError | None = None
+    m_tp: float | None = None
+    m_tp_errors: QuantityError | None = None
 
 
 class SourceTimeFunction(_ObsPyModel):
     """Source Time Function"""
 
-    type: Optional[SourceTimeFunctionType] = None
-    duration: Optional[float] = None
-    rise_time: Optional[float] = None
-    decay_time: Optional[float] = None
+    type: SourceTimeFunctionType | None = None
+    duration: float | None = None
+    rise_time: float | None = None
+    decay_time: float | None = None
 
 
 class MomentTensor(_ModelWithResourceID):
     """Moment Tensor"""
 
-    derived_origin_id: Optional[ResourceIdentifier] = None
-    moment_magnitude_id: Optional[ResourceIdentifier] = None
-    scalar_moment: Optional[float] = None
-    scalar_moment_errors: Optional[QuantityError] = None
-    tensor: Optional[Tensor] = None
-    variance: Optional[float] = None
-    variance_reduction: Optional[float] = None
-    double_couple: Optional[float] = None
-    clvd: Optional[float] = None
-    iso: Optional[float] = None
-    greens_function_id: Optional[float] = None
-    filter_id: Optional[ResourceIdentifier] = None
-    source_time_function: Optional[SourceTimeFunction] = None
-    data_used: Optional[List[DataUsed]] = None
-    method_id: Optional[ResourceIdentifier] = None
-    category: Optional[MomentTensorCategory] = None
-    inversion_type: Optional[MTInversionType] = None
-    creation_info: Optional[CreationInfo] = None
+    derived_origin_id: ResourceIdentifier | None = None
+    moment_magnitude_id: ResourceIdentifier | None = None
+    scalar_moment: float | None = None
+    scalar_moment_errors: QuantityError | None = None
+    tensor: Tensor | None = None
+    variance: float | None = None
+    variance_reduction: float | None = None
+    double_couple: float | None = None
+    clvd: float | None = None
+    iso: float | None = None
+    greens_function_id: float | None = None
+    filter_id: ResourceIdentifier | None = None
+    source_time_function: SourceTimeFunction | None = None
+    data_used: list[DataUsed] | None = None
+    method_id: ResourceIdentifier | None = None
+    category: MomentTensorCategory | None = None
+    inversion_type: MTInversionType | None = None
+    creation_info: CreationInfo | None = None
 
 
 class FocalMechanism(_ModelWithResourceID):
     """Focal Mechanism"""
 
-    triggering_origin_id: Optional[ResourceIdentifier] = None
-    nodal_planes: Optional[NodalPlanes] = None
-    principal_axes: Optional[PrincipalAxes] = None
-    azimuthal_gap: Optional[float] = None
-    station_polarity_count: Optional[int] = None
-    misfit: Optional[float] = None
-    station_distribution_ratio: Optional[float] = None
-    method_id: Optional[ResourceIdentifier] = None
-    evaluation_mode: Optional[EvaluationMode] = None
-    evaluation_status: Optional[EvaluationStatus] = None
-    moment_tensor: Optional[MomentTensor] = None
-    creation_info: Optional[CreationInfo] = None
+    triggering_origin_id: ResourceIdentifier | None = None
+    nodal_planes: NodalPlanes | None = None
+    principal_axes: PrincipalAxes | None = None
+    azimuthal_gap: float | None = None
+    station_polarity_count: int | None = None
+    misfit: float | None = None
+    station_distribution_ratio: float | None = None
+    method_id: ResourceIdentifier | None = None
+    evaluation_mode: EvaluationMode | None = None
+    evaluation_status: EvaluationStatus | None = None
+    moment_tensor: MomentTensor | None = None
+    creation_info: CreationInfo | None = None
 
-    waveform_id: List[WaveformStreamID] = []
-    comments: List[Comment] = []
+    waveform_id: list[WaveformStreamID] = []
+    comments: list[Comment] = []
 
 
 # --- Event definitions
@@ -576,30 +577,30 @@ class FocalMechanism(_ModelWithResourceID):
 class EventDescription(_ObsPyModel):
     """Event Description"""
 
-    text: Optional[str] = None
-    type: Optional[EventDescriptionType] = None
+    text: str | None = None
+    type: EventDescriptionType | None = None
 
 
 class Event(_ModelWithResourceID):
     """Event"""
 
-    event_type: Optional[EventType] = None
-    event_type_certainty: Optional[EventTypeCertainty] = None
-    creation_info: Optional[CreationInfo] = None
-    preferred_origin_id: Optional[ResourceIdentifier] = None
-    preferred_magnitude_id: Optional[ResourceIdentifier] = None
-    preferred_focal_mechanism_id: Optional[ResourceIdentifier] = None
-    event_descriptions: List[EventDescription] = []
-    comments: List[Comment] = []
-    picks: List[Pick] = []
-    amplitudes: List[Amplitude] = []
-    focal_mechanisms: List[FocalMechanism] = []
-    origins: List[Origin] = []
-    magnitudes: List[Magnitude] = []
-    station_magnitudes: List[StationMagnitude] = []
+    event_type: EventType | None = None
+    event_type_certainty: EventTypeCertainty | None = None
+    creation_info: CreationInfo | None = None
+    preferred_origin_id: ResourceIdentifier | None = None
+    preferred_magnitude_id: ResourceIdentifier | None = None
+    preferred_focal_mechanism_id: ResourceIdentifier | None = None
+    event_descriptions: list[EventDescription] = []
+    comments: list[Comment] = []
+    picks: list[Pick] = []
+    amplitudes: list[Amplitude] = []
+    focal_mechanisms: list[FocalMechanism] = []
+    origins: list[Origin] = []
+    magnitudes: list[Magnitude] = []
+    station_magnitudes: list[StationMagnitude] = []
 
     def to_obspy(self):
-        """convert the catalog to obspy form"""
+        """Convert the catalog to obspy form"""
         out = super().to_obspy()
         out.scope_resource_ids()
         return out
@@ -608,7 +609,7 @@ class Event(_ModelWithResourceID):
 class Catalog(_ModelWithResourceID):
     """A collection of events."""
 
-    events: List[Event] = []
-    description: Optional[str] = None
-    comments: Optional[List[Comment]] = None
-    creation_info: Optional[CreationInfo] = None
+    events: list[Event] = []
+    description: str | None = None
+    comments: list[Comment] | None = None
+    creation_info: CreationInfo | None = None

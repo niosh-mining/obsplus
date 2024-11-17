@@ -90,4 +90,3 @@ path="MeridianPosthole.txt"
 
 [MeridianCompactPosthole]
 path="MeridianCompactPosthole.txt"
-

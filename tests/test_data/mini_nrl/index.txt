@@ -12,4 +12,3 @@ path = "integrated/index.txt"
 
 [Datalogger]
 path = "datalogger/index.txt"
-

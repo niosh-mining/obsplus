@@ -1,11 +1,11 @@
 """
 Script to re-make the html docs and publish to gh-pages.
 """
+
 from pathlib import Path
 from subprocess import run
 
 import typer
-
 from clean_docs import clean_docs
 
 # Path to top-level sphinx

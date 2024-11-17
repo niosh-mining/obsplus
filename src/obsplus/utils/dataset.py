@@ -1,12 +1,14 @@
 """
 Simple utility for DataSet.
 """
+
+from __future__ import annotations
+
 import shutil
 import tempfile
 import textwrap
 from contextlib import suppress
 from pathlib import Path
-from typing import Optional, Union
 
 import obsplus
 
@@ -36,9 +38,9 @@ def _create_opsdata(opsdata_path: Path):
 
 
 def copy_dataset(
-    dataset: Union[str, "obsplus.DataSet"],
-    destination: Optional[Union[str, Path]] = None,
-) -> "obsplus.DataSet":
+    dataset: str | obsplus.DataSet,
+    destination: str | Path | None = None,
+) -> obsplus.DataSet:
     """
     Copy a dataset to a destination.
 

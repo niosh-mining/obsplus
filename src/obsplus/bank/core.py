@@ -1,13 +1,17 @@
 """Base class for ObsPlus' in-process databases (aka banks)."""
+
+from __future__ import annotations
+
 import os
 import shutil
 import tempfile
 import warnings
 from abc import ABC, abstractmethod
-from pathlib import Path
+from collections.abc import Iterable, Mapping
 from inspect import isclass
+from pathlib import Path
 from types import MappingProxyType as MapProxy
-from typing import Optional, TypeVar, Mapping, Iterable, Union
+from typing import TypeVar
 
 import numpy as np
 import pandas as pd
@@ -18,7 +22,7 @@ from obsplus.constants import CPU_COUNT, bank_subpaths_type
 from obsplus.exceptions import BankDoesNotExistError
 from obsplus.interfaces import ProgressBar
 from obsplus.utils.bank import _IndexCache
-from obsplus.utils.misc import get_progressbar, iter_files, iterate, get_version_tuple
+from obsplus.utils.misc import get_progressbar, get_version_tuple, iter_files, iterate
 from obsplus.utils.time import to_datetime64
 
 BankType = TypeVar("BankType", bound="_Bank")
@@ -56,7 +60,7 @@ class _Bank(ABC):
     # required dtypes for output from bank
     _dtypes_output: Mapping = MapProxy({})
     # the index cache (can greatly reduce IO efforts)
-    _index_cache: Optional[_IndexCache] = None
+    _index_cache: _IndexCache | None = None
 
     @abstractmethod
     def read_index(self, **kwargs) -> pd.DataFrame:
@@ -67,7 +71,7 @@ class _Bank(ABC):
         """Update the index."""
 
     @abstractmethod
-    def last_updated_timestamp(self) -> Optional[float]:
+    def last_updated_timestamp(self) -> float | None:
         """
         Get the last modified time stored in the index.
 
@@ -75,7 +79,7 @@ class _Bank(ABC):
         """
 
     @property
-    def last_updated(self) -> Optional[np.datetime64]:
+    def last_updated(self) -> np.datetime64 | None:
         """
         Get the last time (UTC) that the bank was updated.
         """
@@ -113,7 +117,7 @@ class _Bank(ABC):
         return "/".join([self.namespace, "metadata"])
 
     @property
-    def _version_or_none(self) -> Optional[str]:
+    def _version_or_none(self) -> str | None:
         """Return the version string or None if it doesn't yet exist."""
         try:
             version = self._index_version
@@ -156,7 +160,7 @@ class _Bank(ABC):
                 )
                 warnings.warn(msg)
 
-    def _unindexed_iterator(self, paths: Optional[bank_subpaths_type] = None):
+    def _unindexed_iterator(self, paths: bank_subpaths_type | None = None):
         """Return an iterator of potential unindexed files."""
         # get mtime, subtract a bit to avoid odd bugs
         mtime = None
@@ -175,7 +179,7 @@ class _Bank(ABC):
         # return file iterator
         return iter_files(paths, ext=self.ext, mtime=mtime)
 
-    def _measure_iterator(self, iterable: Iterable, bar: Optional[ProgressBar] = None):
+    def _measure_iterator(self, iterable: Iterable, bar: ProgressBar | None = None):
         """
         A generator to yield un-indexed files and update progress bar.
 
@@ -198,7 +202,7 @@ class _Bank(ABC):
         getattr(bar, "finish", lambda: None)()  # call finish if bar exists
 
     def _make_meta_table(self):
-        """get a dataframe of meta info"""
+        """Get a dataframe of meta info"""
         meta = dict(
             path_structure=self.path_structure,
             name_structure=self.name_structure,
@@ -223,7 +227,7 @@ class _Bank(ABC):
             msg = f"{path} is not a directory, cant read bank"
             raise BankDoesNotExistError(msg)
 
-    def get_progress_bar(self, bar=None) -> Optional[ProgressBar]:
+    def get_progress_bar(self, bar=None) -> ProgressBar | None:
         """
         Return a progress bar instance based on bar parameter.
 
@@ -288,7 +292,7 @@ class _Bank(ABC):
     def load_example_bank(
         cls: BankType,
         dataset: str = "default_test",
-        path: Optional[Union[str, Path]] = None,
+        path: str | Path | None = None,
     ) -> BankType:
         """
         Create an example bank which is safe to modify.

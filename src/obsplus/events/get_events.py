@@ -2,8 +2,9 @@
 Module for adding a get_events method to obspy events.
 """
 
+from __future__ import annotations
+
 import inspect
-from typing import Tuple, Union
 
 import numpy as np
 import obspy
@@ -14,17 +15,16 @@ from obspy.geodetics import kilometers2degrees
 import obsplus
 import obsplus.utils.misc
 from obsplus.constants import (
-    get_events_parameters,
     CIRCULAR_PARAMS,
-    UNSUPPORTED_PARAMS,
     NONCIRCULAR_PARAMS,
+    UNSUPPORTED_PARAMS,
+    get_events_parameters,
 )
-from obsplus.exceptions import UnsupportedKeyword
+from obsplus.exceptions import UnsupportedKeywordError
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.utils.misc import strip_prefix
 from obsplus.utils.time import _dict_times_to_npdatetimes
-
 
 CLIENT_SUPPORTED = set(inspect.signature(Client.get_events).parameters)
 SUPPORTED_PARAMS = (CLIENT_SUPPORTED | CIRCULAR_PARAMS) - UNSUPPORTED_PARAMS
@@ -44,10 +44,10 @@ def _validate_get_event_kwargs(kwargs, extra=frozenset()):
         # there there are still bad kwargs raise
         if really_bad:
             msg = f"{really_bad} are not supported kwargs by get_events."
-            raise UnsupportedKeyword(msg)
+            raise UnsupportedKeywordError(msg)
 
 
-def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:
+def _sanitize_circular_search(**kwargs) -> tuple[dict, dict]:
     """
     Check for clashes between circular-search and box-search kwargs.
 
@@ -57,12 +57,11 @@ def _sanitize_circular_search(**kwargs) -> Tuple[dict, dict]:
     """
     if CIRCULAR_PARAMS.intersection(kwargs):
         if NONCIRCULAR_PARAMS.intersection(kwargs):
-            raise ValueError(
-                "{0} cannot be used with {1}".format(
-                    NONCIRCULAR_PARAMS.intersection(kwargs),
-                    CIRCULAR_PARAMS.intersection(kwargs),
-                )
+            msg = (
+                f"{NONCIRCULAR_PARAMS.intersection(kwargs)} cannot be used "
+                f"with {CIRCULAR_PARAMS.intersection(kwargs)}"
             )
+            raise ValueError(msg)
         if not {"latitude", "longitude"}.issubset(kwargs):
             raise ValueError("Circular search requires both longitude and latitude")
         # If neither minradius not maxradius they just want everything.
@@ -102,7 +101,7 @@ def _get_bounding_box(circular_kwargs: dict) -> dict:
 
 
 def _get_ids(df, kwargs) -> set:
-    """return a set of event_ids that meet filter requirements"""
+    """Return a set of event_ids that meet filter requirements"""
     filt = np.ones(len(df)).astype(bool)
     # Separate kwargs used in circular searches.
     circular_kwargs, kwargs = _sanitize_circular_search(**kwargs)
@@ -188,9 +187,7 @@ def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
 
 
 @compose_docstring(get_events_params=get_events_parameters)
-def get_event_summary(
-    cat: Union[obspy.Catalog, pd.DataFrame], **kwargs
-) -> pd.DataFrame:
+def get_event_summary(cat: obspy.Catalog | pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Return a dataframe from a events object after applying filters.
 

@@ -1,27 +1,27 @@
-""" tests for misc. utility functions """
+"""tests for misc. utility functions"""
+
 import itertools
 import os
 import time
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
+import obsplus
+import obsplus.utils.misc
 import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
-
-import obsplus
-import obsplus.utils.misc
 from obsplus.constants import NSLC, NULL_SEED_CODES
 from obsplus.utils.misc import (
-    yield_obj_parent_attr,
-    iter_files,
-    getattrs,
-    read_file,
     deprecated_callable,
+    getattrs,
+    iter_files,
+    read_file,
+    yield_obj_parent_attr,
 )
-from obsplus.utils.pd import filter_index, filter_df
-
+from obsplus.utils.pd import filter_df, filter_index
 
 # ------------------------- module level fixtures
 
@@ -47,7 +47,7 @@ class TestReplaceNullSeedCodes:
 
     @pytest.fixture
     def null_stream(self):
-        """return a stream with various nullish nslc codes."""
+        """Return a stream with various nullish nslc codes."""
         st = obspy.read()
         st[0].stats.location = ""
         st[1].stats.channel = "None"
@@ -90,7 +90,7 @@ class TestReplaceNullSeedCodes:
         return inv
 
     def test_stream(self, null_stream):
-        """ensure all the nullish chars are replaced"""
+        """Ensure all the nullish chars are replaced"""
         st = obsplus.utils.misc.replace_null_nlsc_codes(null_stream.copy())
         for tr1, tr2 in zip(null_stream, st):
             for code in NSLC:
@@ -102,7 +102,7 @@ class TestReplaceNullSeedCodes:
                     assert code1 == code2
 
     def test_catalog(self, null_catalog):
-        """ensure all nullish catalog chars are replaced"""
+        """Ensure all nullish catalog chars are replaced"""
         cat = obsplus.utils.misc.replace_null_nlsc_codes(null_catalog.copy())
         for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):
             wid = pick.waveform_id
@@ -112,7 +112,7 @@ class TestReplaceNullSeedCodes:
         """Test for replacing null codes on inventories."""
 
         def _valid_code(code):
-            """return True if the code is valid."""
+            """Return True if the code is valid."""
             return code not in NULL_SEED_CODES
 
         inv = obsplus.utils.misc.replace_null_nlsc_codes(null_inventory)
@@ -131,7 +131,7 @@ class TestFilterDf:
 
     @pytest.fixture
     def example_df(self):
-        """create a simple df for testing. Example from Chris Albon."""
+        """Create a simple df for testing. Example from Chris Albon."""
         raw_data = {
             "first_name": ["Jason", "Molly", "Tina", "Jake", "Amy"],
             "last_name": ["Miller", "Jacobson", "Ali", "Milner", "Cooze"],
@@ -146,7 +146,7 @@ class TestFilterDf:
         # this is mainly here to test the time filtering, because the bank
         # operations pass this off to the HDF5 kernel.
         index = crandall_dataset.waveform_client.read_index(network="UU")
-        t1_ns = int(index["starttime"].view(np.int64).mean())
+        t1_ns = int(index["starttime"].astype(np.int64).mean())
         t1 = np.datetime64(t1_ns, "ns")
         t2 = index["endtime"].max()
         kwargs = dict(network="UU", station="*", location="*", channel="*")
@@ -154,13 +154,13 @@ class TestFilterDf:
         assert (~np.logical_not(bool_ind)).any()
 
     def test_string_basic(self, example_df):
-        """test that specifying a string with no matching works."""
+        """Test that specifying a string with no matching works."""
         out = filter_df(example_df, first_name="Jason")
         assert out[0]
         assert not out[1:].any()
 
     def test_string_matching(self, example_df):
-        """unix style matching should also work."""
+        """Unix style matching should also work."""
         # test *
         out = filter_df(example_df, first_name="J*")
         assert {"Jason", "Jake"} == set(example_df[out].first_name)
@@ -175,20 +175,20 @@ class TestFilterDf:
         assert not out[2:].any()
 
     def test_non_str_single_arg(self, example_df):
-        """test that filter index can be used on Non-nslc columns."""
+        """Test that filter index can be used on Non-nslc columns."""
         # test non strings
         out = filter_df(example_df, age=42)
         assert out[0]
         assert not out[1:].any()
 
     def test_non_str_sequence(self, example_df):
-        """ensure sequences still work for isin style comparisons."""
+        """Ensure sequences still work for isin style comparisons."""
         out = filter_df(example_df, age={42, 52})
         assert out[:2].all()
         assert not out[2:].any()
 
     def test_bad_parameter_raises(self, example_df):
-        """ensure passing a parameter that doesn't have a column raises."""
+        """Ensure passing a parameter that doesn't have a column raises."""
         with pytest.raises(ValueError):
             filter_df(example_df, bad_column=2)
 
@@ -198,7 +198,7 @@ class TestMisc:
 
     @pytest.fixture
     def apply_test_dir(self, tmpdir):
-        """create a test directory for applying functions to files."""
+        """Create a test directory for applying functions to files."""
         path = Path(tmpdir)
         with (path / "first_file.txt").open("w") as fi:
             fi.write("hey")
@@ -207,7 +207,7 @@ class TestMisc:
         return path
 
     def test_apply_or_skip(self, apply_test_dir):
-        """test applying a function to all files or skipping"""
+        """Test applying a function to all files or skipping"""
         processed_files = []
 
         def func(path):
@@ -221,12 +221,12 @@ class TestMisc:
         assert len(out) == 1
 
     def test_getattrs_unused_attr(self):
-        """simple tests for getattrs"""
+        """Simple tests for getattrs"""
         instance = "instance"
-        assert getattrs(instance, ("bob",)) == {"bob": np.NaN}
+        assert getattrs(instance, ("bob",)) == {"bob": np.nan}
 
     def test_read_file_fails(self):
-        """ensure read_file can raise IOError."""
+        """Ensure read_file can raise IOError."""
 
         def raise_value_error(arg):
             raise ValueError("ouch")
@@ -249,7 +249,7 @@ class TestMisc:
         assert "is deprecated" in str(w.list[0])
 
     def test_getattrs_none_returns_empty(self):
-        """make sure None returns empty dict"""
+        """Make sure None returns empty dict"""
         out = getattrs(None, ["bob"])
         assert isinstance(out, dict)
         assert not out
@@ -260,20 +260,20 @@ class TestProgressBar:
 
     def test_graceful_progress_fail(self, monkeypatch):
         """Ensure a progress bar that cant update returns None"""
-        ProgressBar = obsplus.utils.misc._get_progressbar()
+        progress_bar = obsplus.utils.misc._get_progressbar()
 
         def raise_exception():
             raise Exception
 
-        monkeypatch.setattr(ProgressBar, "start", raise_exception)
+        monkeypatch.setattr(progress_bar, "start", raise_exception)
         assert obsplus.utils.misc.get_progressbar(100) is None
 
     def test_simple_progress_bar(self):
         """Ensure a simple progress bar can be used."""
-        ProgressBar = obsplus.utils.misc._get_progressbar()
+        progress_bar = obsplus.utils.misc._get_progressbar()
 
         bar = obsplus.utils.misc.get_progressbar(max_value=100, min_value=1)
-        assert isinstance(bar, ProgressBar)
+        assert isinstance(bar, progress_bar)
         bar.update(1)  # if this doesn't raise the test passes
 
     def test_none_if_min_value_not_met(self):
@@ -299,11 +299,11 @@ class TestMD5:
 
     @pytest.fixture(scope="class")
     def md5_out(self, directory_md5):
-        """return the md5 of the directory."""
+        """Return the md5 of the directory."""
         return obsplus.utils.misc.hash_directory(directory_md5, exclude="*1.txt")
 
     def test_files_exist(self, md5_out):
-        """make sure the hashes exist for the files and such"""
+        """Make sure the hashes exist for the files and such"""
         # the file1.txt should not have been included
         assert len(md5_out) == 1
         assert "file1.txt" not in md5_out
@@ -339,8 +339,8 @@ class TestYieldObjectParentAttr:
 class TestIterFiles:
     """Tests for iterating directories of files."""
 
-    sub = {"D": {"C": ".mseed"}, "F": ".json", "G": {"H": ".txt"}}
-    file_paths = {"A": ".txt", "B": sub}
+    sub: ClassVar = {"D": {"C": ".mseed"}, "F": ".json", "G": {"H": ".txt"}}
+    file_paths: ClassVar = {"A": ".txt", "B": sub}
 
     # --- helper functions
     def setup_test_directory(self, some_dict: dict, path: Path):
@@ -377,9 +377,9 @@ class TestIterFiles:
         return path
 
     def test_basic(self, simple_dir):
-        """test basic usage of iterfiles."""
+        """Test basic usage of iterfiles."""
         files = set(self.get_file_paths(self.file_paths, simple_dir))
-        out = set((Path(x) for x in iter_files(simple_dir)))
+        out = set(Path(x) for x in iter_files(simple_dir))
         assert files == out
 
     def test_one_subdir(self, simple_dir):
