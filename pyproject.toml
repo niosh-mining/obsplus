@@ -42,7 +42,7 @@ keywords = ["geophysics", "Seismology"]
 # --- Dependencies
 
 dependencies = [
-    "numpy>1.24.4",
+    "numpy>1.24.4, <2.0",
     "obspy >= 1.3.0",
     "pandas >= 1.0",
     "progressbar2",
