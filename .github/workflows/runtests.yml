@@ -71,11 +71,12 @@ jobs:
         run: |
           python -m pip install -e .[test]
 
+      # Print out the package info for current environment
       - name: print package info
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
-          conda info -a
-          conda list
+          micromamba info
+          micromamba list
 
       - name: download test data
         shell: bash -l {0}
