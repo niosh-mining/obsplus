@@ -50,13 +50,13 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          micromamba-version: '1.5.8-0' # versions: https://github.com/mamba-org/micromamba-releases
+          micromamba-version: '2.0.2-2' # versions: https://github.com/mamba-org/micromamba-releases
           environment-file: .github/workflows/test_conda_env.yml
           init-shell: >-
             bash
             powershell
           cache-environment: true
-          post-cleanup: 'all'
+          post-cleanup: 'none'
 
       # Not sure why this is needed but it appears to be the case
       - name: fix env
