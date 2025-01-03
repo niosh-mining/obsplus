@@ -144,6 +144,7 @@ class _InventoryConstructor:
     def nrl_client(self, path):
         """Initiate a nominal response library object."""
         from obspy.clients.nrl import NRL
+
         path = Path(path)
         assert path.exists(), f"{path} does not exist"
         return NRL(str(path))
