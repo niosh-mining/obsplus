@@ -43,10 +43,9 @@ jobs:
       # set individual cache key (only the start of it)
       cache_key: ${{ matrix.os }}-py${{ matrix.python-version }}
       # set conda environment file with dependencies
-      env_file: ".github/test_conda_env.yml"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # need this so tags are pulled and versions work
 
