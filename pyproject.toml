@@ -30,7 +30,7 @@ authors = [
 description = "An ObsPy exapanson pack"
 readme = "README.rst"
 license = { file="LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
