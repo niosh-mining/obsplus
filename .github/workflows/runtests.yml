@@ -57,9 +57,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       # Runs test suite and calculates coverage
       - name: run test suite
         shell: bash -l {0}
