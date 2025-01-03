@@ -7,6 +7,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # need this so tags are pulled and versions work
+
     - uses: mamba-org/setup-micromamba@v2
       with:
         micromamba-version: '2.0.5-0' # versions: https://github.com/mamba-org/micromamba-releases
@@ -32,3 +36,16 @@ runs:
       shell: bash -el {0}
       run: |
         python --version
+
+    - name: install obsplus
+      shell: bash -l {0}
+      run: |
+        pip install -e .[dev]
+
+    - name: download test data
+      shell: bash -l {0}
+      run: |
+        if [ ! -d ~/opsdata ]; then
+          git clone https://github.com/d-chambers/opsdata_test
+          mv opsdata_test ~/opsdata
+        fi
