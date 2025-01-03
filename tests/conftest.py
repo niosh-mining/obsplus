@@ -1,22 +1,31 @@
 """
 pytest configuration for obsplus
 """
+import copy
 import glob
 import os
 import shutil
-import sys
-import tempfile
 import typing
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from os.path import basename
-from os.path import join, dirname, abspath, exists
+from os.path import join, dirname, abspath
 from pathlib import Path
 
+import matplotlib
+import numpy as np
 import obspy
 import pytest
+import tables
+
+import obsplus.utils.dataset
+import obsplus.utils.events
+from obsplus.constants import CPU_COUNT
+from obsplus.utils.testing import instrument_methods
 
 # ------------------------- define constants
 
 # path to the test directory
+
 TEST_PATH = abspath(dirname(__file__))
 # path to the package directory
 PKG_PATH = dirname(TEST_PATH)
@@ -35,26 +44,27 @@ inventories = glob.glob(join(INVENTORY_DIRECTORY, "*"))
 # init a dict for storing event id and events objects in
 eve_id_cache = {}
 
-# add the package path to sys.path so imports are from repo
-sys.path.insert(0, PKG_PATH)
-
-import obsplus
-
 # path to obsplus datasets
 DATASETS = join(dirname(obsplus.__file__), "datasets")
 
 
+def pytest_sessionstart(session):
+    """
+    Hook to run before any other tests.
+
+    Used to ensure a non-visual backend is used so plots don't pop up
+    and to set debug hook to True to avoid showing progress bars,
+    except when explicitly being tested.
+    """
+    # If running in CI make sure to turn off matplotlib.
+    if os.environ.get("CI", False):
+        matplotlib.use("Agg")
+
+    # need to set nodes to 32 to avoid crash on p3.11. See pytables#977.
+    tables.parameters.NODE_CACHE_SLOTS = 32
+
+
 # ------------------------------ helper functions
-
-
-def append_func_name(list_obj):
-    """ decorator to append a function name to list_obj """
-
-    def wrap(func):
-        list_obj.append(func.__name__)
-        return func
-
-    return wrap
 
 
 class ObspyCache:
@@ -87,7 +97,10 @@ class ObspyCache:
     def _load_object(self, item):
         if item not in self._objects:
             self._objects[item] = self.load_func(self.keys[item])
-        return self._objects[item].copy()
+        try:
+            return self._objects[item].copy()
+        except AttributeError:
+            return copy.deepcopy(self._objects[item])
 
 
 def collect_catalogs():
@@ -96,15 +109,11 @@ def collect_catalogs():
     target a specific cat_name
     """
 
-    def _get_origin_time(cat):
-        ori = obsplus.utils.get_preferred(cat, "origin")
-        return ori.time
-
     out = {}
     for cat_path in catalogs:
         cat = obspy.read_events(cat_path)
         # sort events by origin time
-        cat.events.sort(key=_get_origin_time)
+        cat.events.sort(key=obsplus.get_reference_time)
         out[os.path.basename(cat_path).split(".")[0]] = cat
         # add to cache and assert cat_name resource id is unique
         cat_id = cat.resource_id.id
@@ -112,20 +121,94 @@ def collect_catalogs():
         eve_id_cache[cat_id] = len(cat)
 
     # get catalog from datasets
-    out["kemmerer"] = obsplus.load_dataset("kemmerer").event_client.get_events()
-    out["bingham"] = obsplus.load_dataset("bingham").event_client.get_events()
-    out["crandall"] = obsplus.load_dataset("crandall").event_client.get_events()
+    for name in ("bingham_test", "crandall_test"):
+        ds = obsplus.load_dataset(name)
+        out[name] = ds.event_client.get_events()
     return out
 
 
+def internet_available():
+    """Test if internet resources are available."""
+    import socket
+
+    address = "8.8.8.8"
+    port = 53
+    try:
+        socket.setdefaulttimeout(1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((address, port))
+        return True
+    except socket.error:
+        return False
+
+
+def load_and_update_dataset(name):
+    """
+    Update and load a dataset.
+    """
+    client_names = [f"{x}_client" for x in ["waveform", "event", "station"]]
+    # load dataset
+    ds = obsplus.load_dataset(name)
+    # then iterate each client and call update index
+    for cname in client_names:
+        client = getattr(ds, cname)
+        getattr(client, "update_index", lambda: None)()
+    return ds
+
+
 cat_dict = collect_catalogs()
+waveform_cache_obj = ObspyCache("waveforms", obspy.read)
+event_cache_obj = ObspyCache("qml_files", obspy.read_events)
+test_catalog_cache_obj = ObspyCache(CATALOG_DIRECTORY, obspy.read_events)
+station_cache_obj = ObspyCache(INVENTORY_DIRECTORY, obspy.read_inventory)
+has_internet = internet_available()
 
 
 # -------------------- collection of test cases
 
 
+class StreamTester:
+    """A collection of methods for testing waveforms."""
+
+    @staticmethod
+    def streams_almost_equal(st1, st2):
+        """
+        Return True if two streams are almost equal.
+        Will only look at default params for stats objects.
+
+        Parameters
+        ----------
+        st1
+            The first stream.
+        st2
+            The second stream.
+        """
+
+        stats_attrs = (
+            "starttime",
+            "endtime",
+            "sampling_rate",
+            "network",
+            "station",
+            "location",
+            "channel",
+        )
+
+        st1, st2 = st1.copy(), st2.copy()
+        st1.sort()
+        st2.sort()
+        for tr1, tr2 in zip(st1, st2):
+            stats1 = {x: tr1.stats[x] for x in stats_attrs}
+            stats2 = {x: tr2.stats[x] for x in stats_attrs}
+            if not stats1 == stats2:
+                return False
+            if not np.all(np.isclose(tr1.data, tr2.data)):
+                return False
+        return True
+
+
 class DataSet(typing.NamedTuple):
-    """ A data class for storing info about test cases """
+    """A data class for storing info about test cases"""
 
     base = None
     quakeml = None
@@ -136,175 +219,296 @@ class DataSet(typing.NamedTuple):
     inventory_path = None
 
 
+@pytest.fixture(scope="class")
+def thread_executor():
+    """return a thread pool"""
+    with ThreadPoolExecutor(CPU_COUNT) as executor:
+        yield executor
+
+
+@pytest.fixture(scope="class")
+def process_executor():
+    """return a process pool"""
+    # in order to avoid sapping too many resources, just use 1/2 CPU count
+    with ProcessPoolExecutor((CPU_COUNT // 2)) as executor:
+        yield executor
+
+
+@pytest.fixture(scope="class", params=["thread", "process"])
+def executor(request):
+    """Aggregate both the thread and process executors."""
+    fixture_name = f"{request.param}_executor"
+    return request.getfixturevalue(fixture_name)
+
+
+@pytest.fixture()
+def instrumented_executor(executor):
+    """
+    Return a thread pool executor which has been instrumented.
+
+    This allows the calls to each of the executors methods to be counted. A
+    Counter object is attached to the executor and each of the methods is
+    wrapped to count how many times it is called.
+    """
+    with instrument_methods(executor):
+        yield executor
+
+
 @pytest.fixture(scope="session")
 def ta_dataset():
-    """ Load the small TA test case into a dataset """
-    return obsplus.load_dataset("TA")
+    """Load the small ta_test test case into a dataset"""
+    return load_and_update_dataset("ta_test")
 
 
 @pytest.fixture(scope="session")
-def kemmerer_dataset():
-    """ Load the kemmerer test case """
-    return obsplus.load_dataset("kemmerer")
+def ta_wavebank(ta_dataset):
+    """Return a wavebank from ta_test dataset."""
+    return ta_dataset.waveform_client
 
 
 @pytest.fixture(scope="session")
 def bingham_dataset():
-    """ load the bingham dataset """
-    return obsplus.load_dataset("bingham")
+    """load the bingham_test dataset"""
+    ds = load_and_update_dataset("bingham_test")
+    return ds
 
 
-@pytest.fixture(scope="session")
-def bingham_inventory(bingham_dataset):
-    """ load the bingham tests case """
-    return bingham_dataset.station_client
+@pytest.fixture()
+def bingham_catalog(bingham_dataset):
+    """load the bingham_test tests case"""
+    cat = bingham_dataset.event_client.get_events()
+    assert len(cat), "catalog is empty"
+    return cat
+
+
+@pytest.fixture()
+def bingham_stream(bingham_dataset):
+    """load the bingham_test tests case"""
+    return bingham_dataset.waveform_client.get_waveforms().copy()
 
 
 @pytest.fixture(scope="session")
 def bingham_stream_dict(bingham_dataset):
-    """ return a dict where keys are event_id, vals are streams """
+    """return a dict where keys are event_id, vals are streams"""
     fetcher = bingham_dataset.get_fetcher()
     return dict(fetcher.yield_event_waveforms(10, 50))
 
 
 @pytest.fixture(scope="session")
 def crandall_dataset():
-    """ load the crandall canyon dataset. """
-    return obsplus.load_dataset("crandall")
-
-
-@pytest.fixture(scope="session")
-def crandall_fetcher(crandall_dataset):
-    """ Return a Fetcher from the crandall dataset. """
-    return crandall_dataset.get_fetcher()
-
-
-@pytest.fixture(scope="session")
-def crandall_data_array(crandall_fetcher):
-    """ return a data array (with attached picks) of crandall dataset. """
-    cat = crandall_fetcher.event_client.get_events()
-    st_dict = crandall_fetcher.get_event_waveforms(10, 50)
-    dar = obsplus.obspy_to_array_dict(st_dict)[40]
-    dar.ops.attach_events(cat)
-    return dar
+    """Load the crandall_test canyon dataset."""
+    return load_and_update_dataset("crandall_test")
 
 
 @pytest.fixture(scope="session")
 def crandall_bank(crandall_dataset):
+    """Return a WaveBank of Crandall Canyon dataset."""
     return obsplus.WaveBank(crandall_dataset.waveform_client)
-
-
-# ------------------------- session fixtures
-
-
-@pytest.yield_fixture(scope="module")
-def temp_dir():
-    """ create a temporary archive directory """
-    td = tempfile.mkdtemp()
-    yield td
-    if exists(td):
-        shutil.rmtree(td)
 
 
 @pytest.fixture(scope="session", params=cat_dict.values())
 def test_catalog(request):
     """
-    return a list of test events (in cat_name from) from
-    quakeml saved on disk
+    Parametrized fixture to return test events.
     """
     cat = request.param
     return cat
 
 
-@pytest.fixture(scope="session")
-def catalog_dic():
-    """ a dictionary of catalogs based on name of cat_name file """
-    return cat_dict
-
-
 @pytest.fixture(scope="session", params=inventories)
 def test_inventory(request):
-    """ return a list of test inventories from
-    stationxml files saved on disk """
+    """
+    Return a list of test inventories from stationxml files saved on disk.
+    """
     inv = obspy.read_inventory(request.param)
     return inv
 
 
 @pytest.fixture(scope="session")
-def cd_2_test_directory():
-    """ cd to test directory, then cd back """
-    back = os.getcwd()
-    there = dirname(__file__)
-    os.chdir(there)
-    yield  # there and back again
-    os.chdir(back)
-
-
-@pytest.fixture(scope="session")
 def ta_archive(ta_dataset):
-    """ make sure the TA archive, generated with the setup_test_archive
-    script, has been downloaded, else download it """
+    """
+    Make sure the ta_test archive, generated with the setup_test_archive
+    script, has been downloaded, else download it.
+    """
     return Path(obsplus.WaveBank(ta_dataset.waveform_client).index_path).parent
-
-
-@pytest.fixture(scope="session")
-def kem_archive(kemmerer_dataset):
-    """ download the kemmerer data (will take a few minutes but only
-     done once) """
-    return Path(obsplus.WaveBank(kemmerer_dataset.waveform_client).index_path).parent
-
-
-@pytest.fixture(scope="session")
-def kem_fetcher():
-    """ return a wavefetcher of the kemmerer dataset, download if needed """
-    return obsplus.load_dataset("kemmerer")()
 
 
 @pytest.fixture(scope="class")
 def class_tmp_dir(tmpdir_factory):
-    """ create a temporary directory on the class scope """
+    """Create a temporary directory on the class scope."""
     return tmpdir_factory.mktemp("base")
 
 
 @pytest.fixture(scope="class")
-def tmp_ta_dir(class_tmp_dir):
-    """ Make a temp copy of the TA bank """
-    bank = obsplus.load_dataset("TA").waveform_client
+def tmp_ta_dir(class_tmp_dir, ta_dataset):
+    """Make a temp copy of the ta_test bank."""
+    bank = ta_dataset.waveform_client
     path = dirname(dirname(bank.index_path))
     out = os.path.join(class_tmp_dir, "temp")
     shutil.copytree(path, out)
     yield out
 
 
+@pytest.fixture(scope="class", params=waveform_cache_obj.keys)
+def waveform_cache_stream(request):
+    """
+    Return the each stream in the cache
+    """
+    return waveform_cache_obj[request.param]
+
+
+@pytest.fixture(scope="class")
+def waveform_cache_trace(waveform_cache_stream):
+    """
+    Return the first trace of each test stream
+    """
+    return waveform_cache_stream[0]
+
+
 @pytest.fixture(scope="session")
-def bingham_bank_path(tmpdir_factory):
-    """ Create  bank structure using Bingham dataset """
-    tmpdir = tmpdir_factory.mktemp("data")
-    obsplus.copy_dataset("bingham", tmpdir)
-    return str(tmpdir)
+def waveform_cache():
+    """
+    Return the waveform cache object for tests to select which waveform
+    should be used by name.
+    """
+    return waveform_cache_obj
 
 
-# --------------- add things to the pytest namespace
+# TODO these next two fixtures are similar, see if they can be merged
 
 
-def pytest_namespace():
-    """ add the expected files to the py.test namespace """
-    odict = {
-        "test_data_path": TEST_DATA_PATH,
-        "test_path": TEST_PATH,
-        "package_path": PKG_PATH,
-        "data_path": TEST_DATA_PATH,
-        "events": cat_dict,
-        "append_func_name": append_func_name,
-        "waveforms": ObspyCache("waveforms", obspy.read),
-    }
-    return odict
+@pytest.fixture(scope="session")
+def event_cache():
+    """
+    Return the event cache (qml) object for tests to select particular
+    quakemls.
+    """
+    return event_cache_obj
+
+
+@pytest.fixture(scope="session")
+def catalog_cache():
+    """Return a cache from the test_catalogs."""
+    return test_catalog_cache_obj
+
+
+@pytest.fixture
+def dateline_catalog():
+    """Create a catalog which spans the dateline"""
+    lat_lons = [[35.899, -179.999], [36.122, 179.789], [0, 0]]
+    cat = obspy.read_events()
+    for num, (lat, lon) in enumerate(lat_lons):
+        cat[num].origins[0].latitude = lat
+        cat[num].origins[0].longitude = lon
+    return cat
+
+
+@pytest.fixture(params=glob.glob(join(TEST_DATA_PATH, "qml2merge", "*")))
+def qml_to_merge_paths(request):
+    """
+    Returns a path to each qml2merge directory, which contains two catalogs
+    for merging together.
+    """
+    return request.param
+
+
+@pytest.fixture(scope="class")
+def qml_to_merge_basic():
+    """Return a path to the basic merge qml dataset."""
+    out = glob.glob(join(TEST_DATA_PATH, "qml2merge", "*2017-01-06T16-15-14"))
+    return out[0]
+
+
+@pytest.fixture(scope="session", params=station_cache_obj.keys)
+def station_cache_inventory(request):
+    """Return the test inventories."""
+    return station_cache_obj[request.param]
+
+
+@pytest.fixture(scope="class")
+def basic_stream_with_gap(waveform_cache):
+    """
+    Return a waveforms with a 2 second gap in center, return combined
+    waveforms with gaps, first chunk, second chunk.
+    """
+    st = waveform_cache["default"]
+    st1 = st.copy()
+    st2 = st.copy()
+    t1 = st[0].stats.starttime
+    t2 = st[0].stats.endtime
+    average = obspy.UTCDateTime((t1.timestamp + t2.timestamp) / 2.0)
+    a1 = average - 1
+    a2 = average + 1
+    # split and recombine
+    st1.trim(starttime=t1, endtime=a1)
+    st2.trim(starttime=a2, endtime=t2)
+    out = st1.copy() + st2.copy()
+    out.sort()
+    assert len(out) == 6
+    gaps = out.get_gaps()
+    for gap in gaps:
+        assert gap[4] < gap[5]
+    return out, st1, st2
+
+
+@pytest.fixture(scope="class")
+def disjointed_stream():
+    """return a waveforms that has parts with no overlaps"""
+    st = obspy.read()
+    st[0].stats.starttime += 3600
+    return st
+
+
+@pytest.fixture
+def fragmented_stream():
+    """create a waveforms that has been fragemented"""
+    st = obspy.read()
+    # make streams with new stations that are disjointed
+    st2 = st.copy()
+    for tr in st2:
+        tr.stats.station = "BOB"
+        tr.data = tr.data[0:100]
+    st3 = st.copy()
+    for tr in st3:
+        tr.stats.station = "BOB"
+        tr.stats.starttime += 25
+        tr.data = tr.data[2500:]
+    return st + st2 + st3
+
+
+@pytest.fixture(scope="class")
+def default_wbank(tmp_path_factory):
+    """create a  directory out of the traces in default waveforms, init bank"""
+    base = Path(tmp_path_factory.mktemp("default_wbank"))
+    st = obspy.read()
+    for num, tr in enumerate(st):
+        name = base / f"{(num)}.mseed"
+        tr.write(str(name), "mseed")
+    bank = obsplus.WaveBank(base)
+    bank.update_index()
+    return bank
+
+
+@pytest.fixture(scope="class")
+def simple_event_dir(tmp_path_factory):
+    """Create an event directory from the default catalog."""
+    path = tmp_path_factory.mktemp("_event_client_getting")
+    ebank = obsplus.EventBank(path)
+    ebank.put_events(obspy.read_events())
+    return str(path)
+
+
+@pytest.fixture(scope="class")
+def default_ebank(simple_event_dir):
+    """Return the default eventbank."""
+    return obsplus.EventBank(simple_event_dir)
 
 
 # -------------- configure test runner
 
 
 def pytest_addoption(parser):
+    """Add obsplus' pytest command options."""
     parser.addoption(
         "--datasets",
         action="store_true",
@@ -312,8 +516,27 @@ def pytest_addoption(parser):
         default=False,
         help="enable dataset tests",
     )
+    parser.addoption(
+        "--network",
+        action="store_true",
+        dest="network",
+        default=has_internet,
+        help="run tests that require a network connection",
+    )
 
 
-def pytest_configure(config):
-    if not config.option.datasets:
-        setattr(config.option, "markexpr", "not dataset")
+def pytest_collection_modifyitems(config, items):
+    """Configure obsplus' pytest command line options."""
+    marks = {}
+    if not config.getoption("--datasets"):
+        msg = "needs --dataset option to run"
+        marks["dataset"] = pytest.mark.skip(reason=msg)
+    if not config.getoption("--network"):
+        msg = "needs an active network connection to run"
+        marks["requires_network"] = pytest.mark.skip(reason=msg)
+
+    for item in items:
+        marks_to_apply = set(marks)
+        item_marks = set(item.keywords)
+        for mark_name in marks_to_apply & item_marks:
+            item.add_marker(marks[mark_name])

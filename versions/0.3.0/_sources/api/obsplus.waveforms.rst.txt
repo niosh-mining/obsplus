@@ -1,0 +1,15 @@
+obsplus.waveforms package
+=========================
+
+.. automodule:: obsplus.waveforms
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.waveforms.get_waveforms
