@@ -44,7 +44,7 @@ keywords = ["geophysics", "Seismology"]
 dependencies = [
     # TODO: Unpin numpy<2 when an obspy release which supports numpy 2 comes out.
     "numpy>1.24.4, <2.0",
-    "obspy >= 1.3.0",
+    "obspy >= 1.4.0",
     "pandas >= 1.0",
     "progressbar2",
     "pydantic >= 2.0, <3.0",
