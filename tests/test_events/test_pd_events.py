@@ -1,36 +1,37 @@
 """
 Tests for converting catalogs to dataframes.
 """
+
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
+import obsplus
 import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
-from obspy import UTCDateTime
-
-import obsplus
 from obsplus import events_to_df, picks_to_df
 from obsplus.constants import (
-    EVENT_COLUMNS,
-    PICK_COLUMNS,
-    ARRIVAL_COLUMNS,
     AMPLITUDE_COLUMNS,
-    STATION_MAGNITUDE_COLUMNS,
-    MAGNITUDE_COLUMNS,
+    ARRIVAL_COLUMNS,
+    EVENT_COLUMNS,
     EVENT_DTYPES,
+    MAGNITUDE_COLUMNS,
+    PICK_COLUMNS,
+    STATION_MAGNITUDE_COLUMNS,
 )
 from obsplus.events.pd import (
     amplitudes_to_dataframe,
-    station_magnitudes_to_dataframe,
     arrivals_to_dataframe,
-    picks_to_dataframe,
     event_to_dataframe,
     magnitudes_to_dataframe,
+    picks_to_dataframe,
+    station_magnitudes_to_dataframe,
 )
 from obsplus.utils.misc import register_func
 from obsplus.utils.time import to_datetime64, to_utc
+from obspy import UTCDateTime
 
 common_extractor_cols = {
     "agency_id",
@@ -224,7 +225,7 @@ def floatify_dict(some_dict):
     """
     out = {}
     for i, v in some_dict.items():
-        if isinstance(v, (pd.Timestamp, np.datetime64)):
+        if isinstance(v, pd.Timestamp | np.datetime64):
             v = to_utc(v).timestamp
         if isinstance(v, float):
             v = np.round(v, 4)
@@ -242,13 +243,13 @@ def event_directory():
 @pytest.fixture
 def event_file(event_directory):
     """Return a path to the first event file in the bingham_test bank."""
-    first = list(Path(event_directory).rglob("*.xml"))[0]
+    first = next(iter(Path(event_directory).rglob("*.xml")))
     return first
 
 
 @pytest.fixture(scope="class")
 def empty_catalog():
-    """run an empty events through the picks_to_df function"""
+    """Run an empty events through the picks_to_df function"""
     event = ev.Event()
     cat = obspy.Catalog(events=[event])
     return picks_to_dataframe(cat)
@@ -260,14 +261,14 @@ def empty_catalog():
 class TestCat2Df:
     """test the simplified dataframe conversion"""
 
-    required_columns = EVENT_COLUMNS
-    fixtures = []
+    required_columns: ClassVar = EVENT_COLUMNS
+    fixtures: ClassVar = []
 
     # fixtures
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def events_from_catalog(self):
-        """read events from a events object"""
+        """Read events from a events object"""
         cat = obspy.read_events()
         return event_to_dataframe(cat)
 
@@ -288,7 +289,7 @@ class TestCat2Df:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def catalog_no_magnitude(self):
-        """get a events with no magnitudes (should just fill with NaN)"""
+        """Get a events with no magnitudes (should just fill with NaN)"""
         t1 = obspy.UTCDateTime("2099-04-01T00-01-00")
         ori = ev.Origin(time=t1, latitude=47.1, longitude=-100.22)
         event = ev.Event(origins=[ori])
@@ -298,19 +299,19 @@ class TestCat2Df:
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def catalog_empty(self):
-        """get a with one blank event"""
+        """Get a with one blank event"""
         event = ev.Event()
         cat = ev.Catalog(events=[event])
         return events_to_df(cat)
 
     @pytest.fixture(scope="class", params=fixtures)
     def read_events_output(self, request):
-        """the parametrized output of read_events fixtures"""
+        """The parametrized output of read_events fixtures"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture
     def events_rejected_picks(self, bingham_dataset):
-        """return a events that has all rejected picks"""
+        """Return a events that has all rejected picks"""
         cat = bingham_dataset.event_client.get_events().copy()
         for event in cat:
             for pick in event.picks:
@@ -334,29 +335,29 @@ class TestCat2Df:
 
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
-        """call the catalog2df method, return result"""
+        """Call the catalog2df method, return result"""
         cat = test_catalog.copy()
         return event_to_dataframe(cat)
 
     # tests
     def test_method_exists(self, test_catalog):
-        """test that the cat_name has the catalog2df method"""
+        """Test that the cat_name has the catalog2df method"""
         assert hasattr(test_catalog, "to_df")
 
     def test_output_type(self, df):
-        """make sure a df was returned"""
+        """Make sure a df was returned"""
         assert isinstance(df, pd.DataFrame)
 
     def test_columns(self, df):
-        """make sure the required columns are in the dataframe"""
+        """Make sure the required columns are in the dataframe"""
         assert set(df.columns).issuperset(self.required_columns)
 
     def test_lengths(self, df, test_catalog):
-        """ensure the lengths of the dataframe and events are the same"""
+        """Ensure the lengths of the dataframe and events are the same"""
         assert len(df) == len(test_catalog)
 
     def test_event_description(self, df, test_catalog):
-        """ensure the event descriptions match"""
+        """Ensure the event descriptions match"""
         for eve, description in zip(test_catalog, df.event_description):
             if eve.event_descriptions:
                 ed = eve.event_descriptions[0].text
@@ -365,7 +366,7 @@ class TestCat2Df:
             assert ed == description
 
     def test_str(self):
-        """ensure there is a string rep for events_to_df."""
+        """Ensure there is a string rep for events_to_df."""
         cat_to_df_str = str(events_to_df)
         assert isinstance(cat_to_df_str, str)  # dumb test to boost coverage
 
@@ -385,12 +386,12 @@ class TestCat2Df:
         assert (expected == df.dtypes).all()
 
     def test_basics(self, read_events_output):
-        """make sure a dataframe is returned"""
+        """Make sure a dataframe is returned"""
         assert isinstance(read_events_output, pd.DataFrame)
         assert len(read_events_output)
 
     def test_rejected_phases_still_counted(self, events_rejected_picks):
-        """ensure rejected picks are still counted in arrival numbering"""
+        """Ensure rejected picks are still counted in arrival numbering"""
         df = events_to_df(events_rejected_picks)
         assert (df.p_phase_count != 0).all()
 
@@ -415,7 +416,7 @@ class TestCat2Df:
         assert isinstance(df, pd.DataFrame)
 
     def test_cat_to_df_method(self):
-        """ensure the events object has the to_df method bolted on"""
+        """Ensure the events object has the to_df method bolted on"""
         cat = obspy.read_events()
         df = cat.to_df()
         assert isinstance(df, pd.DataFrame)
@@ -429,7 +430,7 @@ class TestCat2Df:
         catalog_empty,
     ):
         """
-        This test simply gathers up all the aggregated fixtures so they
+        A test to simply gathers up all the aggregated fixtures so they
         are properly marked as used.
         """
 
@@ -442,8 +443,8 @@ class TestLongitude:
 
     def test_catalog(self):
         """Tests for (modified) default catalog."""
-        import obspy
         import obsplus
+        import obspy
 
         cat = obspy.read_events()
         cat[0].origins[0].longitude = 799
@@ -494,14 +495,14 @@ class TestCat2DfPreferredThings:
 
     @pytest.fixture(scope="class")
     def df(self, test_catalog):
-        """call the catalog2df method, return result"""
+        """Call the catalog2df method, return result"""
         out = events_to_df(test_catalog.copy())
         out.reset_index(inplace=True, drop=True)
         return out
 
     # tests
     def test_origins(self, df, preferred_origins):
-        """ensure the origins are correct"""
+        """Ensure the origins are correct"""
         for ind, row in df.iterrows():
             origin = preferred_origins[ind]
             assert np.allclose(origin.latitude, row.latitude)
@@ -509,7 +510,7 @@ class TestCat2DfPreferredThings:
             assert origin.time == obspy.UTCDateTime(row.time)
 
     def test_magnitudes(self, df, preferred_magnitudes, test_catalog):
-        """ensure the origins are correct"""
+        """Ensure the origins are correct"""
         for ind, row in df.iterrows():
             mag = preferred_magnitudes[ind]
             assert mag.mag == row.magnitude
@@ -521,30 +522,30 @@ class TestCat2DfPreferredThings:
 class TestReadPicks:
     """ensure phase picks can be read in"""
 
-    fixtures = []
+    fixtures: ClassVar = []
     cat_name = "2016-04-13T23-51-13.xml"
 
     @pytest.fixture(scope="class")
     def tcat(self, catalog_cache):
-        """read in an event for testing"""
+        """Read in an event for testing"""
         return catalog_cache[self.cat_name]
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def catalog_output(self, tcat):
-        """call read_picks on the events, return result"""
+        """Call read_picks on the events, return result"""
         return picks_to_dataframe(tcat)
 
     @pytest.fixture(scope="class")
     @register_func(fixtures)
     def dataframe_output(self, tcat):
-        """return read_picks result from reading dataframe"""
+        """Return read_picks result from reading dataframe"""
         df = picks_to_df(tcat)
         return picks_to_dataframe(df)
 
     @pytest.fixture(scope="class")
     def picks_no_origin(self):
-        """create a events that has picks but no origin"""
+        """Create a events that has picks but no origin"""
         t0 = UTCDateTime("2016-01-01T10:12:15.222")
 
         def wave_id(seed_str):
@@ -559,12 +560,12 @@ class TestReadPicks:
 
     @pytest.fixture(scope="class", params=fixtures)
     def read_picks_output(self, request):
-        """return the outputs from the fixtures"""
+        """Return the outputs from the fixtures"""
         return request.getfixturevalue(request.param)
 
     @pytest.fixture
     def bingham_cat_only_picks(self, bingham_dataset):
-        """return bingham_test catalog with everything but picks removed"""
+        """Return bingham_test catalog with everything but picks removed"""
         events = []
         for eve in bingham_dataset.event_client.get_events().copy():
             events.append(ev.Event(picks=eve.picks))
@@ -572,7 +573,7 @@ class TestReadPicks:
 
     # general tests
     def test_type(self, read_picks_output):
-        """make sure a dataframe was returned"""
+        """Make sure a dataframe was returned"""
         assert isinstance(read_picks_output, pd.DataFrame)
 
     def test_len(self, read_picks_output, tcat):
@@ -581,13 +582,13 @@ class TestReadPicks:
 
     # empty_catalog_tests
     def test_empty_catalog_input(self, empty_catalog):
-        """ensure a zero len dataframe was returned with required columns"""
+        """Ensure a zero len dataframe was returned with required columns"""
         assert isinstance(empty_catalog, pd.DataFrame)
         assert not len(empty_catalog)
         assert set(empty_catalog.columns).issubset(PICK_COLUMNS)
 
     def test_picks_no_origin(self, picks_no_origin):
-        """ensure not having an origin time returns min of picks per event."""
+        """Ensure not having an origin time returns min of picks per event."""
         df = picks_no_origin
         assert (df["event_time"] == df["time"].min()).all()
 
@@ -623,7 +624,7 @@ class TestReadPicks:
         assert df.polarity.iloc[0] == ""
 
     def test_from_file(self, event_file):
-        """test for reading phase picks from files."""
+        """Test for reading phase picks from files."""
         df = picks_to_df(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -719,7 +720,7 @@ class TestReadArrivals:
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_arr_output):
-        """values to compare from the extractor"""
+        """Values to compare from the extractor"""
         ser_dict = dict(read_arr_output.iloc[0])
         for key in common_extractor_cols:
             ser_dict.pop(key, None)
@@ -727,7 +728,7 @@ class TestReadArrivals:
 
     @pytest.fixture(scope="class")
     def arr_dict(self, dummy_cat):
-        """values to compare from the arrivals"""
+        """Values to compare from the arrivals"""
         origin = dummy_cat[0].preferred_origin()
         arr = origin.arrivals[0]
         arr_dict = dict(arr.__dict__)
@@ -744,7 +745,7 @@ class TestReadArrivals:
 
     # general tests
     def test_type(self, read_arr_output):
-        """make sure a dataframe was returned"""
+        """Make sure a dataframe was returned"""
         assert isinstance(read_arr_output, pd.DataFrame)
 
     def test_len(self, read_arr_output, dummy_cat):
@@ -755,13 +756,13 @@ class TestReadArrivals:
         assert req_len == len(read_arr_output)
 
     def test_values(self, ser_dict, arr_dict):
-        """make sure the values of the first arrival are as expected"""
+        """Make sure the values of the first arrival are as expected"""
         floatify_dict(ser_dict)
         assert floatify_dict(ser_dict) == floatify_dict(arr_dict)
 
     # empty catalog tests
     def test_empty_catalog(self):
-        """ensure returns empty df with required columns"""
+        """Ensure returns empty df with required columns"""
         empty_cat = ev.Catalog()
         df = arrivals_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
@@ -769,14 +770,14 @@ class TestReadArrivals:
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
 
     def test_no_origin(self, no_origin):
-        """ensure returns empty df with required columns"""
+        """Ensure returns empty df with required columns"""
         df = arrivals_to_dataframe(no_origin)
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(ARRIVAL_COLUMNS)
 
     def test_from_file(self, event_file):
-        """test for reading arrivals from files."""
+        """Test for reading arrivals from files."""
         df = arrivals_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -793,7 +794,7 @@ class TestReadArrivals:
         assert isinstance(df, pd.DataFrame)
 
     def test_arrivals_from_origin(self, dummy_cat):
-        """tests for specifically extracting arrivals from origin objects"""
+        """Tests for specifically extracting arrivals from origin objects"""
         origin = dummy_cat[0].origins[0]
         df = arrivals_to_dataframe(origin)
         assert len(df) == len(origin.arrivals)
@@ -836,7 +837,7 @@ class TestReadAmplitudes:
 
     @pytest.fixture(scope="class")
     def ser_dict(self, amp_series):
-        """values to compare from the extractor"""
+        """Values to compare from the extractor"""
         ser_dict = dict(amp_series)
         err_cols = {
             "confidence_level",
@@ -850,7 +851,7 @@ class TestReadAmplitudes:
 
     @pytest.fixture(scope="class")
     def amp_dict(self, amplitude):
-        """values to compare from the arrivals"""
+        """Values to compare from the arrivals"""
         amp_dict = dict(amplitude.__dict__)
         # Remove unnecessary items
         err_objs = {"generic_amplitude_errors", "scaling_time_errors", "period_errors"}
@@ -870,7 +871,7 @@ class TestReadAmplitudes:
 
     # general tests
     def test_type(self, read_amps_output):
-        """make sure a dataframe was returned"""
+        """Make sure a dataframe was returned"""
         assert isinstance(read_amps_output, pd.DataFrame)
 
     def test_len(self, read_amps_output, dummy_cat):
@@ -879,7 +880,7 @@ class TestReadAmplitudes:
         assert req_len == len(read_amps_output)
 
     def test_values(self, ser_dict, amp_dict):
-        """make sure the values of the first amplitude are as expected"""
+        """Make sure the values of the first amplitude are as expected"""
         assert floatify_dict(ser_dict) == floatify_dict(amp_dict)
 
     def test_creation_time(self, amplitude, amp_series):
@@ -891,14 +892,14 @@ class TestReadAmplitudes:
         assert amp_series["agency_id"] == amplitude.creation_info.agency_id
 
     def test_empty_catalog(self):
-        """ensure returns empty df with required columns"""
+        """Ensure returns empty df with required columns"""
         df = amplitudes_to_dataframe(ev.Catalog())
         assert isinstance(df, pd.DataFrame)
         assert not len(df)
         assert set(df.columns).issubset(AMPLITUDE_COLUMNS)
 
     def test_from_file(self, event_file):
-        """test for reading amplitudes from files."""
+        """Test for reading amplitudes from files."""
         df = amplitudes_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
 
@@ -956,7 +957,7 @@ class TestReadStationMagnitudes:
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_sms_output):
-        """values to compare from the extractor"""
+        """Values to compare from the extractor"""
         ser_dict = dict(read_sms_output.iloc[0])
         err_cols = {
             "confidence_level",
@@ -970,7 +971,7 @@ class TestReadStationMagnitudes:
 
     @pytest.fixture(scope="class")
     def sm_dict(self, dummy_cat):
-        """values to compare from the arrivals"""
+        """Values to compare from the arrivals"""
         sm_dict = dict(dummy_cat[0].station_magnitudes[0].__dict__)
         # Remove unnecessary items
         err_objs = {"mag_errors"}
@@ -985,7 +986,7 @@ class TestReadStationMagnitudes:
 
     # general tests
     def test_type(self, read_sms_output):
-        """make sure a dataframe was returned"""
+        """Make sure a dataframe was returned"""
         assert isinstance(read_sms_output, pd.DataFrame)
 
     def test_len(self, read_sms_output, dummy_cat):
@@ -996,7 +997,7 @@ class TestReadStationMagnitudes:
         assert req_len == len(read_sms_output)
 
     def test_values(self, ser_dict, sm_dict):
-        """make sure the values of the first station magnitude are as expected"""
+        """Make sure the values of the first station magnitude are as expected"""
         assert floatify_dict(ser_dict) == floatify_dict(sm_dict)
 
     # magnitude object tests
@@ -1010,7 +1011,7 @@ class TestReadStationMagnitudes:
 
     # empty catalog tests
     def test_empty_catalog(self):
-        """ensure returns empty df with required columns"""
+        """Ensure returns empty df with required columns"""
         empty_cat = ev.Catalog()
         df = station_magnitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
@@ -1018,7 +1019,7 @@ class TestReadStationMagnitudes:
         assert set(df.columns).issubset(STATION_MAGNITUDE_COLUMNS)
 
     def test_from_file(self, event_file):
-        """test for reading station magnitudes from files."""
+        """Test for reading station magnitudes from files."""
         df = station_magnitudes_to_dataframe(event_file)
         assert isinstance(df, pd.DataFrame)
         assert len(df)
@@ -1056,7 +1057,7 @@ class TestReadMagnitudes:
 
     @pytest.fixture(scope="class")
     def ser_dict(self, read_mags_output):
-        """values to compare from the extractor"""
+        """Values to compare from the extractor"""
         ser_dict = dict(read_mags_output.iloc[0])
         err_cols = {
             "confidence_level",
@@ -1070,7 +1071,7 @@ class TestReadMagnitudes:
 
     @pytest.fixture(scope="class")
     def mag_dict(self, dummy_cat):
-        """values to compare from the arrivals"""
+        """Values to compare from the arrivals"""
         mag_dict = dict(dummy_cat[0].magnitudes[0].__dict__)
         # Remove unnecessary items
         extra_objs = {"mag_errors", "station_magnitude_contributions"}
@@ -1084,7 +1085,7 @@ class TestReadMagnitudes:
 
     # general tests
     def test_type(self, read_mags_output):
-        """make sure a dataframe was returned"""
+        """Make sure a dataframe was returned"""
         assert isinstance(read_mags_output, pd.DataFrame)
 
     def test_len(self, read_mags_output, dummy_cat):
@@ -1093,12 +1094,12 @@ class TestReadMagnitudes:
         assert req_len == len(read_mags_output)
 
     def test_values(self, ser_dict, mag_dict):
-        """make sure the values of the first station magnitude are as expected"""
+        """Make sure the values of the first station magnitude are as expected"""
         assert floatify_dict(ser_dict) == floatify_dict(mag_dict)
 
     # empty catalog tests
     def test_empty_catalog(self):
-        """ensure returns empty df with required columns"""
+        """Ensure returns empty df with required columns"""
         empty_cat = ev.Catalog()
         df = magnitudes_to_dataframe(empty_cat)
         assert isinstance(df, pd.DataFrame)
@@ -1132,14 +1133,14 @@ class TestReadMagnitudes:
 class TestReadBingham:
     """Test for reading a variety of pick formats from the bingham_test dataset."""
 
-    event_fixtures = []
-    picks_fixtures = []
+    event_fixtures: ClassVar = []
+    picks_fixtures: ClassVar = []
 
     @pytest.fixture(scope="class")
     @register_func(event_fixtures)
     @register_func(picks_fixtures)
     def catalog(self, bingham_dataset):
-        """return the bingham_test catalog"""
+        """Return the bingham_test catalog"""
         return bingham_dataset.event_client.get_events()
 
     @pytest.fixture(scope="class")
@@ -1165,7 +1166,7 @@ class TestReadBingham:
     @pytest.fixture(scope="class")
     @register_func(picks_fixtures)
     def pick_dataframe(self, catalog):
-        """return a dataframe of picks."""
+        """Return a dataframe of picks."""
         return picks_to_df(catalog)
 
     @pytest.fixture(scope="class")

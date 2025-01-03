@@ -1,13 +1,13 @@
 """
 Tests for the pandas utilites.
 """
+
 import numpy as np
+import obsplus
+import obsplus.utils.pd as upd
 import obspy
 import pandas as pd
 import pytest
-
-import obsplus
-import obsplus.utils.pd as upd
 from obsplus.constants import NSLC
 from obsplus.exceptions import DataFrameContentError
 from obsplus.utils.time import to_datetime64, to_timedelta64
@@ -25,7 +25,7 @@ def simple_df():
 def waveform_df():
     """Create a dataframe with the basic required columns."""
     st = obspy.read()
-    cols = list(NSLC) + ["starttime", "endtime"]
+    cols = [*list(NSLC), "starttime", "endtime"]
     df = pd.DataFrame([tr.stats for tr in st])[cols]
     df["starttime"] = to_datetime64(df["starttime"])
     df["endtime"] = to_datetime64(df["endtime"])
@@ -78,7 +78,7 @@ class TestCastDtypes:
         return df
 
     def test_basic(self, simple_df):
-        """simple test for casting datatypes."""
+        """Simple test for casting datatypes."""
         out = upd.cast_dtypes(simple_df, {"time": str})
         assert all([isinstance(x, str) for x in out["time"]])
 
@@ -148,7 +148,7 @@ class TestGetWaveformsBulkArgs:
 
     def test_missing_value_raises(self, waveform_df):
         """Ensure any NaN values raises."""
-        waveform_df.loc[0, "starttime"] = np.NaN
+        waveform_df.loc[0, "starttime"] = np.nan
         with pytest.raises(DataFrameContentError):
             upd.get_waveforms_bulk_args(waveform_df)
 

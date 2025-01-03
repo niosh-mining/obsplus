@@ -2,13 +2,15 @@
 General utility functions which are not specific to one data type.
 """
 
+from __future__ import annotations
+
 import copy
 import logging
 import warnings
+from collections.abc import Callable, Iterable
 from contextlib import suppress
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Callable, Iterable
 
 import obspy
 import obspy.core.event as ev
@@ -17,22 +19,22 @@ from obspy.core.event import Catalog, Event, ResourceIdentifier, WaveformStreamI
 
 import obsplus
 from obsplus.constants import (
-    catalog_or_event,
-    catalog_component,
-    event_clientable_type,
-    EVENT_PATH_STRUCTURE,
     EVENT_NAME_STRUCTURE,
+    EVENT_PATH_STRUCTURE,
+    catalog_component,
+    catalog_or_event,
+    event_clientable_type,
 )
 from obsplus.exceptions import ValidationError
 from obsplus.interfaces import EventClient
 from obsplus.utils.bank import EVENT_EXT, _get_time_values
-from obsplus.utils.misc import yield_obj_parent_attr, _get_path
+from obsplus.utils.misc import _get_path, yield_obj_parent_attr
 from obsplus.utils.pd import get_seed_id_series
 from obsplus.utils.time import _get_event_origin_time, to_utc
 
 
 def duplicate_events(
-    event: catalog_or_event, resource_generator: Optional[Callable] = None
+    event: catalog_or_event, resource_generator: Callable | None = None
 ) -> catalog_or_event:
     """
     Duplicate an event.
@@ -222,7 +224,7 @@ def bump_creation_version(obj):
     creation_time and bumping the version by one
     """
     if not hasattr(obj, "creation_info"):  # nothing to do if no CI
-        msg = "%s has no creation_info attribute" % obj
+        msg = f"{obj} has no creation_info attribute"
         logging.warning(msg)
         return
     # get creation info
@@ -236,7 +238,7 @@ def bump_creation_version(obj):
 
 
 def _bump_version(version):
-    """bump the version in the creation info"""
+    """Bump the version in the creation info"""
     if isinstance(version, str):
         split = [int(x) for x in version.split(".")]
         split[-1] += 1
@@ -250,7 +252,7 @@ def make_origins(
     events: catalog_or_event,
     inventory: obspy.Inventory,
     depth: float = 1.0,
-    phase_hints: Optional[Iterable] = ("P", "p"),
+    phase_hints: Iterable | None = ("P", "p"),
 ) -> catalog_or_event:
     """
     Iterate a catalog or single events and ensure each has an origin.
@@ -460,7 +462,7 @@ def get_preferred(event: Event, what: str, init_empty=False):
             obj = potentials.get(pid.id, None)
             if obj is None:  # it wasn't found in the potentials.
                 var = (pid.id, whats, str(event))
-                warnings.warn("cannot find %s in %s for event %s" % var)
+                warnings.warn("cannot find {} in {} for event {}".format(*var))
                 try:
                     obj = getattr(event, whats)[-1]
                 except IndexError:  # there are no "whats", return None
@@ -473,10 +475,10 @@ def get_preferred(event: Event, what: str, init_empty=False):
 
 def _summarize_event(
     event: ev.Event,
-    path: Optional[str] = None,
-    name: Optional[str] = None,
-    path_struct: Optional[str] = None,
-    name_struct: Optional[str] = None,
+    path: str | None = None,
+    name: str | None = None,
+    path_struct: str | None = None,
+    name_struct: str | None = None,
 ) -> dict:
     """
     Function to extract info from events for indexing.

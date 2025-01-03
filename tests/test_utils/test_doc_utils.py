@@ -10,7 +10,7 @@ class TestDocsting:
     """tests for obsplus' simple docstring substitution function."""
 
     def count_white_space(self, some_str):
-        """count the number of whitespace chars in a str"""
+        """Count the number of whitespace chars in a str"""
         return len(some_str) - len(some_str.lstrip(" "))
 
     def test_docstring(self):
@@ -33,7 +33,7 @@ class TestDocsting:
             """
 
         assert "Parameters" in testfun1.__doc__
-        line = [x for x in testfun1.__doc__.split("\n") if "Parameters" in x][0]
+        line = next(x for x in testfun1.__doc__.split("\n") if "Parameters" in x)
         base_spaces = line.split("Parameters")[0]
         assert len(base_spaces) == 12
 

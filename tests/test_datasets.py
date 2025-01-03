@@ -1,6 +1,7 @@
 """
 Tests for the datasets
 """
+
 import os
 import random
 import shutil
@@ -8,20 +9,20 @@ import string
 import tempfile
 from contextlib import suppress
 from pathlib import Path
-
-import obspy
-import pytest
+from typing import ClassVar
 
 import obsplus
 import obsplus.utils.dataset
+import obspy
+import pytest
 from obsplus.constants import DATA_TYPES
 from obsplus.datasets.dataset import DataSet
 from obsplus.exceptions import (
-    MissingDataFileError,
-    FileHashChangedError,
     DataVersionError,
+    FileHashChangedError,
+    MissingDataFileError,
 )
-from obsplus.interfaces import WaveformClient, EventClient, StationClient
+from obsplus.interfaces import EventClient, StationClient, WaveformClient
 
 
 class BasicDataset(DataSet):
@@ -77,7 +78,7 @@ def make_dummy_dataset(cls_name="dummy", cls_version="0.1.0"):
 
 @pytest.fixture(scope="session", params=list(DataSet._datasets))
 def dataset(request):
-    """laod in the datasets"""
+    """Laod in the datasets"""
     return DataSet._datasets[request.param]
 
 
@@ -85,7 +86,7 @@ def dataset(request):
 class TestDatasets:
     """Generic tests for all loaded datasets."""
 
-    client_types = {
+    client_types: ClassVar = {
         "event": EventClient,
         "station": StationClient,
         "waveform": WaveformClient,
@@ -103,7 +104,7 @@ class TestDatasets:
 
     @pytest.fixture(scope="class")
     def datafetcher(self, new_dataset):
-        """call the dataset (forces download) and return fetcher."""
+        """Call the dataset (forces download) and return fetcher."""
         return new_dataset.get_fetcher()
 
     def test_clients(self, datafetcher):
@@ -113,19 +114,19 @@ class TestDatasets:
             assert isinstance(obj, ctype) or obj is None
 
     def test_directory_created(self, new_dataset):
-        """ensure the new directory was created."""
+        """Ensure the new directory was created."""
         for name in DATA_TYPES:
             path = getattr(new_dataset, name + "_path")
             assert path.exists()
             assert path.is_dir()
 
     def test_readme_created(self, new_dataset):
-        """ensure the readme was created."""
+        """Ensure the readme was created."""
         path = new_dataset.data_path / "readme.txt"
         assert path.exists()
 
     def test_new_dataset(self, tmpdir):
-        """ensure a new dataset can be created and creates default paths"""
+        """Ensure a new dataset can be created and creates default paths"""
         path = Path(tmpdir)
         inv = obspy.read_inventory()
 
@@ -162,12 +163,12 @@ class TestBasic:
             assert expected.exists()
 
     def test_get_fetcher(self, ta_dataset):
-        """ensure a datafetcher can be created."""
+        """Ensure a datafetcher can be created."""
         fetcher = ta_dataset.get_fetcher()
         assert isinstance(fetcher, obsplus.Fetcher)
 
     def test_can_copy_twice(self, ta_dataset, tmp_path):
-        """copying a dataset to the same location twice should work."""
+        """Copying a dataset to the same location twice should work."""
         ta_dataset.copy_to(tmp_path)
         ta_dataset.copy_to(tmp_path)
         assert Path(tmp_path).exists()
@@ -194,9 +195,9 @@ class TestDatasetDownloadMemory:
         """Return a dummy dataset for testing, cleanup after it."""
         randstr = "".join(random.sample(string.ascii_uppercase, 12))
         name = "TESTDATASET" + randstr
-        DS = make_dummy_dataset(name)
-        yield DS
-        DS.cleanup()
+        ds = make_dummy_dataset(name)
+        yield ds
+        ds.cleanup()
 
     def test_datasets_remember_download(self, dummy_dataset_class, tmp_path):
         """
@@ -261,7 +262,7 @@ class TestCopyDataset:
         assert isinstance(new_ds, DataSet)
 
     def test_copy_dataset_with_dataset(self):
-        """ensure a dataset can be the first argument to copy_dataset"""
+        """Ensure a dataset can be the first argument to copy_dataset"""
         ds = obsplus.load_dataset("bingham_test")
         out = obsplus.utils.dataset.copy_dataset(ds)
         assert isinstance(out, DataSet)
@@ -269,12 +270,12 @@ class TestCopyDataset:
         assert out.data_path != ds.data_path
 
     def test_copy_unknown_dataset(self):
-        """ensure copying a dataset that doesn't exit raises."""
+        """Ensure copying a dataset that doesn't exit raises."""
         with pytest.raises(ValueError):
             obsplus.load_dataset("probably_not_a_real_dataset")
 
     def test_str_and_repr(self):
-        """ensure str is returned from str and repr"""
+        """Ensure str is returned from str and repr"""
         ds = obsplus.load_dataset("bingham_test")
         assert isinstance(str(ds), str)  # these are dumb COV tests
         assert isinstance(ds.__repr__(), str)
@@ -549,7 +550,7 @@ class TestBasicDataset:
             name = "one"
             version = "0.0.1"
 
-            _load_funcs = dict(waveform=_func, event=_func, station=_func)
+            _load_funcs: ClassVar = dict(waveform=_func, event=_func, station=_func)
 
         # with pytest.warns(UserWarning):
         ds = SomeDataset(base_path=tmp_path)

@@ -1,12 +1,14 @@
 """
 Stream utilities
 """
-import copy
 
+from __future__ import annotations
+
+import copy
 import warnings
 from functools import singledispatch
 from pathlib import Path
-from typing import Optional, Union, List, Any
+from typing import Any
 
 import numpy as np
 import obspy
@@ -15,32 +17,35 @@ from obspy import Stream, UTCDateTime
 
 import obsplus
 from obsplus.constants import (
-    waveform_clientable_type,
-    wave_type,
     NSLC,
-    trace_sequence,
     NUMPY_FLOAT_TYPES,
     NUMPY_INT_TYPES,
-    waveform_request_type,
     WAVEFORM_REQUEST_DTYPES,
+    trace_sequence,
+    wave_type,
+    waveform_clientable_type,
+    waveform_request_type,
 )
 from obsplus.exceptions import ValidationError
 from obsplus.interfaces import WaveformClient
-from obsplus.utils.pd import filter_index
-from obsplus.utils.pd import get_seed_id_series, cast_dtypes, _column_contains
-from obsplus.utils.time import to_utc, to_timedelta64, to_datetime64
 from obsplus.utils.misc import ObjectWrapper
-
+from obsplus.utils.pd import (
+    _column_contains,
+    cast_dtypes,
+    filter_index,
+    get_seed_id_series,
+)
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
 # ---------- trim functions
 
 
 def trim_event_stream(
     stream: Stream,
-    merge: Optional[int] = 1,
+    merge: int | None = 1,
     copy: bool = True,
     trim_tolerance=None,
-    required_len: Optional[float] = 0.95,
+    required_len: float | None = 0.95,
 ):
     """
     Trim the waveforms to a common start time and end time.
@@ -100,7 +105,7 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
         if con1 or con2:
             msg = (
                 "the following waveforms did not meed the required trim "
-                f"tolerance{str(stream)}"
+                f"tolerance{stream!s}"
             )
             raise ValueError(msg)
     # check length requirements, pop out any traces that dont meet it
@@ -137,7 +142,7 @@ def _get_waveform_df(stream: wave_type) -> pd.DataFrame:
     This is private because it is probably not quite polished enough to include
     in the public API. More thought is needed how to do this properly.
     """
-    stats_columns = list(NSLC) + ["starttime", "endtime", "sampling_rate"]
+    stats_columns = [*list(NSLC), "starttime", "endtime", "sampling_rate"]
     trace_contents = [{i: tr.stats[i] for i in stats_columns} for tr in stream]
     df = pd.DataFrame(trace_contents, columns=stats_columns)
     # ensure time(y) columns have proper
@@ -155,7 +160,7 @@ def _get_bulk(bulk):
     if bulk is None:
         return []
     if isinstance(bulk, pd.DataFrame):
-        cols = list(NSLC) + ["starttime", "endtime"]
+        cols = [*list(NSLC), "starttime", "endtime"]
         assert set(cols).issubset(
             bulk.columns
         ), f"A bulk dataframe must have the following columns: {cols}"
@@ -164,8 +169,8 @@ def _get_bulk(bulk):
 
 
 def stream_bulk_split(
-    st: Stream, bulk: List[waveform_request_type], fill_value: Any = None
-) -> List[Stream]:
+    st: Stream, bulk: list[waveform_request_type], fill_value: Any = None
+) -> list[Stream]:
     """
     Split a stream into a list of streams that meet requirements in bulk.
 
@@ -284,7 +289,7 @@ def merge_traces(st: trace_sequence, inplace=False) -> obspy.Stream:
     return obspy.Stream(traces=merged_traces)
 
 
-def _get_dtype(trace_list: List[trace_sequence]) -> np.dtype:
+def _get_dtype(trace_list: list[trace_sequence]) -> np.dtype:
     """
     Return the datatype that should be used for the merged trace list.
     """
@@ -368,7 +373,7 @@ def _get_stream_start_end(stream, gap_df):
 
 
 def _make_gap_dataframe(gaps):
-    """make a dataframe out of the gaps in a waveforms"""
+    """Make a dataframe out of the gaps in a waveforms"""
     # get a dataframe of gaps
     columns = [
         "network",
@@ -389,7 +394,7 @@ def _make_gap_dataframe(gaps):
 
 
 def _get_waveforms_bulk_naive(self, bulk_arg):
-    """a naive implementation of get_waveforms_bulk that uses iteration."""
+    """A naive implementation of get_waveforms_bulk that uses iteration."""
     st = obspy.Stream()
     for arg in bulk_arg:
         st += self.get_waveforms(*arg)
@@ -397,13 +402,13 @@ def _get_waveforms_bulk_naive(self, bulk_arg):
 
 
 def archive_to_sds(
-    bank: Union[Path, str, "obsplus.WaveBank"],
-    sds_path: Union[Path, str],
-    starttime: Optional[UTCDateTime] = None,
-    endtime: Optional[UTCDateTime] = None,
+    bank: Path | str | obsplus.WaveBank,
+    sds_path: Path | str,
+    starttime: UTCDateTime | None = None,
+    endtime: UTCDateTime | None = None,
     overlap: float = 30,
     type_code: str = "D",
-    stream_processor: Optional[callable] = None,
+    stream_processor: callable | None = None,
 ):
     """
     Create a seiscomp data structure archive from a waveform source.
@@ -512,7 +517,7 @@ def get_waveform_client(waveforms: waveform_clientable_type) -> WaveformClient:
 @get_waveform_client.register(str)
 @get_waveform_client.register(Path)
 def _get_waveclient_from_path(path):
-    """get a waveform client from a path."""
+    """Get a waveform client from a path."""
     path = Path(path)
     if path.is_dir():
         return get_waveform_client(obsplus.WaveBank(path))

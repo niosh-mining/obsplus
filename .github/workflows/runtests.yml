@@ -28,7 +28,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12']
+
 
     # only run if CI isn't turned off
     if: github.event_name == 'push' || !contains(github.event.pull_request.labels.*.name, 'no_ci')
@@ -41,55 +42,17 @@ jobs:
       # set individual cache key (only the start of it)
       cache_key: ${{ matrix.os }}-py${{ matrix.python-version }}
       # set conda environment file with dependencies
-      env_file: ".github/test_conda_env.yml"
 
     steps:
-      - uses: actions/checkout@v3
+
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # need this so tags are pulled and versions work
 
-      - name: Get year week
-        id: date
-        run: echo "date=$(date +'%Y:%U')" >> $GITHUB_STATE
-
-      - name: setup conda env
-        uses: conda-incubator/setup-miniconda@v2.2.0
+      - name: Install obsplus
+        uses: ./.github/actions/install-obsplus
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          activate-environment: test
-          use-mamba: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Cache conda env
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.prefix }}
-          key: ${{ env.cache_key }}-hash${{ hashFiles(env.env_file) }}-${{ steps.date.outputs.date }}-${{ env.CACHE_NUMBER }}
-        id: cache
-
-      - name: Update environment
-        run: mamba env update -n test -f ${{ env.env_file }}
-        if: steps.cache.outputs.cache-hit != 'true'
-
-      - name: install obsplus
-        shell: bash -l {0}
-        run: |
-          python -m pip install -e .[test]
-
-      - name: print package info
-        shell: bash -l {0}
-        run: |
-          conda info -a
-          conda list
-
-      - name: download test data
-        shell: bash -l {0}
-        run: |
-          if [ ! -d ~/opsdata ]; then
-            git clone https://github.com/d-chambers/opsdata_test
-            mv opsdata_test ~/opsdata
-          fi
 
       # Runs test suite and calculates coverage
       - name: run test suite
@@ -122,11 +85,6 @@ jobs:
 
 # This is a very useful step for debugging, it allows you to ssh into the CI
 # machine (https://github.com/marketplace/actions/debugging-with-tmate).
-# Make sure to open the log before the job starts else you cant see the tmate
-# url. See https://github.com/mxschmitt/action-tmate/issues/1.
-# Also, the CI machine will close on a non-zero exit code (annoying). This can
-# be overcome by coalescing the null command like so:
-# $ some-command-that-can-fail || :
 #
 #- name: Setup tmate session
 #  uses: mxschmitt/action-tmate@v3

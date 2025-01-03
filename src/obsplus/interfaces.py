@@ -6,10 +6,10 @@ hooks can be used.
 """
 
 from abc import abstractmethod
-from typing_extensions import Protocol, runtime_checkable
 
 import obspy
 import pandas as pd
+from typing_extensions import Protocol, runtime_checkable
 
 
 @runtime_checkable

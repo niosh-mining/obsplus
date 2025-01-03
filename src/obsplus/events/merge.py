@@ -2,12 +2,13 @@
 functions for merging catalogs together
 """
 
+from __future__ import annotations
+
 import warnings
 from collections import OrderedDict
-from typing import Optional, Union
 
 import numpy as np
-from obspy.core.event import Catalog, Origin, Event
+from obspy.core.event import Catalog, Event, Origin
 
 import obsplus
 from obsplus import validate_catalog
@@ -136,7 +137,7 @@ def attach_new_origin(
     new_event: Event,
     new_origin: Origin,
     preferred: bool,
-    index: Optional[int] = None,
+    index: int | None = None,
 ) -> Catalog:
     """
     Attach a new origin to an existing events object.
@@ -194,7 +195,7 @@ def attach_new_origin(
 
 
 def _associate_picks(old_eve, new_event, new_origin):
-    """associate the origin arrivals with correct picks from old event"""
+    """Associate the origin arrivals with correct picks from old event"""
     picks = old_eve.picks  # picks of old cat_name
     new_resource_pick_dict = {x.resource_id.id: x for x in new_event.picks}
     old_pick_dict = _hash_wids(picks, "phase_hint")
@@ -209,7 +210,7 @@ def _associate_picks(old_eve, new_event, new_origin):
 
 def associate_merge(
     event: Event,
-    new_catalog: Union[Catalog, Event],
+    new_catalog: Catalog | Event,
     median_tolerance: float = 1.0,
     reject_old: bool = False,
 ) -> Event:
@@ -238,7 +239,7 @@ def associate_merge(
         """
         Return a (close enough) approximation of the median for datetimes in ns.
         """
-        int_median = int(time_ser.view(np.int64).median())
+        int_median = int(time_ser.astype(np.int64).median())
         return int_median
 
     def _get_associated_event_id(new_picks, old_picks):

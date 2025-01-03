@@ -1,25 +1,24 @@
 """
 Tests for validation logic.
 """
-import copy
 
-import obspy
-import obspy.core.event as ev
-import pytest
-from obspy.core.event import ResourceIdentifier, WaveformStreamID, TimeWindow
+import copy
 
 import obsplus
 import obsplus.events.validate
+import obspy
+import obspy.core.event as ev
+import pytest
 from obsplus import validate_catalog
 from obsplus.utils.misc import yield_obj_parent_attr
-
+from obspy.core.event import ResourceIdentifier, TimeWindow, WaveformStreamID
 
 # ----------------- module level fixtures
 
 
 @pytest.fixture(scope="function")
 def cat1(event_cache):
-    """return a copy of events 1"""
+    """Return a copy of events 1"""
     cat = event_cache["2017-01-16T01-15-13-8a42f.xml"].copy()
     validate_catalog(cat)
     cat[0].focal_mechanisms.append(obspy.core.event.FocalMechanism())
@@ -63,7 +62,7 @@ class TestValidateCatalog:
 
     @pytest.fixture()
     def cat1_cleared_preferreds(self, cat1):
-        """clear the preferred values of the events, return events"""
+        """Clear the preferred values of the events, return events"""
         validate_catalog(cat1)
         cat = cat1.copy()
         cat[0].preferred_origin_id = None
@@ -128,14 +127,14 @@ class TestValidateCatalog:
 
     @pytest.fixture()
     def cat1_no_pick_phase_hints(self, cat1):
-        """clear the phase hints in the first pick"""
+        """Clear the phase hints in the first pick"""
         cat = cat1.copy()
         cat[0].picks[0].phase_hint = None
         return cat
 
     @pytest.fixture()
     def cat1_no_pick_waveform_id(self, cat1):
-        """clear the phase hints in the first pick"""
+        """Clear the phase hints in the first pick"""
         cat = cat1.copy()
         cat[0].picks[0].waveform_id = None
         return cat
@@ -174,7 +173,7 @@ class TestValidateCatalog:
 
     # tests
     def test_pcat1_cleared_preferreds(self, cat1_cleared_preferreds):
-        """cleared preferreds should be reset to last in list"""
+        """Cleared preferreds should be reset to last in list"""
         cat = cat1_cleared_preferreds
         validate_catalog(cat)
         self.preferred_ids_are_set(cat)
@@ -188,7 +187,7 @@ class TestValidateCatalog:
             assert ev.preferred_focal_mechanism() == ev.focal_mechanisms[-1]
 
     def test_cat1_preferred_cache_empty(self, cat1_preferred_cache_empty):
-        """ensure preferred still point to correct (not last) origins/mags"""
+        """Ensure preferred still point to correct (not last) origins/mags"""
         cat = cat1_preferred_cache_empty
         validate_catalog(cat)
         self.preferred_ids_are_set(cat)
@@ -204,7 +203,7 @@ class TestValidateCatalog:
             assert cat[0].preferred_focal_mechanism() == first_mech
 
     def test_bad_arrival_pick_id_raises(self, cat1_bad_arrival_pick_id):
-        """make sure a bad pick_id in arrivals raises assertion error"""
+        """Make sure a bad pick_id in arrivals raises assertion error"""
         with pytest.raises(AssertionError):
             validate_catalog(cat1_bad_arrival_pick_id)
 
@@ -217,26 +216,26 @@ class TestValidateCatalog:
             validate_catalog(cat1_multiple_resource_ids)
 
     def test_empty_phase_hint_raises(self, cat1_no_pick_phase_hints):
-        """ensure raises if any phase hints are undefined"""
+        """Ensure raises if any phase hints are undefined"""
         with pytest.raises(AssertionError):
             validate_catalog(cat1_no_pick_phase_hints)
 
     def test_empty_pick_wid_raises(self, cat1_no_pick_waveform_id):
-        """ensure raise if any waveform ids are empty on picks"""
+        """Ensure raise if any waveform ids are empty on picks"""
         with pytest.raises(AssertionError):
             validate_catalog(cat1_no_pick_waveform_id)
 
     def test_none_in_arrival_pick_id_fails(self, cat1_none_arrival_pick_id):
-        """make sure if an arrival has a None pick validate raises"""
+        """Make sure if an arrival has a None pick validate raises"""
         with pytest.raises(AssertionError):
             validate_catalog(cat1_none_arrival_pick_id)
 
     def test_works_with_event(self, cat1):
-        """ensure the method can also be called on an event"""
+        """Ensure the method can also be called on an event"""
         validate_catalog(cat1[0])
 
     def test_duplicate_picks(self, cat1):
-        """ensure raise if there are more than one p or s pick per station"""
+        """Ensure raise if there are more than one p or s pick per station"""
         cat = cat1.copy()
         # Duplicating p pick at picks[2]
         pick = cat[0].picks[2]
@@ -246,7 +245,7 @@ class TestValidateCatalog:
             obsplus.events.validate.check_duplicate_picks(cat)
 
     def test_s_before_p(self, cat1):
-        """ensure raise if any s picks are before p picks"""
+        """Ensure raise if any s picks are before p picks"""
         cat = cat1.copy()
         # Set s time before p time
         # pick[3] is a s pick and pick[2] is a p pick
@@ -273,7 +272,7 @@ class TestValidateCatalog:
             validate_catalog(cat)
 
     def test_p_lims(self, cat1):
-        """ensure raise if there are any outlying P picks"""
+        """Ensure raise if there are any outlying P picks"""
         cat = cat1.copy()
         # Assigning p pick an outlying time (1 hour off)
         # picks[2] is a known p pick
@@ -282,7 +281,7 @@ class TestValidateCatalog:
             validate_catalog(cat, p_lim=30 * 60)
 
     def test_amp_lims(self, cat1):
-        """ensure raise if there are any above limit amplitudes picks"""
+        """Ensure raise if there are any above limit amplitudes picks"""
         cat = cat1.copy()
         # Assigning an amplitude an above limit value
         cat[0].amplitudes[0].generic_amplitude = 1
@@ -290,7 +289,7 @@ class TestValidateCatalog:
             validate_catalog(cat, amp_lim=0.5)
 
     def test_amp_filts(self, cat1):
-        """ensure raise if unexpected filter used"""
+        """Ensure raise if unexpected filter used"""
         cat = cat1.copy()
         amp = cat[0].amplitudes[0]
         # Assigning bad filter to an amplitude

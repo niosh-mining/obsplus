@@ -1,18 +1,17 @@
 """
 Tests for utils for events submodule
 """
+
 import copy
 import time
 from pathlib import Path
 
 import numpy as np
+import obsplus
+import obsplus.utils.events
 import obspy
 import obspy.core.event as ev
 import pytest
-from obspy.core.event import ResourceIdentifier
-
-import obsplus
-import obsplus.utils.events
 from obsplus import get_preferred
 from obsplus.events import validate
 from obsplus.exceptions import ValidationError
@@ -20,12 +19,13 @@ from obsplus.interfaces import EventClient
 from obsplus.utils.events import (
     bump_creation_version,
     duplicate_events,
+    get_event_client,
     make_origins,
     prune_events,
     strip_events,
-    get_event_client,
 )
 from obsplus.utils.misc import get_instances_from_tree
+from obspy.core.event import ResourceIdentifier
 
 CAT = obspy.read_events()
 
@@ -35,12 +35,12 @@ class TestDuplicateEvent:
 
     @pytest.fixture
     def catalog(self):
-        """return default events"""
+        """Return default events"""
         return obspy.read_events()
 
     @pytest.fixture
     def duplicated_catalog(self, catalog):
-        """return an event duplicated from first"""
+        """Return an event duplicated from first"""
         return duplicate_events(catalog)
 
     @pytest.fixture
@@ -49,11 +49,11 @@ class TestDuplicateEvent:
         return obsplus.duplicate_events(catalog_cache["cat6"])
 
     def test_return_type(self, duplicated_catalog):
-        """ensure a events was returned"""
+        """Ensure a events was returned"""
         assert isinstance(duplicated_catalog, obspy.Catalog)
 
     def test_unique_resource_ids(self, catalog, duplicated_catalog):
-        """ensure all resource ids are unique in duplicated event"""
+        """Ensure all resource ids are unique in duplicated event"""
         ev1, ev2 = catalog, duplicated_catalog
         rids1 = {x for x in get_instances_from_tree(ev1, cls=ResourceIdentifier)}
         rids2 = {x for x in get_instances_from_tree(ev2, cls=ResourceIdentifier)}
@@ -63,7 +63,7 @@ class TestDuplicateEvent:
         assert all(x.get_referred_object() is None for x in commons)
 
     def test_duplicated(self, catalog, duplicated_catalog):
-        """ensure duplicated is equal on all aspects except resource id"""
+        """Ensure duplicated is equal on all aspects except resource id"""
         cat1, cat2 = catalog, duplicated_catalog
         origin_attrs = ("latitude", "longitude", "depth", "time")
 
@@ -75,7 +75,7 @@ class TestDuplicateEvent:
                 assert getattr(or1, origin_attr) == getattr(or2, origin_attr)
 
     def test_duplicated_catalog_valid(self, duplicated_big_catalog):
-        """ensure the duplicated events is valid"""
+        """Ensure the duplicated events is valid"""
         obsplus.validate_catalog(duplicated_big_catalog)
 
     def test_interconnected_rids(self, catalog_cache):
@@ -155,7 +155,7 @@ class TestPruneEvents:
         assert len(por.arrivals) == 1
 
     def test_one_rejected_origin(self, catalog_rejected_orphan_origin):
-        """ensure a rejected origin, with no other references, is removed."""
+        """Ensure a rejected origin, with no other references, is removed."""
         event = catalog_rejected_orphan_origin[0]
         origin_count_before = len(event.origins)
         out = obsplus.utils.events.prune_events(event)
@@ -370,7 +370,7 @@ class TestBumpCreationVersion:
 
     @pytest.fixture(scope="class")
     def eve_cis(self, cat):
-        """return the original version and the bumped version"""
+        """Return the original version and the bumped version"""
         ev1 = cat[0].origins[0]
         cl1 = copy.deepcopy(ev1.creation_info)
         ev2 = cat[0].origins[0].copy()
@@ -404,7 +404,7 @@ class TestBumpCreationVersion:
 
     # tests
     def test_bump_version(self, eve_cis):
-        """test that the version gets bumped once on default cat_name"""
+        """Test that the version gets bumped once on default cat_name"""
         ci1, ci2 = eve_cis
         ct1, ct2 = ci1.creation_time, ci2.creation_time
         assert isinstance(ct2, obspy.UTCDateTime)
@@ -413,19 +413,19 @@ class TestBumpCreationVersion:
         assert ci2.version is not None
 
     def test_bump_twice(self, multi_version):
-        """test that the version can be bumped twice"""
+        """Test that the version can be bumped twice"""
         ci1, ci2 = multi_version
         ct1, ct2 = ci1.creation_time, ci2.creation_time
         v1, v2 = ci1.version, ci2.version
         for update_time in [ct1, ct2]:
             assert isinstance(update_time, obspy.UTCDateTime)
         for ver in [v1, v2]:
-            assert isinstance(ver, (str, int))
+            assert isinstance(ver, str | int)
         assert ct2 > ct1
         assert v2 > v1
 
     def test_bump_int_version(self, int_version):
-        """ensure bumping an integer version can happen"""
+        """Ensure bumping an integer version can happen"""
         assert int_version.version == "1"
 
     def test_bump_version_on_bad_object(self):
@@ -468,7 +468,7 @@ class TestGetPreferred:
         assert isinstance(ori, ev.Origin)
 
     def test_bad_preferred_origin(self):
-        """ensure the bad preferred just returns last in list"""
+        """Ensure the bad preferred just returns last in list"""
         eve = obspy.read_events()[0]
         eve.preferred_origin_id = "bob"
         with pytest.warns(UserWarning) as w:
@@ -511,13 +511,13 @@ class TestMakeOrigins:
 
     @pytest.fixture(scope="class")
     def cat_added_origins(self, cat_only_picks, inv):
-        """run make_origins on the catalog with only picks and return"""
+        """Run make_origins on the catalog with only picks and return"""
         # get corresponding inventory
         return make_origins(events=cat_only_picks, inventory=inv)
 
     @pytest.fixture(scope="class")
     def strange_picks_added_origins(self, inv):
-        """make sure "rejected" picks and oddball phase hints get skipped"""
+        """Make sure "rejected" picks and oddball phase hints get skipped"""
         # Pick w/ good phase hint but bad evaluation status
         pick1 = ev.Pick(
             time=obspy.UTCDateTime(),
@@ -543,12 +543,12 @@ class TestMakeOrigins:
         return make_origins(events=eve, inventory=inv, phase_hints=["P", "S"]), pick3
 
     def test_all_events_have_origins(self, cat_added_origins):
-        """ensure all the events do indeed have origins"""
+        """Ensure all the events do indeed have origins"""
         for event in cat_added_origins:
             assert event.origins, f"{event} has no origins"
 
     def test_origins_have_time_and_location(self, cat_added_origins):
-        """all added origins should have both times and locations."""
+        """All added origins should have both times and locations."""
         for event in cat_added_origins:
             for origin in event.origins:
                 assert isinstance(origin.time, obspy.UTCDateTime)
@@ -566,7 +566,7 @@ class TestMakeOrigins:
         assert np.isclose(t1, t2)
 
     def test_bad_first_not_in_inventory(self, cat_bad_first_picks, inv):
-        """ensure function raises when bad first picks are found."""
+        """Ensure function raises when bad first picks are found."""
         with pytest.raises(ValidationError):
             make_origins(cat_bad_first_picks, inv)
 
@@ -633,7 +633,7 @@ class TestGetEventClient:
     def test_from_file(self, simple_event_dir):
         """Test getting events from a file."""
         # get first file
-        first = list(Path(simple_event_dir).rglob("*.xml"))[0]
+        first = next(iter(Path(simple_event_dir).rglob("*.xml")))
         out = get_event_client(first)
         assert isinstance(out, EventClient)
         assert isinstance(out, obspy.Catalog)

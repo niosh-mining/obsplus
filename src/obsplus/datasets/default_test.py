@@ -2,6 +2,7 @@
 The default test dataset. This consists exclusively of obspy's default objects
 saved to disk.
 """
+
 from pathlib import Path
 
 import obspy

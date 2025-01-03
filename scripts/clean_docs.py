@@ -1,6 +1,7 @@
 """
 Script to cleanup documentation.
 """
+
 import shutil
 from pathlib import Path
 from subprocess import run

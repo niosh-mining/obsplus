@@ -1,12 +1,12 @@
 """
 Tests for event schema.
 """
-from typing import Sequence
 
-import obspy
-import obspy.core.event as ev
+from collections.abc import Sequence
 
 import obsplus.events.schema as esc
+import obspy
+import obspy.core.event as ev
 from obsplus.constants import NSLC
 from obsplus.events.json import cat_to_dict
 
@@ -16,7 +16,6 @@ class TestResourceID:
 
     def test_null(self):
         """Ensure Null generates a resource ID a la ObsPy"""
-
         import obspy
 
         obspy._debug = True
@@ -27,7 +26,6 @@ class TestResourceID:
 
     def test_defined_resource_id(self):
         """Ensure the defined resource_id sticks."""
-
         rid = str(ev.ResourceIdentifier())
         out = esc.ResourceIdentifier(id=rid)
         assert out.id == rid
@@ -91,7 +89,7 @@ class TestConversions:
     def test_from_simple_obspy(self):
         """Test converting from a simple obspy catalog"""
         event = obspy.read_events()[0]
-        pydantic_event = esc.Event.parse_obj(event)
+        pydantic_event = esc.Event.model_validate(event)
         assert isinstance(pydantic_event, esc.Event)
 
     def test_from_obspy_catalog(self, test_catalog):

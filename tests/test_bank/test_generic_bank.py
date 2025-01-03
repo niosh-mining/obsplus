@@ -1,13 +1,13 @@
 """
 Tests for general banks.
 """
+
 from pathlib import Path
 
 import numpy as np
+import obsplus
 import obspy
 import pytest
-
-import obsplus
 from obsplus.utils.misc import suppress_warnings
 
 bank_params = ["default_ebank", "default_wbank"]
@@ -63,7 +63,7 @@ class TestVersions:
 
     @pytest.fixture
     def ebank_high_version(self, tmpdir, monkeypatch):
-        """return the default bank with a negative version number."""
+        """Return the default bank with a negative version number."""
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__last_version__", self.high_version_str)
         cat = obspy.read_events()

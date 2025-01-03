@@ -1,6 +1,7 @@
 """
 Simple tests for the dataset utils.
 """
+
 from pathlib import Path
 
 from obsplus.utils.dataset import _create_opsdata

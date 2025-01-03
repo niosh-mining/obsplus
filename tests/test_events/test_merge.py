@@ -1,6 +1,7 @@
 """
 Tests for merging catalogs together.
 """
+
 from glob import glob
 from os.path import join
 
@@ -8,15 +9,14 @@ import numpy as np
 import obspy
 import obspy.core.event as ev
 import pytest
-
 from obsplus import validate_catalog
 from obsplus.events.merge import (
-    merge_events,
-    attach_new_origin,
-    associate_merge,
     _hash_wids,
+    associate_merge,
+    attach_new_origin,
+    merge_events,
 )
-from obsplus.utils import yield_obj_parent_attr, get_reference_time
+from obsplus.utils import get_reference_time, yield_obj_parent_attr
 
 CAT = obspy.read_events()
 ORIGINS = [ori for eve in CAT for ori in eve.origins]
@@ -28,7 +28,7 @@ ALLSORTS = ORIGINS + MAGNITUDES
 
 
 def extract_merge_catalogs(merge_directory):
-    """given a directory with two qmls, read in the qmls and return"""
+    """Given a directory with two qmls, read in the qmls and return"""
     files = glob(join(merge_directory, "*"))
     cat_path1 = [x for x in files if x.endswith("1.xml")]
     cat_path2 = [x for x in files if x.endswith("2.xml")]
@@ -44,13 +44,13 @@ def extract_merge_catalogs(merge_directory):
 
 @pytest.fixture(scope="function")
 def merge_catalogs_function(qml_to_merge_paths):
-    """return a pair of catalogs for merge testing"""
+    """Return a pair of catalogs for merge testing"""
     return extract_merge_catalogs(qml_to_merge_paths)
 
 
 @pytest.fixture(scope="class")
 def merge_catalog_basic(qml_to_merge_basic):
-    """return just the basic events used to test merging"""
+    """Return just the basic events used to test merging"""
     return extract_merge_catalogs(qml_to_merge_basic)
 
 
@@ -80,14 +80,14 @@ class TestMergePicks:
 
     @pytest.fixture(scope="class")
     def pick_resource_ids(self, merge_catalog_basic):
-        """return list of pick ids from the first events"""
+        """Return list of pick ids from the first events"""
         cat1, _ = merge_catalog_basic
         pick_ids = [x.resource_id.id for x in cat1[0].picks]
         return pick_ids
 
     @pytest.fixture(scope="class")
     def amplitude_resource_ids(self, merge_catalog_basic):
-        """return list of pick ids from the first events"""
+        """Return list of pick ids from the first events"""
         cat1, _ = merge_catalog_basic
         amplitude_ids = [x.resource_id.id for x in cat1[0].amplitudes]
         return amplitude_ids
@@ -118,7 +118,7 @@ class TestMergePicks:
 
     @pytest.fixture()
     def merge_catalogs_add_pick(self, qml_to_merge_basic):
-        """add a pick and amplitude to the new cat_name, merge with old"""
+        """Add a pick and amplitude to the new cat_name, merge with old"""
         cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         # add new pick
         pick1 = cat2[0].picks[0]
@@ -148,7 +148,7 @@ class TestMergePicks:
 
     # tests
     def test_pick_times(self, merged_catalogs):
-        """test that the times are the merged_catalogssame in the picks"""
+        """Test that the times are the merged_catalogssame in the picks"""
         cat1, cat2 = merged_catalogs
         assert len(cat1[0].picks) == len(cat2[0].picks)
         for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
@@ -158,7 +158,7 @@ class TestMergePicks:
         validate_catalog(cat2)
 
     def test_amplitudes(self, merged_catalogs):
-        """ensure the amplitudes are the same"""
+        """Ensure the amplitudes are the same"""
         cat1, cat2 = merged_catalogs
         assert len(cat1[0].amplitudes) == len(cat2[0].amplitudes)
         for amp1, amp2 in zip(cat1[0].amplitudes, cat2[0].amplitudes):
@@ -178,7 +178,7 @@ class TestMergePicks:
     def test_cat1_amplitude_ids_unchanged(
         self, merged_catalogs, amplitude_resource_ids
     ):
-        """ensure the resource IDs on the amplitudes haven't changed"""
+        """Ensure the resource IDs on the amplitudes haven't changed"""
         cat1, _ = merged_catalogs
         new_amplitude_ids = [x.resource_id.id for x in cat1[0].amplitudes]
         assert amplitude_resource_ids == new_amplitude_ids
@@ -225,7 +225,7 @@ class TestMergePicks:
         validate_catalog(cat2)
 
     def test_bad_amplitude(self, merge_catalogs_add_bad_amplitude):
-        """ensure an amplitude with no pick id doesnt get merged"""
+        """Ensure an amplitude with no pick id doesnt get merged"""
         cat1, cat2 = merge_catalogs_add_bad_amplitude
         assert len(cat1[0].amplitudes) == (len(cat2[0].amplitudes) - 1)
 
@@ -274,7 +274,7 @@ class TestAttachNewOrigin:
 
     @pytest.fixture(scope="function")
     def append_origin_catalog(self, origin_pack):
-        """attach the new origin to the first event without index"""
+        """Attach the new origin to the first event without index"""
         cat1, cat2, origin = origin_pack
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
@@ -282,7 +282,7 @@ class TestAttachNewOrigin:
 
     @pytest.fixture(scope="function")
     def insert_origin_catalog(self, origin_pack):
-        """insert the origin to overwrite old origin"""
+        """Insert the origin to overwrite old origin"""
         cat1, cat2, origin = origin_pack
         # ensure origin is a modified version of cat2's first origin
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
@@ -298,14 +298,14 @@ class TestAttachNewOrigin:
         assert origin == append_origin_catalog[0].origins[-1]
 
     def test_insert_origins(self, insert_origin_catalog, origin_pack):
-        """ensure the origin is now the first in the list"""
+        """Ensure the origin is now the first in the list"""
         _, _, origin = origin_pack
 
         self.origin_is_preferred(insert_origin_catalog, origin)
         assert origin == insert_origin_catalog[0].origins[0]
 
     def test_insert_origin_out_of_bounds(self, origin_pack):
-        """ensure the origin is still found even if bogus index was used"""
+        """Ensure the origin is still found even if bogus index was used"""
         cat1, cat2, origin = origin_pack
 
         # ensure origin is a modified version of cat2's first origin

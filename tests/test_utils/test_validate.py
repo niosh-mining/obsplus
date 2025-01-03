@@ -1,24 +1,24 @@
 """
 Tests for the validate module.
 """
+
 from collections import defaultdict
 
 import numpy as np
+import obsplus
+import obsplus.utils.misc
 import obspy
 import obspy.core.event as ev
 import pytest
-from obspy.core.inventory import Inventory, Network, Station
-from obspy.core.stream import Stream, Trace
-
-import obsplus
-import obsplus.utils.misc
 from obsplus.exceptions import ValidationNameError
 from obsplus.utils.validate import (
     _temp_validate_namespace,
-    validator,
-    validate,
     decompose,
+    validate,
+    validator,
 )
+from obspy.core.inventory import Inventory, Network, Station
+from obspy.core.stream import Stream, Trace
 
 
 class Thing1:
@@ -70,7 +70,7 @@ class TestValidateBasics:
 
         @validator(self.validate_namespace, Thing4)
         def fourth_validator(obj):
-            """This validator should fail."""
+            """Ensure a validator should fails that isn't valid."""
             assert False
 
         @validator(self.validate_namespace, (Thing1, Thing2))
@@ -132,7 +132,7 @@ class TestDecompose:
     """Tests for decomposing objects into their respective classes."""
 
     def test_decompose_catalog(self):
-        """ensure the catalog, and friends, can be decomposed."""
+        """Ensure the catalog, and friends, can be decomposed."""
         test_cls = (ev.Catalog, ev.Event, ev.Origin, ev.Pick, ev.Amplitude)
         cat = obspy.read_events()
         for obj, _, _ in obsplus.utils.misc.yield_obj_parent_attr(cat):
@@ -196,7 +196,7 @@ class TestDocumentationCase:
 
     @pytest.fixture
     def validation_report(self, validators, bad_catalog):
-        """return the report of the validators."""
+        """Return the report of the validators."""
         return validate(bad_catalog, self.namespace, report=True)
 
     def test_validation_runs(self, validation_report):

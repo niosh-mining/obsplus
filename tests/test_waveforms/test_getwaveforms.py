@@ -1,17 +1,17 @@
 """
 Tests for waveform stuff.
 """
+
 import copy
 
 import obspy
 import pytest
-
 from obsplus.utils.testing import assert_streams_almost_equal
 
 
 @pytest.fixture(scope="class")
 def stream():
-    """create a test waveforms with several channels"""
+    """Create a test waveforms with several channels"""
     st1 = obspy.read()
     # set to different station/channel and times
     st2 = obspy.read()
@@ -27,11 +27,11 @@ class TestGetWaveforms:
     """Test for waveform requests."""
 
     def test_has_attr(self, stream):
-        """ensure the get_waveforms attrs exists"""
+        """Ensure the get_waveforms attrs exists"""
         assert hasattr(stream, "get_waveforms")
 
     def test_filter_on_sid(self, stream):
-        """ensure filtering on station id and such"""
+        """Ensure filtering on station id and such"""
         t1 = obspy.UTCDateTime("2016-01-01")
         filt = dict(
             network="LF",
@@ -81,15 +81,15 @@ class TestGetWaveformsBulk:
         """
         bulk = []
         for tr in bingham_stream:
-            bulk.append(tr.id.split(".") + [tr.stats.starttime, tr.stats.endtime])
+            bulk.append([*tr.id.split("."), tr.stats.starttime, tr.stats.endtime])
         return bulk
 
     def test_has_attr(self, stream):
-        """ensure the get_waveforms attrs exists"""
+        """Ensure the get_waveforms attrs exists"""
         assert hasattr(stream, "get_waveforms_bulk")
 
     def test_filter_on_sid(self, stream):
-        """ensure filtering on station id and such"""
+        """Ensure filtering on station id and such"""
         t1 = obspy.UTCDateTime("2016-01-01")
         bulk = [("LF", "BOB", "*", "*", t1, t1 + 10)]
         st = stream.get_waveforms_bulk(bulk)
@@ -130,6 +130,6 @@ class TestGetWaveformsBulk:
         t1 = obspy.UTCDateTime("2012-01-01")
         t2 = t1 + 12
         st = obspy.read()
-        bulk = [tuple(st[0].id.split(".") + [t1, t2])]
+        bulk = [tuple([*st[0].id.split("."), t1, t2])]
         stt = st.get_waveforms_bulk(bulk)
         assert isinstance(stt, obspy.Stream)

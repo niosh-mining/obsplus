@@ -1,12 +1,15 @@
 """
 Testing utilities for ObsPlus.
 """
+
+from __future__ import annotations
+
 import os
 from collections import Counter
 from contextlib import contextmanager
 from os.path import join
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import ClassVar
 
 import numpy as np
 import obspy
@@ -85,32 +88,34 @@ class ArchiveDirectory:
         self,
         starttime: utc_able_type,
         endtime: utc_able_type,
-        seed_ids: Optional[List[str]] = None,
-        sampling_rate: Optional[Union[float, int]] = None,
+        seed_ids: list[str] | None = None,
+        sampling_rate: float | int | None = None,
     ) -> obspy.Stream:
-        """create a waveforms from random data"""
+        """Create a waveforms from random data"""
         t1 = to_utc(starttime)
         t2 = to_utc(endtime)
         sr = sampling_rate or self.sampling_rate
         ar_len = int((t2.timestamp - t1.timestamp) * sr)
         st = obspy.Stream()
+        rand_gen = np.random.default_rng(seed=20)
+
         for seed in seed_ids or self.seed_ids:
-            n, s, l, c = seed.split(".")
+            net, sta, loc, cha = seed.split(".")
             meta = {
                 "sampling_rate": sr,
                 "starttime": t1,
-                "network": n,
-                "station": s,
-                "location": l,
-                "channel": c,
+                "network": net,
+                "station": sta,
+                "location": loc,
+                "channel": cha,
             }
-            data = np.random.randn(ar_len)
+            data = rand_gen.standard_normal(ar_len)
             tr = obspy.Trace(data=data, header=meta)
             st.append(tr)
         return st
 
     def get_gap_stream(self, t1, t2, gaps):
-        """return streams with gaps in it"""
+        """Return streams with gaps in it"""
         assert len(gaps) == 1
         gap = gaps.iloc[0]
         ts1, ts2 = t1.timestamp, t2.timestamp
@@ -132,7 +137,7 @@ class ArchiveDirectory:
             raise ValueError("something went wrong!")  # pragma: no cover
 
     def create_directory(self):
-        """create the directory with gaps in it"""
+        """Create the directory with gaps in it"""
         # get a dataframe of the gaps
         if self.gaps is not None:
             df = pd.DataFrame(self.gaps, columns=["start", "end"])
@@ -227,7 +232,7 @@ class _StreamEqualTester:
     :func:`obsplus.utils.testing.assert_streams_almost_equal`.
     """
 
-    skeys = list(NSLC) + ["sampling_rate", "starttime", "endtime"]
+    skeys: ClassVar = [*list(NSLC), "sampling_rate", "starttime", "endtime"]
 
     def __init__(
         self,

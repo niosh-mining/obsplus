@@ -2,18 +2,17 @@
 Script to make the documentation and publish to gh-pages. This should
 be done once for each release.
 """
+
 import os
 import shutil
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from subprocess import run, PIPE
+from subprocess import run
 
 import jinja2
-import typer
-
-from make_docs import make_docs
-
 import obsplus
+import typer
+from make_docs import make_docs
 
 VERSION = obsplus.__version__
 
@@ -123,10 +122,10 @@ def _commit_new_docs(pages_path):
     """Commit the new docs, overwrite second commit."""
     # remove precommit hooks
     cmd = "pre-commit uninstall"
-    run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
+    run(cmd, shell=True, capture_output=True, check=True, cwd=pages_path)
     # reset to the first commit in gh-pages branch
     cmd = "git reset --soft `git rev-list --max-parents=0 HEAD | tail -n 1`"
-    run(cmd, shell=True, stdout=PIPE, stderr=PIPE, check=True, cwd=pages_path)
+    run(cmd, shell=True, capture_output=True, check=True, cwd=pages_path)
     # make a commit
     run("git add -A", shell=True, check=True, cwd=pages_path)
     cmd = f'git commit -m "{VERSION} docs"'
