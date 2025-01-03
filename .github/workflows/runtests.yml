@@ -44,6 +44,10 @@ jobs:
 
     steps:
 
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need this so tags are pulled and versions work
+
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:

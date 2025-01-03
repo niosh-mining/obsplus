@@ -7,10 +7,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # need this so tags are pulled and versions work
-
     - uses: mamba-org/setup-micromamba@v2
       with:
         micromamba-version: '2.0.5-0' # versions: https://github.com/mamba-org/micromamba-releases
