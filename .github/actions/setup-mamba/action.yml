@@ -1,0 +1,34 @@
+name: "Setup Mamba"
+description: "Sets up mamba before installing main package."
+inputs:
+  python-version:
+    description: "The python string of the version to install"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: mamba-org/setup-micromamba@v2
+      with:
+        micromamba-version: '2.0.5-0' # versions: https://github.com/mamba-org/micromamba-releases
+        environment-file: .github/test_conda_env.yml
+        init-shell: >-
+          bash
+          powershell
+        cache-environment: true
+        cache-environment-key: environment-${{ steps.date.outputs.date }}
+        post-cleanup: 'all'
+        create-args: >-
+          python=${{ input.python-version }}
+
+    # Not sure why this is needed but it appears to be the case
+    - name: fix env
+      shell: bash -l {0}
+      run: |
+        micromamba shell init --shell bash --root-prefix=~/micromamba
+        eval "$(micromamba shell hook --shell bash)"
+        micromamba activate dascore
+
+    - name: print python version
+      shell: bash -el {0}
+      run: |
+        python --version
