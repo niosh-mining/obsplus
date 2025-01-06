@@ -423,11 +423,17 @@ def iter_files(
                             yield entry.path
             elif entry.is_dir() and not (skip_hidden and entry.name[0] == "."):
                 yield from iter_files(
-                    entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
+                    entry.path,
+                    ext=ext,
+                    mtime=mtime,
+                    ctime=ctime,
+                    skip_hidden=skip_hidden,
                 )
     except TypeError:  # multiple paths were passed
         for path in paths:
-            yield from iter_files(path, ext, mtime, skip_hidden)
+            yield from iter_files(
+                path, ext=ext, mtime=mtime, ctime=ctime, skip_hidden=skip_hidden
+            )
     except NotADirectoryError:  # a file path was passed, just return it
         yield paths
 

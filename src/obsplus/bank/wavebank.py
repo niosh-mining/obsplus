@@ -295,7 +295,7 @@ class WaveBank(_Bank):
             update_time = time.time() if update_time is None else update_time
             store.put(self._time_node, pd.Series(update_time))
             # make sure meta table also exists.
-            # Note this is hear to avoid opening the store again.
+            # Note this is here to avoid opening the store again.
             if self._meta_node not in store:
                 meta = self._make_meta_table()
                 store.put(self._meta_node, meta, format="table")
