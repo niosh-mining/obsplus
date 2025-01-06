@@ -36,6 +36,16 @@ from obsplus.exceptions import BankDoesNotExistError, UnsupportedKeywordError
 from obsplus.utils.testing import ArchiveDirectory, check_index_paths
 from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 from obspy import UTCDateTime
+from obsplus.utils.misc import iter_files
+
+def _get_ctimes(bank):
+    files = pd.Series(
+        {Path(x).name: Path(x).stat().st_ctime
+         for x in  iter_files(bank.bank_path)
+         }
+    )
+    return pd.Series(files).sort_index()
+
 
 
 def count_calls(instance, bound_method, counter_attr):
@@ -77,7 +87,12 @@ def ta_bank(tmp_ta_dir):
 @pytest.fixture(scope="function")
 def ta_bank_index(ta_bank):
     """Return the ta bank, but first update index"""
+    ctime1 = _get_ctimes(ta_bank)
     ta_bank.update_index()
+    ctime2 = _get_ctimes(ta_bank)
+    breakpoint()
+    ta_bank.update_index()
+    ctime3 = _get_ctimes(ta_bank)
     return ta_bank
 
 
@@ -208,6 +223,7 @@ class TestBankBasics:
         time if no new files were added.
         """
         last_updated1 = ta_bank_index.last_updated_timestamp
+        breakpoint()
         ta_bank_index.update_index()
         last_updated2 = ta_bank_index.last_updated_timestamp
         # updating should not get stamped unless files were added

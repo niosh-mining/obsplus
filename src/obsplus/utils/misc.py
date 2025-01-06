@@ -384,6 +384,7 @@ def iter_files(
     paths: str | Iterable[str],
     ext: str | None = None,
     mtime: float | None = None,
+    ctime: float | None = None,
     skip_hidden: bool = True,
 ) -> Iterable[str]:
     """
@@ -395,23 +396,31 @@ def iter_files(
     paths
         The path to the base directory to traverse. Can also use a collection
         of paths.
-    ext : str or None
+    ext
         The extensions to map.
-    mtime : int or float
+    mtime
         Time stamp indicating the minimum mtime.
+    ctime
+        Time stamp indicating the minimum ctime.
     skip_hidden : bool
         If True skip files or folders (they begin with a '.')
 
     Yields
     ------
     Paths, as strings, meeting requirements.
+
+    Notes
+    -----
+    See #275 for a discussion of the difference between mtime and ctime,
+    and the implications of using one over the other.
     """
     try:  # a single path was passed
         for entry in os.scandir(paths):
             if entry.is_file() and (ext is None or entry.name.endswith(ext)):
                 if mtime is None or entry.stat().st_mtime >= mtime:
-                    if entry.name[0] != "." or not skip_hidden:
-                        yield entry.path
+                    if ctime is None or entry.stat().st_ctime >= ctime:
+                        if entry.name[0] != "." or not skip_hidden:
+                            yield entry.path
             elif entry.is_dir() and not (skip_hidden and entry.name[0] == "."):
                 yield from iter_files(
                     entry.path, ext=ext, mtime=mtime, skip_hidden=skip_hidden
