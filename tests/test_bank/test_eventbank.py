@@ -214,6 +214,27 @@ class TestBankBasics:
         assert isinstance(df, pd.DataFrame)
         assert len(bingham_catalog) == len(df)
 
+    def test_custom_index_path_as_str(
+        self, tmpdir_factory, cust_ebank_index_path
+    ):
+        """
+        Make sure custom index path works if a str is passed instead of a Path
+        (#277)
+        """
+        # Note that this wasn't actually affected like the WaveBank, but it's
+        #  good to have them behave consistently
+
+        # Create a fresh copy of the bingham dataset
+        new = Path(str(tmpdir_factory.mktemp("bingham_test")))
+        copy_dataset("bingham_test", new)
+
+        # Create a bank with a str custom index path
+        path = new / "bingham_test" / "events"
+        ebank = EventBank(path, index_path=str(cust_ebank_index_path))
+
+        # Make sure the index path got saved as a Path
+        assert isinstance(ebank.index_path, Path)
+
     def test_read_timestamp(self, bing_ebank):
         """Read the current timestamp (after index has been updated)"""
         bing_ebank.update_index()

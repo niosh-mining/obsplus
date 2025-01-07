@@ -193,6 +193,14 @@ class TestBankBasics:
         # Make sure paths got written to the index properly
         check_index_paths(cust_index_wbank)
 
+    def test_custom_index_path_as_str(self, tmp_ta_dir, cust_wbank_index_path):
+        """Ensure a custom index path works if a str is passed (#277)"""
+        bank_path = os.path.join(tmp_ta_dir, "waveforms")
+        bank = WaveBank(bank_path, index_path=str(cust_wbank_index_path))
+        bank.update_index()
+        # Make sure you can interact with the index
+        check_index_paths(bank)
+
     def test_create_index(self, ta_bank_no_index):
         """Make sure a fresh index can be created"""
         # test that just trying to get an index that doesnt exists creates it

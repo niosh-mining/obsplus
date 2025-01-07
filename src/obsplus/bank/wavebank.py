@@ -209,7 +209,7 @@ class WaveBank(_Bank):
             path_structure if path_structure is not None else WAVEFORM_STRUCTURE
         )
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
-        self._index_path = index_path
+        self._index_path = Path(index_path) if index_path is not None else None
         self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
