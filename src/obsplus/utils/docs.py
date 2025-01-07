@@ -1,11 +1,15 @@
 """
 Obsplus Utilities for documentation.
 """
+
+from __future__ import annotations
+
 import textwrap
-from typing import Dict, Any, Union, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 
-def compose_docstring(**kwargs: Union[str, Sequence[str]]):
+def compose_docstring(**kwargs: str | Sequence[str]):
     """
     Decorator for composing docstrings.
 
@@ -21,7 +25,6 @@ def compose_docstring(**kwargs: Union[str, Sequence[str]]):
 
     Examples
     --------
-
     @compose_docstring(some_value='10')
     def example_function():
         '''
@@ -39,7 +42,7 @@ def compose_docstring(**kwargs: Union[str, Sequence[str]]):
             value = value if isinstance(value, str) else "\n".join(value)
             # strip out first line if needed
             value = value.lstrip()
-            search_value = "{%s}" % key
+            search_value = f"{{{key}}}"
             # find all lines that match values
             lines = [x for x in docstring.split("\n") if search_value in x]
             for line in lines:
@@ -56,7 +59,7 @@ def compose_docstring(**kwargs: Union[str, Sequence[str]]):
     return _wrap
 
 
-def format_dtypes(dtype_dict: Dict[str, Any]) -> str:
+def format_dtypes(dtype_dict: dict[str, Any]) -> str:
     """
     Convert a dictionary of datatypes to a string printable format for
     displaying in docstrings.

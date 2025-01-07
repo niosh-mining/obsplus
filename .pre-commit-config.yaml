@@ -1,30 +1,33 @@
+exclude: scripts/_templates
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
-    -   id: trailing-whitespace
--   repo: https://github.com/psf/black
-    rev: 22.10.0
+    -   id: check-merge-conflict
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
+
+    # Ruff is a replacement for flake8 and many other linters (much faster too)
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.4.8
     hooks:
-    -   id: black
-        language_version: python3
--   repo: https://github.com/asottile/blacken-docs
-    rev: v1.10.0
+    -   id: ruff
+        args: ["--fix"]
+        # Run the formatter.
+    -   id: ruff-format
+
+    # ensures __future__ import annotations at top of files which require it
+    # for the typing features they are using.
+-   repo: https://github.com/frostming/fix-future-annotations
+    rev: 0.5.0
     hooks:
-    -   id: blacken-docs
-        additional_dependencies: [black==21.5b1]
--   repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-    -   id: flake8
-        additional_dependencies:
-          - flake8-black
-          - flake8-breakpoint
-          - flake8-docstrings
+    -   id: fix-future-annotations
+
+    # strips out all outputs from notebooks.
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.3.9
+    rev: 0.6.1
     hooks:
     -   id: nbstripout
-        files: ".ipynb"

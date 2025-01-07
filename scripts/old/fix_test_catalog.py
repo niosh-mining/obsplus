@@ -1,15 +1,16 @@
 """
-This script is designed to fix catalog 6.
+A script is designed to fix catalog 6.
 
 It has two S picks on the same station. We need to remove these and anything
 that might refer to them
 """
+
 from pathlib import Path
 
 import obsplus
 import obspy
-from obspy.core.event import ResourceIdentifier
 from obsplus.events.validate import validate_catalog
+from obspy.core.event import ResourceIdentifier
 
 if __name__ == "__main__":
     cat_path = Path(

@@ -1,6 +1,5 @@
 """A collection of ObsPlus Exceptions and Warnings."""
 
-
 # --- Exceptions
 
 
@@ -39,7 +38,7 @@ class AmbiguousResponseError(ValueError):
     """
 
 
-class UnsupportedKeyword(TypeError):
+class UnsupportedKeywordError(TypeError):
     """
     Raised when ObsPlus encounters an unexpected keyword.
     """

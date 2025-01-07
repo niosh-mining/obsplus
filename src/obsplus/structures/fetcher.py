@@ -1,12 +1,16 @@
 """
 Data fetcher class stuff
 """
+
+from __future__ import annotations
+
 import copy
 import functools
 import warnings
 from collections import namedtuple
+from collections.abc import Callable
 from functools import partial
-from typing import Optional, Union, Callable, Tuple, Dict
+from typing import ClassVar
 
 import numpy as np
 import obspy
@@ -14,19 +18,19 @@ import pandas as pd
 from obspy import Stream
 
 import obsplus
-from obsplus import events_to_df, stations_to_df, picks_to_df
+from obsplus import events_to_df, picks_to_df, stations_to_df
 from obsplus.bank.wavebank import WaveBank
 from obsplus.constants import (
-    waveform_clientable_type,
-    event_clientable_type,
-    station_clientable_type,
-    stream_proc_type,
+    LARGEDT64,
     NSLC,
     WAVEFETCHER_OVERRIDES,
+    bulk_waveform_arg_type,
+    event_clientable_type,
     event_time_type,
     get_waveforms_parameters,
-    bulk_waveform_arg_type,
-    LARGEDT64,
+    station_clientable_type,
+    stream_proc_type,
+    waveform_clientable_type,
 )
 from obsplus.exceptions import TimeOverflowWarning
 from obsplus.utils.docs import compose_docstring
@@ -34,8 +38,13 @@ from obsplus.utils.events import get_event_client
 from obsplus.utils.misc import register_func, suppress_warnings
 from obsplus.utils.pd import filter_index, get_seed_id_series
 from obsplus.utils.stations import get_station_client
-from obsplus.utils.time import get_reference_time
-from obsplus.utils.time import to_datetime64, to_timedelta64, make_time_chunks, to_utc
+from obsplus.utils.time import (
+    get_reference_time,
+    make_time_chunks,
+    to_datetime64,
+    to_timedelta64,
+    to_utc,
+)
 from obsplus.utils.waveforms import get_waveform_client
 
 EventStream = namedtuple("EventStream", "event_id stream")
@@ -78,9 +87,9 @@ def _temporary_override(func):
 
 # ---------------------------------- Wavefetcher class
 
-fetcher_waveform_type = Union[waveform_clientable_type, obsplus.WaveBank]
-fetcher_event_type = Union[event_clientable_type, pd.DataFrame, obsplus.EventBank]
-fetcher_station_type = Union[station_clientable_type, pd.DataFrame]
+fetcher_waveform_type = waveform_clientable_type | obsplus.WaveBank
+fetcher_event_type = event_clientable_type | pd.DataFrame | obsplus.EventBank
+fetcher_station_type = station_clientable_type | pd.DataFrame
 
 
 @_enable_swaps
@@ -163,13 +172,13 @@ class Fetcher:
     def __init__(
         self,
         waveforms: fetcher_waveform_type,
-        stations: Optional[fetcher_event_type] = None,
-        events: Optional[fetcher_event_type] = None,
-        picks: Optional[pd.DataFrame] = None,
-        stream_processor: Optional[stream_proc_type] = None,
-        time_before: Optional[float] = None,
-        time_after: Optional[float] = None,
-        event_query: Optional[dict] = None,
+        stations: fetcher_event_type | None = None,
+        events: fetcher_event_type | None = None,
+        picks: pd.DataFrame | None = None,
+        stream_processor: stream_proc_type | None = None,
+        time_before: float | None = None,
+        time_after: float | None = None,
+        event_query: dict | None = None,
     ):
         # if fetch_arg is a WaveFetcher just update dict and return
         if isinstance(waveforms, Fetcher):
@@ -272,14 +281,14 @@ class Fetcher:
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def yield_waveforms(
         self,
-        network: Optional[str] = None,
-        station: Optional[str] = None,
-        location: Optional[str] = None,
-        channel: Optional[str] = None,
-        starttime: Optional[obspy.UTCDateTime] = None,
-        endtime: Optional[obspy.UTCDateTime] = None,
+        network: str | None = None,
+        station: str | None = None,
+        location: str | None = None,
+        channel: str | None = None,
+        starttime: obspy.UTCDateTime | None = None,
+        endtime: obspy.UTCDateTime | None = None,
         duration: float = 3600.0,
-        overlap: Optional[float] = None,
+        overlap: float | None = None,
     ) -> Stream:
         """
         Yield time-series segments from the waveform client.
@@ -316,15 +325,15 @@ class Fetcher:
 
     # ------------------------ event waveforms fetching methods
 
-    reference_funcs = {}  # stores funcs for getting event reference times
+    reference_funcs: ClassVar = {}  # stores funcs for getting event reference times
 
     def yield_event_waveforms(
         self,
-        time_before: Optional[float] = None,
-        time_after: Optional[float] = None,
-        reference: Union[str, Callable] = "origin",
+        time_before: float | None = None,
+        time_after: float | None = None,
+        reference: str | Callable = "origin",
         raise_on_fail: bool = True,
-    ) -> Tuple[str, Stream]:
+    ) -> tuple[str, Stream]:
         """
         Yield event_id and streams for each event.
 
@@ -356,7 +365,7 @@ class Fetcher:
         """
 
         def _check_yield_event_waveform_(reference, ta, tb):
-            if not reference.lower() in self.reference_funcs:
+            if reference.lower() not in self.reference_funcs:
                 msg = (
                     f"reference of {reference} is not supported. Supported "
                     f"reference arguments are {list(self.reference_funcs)}"
@@ -400,11 +409,11 @@ class Fetcher:
 
     def get_event_waveforms(
         self,
-        time_before: Optional[float] = None,
-        time_after: Optional[float] = None,
-        reference: Union[str, Callable] = "origin",
+        time_before: float | None = None,
+        time_after: float | None = None,
+        reference: str | Callable = "origin",
         raise_on_fail: bool = True,
-    ) -> Dict[str, Stream]:
+    ) -> dict[str, Stream]:
         """
         Return a dict of event_ids and waveforms for each event in events.
 
@@ -443,8 +452,8 @@ class Fetcher:
     def __call__(
         self,
         time_arg: event_time_type,
-        time_before: Optional[float] = None,
-        time_after: Optional[float] = None,
+        time_before: float | None = None,
+        time_after: float | None = None,
         *args,
         **kwargs,
     ) -> obspy.Stream:
@@ -476,7 +485,7 @@ class Fetcher:
 
     # ------------------------------- misc
 
-    def copy(self) -> "Fetcher":
+    def copy(self) -> Fetcher:
         """Return a deep copy of the fetcher."""
         return copy.deepcopy(self)
 
@@ -547,7 +556,7 @@ class Fetcher:
 
     @property
     def picks_df(self):
-        """return a dataframe from the picks (if possible)"""
+        """Return a dataframe from the picks (if possible)"""
         if self._picks_df is None:
             try:
                 df = picks_to_df(self.event_client)

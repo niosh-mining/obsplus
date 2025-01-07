@@ -1,11 +1,10 @@
 """
 Tests for the dataframe extractor.
 """
-import obspy.core.event as ev
 
+import obspy.core.event as ev
 from obsplus import load_dataset
 from obsplus.structures.dfextractor import DataFrameExtractor
-
 
 # create a dataframe extractor for magnitudes
 

@@ -1,5 +1,7 @@
+"""
+Sphinx configuration for ObsPlus doc build.
+"""
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # obsplus documentation build configuration file, created by
 # sphinx-quickstart
@@ -15,7 +17,7 @@
 
 import datetime
 import sys
-from os.path import dirname, abspath
+from os.path import abspath, dirname
 
 year = datetime.datetime.now().year
 
@@ -34,7 +36,7 @@ project_root = dirname(cwd)
 # version is used.
 sys.path.insert(0, project_root)
 
-import obsplus
+import obsplus  # noqa
 
 # load the datasets used by docs here so notebooks don't have to
 obsplus.load_dataset("crandall_test")

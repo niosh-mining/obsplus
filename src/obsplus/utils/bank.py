@@ -1,32 +1,35 @@
 """
 Utils for banks
 """
+
+from __future__ import annotations
+
 import contextlib
 import os
 import re
 import sqlite3
 import time
 import warnings
-from typing import Optional, Sequence, List
+from collections.abc import Sequence
 
+import numpy as np
 import obspy
 import pandas as pd
-import numpy as np
 from tables.exceptions import ClosedNodeError
 
 from obsplus.constants import (
-    NSLC,
-    WAVEFORM_STRUCTURE,
-    WAVEFORM_NAME_STRUCTURE,
-    SMALLDT64,
     LARGEDT64,
+    NSLC,
     READ_HDF5_KWARGS,
+    SMALLDT64,
+    WAVEFORM_NAME_STRUCTURE,
+    WAVEFORM_STRUCTURE,
 )
-from obsplus.exceptions import UnsupportedKeyword
+from obsplus.exceptions import UnsupportedKeywordError
 from obsplus.utils.geodetics import map_longitudes
 from obsplus.utils.misc import READ_DICT, _get_path
 from obsplus.utils.mseed import summarize_mseed
-from obsplus.utils.time import to_datetime64, _dict_times_to_ns
+from obsplus.utils.time import _dict_times_to_ns, to_datetime64
 
 # functions for summarizing the various formats
 summarizing_functions = dict(mseed=summarize_mseed)
@@ -41,7 +44,7 @@ STATION_EXT = ".xml"
 
 
 def _get_time_values(time1, time2=None):
-    """get the time values from a UTCDateTime object or two"""
+    """Get the time values from a UTCDateTime object or two"""
     tvals = "year month day hour minute second microsecond".split()
     utc1 = time1
     split = re.split("-|:|T|[.]", str(utc1).replace("Z", ""))
@@ -55,7 +58,7 @@ def _get_time_values(time1, time2=None):
     return out
 
 
-def summarize_generic_stream(path, format=None) -> List[dict]:
+def summarize_generic_stream(path, format=None) -> list[dict]:
     """
     Return summary information for a stream stored on disk.
 
@@ -97,10 +100,10 @@ def _summarize_wave_file(path, format, summarizer=None):
 
 def _summarize_trace(
     trace: obspy.Trace,
-    path: Optional[str] = None,
-    name: Optional[str] = None,
-    path_struct: Optional[str] = None,
-    name_struct: Optional[str] = None,
+    path: str | None = None,
+    name: str | None = None,
+    path_struct: str | None = None,
+    name_struct: str | None = None,
 ) -> dict:
     """
     Function to extract info from traces for indexing.
@@ -166,7 +169,7 @@ class _IndexCache:
         # self.next_index = itertools.cycle(self.cache.index)
 
     def __call__(self, starttime, endtime, buffer, **kwargs):
-        """get start and end times, perform in kernel lookup"""
+        """Get start and end times, perform in kernel lookup"""
         starttime, endtime = self._get_times(starttime, endtime)
         self._validate_kwargs(kwargs)
         # find out if the query falls within one cached times
@@ -212,7 +215,7 @@ class _IndexCache:
         if not kwarg_set.issubset(READ_HDF5_KWARGS):
             bad_kwargs = kwarg_set - set(READ_HDF5_KWARGS)
             msg = f"The following kwargs are not supported: {bad_kwargs}. "
-            raise UnsupportedKeyword(msg)
+            raise UnsupportedKeywordError(msg)
 
     def _set_cache(self, index, starttime, endtime, kwargs):
         """Cache the current index"""
@@ -227,13 +230,13 @@ class _IndexCache:
         self.cache.loc[self._get_next_index()] = ser
 
     def _kwargs_to_str(self, kwargs):
-        """convert kwargs to a string"""
+        """Convert kwargs to a string"""
         keys = sorted(list(kwargs.keys()))
         ou = str([(item, kwargs[item]) for item in keys])
         return ou
 
     def _get_index(self, where, fail_counts=0, **kwargs):
-        """read the hdf5 file"""
+        """Read the hdf5 file"""
         try:
             return pd.read_hdf(
                 self.bank.index_path, self.bank._index_node, where=where, **kwargs
@@ -248,7 +251,7 @@ class _IndexCache:
             return self._get_index(where, fail_counts=fail_counts + 1, **kwargs)
 
     def clear_cache(self):
-        """removes all cached dataframes."""
+        """Removes all cached dataframes."""
         self.cache = pd.DataFrame(
             index=range(self.max_size), columns="t1 t2 kwargs cindex".split()
         )
@@ -338,7 +341,7 @@ def _make_wheres(queries):
         return kwargs
 
     def _handle_nat(kwargs):
-        """add a mintime that will exclude NaT values if endtime is used"""
+        """Add a mintime that will exclude NaT values if endtime is used"""
         if "maxtime" in kwargs and "mintime" not in kwargs:
             kwargs["mintime"] = SMALLDT64.astype(np.int64) + 1
         return kwargs
@@ -360,7 +363,7 @@ def _make_wheres(queries):
         return kwargs, out
 
     def _build_query(kwargs):
-        """iterate each key/value and build query"""
+        """Iterate each key/value and build query"""
         out = []
         kwargs, out = _handle_dateline_transversal(kwargs, out)
         for key, val in kwargs.items():
@@ -386,7 +389,7 @@ def _make_wheres(queries):
 
 
 def _make_sql_command(cmd, table_name, columns=None, **kwargs) -> str:
-    """build a sql command"""
+    """Build a sql command"""
     # get columns
     if columns:
         col = [columns] if isinstance(columns, str) else columns
@@ -415,10 +418,6 @@ def _read_table(table_name, con, columns=None, **kwargs) -> pd.DataFrame:
     table_name
     con
     columns
-
-    Returns
-    -------
-
     """
     # first ensure all times are ns (as ints)
     sql = _make_sql_command("select", table_name, columns=columns, **kwargs)
@@ -448,7 +447,7 @@ def _try_read_stream(stream_path, format=None, **kwargs):
         try:
             stt = obspy.read(stream_path, **kwargs)
         except Exception:
-            warnings.warn("obspy failed to read %s" % stream_path, UserWarning)
+            warnings.warn(f"obspy failed to read {stream_path}", UserWarning)
         else:
             msg = f"{stream_path} was read but is not of format {format}"
             warnings.warn(msg, UserWarning)

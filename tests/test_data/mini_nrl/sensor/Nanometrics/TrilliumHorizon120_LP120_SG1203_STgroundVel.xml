@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.1">
+  <Source>IRIS-DMC</Source>
+  <Module>IRIS NRL service | version: 1</Module>
+  <ModuleURI>https://service.iris.edu/irisws/nrl/1/</ModuleURI>
+  <Created>2023-09-06T01:00:04.261337Z</Created>
+  <Network code="XX" startDate="1970-01-01T00:00:00Z">
+    <Station code="YY" startDate="1970-01-01T00:00:00Z">
+      <Comment>
+        <Value>This is a comment.</Value>
+      </Comment>
+      <Latitude>0.0</Latitude>
+      <Longitude>0.0</Longitude>
+      <Elevation>0.0</Elevation>
+      <Site>
+        <Name>Long site name</Name>
+      </Site>
+      <Channel code="ZZZ" locationCode="00" startDate="1970-01-01T00:00:00Z">
+        <Latitude>0.0</Latitude>
+        <Longitude>0.0</Longitude>
+        <Elevation>0.0</Elevation>
+        <Depth>0.0</Depth>
+        <Azimuth>0.0</Azimuth>
+        <Dip>0.0</Dip>
+        <Sensor>
+          <Description>The sensor name</Description>
+        </Sensor>
+        <Response>
+          <InstrumentSensitivity>
+            <Value>+1.20250E+03</Value>
+            <Frequency>1</Frequency>
+            <InputUnits>
+              <Name>m/s</Name>
+              <Description>Velocity in Meters Per Second</Description>
+            </InputUnits>
+            <OutputUnits>
+              <Name>V</Name>
+              <Description>Volts</Description>
+            </OutputUnits>
+          </InstrumentSensitivity>
+          <Stage number="1" resourceId="NRL:AnaPAZ_IUmPs_NZ6_NP11_PHeeeaf6e_AN8.31871ep17_FN1::NRL:Gain_SG1202.5_FN1">
+            <PolesZeros>
+              <InputUnits>
+                <Name>m/s</Name>
+                <Description>Velocity in Meters Per Second</Description>
+              </InputUnits>
+              <OutputUnits>
+                <Name>V</Name>
+                <Description>Volts</Description>
+              </OutputUnits>
+              <PzTransferFunctionType>LAPLACE (RADIANS/SECOND)</PzTransferFunctionType>
+              <NormalizationFactor>8.31871e+17</NormalizationFactor>
+              <NormalizationFrequency>1</NormalizationFrequency>
+              <Zero number="0">
+                <Real>0</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Zero number="1">
+                <Real>0</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Zero number="2">
+                <Real>-31.63</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Zero number="3">
+                <Real>-160</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Zero number="4">
+                <Real>-350</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Zero number="5">
+                <Real>-3177</Real>
+                <Imaginary>0</Imaginary>
+              </Zero>
+              <Pole number="0">
+                <Real>-0.036614</Real>
+                <Imaginary>-0.037059</Imaginary>
+              </Pole>
+              <Pole number="1">
+                <Real>-0.036614</Real>
+                <Imaginary>0.037059</Imaginary>
+              </Pole>
+              <Pole number="2">
+                <Real>-32.55</Real>
+                <Imaginary>0</Imaginary>
+              </Pole>
+              <Pole number="3">
+                <Real>-142</Real>
+                <Imaginary>0</Imaginary>
+              </Pole>
+              <Pole number="4">
+                <Real>-364</Real>
+                <Imaginary>-404</Imaginary>
+              </Pole>
+              <Pole number="5">
+                <Real>-364</Real>
+                <Imaginary>404</Imaginary>
+              </Pole>
+              <Pole number="6">
+                <Real>-1260</Real>
+                <Imaginary>0</Imaginary>
+              </Pole>
+              <Pole number="7">
+                <Real>-4900</Real>
+                <Imaginary>-5200</Imaginary>
+              </Pole>
+              <Pole number="8">
+                <Real>-4900</Real>
+                <Imaginary>5200</Imaginary>
+              </Pole>
+              <Pole number="9">
+                <Real>-7100</Real>
+                <Imaginary>-1700</Imaginary>
+              </Pole>
+              <Pole number="10">
+                <Real>-7100</Real>
+                <Imaginary>1700</Imaginary>
+              </Pole>
+            </PolesZeros>
+            <StageGain>
+              <Value>1202.5</Value>
+              <Frequency>1</Frequency>
+            </StageGain>
+          </Stage>
+        </Response>
+      </Channel>
+    </Station>
+  </Network>
+</FDSNStationXML>

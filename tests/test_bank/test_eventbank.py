@@ -1,27 +1,28 @@
 """
 tests for event wavebank
 """
+
 import os
 import shutil
 import time
 from contextlib import suppress
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
+import obsplus
+import obsplus.utils.misc
 import obspy
 import obspy.core.event as ev
 import pandas as pd
 import pytest
-from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
-
-import obsplus
-import obsplus.utils.misc
 from obsplus import EventBank, copy_dataset
 from obsplus.constants import EVENT_DTYPES
-from obsplus.exceptions import UnsupportedKeyword
+from obsplus.exceptions import UnsupportedKeywordError
 from obsplus.utils.events import get_preferred
-from obsplus.utils.testing import instrument_methods
-from obsplus.utils.misc import suppress_warnings, get_progressbar
+from obsplus.utils.misc import get_progressbar, suppress_warnings
+from obsplus.utils.testing import check_index_paths, instrument_methods
+from obspy.geodetics import gps2dist_azimuth, kilometer2degrees
 
 
 def try_permission_sleep(callable, *args, _count=0, **kwargs):
@@ -59,7 +60,7 @@ def ebank(tmpdir, cat_with_descs):
 
 @pytest.fixture
 def ebank_no_index(ebank):
-    """return an event bank with no index file."""
+    """Return an event bank with no index file."""
     with suppress((FileNotFoundError, PermissionError)):
         Path(ebank.index_path).unlink()
     return ebank
@@ -112,12 +113,12 @@ def dateline_eventbank(dateline_catalog, tmp_path):
 class TestBankBasics:
     """Tests for basics of the banks."""
 
-    expected_attrs = ["update_index", "read_index"]
+    expected_attrs: ClassVar = ["update_index", "read_index"]
     low_version_str: str = "0.0.-1"
 
     @pytest.fixture
     def ebank_low_version(self, tmpdir, monkeypatch):
-        """return the default bank with a negative version number."""
+        """Return the default bank with a negative version number."""
         # monkey patch obsplus version so that a low version is saved to disk
         monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         cat = obspy.read_events()
@@ -128,6 +129,24 @@ class TestBankBasics:
         monkeypatch.undo()
         assert ebank._index_version == self.low_version_str
         assert obsplus.__last_version__ != self.low_version_str
+        return ebank
+
+    @pytest.fixture
+    def cust_ebank_index_path(self, tmpdir_factory):
+        """Path for a custom index location"""
+        return tmpdir_factory.mktemp("custom_index") / ".index.db"
+
+    @pytest.fixture
+    def cust_index_ebank(self, tmpdir_factory, cust_ebank_index_path):
+        """
+        Create a copy of the bingham_test data set. Then return an inited event bank
+        using the temporary bingham_test bank
+        """
+        new = Path(str(tmpdir_factory.mktemp("bingham_test")))
+        copy_dataset("bingham_test", new)
+        path = new / "bingham_test" / "events"
+        ebank = EventBank(path, index_path=cust_ebank_index_path)
+        ebank.update_index()
         return ebank
 
     @pytest.fixture(scope="class")
@@ -164,7 +183,7 @@ class TestBankBasics:
         monkeypatch.undo()
 
     def test_has_attrs(self, bing_ebank):
-        """ensure all the required attrs exist"""
+        """Ensure all the required attrs exist"""
         for attr in self.expected_attrs:
             assert hasattr(bing_ebank, attr)
 
@@ -177,24 +196,42 @@ class TestBankBasics:
         assert isinstance(df, pd.DataFrame)
         assert len(bingham_catalog) == len(df)
 
+    def test_custom_index_path(
+        self, cust_index_ebank, cust_ebank_index_path, bingham_catalog
+    ):
+        """
+        Read index, ensure its length matches events and id sets are
+        equal.
+        """
+        index_path = cust_index_ebank.index_path
+        # Make sure the new path got passed correctly
+        assert index_path == cust_ebank_index_path
+        assert os.path.exists(index_path)
+        # Make sure paths got written to the index properly
+        check_index_paths(cust_index_ebank)
+        # As an extra check, verify the length of the index matches the data catalog
+        df = cust_index_ebank.read_index()
+        assert isinstance(df, pd.DataFrame)
+        assert len(bingham_catalog) == len(df)
+
     def test_read_timestamp(self, bing_ebank):
-        """read the current timestamp (after index has been updated)"""
+        """Read the current timestamp (after index has been updated)"""
         bing_ebank.update_index()
         ts = bing_ebank.last_updated_timestamp
         assert isinstance(ts, float)
         assert ts > 0
 
     def test_init_bank_with_bank(self, bing_ebank):
-        """ensure an EventBank can be init'ed with an event bank."""
+        """Ensure an EventBank can be init'ed with an event bank."""
         ebank2 = EventBank(bing_ebank)
         assert isinstance(ebank2, EventBank)
 
     def test_bank_issubclass(self):
-        """ensure events is not a subclass of EventBank."""
+        """Ensure events is not a subclass of EventBank."""
         assert not issubclass(obspy.Catalog, EventBank)
 
     def test_bad_files_skipped(self, ebank_with_bad_files):
-        """make sure the index is still returnable and of the expected size."""
+        """Make sure the index is still returnable and of the expected size."""
         cat = obspy.read_events()
         df = ebank_with_bad_files.read_index()
         assert len(cat) == len(df)
@@ -416,19 +453,19 @@ class TestReadIndexQueries:
     """tests for index querying"""
 
     def test_query_min_magnitude(self, bing_ebank):
-        """test min mag query"""
+        """Test min mag query"""
         min_mag = 1.1
         df = bing_ebank.read_index(minmagnitude=min_mag)
         assert (df["magnitude"] >= min_mag).all()
 
     def test_query_max_magnitude(self, bing_ebank):
-        """test min mag query"""
+        """Test min mag query"""
         max_mag = 1.1
         df = bing_ebank.read_index(maxmagnitude=max_mag)
         assert (df["magnitude"] <= max_mag).all()
 
     def test_query_magnitudes_with_nan(self, bing_ebank):
-        """test querying a column with NaNs (local_mag)"""
+        """Test querying a column with NaNs (local_mag)"""
         minmag, maxmag = 1.0, 1.5
         df = bing_ebank.read_index(minlocal_magnitude=minmag, maxlocal_magnitude=maxmag)
         con1 = df.local_magnitude > minmag
@@ -436,14 +473,14 @@ class TestReadIndexQueries:
         assert (con1 & con2).all()
 
     def test_query_event_id(self, bing_ebank, bingham_catalog):
-        """test query on an event id"""
+        """Test query on an event id"""
         eve_id = str(bingham_catalog[0].resource_id)
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
         assert eve_id in set(df["event_id"])
 
     def test_query_resource_id(self, bing_ebank, bingham_catalog):
-        """test query on a resource id"""
+        """Test query on a resource id"""
         eve_id = bingham_catalog[0].resource_id
         df = bing_ebank.read_index(event_id=eve_id)
         assert len(df) == 1
@@ -460,7 +497,7 @@ class TestReadIndexQueries:
         assert df["event_id"].isin(eve_ids).all()
 
     def test_bad_param_raises(self, bing_ebank):
-        """assert bad query param will raise"""
+        """Assert bad query param will raise"""
         with pytest.raises(ValueError):
             bing_ebank.read_index(minradius=20)
 
@@ -516,7 +553,7 @@ class TestReadIndexQueries:
 
     def test_unsupported_params_raise(self, ebank):
         """Ensure unsupported kwargs raise."""
-        with pytest.raises(UnsupportedKeyword, match="not_a_kwarg"):
+        with pytest.raises(UnsupportedKeywordError, match="not_a_kwarg"):
             ebank.read_index(not_a_kwarg=10)
 
     def test_query_around_earth(self, dateline_eventbank):
@@ -568,14 +605,14 @@ class TestGetEvents:
         return ebank
 
     def test_no_params(self, bing_ebank, bingham_catalog):
-        """ensure a basic query can get an event"""
+        """Ensure a basic query can get an event"""
         cat = bing_ebank.get_events()
         ev1 = sorted(cat.events, key=lambda x: str(x.resource_id))
         ev2 = sorted(bingham_catalog.events, key=lambda x: str(x.resource_id))
         assert ev1 == ev2
 
     def test_query(self, bing_ebank, bingham_catalog):
-        """test a query"""
+        """Test a query"""
         t2 = obspy.UTCDateTime("2013-04-10")
         t1 = obspy.UTCDateTime("2010-01-01")
         cat = bing_ebank.get_events(endtime=t2, starttime=t1)
@@ -600,7 +637,7 @@ class TestGetEvents:
         assert cat1 == cat2
 
     def test_issue_30(self, crandall_dataset):
-        """ensure eventid can accept a numpy array. see #30."""
+        """Ensure eventid can accept a numpy array. see #30."""
         ds = crandall_dataset
         ebank = obsplus.EventBank(ds.event_path)
         # get first two event_ids
@@ -634,7 +671,7 @@ class TestPutEvents:
     """tests for putting events into the bank"""
 
     def test_put_new_events(self, bing_ebank):
-        """ensure a new event can be put into the bank"""
+        """Ensure a new event can be put into the bank"""
         ori = ev.Origin(time=obspy.UTCDateTime("2016-01-01"))
         event = ev.Event(origins=[ori])
         event.origins[0].depth_errors = None  # see obspy 2173
@@ -644,7 +681,7 @@ class TestPutEvents:
         assert event_out[0] == event
 
     def test_update_event(self, bing_ebank, bingham_catalog):
-        """modify and event and ensure index is updated"""
+        """Modify and event and ensure index is updated"""
         index1 = bing_ebank.read_index()
         eve = bingham_catalog[0]
         rid = str(eve.resource_id)
@@ -653,6 +690,7 @@ class TestPutEvents:
         new_lat = old_lat + 0.15
         eve.origins[0].latitude = new_lat
         # check event back in
+        # breakpoint()
         bing_ebank.put_events(eve)
         # read index, ensure event_ids are unique and have correct values
         index2 = bing_ebank.read_index()
@@ -757,7 +795,7 @@ class TestProgressBar:
 
     @pytest.fixture
     def custom_bar(self):
-        """return a custom bar implementation."""
+        """Return a custom bar implementation."""
 
         class Bar:
             called = False
@@ -776,7 +814,7 @@ class TestProgressBar:
 
     @pytest.fixture()
     def bar_ebank(self, tmpdir, monkeypatch):
-        """return an event bank specifically for testing ProgressBar."""
+        """Return an event bank specifically for testing ProgressBar."""
         # set the interval and min files to 1 to ensure bar gets called
         cat = obspy.read_events()
         path = Path(tmpdir)

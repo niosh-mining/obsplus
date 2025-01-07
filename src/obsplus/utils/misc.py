@@ -1,38 +1,34 @@
 """
 Misc. ObsPlus utilities.
 """
+
+from __future__ import annotations
+
 import contextlib
 import fnmatch
 import hashlib
 import os
 import warnings
-from functools import wraps, partial, singledispatch
+from collections.abc import Callable, Collection, Generator, Iterable
+from functools import partial, singledispatch, wraps
 from os.path import join
 from pathlib import Path, PurePosixPath
+from tkinter.ttk import Progressbar
 from typing import (
-    Generator,
-    Tuple,
     Any,
-    Set,
-    Optional,
-    Callable,
-    Union,
     TypeVar,
-    Collection,
-    Dict,
-    Iterable,
 )
 
 import numpy as np
 import obspy
 import pandas as pd
 from obspy.core import event as ev
-from obspy.core.inventory import Station, Channel
+from obspy.core.inventory import Channel, Station
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
 
 import obsplus
-from obsplus.constants import NULL_SEED_CODES, NSLC
+from obsplus.constants import NSLC, NULL_SEED_CODES
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
@@ -57,10 +53,6 @@ def deprecated_callable(func=None, replacement_str=None):
     ----------
     func
     replacement_str
-
-    Returns
-    -------
-
     """
     fname = str(getattr(func, "__name__", func))
 
@@ -81,7 +73,7 @@ def deprecated_callable(func=None, replacement_str=None):
 
 def yield_obj_parent_attr(
     obj, cls=None, is_attr=None, has_attr=None, basic_types=False
-) -> Generator[Tuple[Any, Any, str], None, None]:
+) -> Generator[tuple[Any, Any, str], None, None]:
     """
     Recurse an object, yield a tuple of object, parent, attr.
 
@@ -129,7 +121,7 @@ def yield_obj_parent_attr(
     >>> # count how many times each resource_id is referred to
     >>> count = {i: len(v) for i, v in rid_mapping.items()}
     """
-    ids: Set[int] = set()  # id cache to avoid circular references
+    ids: set[int] = set()  # id cache to avoid circular references
 
     def func(obj, attr=None, parent=None):
         id_tuple = (id(obj), id(parent))
@@ -147,7 +139,7 @@ def yield_obj_parent_attr(
         # Check if basic type (dont
         is_basic = basic_types or not isinstance(obj, BASIC_NON_SEQUENCE_TYPE)
         # Iterate through basic built-in types.
-        if isinstance(obj, (list, tuple)):
+        if isinstance(obj, list | tuple):
             for val in obj:
                 yield from func(val, attr=attr, parent=parent)
         elif isinstance(obj, dict):
@@ -191,7 +183,7 @@ def try_read_catalog(catalog_path, **kwargs):
     return None
 
 
-def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
+def read_file(file_path, funcs=(pd.read_csv,)) -> Any | None:
     """
     For a given file_path, try reading it with each function in funcs.
 
@@ -209,10 +201,10 @@ def read_file(file_path, funcs=(pd.read_csv,)) -> Optional[Any]:
             return func(file_path)
         except Exception:
             pass
-    raise IOError(f"failed to read {file_path}")
+    raise OSError(f"failed to read {file_path}")
 
 
-def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
+def apply_to_files_or_skip(func: Callable, directory: str | Path):
     """
     Generator for applying func to all files in directory.
 
@@ -240,7 +232,7 @@ def apply_to_files_or_skip(func: Callable, directory: Union[str, Path]):
                 pass
 
 
-def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Optional:
+def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Progressbar | None:
     """
     Get a progress bar object using the ProgressBar2 library.
 
@@ -268,8 +260,8 @@ def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Optional:
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
-        ProgressBar = _get_progressbar()
-        bar = ProgressBar(max_value=max_value, *args, **kwargs)
+        progress_bar = _get_progressbar()
+        bar = progress_bar(max_value=max_value, *args, **kwargs)
         bar.start()
         bar.update = _new_update(bar)
         bar.update(1)
@@ -291,14 +283,14 @@ def iterate(obj):
     return obj if isinstance(obj, Iterable) else (obj,)
 
 
-class DummyFile(object):
+class DummyFile:
     """Dummy class to mock std out interface but go nowhere."""
 
     def write(self, x):
-        """do nothing"""
+        """Do nothing"""
 
     def flush(self):
-        """do nothing"""
+        """Do nothing"""
 
 
 def getattrs(obj: object, col_set: Collection, default_value: object = np.nan) -> dict:
@@ -389,9 +381,9 @@ def _replace_inv_nulls(inv, null_codes=NULL_SEED_CODES, replacement_value=""):
 
 
 def iter_files(
-    paths: Union[str, Iterable[str]],
-    ext: Optional[str] = None,
-    mtime: Optional[float] = None,
+    paths: str | Iterable[str],
+    ext: str | None = None,
+    mtime: float | None = None,
     skip_hidden: bool = True,
 ) -> Iterable[str]:
     """
@@ -431,7 +423,7 @@ def iter_files(
         yield paths
 
 
-def hash_file(path: Union[str, Path]):
+def hash_file(path: str | Path):
     """
     Calculate the sha256 hash of a file.
 
@@ -457,11 +449,11 @@ def hash_file(path: Union[str, Path]):
 
 
 def hash_directory(
-    path: Union[Path, str],
+    path: Path | str,
     match: str = "*",
-    exclude: Optional[Union[str, Collection[str]]] = None,
+    exclude: str | Collection[str] | None = None,
     hidden=False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Calculate the sha256 hash of all files in a directory.
 
@@ -502,7 +494,7 @@ def hash_directory(
 
 
 def _get_path(info, path, name, path_struct, name_strcut):
-    """return a dict with path, and file name"""
+    """Return a dict with path, and file name"""
     if path is None:  # if the path needs to be created
         ext = info.get("ext", "")
         # get name
@@ -533,7 +525,7 @@ def suppress_warnings(category=Warning):
     return None
 
 
-def register_func(list_or_dict: Union[list, dict], key: Optional[str] = None):
+def register_func(list_or_dict: list | dict, key: str | None = None):
     """
     Decorator for registering a function name in a list or dict.
 
@@ -570,9 +562,12 @@ def validate_version_str(version_str: str):
     if not (is_str and len(version_str.split(".")) == 3):
         msg = f"version must be a string of the form x.y.z, not {version_str}"
         raise ValueError(msg)
+    # this will split out the dev version tags to just get latest version
+    out = version_str.split("dev")[0].split("+")[0]
+    return out
 
 
-def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
+def get_version_tuple(version_str: str) -> tuple[int, int, int]:
     """
     Convert a semantic version string to a tuple.
 
@@ -582,12 +577,12 @@ def get_version_tuple(version_str: str) -> Tuple[int, int, int]:
         A version of the form "x.y.z". Google semantic versioning for more
         details.
     """
-    validate_version_str(version_str)
+    version_str = validate_version_str(version_str)
     split = version_str.split(".")
     return int(split[0]), int(split[1]), int(split[2])
 
 
-def strip_prefix(some_str: str, prefixes: Union[str, Collection[str]]) -> str:
+def strip_prefix(some_str: str, prefixes: str | Collection[str]) -> str:
     """Strip a prefix of a string."""
     out = some_str
     for prefix in obsplus.utils.iterate(prefixes):

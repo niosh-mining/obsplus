@@ -1,0 +1,30 @@
+# Lint the code using the defined pre-commits
+name: LintCode
+on: [push]
+
+jobs:
+  lint_code:
+    runs-on: ubuntu-latest
+
+    # only run if CI isn't turned off
+    if: github.event_name == 'push' || !contains(github.event.pull_request.labels.*.name, 'no_ci')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "get tags"
+        run: |
+          git fetch --tags --force # Retrieve annotated tags.
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: install linting packages
+        run: uv tool install pre-commit
+
+      - name: run all precommits
+        run: uv run pre-commit run --all

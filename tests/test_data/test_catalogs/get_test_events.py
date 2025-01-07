@@ -1,13 +1,14 @@
 """
 Simple script to use obspy to get catalogs for testing
 """
+
 import os
 
 import obspy
 
 
 def get_cat1(name="cat1.xml"):
-    """the default obspy cat_name"""
+    """The default obspy cat_name"""
     if os.path.exists(name):
         return
     cat = obspy.read_events()
@@ -15,7 +16,7 @@ def get_cat1(name="cat1.xml"):
 
 
 def get_cat2(name="cat2.xml"):
-    """a large iris cat_name"""
+    """A large iris cat_name"""
     if os.path.exists(name):
         return
     from obspy.clients.fdsn import Client
@@ -50,7 +51,7 @@ def get_cat3(name="cat3.xml"):
     cat.write(name, "quakeml")
 
 
-class MegaCatalog(object):
+class MegaCatalog:
     """
     A class to Create a events with a single event that has many features.
 
@@ -61,7 +62,7 @@ class MegaCatalog(object):
     def __init__(self):
         # handle imports in init to avoid circular imports
         import obspy.core.event as ev
-        from obspy import UTCDateTime, Catalog
+        from obspy import Catalog, UTCDateTime
 
         self.ev = ev
         self.UTCDateTime = UTCDateTime
@@ -327,7 +328,6 @@ class MegaCatalog(object):
 
 def get_cat4(name="cat4.xml"):
     """A manually created single-event cat_name with many features"""
-
     cat = MegaCatalog().catalog
     cat.write(name, "quakeml")
 

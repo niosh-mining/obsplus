@@ -1,6 +1,7 @@
 """
 The test TA dataset.
 """
+
 import obspy
 
 from obsplus import WaveBank
@@ -22,10 +23,10 @@ class TA(DataSet):
     starttime = obspy.UTCDateTime("2007-02-15")
     endtime = obspy.UTCDateTime("2007-02-25")
 
-    bulk = [
+    bulk = (
         ("TA", "M11A", "*", "VH*", starttime, endtime),
         ("TA", "M14A", "*", "VH*", starttime, endtime),
-    ]
+    )
 
     def download_stations(self):
         """Download TA stations."""

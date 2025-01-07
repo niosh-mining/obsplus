@@ -30,14 +30,10 @@ authors = [
 description = "An ObsPy exapanson pack"
 readme = "README.rst"
 license = { file="LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -46,11 +42,12 @@ keywords = ["geophysics", "Seismology"]
 # --- Dependencies
 
 dependencies = [
-    "numpy>=1.13.0",
-    "obspy >= 1.3.0",
+    # TODO: Unpin numpy<2 when an obspy release which supports numpy 2 comes out.
+    "numpy>1.24.4, <2.0",
+    "obspy >= 1.4.0",
     "pandas >= 1.0",
     "progressbar2",
-    "pydantic >= 1.8.2",
+    "pydantic >= 2.0, <3.0",
     "scipy",
     "tables",
     "typing-extensions",
@@ -94,3 +91,84 @@ bingham_test = "obsplus.datasets.bingham_test"
 crandall_test = "obsplus.datasets.crandall_test"
 ta_test = "obsplus.datasets.ta_test"
 default_test = "obsplus.datasets.default_test"
+
+
+# --- Pytest config
+[tool.pytest.ini_options]
+
+markers = [
+    "requires_network: tests that require network access",
+    "dataset: tests that require a dataset to run"
+]
+
+filterwarnings = [
+    # Ignore hdf5 warnings from pytables, See pytables #1035
+    'ignore::Warning:tables:'
+]
+
+# --- Ruff configuration
+
+[tool.ruff]
+
+line-length = 88
+
+# enable certain types of linting
+lint.select = [
+    "E",
+    "F",
+    "UP",
+    "RUF",
+    "I001",
+    "D",
+    "FA",
+    "T",
+    "N",
+    "NPY",
+    "NPY201",
+]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "__init__.py"
+]
+
+# lowest python version supported
+target-version = "py310"
+
+lint.fixable = ["ALL"]
+
+# List of codes to ignore
+lint.ignore = ["D105", "D107", "D401", "D205", "D200", "D400"]
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+# config for docstring parsing
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+# Use `\n` line endings for all files
+line-ending = "lf"

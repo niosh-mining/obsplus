@@ -1,0 +1,20 @@
+[Main]
+question = "What is the full scale voltage?"
+
+[4Vpp]
+path = "Centaur_FV4Vpp.txt"
+
+[40Vpp]
+path = "Centaur_FV40Vpp.txt"
+
+[2Vpp]
+path = "Centaur_FV2Vpp.txt"
+
+[20Vpp]
+path = "Centaur_FV20Vpp.txt"
+
+[1Vpp]
+path = "Centaur_FV1Vpp.txt"
+
+[10Vpp]
+path = "Centaur_FV10Vpp.txt"

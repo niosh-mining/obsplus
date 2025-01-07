@@ -1,17 +1,17 @@
 """
 Tests for geodetic utils.
 """
+
 import itertools
 
 import numpy as np
+import obsplus
 import obspy
 import pandas as pd
 import pytest
-
-import obsplus
 from obsplus.constants import DISTANCE_COLUMN_DTYPES
-from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.exceptions import DataFrameContentError
+from obsplus.utils.geodetics import SpatialCalculator, map_longitudes
 from obsplus.utils.misc import suppress_warnings
 
 
@@ -22,12 +22,12 @@ class TestCalculateDistance:
 
     @pytest.fixture(scope="class")
     def spatial_calc(self):
-        """return the default instance of the spatial calculator."""
+        """Return the default instance of the spatial calculator."""
         return SpatialCalculator()
 
     @pytest.fixture(scope="class")
     def cat(self):
-        """return the first 3 events from the crandall_test dataset."""
+        """Return the first 3 events from the crandall_test dataset."""
         return obspy.read_events()
 
     @pytest.fixture(scope="class")
@@ -42,7 +42,7 @@ class TestCalculateDistance:
             return spatial_calc(entity_1=cat, entity_2=inv)
 
     def test_type(self, distance_df):
-        """ensure a dataframe was returned."""
+        """Ensure a dataframe was returned."""
         assert isinstance(distance_df, pd.DataFrame)
         assert set(distance_df.columns) == set(DISTANCE_COLUMN_DTYPES)
 
@@ -59,7 +59,7 @@ class TestCalculateDistance:
         assert seed_id_df == seed_id_stations
 
     def test_cat_cat(self, cat, spatial_calc):
-        """ensure it works with two catalogs"""
+        """Ensure it works with two catalogs"""
         with suppress_warnings():
             df = spatial_calc(cat, cat)
         event_ids = {str(x.resource_id) for x in cat}

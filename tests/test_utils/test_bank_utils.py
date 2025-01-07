@@ -1,28 +1,29 @@
 """
 Tests for the bank-specific utilities
 """
+
 import os
 import tempfile
+from typing import ClassVar
 
 import numpy as np
 import obspy
-import pytest
 import pandas as pd
-from obspy import UTCDateTime as UTC
-
+import pytest
+from obsplus.constants import NSLC
 from obsplus.utils.bank import (
     _summarize_trace,
     _try_read_stream,
     summarize_generic_stream,
 )
-from obsplus.utils.mseed import summarize_mseed
 from obsplus.utils.events import _summarize_event
-from obsplus.constants import NSLC
+from obsplus.utils.mseed import summarize_mseed
+from obspy import UTCDateTime
 
 
 @pytest.fixture(scope="module")
 def text_file():
-    """save some text to file (note a waveforms) return path"""
+    """Save some text to file (note a waveforms) return path"""
     with tempfile.NamedTemporaryFile("w") as tf:
         tf.write("some text, not a waveforms")
         tf.flush()
@@ -33,7 +34,7 @@ def text_file():
 class TestStreamPathStructure:
     """tests for using the PathStructure for Streams"""
 
-    structs = [
+    structs: ClassVar = [
         "{year}/{month}/{day}",
         "{network}/{station}/{year}/{month}/{day}",
         "{year}/{julday}/{station}",
@@ -45,12 +46,12 @@ class TestStreamPathStructure:
     # fixtures
     @pytest.fixture(scope="class", params=structs)
     def struct_string(self, request):
-        """return the structure strings associated with class"""
+        """Return the structure strings associated with class"""
         return request.param
 
     @pytest.fixture(scope="class")
     def output(self, struct_string, waveform_cache_trace):
-        """init a bank_structure class from the structure strings"""
+        """Init a bank_structure class from the structure strings"""
         return _summarize_trace(waveform_cache_trace, path_struct=struct_string)
 
     # general tests
@@ -61,7 +62,7 @@ class TestStreamPathStructure:
 
     # specific tests
     def test_trace_path(self):
-        """test the basics of trace conversions"""
+        """Test the basics of trace conversions"""
         struc = "waveforms/{year}/{month}/{day}/{network}/{station}/{channel}"
         tr = obspy.read()[0]
         expected = "waveforms/2009/08/24/BW/RJOB/EHZ/2009-08-24T00-20-03.mseed"
@@ -87,7 +88,7 @@ class TestReadStream:
     # fixtures
     @pytest.fixture()
     def stream_file(self):
-        """save the default waveforms to disk return path"""
+        """Save the default waveforms to disk return path"""
         name = "deleteme.mseed"
         st = obspy.read()
         st.write(name, "mseed")
@@ -95,7 +96,7 @@ class TestReadStream:
         os.remove(name)
 
     def test_bad_returns_none(self, text_file):
-        """make sure bad file returns None"""
+        """Make sure bad file returns None"""
         with pytest.warns(UserWarning) as warn:
             out = _try_read_stream(text_file)
         assert len(warn)
@@ -104,7 +105,7 @@ class TestReadStream:
         assert out is None
 
     def test_try_read_stream(self, stream_file):
-        """make sure the waveforms file can be read in"""
+        """Make sure the waveforms file can be read in"""
         st = _try_read_stream(stream_file)
         assert isinstance(st, obspy.Stream)
 
@@ -112,10 +113,10 @@ class TestReadStream:
 class TestSummarizeStreams:
     """tests for summarizing streams."""
 
-    start = UTC("2017-09-20T01-00-00")
-    end = UTC("2017-09-20T02-00-00")
-    gap_start = UTC("2017-09-20T01-25-35")
-    gap_end = UTC("2017-09-20T01-25-40")
+    start = UTCDateTime("2017-09-20T01-00-00")
+    end = UTCDateTime("2017-09-20T02-00-00")
+    gap_start = UTCDateTime("2017-09-20T01-25-35")
+    gap_end = UTCDateTime("2017-09-20T01-25-40")
 
     def clean_dataframe(self, df):
         """Function to fix some common issues with the dataframe."""
@@ -138,14 +139,15 @@ class TestSummarizeStreams:
             sampling_rate=1,
             starttime=self.start,
         )
+        rng = np.random.default_rng(30)
         len1 = int(self.gap_start - self.start)
         # create first trace
-        ar1 = np.random.rand(len1)
+        ar1 = rng.random(len1)
         tr1 = obspy.Trace(data=ar1, header=stats)
         assert tr1.stats.endtime <= self.gap_start
         # create second trace
         len2 = int(self.end - self.gap_end)
-        ar2 = np.random.rand(len2)
+        ar2 = rng.random(len2)
         stats2 = dict(stats)
         stats2.update({"starttime": self.gap_end})
         tr2 = obspy.Trace(data=ar2, header=stats2)

@@ -1,11 +1,11 @@
 """
 Script to re-make the html docs and publish to gh-pages.
 """
+
 from pathlib import Path
 from subprocess import run
 
 import typer
-
 from clean_docs import clean_docs
 
 # Path to top-level sphinx
@@ -28,6 +28,7 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
     Path to created html directory.
 
     """
+    doc_path = Path(doc_path)
     # clean out all the old docs
     clean_docs()
     # execute all the notebooks
@@ -43,7 +44,7 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
         if result.returncode != 0:
             raise RuntimeError(f"failed to run {note_book_path}")
     # run auto api-doc
-    run("sphinx-apidoc ../obsplus -e -M -o api", cwd=doc_path, shell=True)
+    run("sphinx-apidoc ../src/obsplus -e -M -o api", cwd=doc_path, shell=True)
     run("make html", cwd=doc_path, shell=True, check=True)
     # ensure html directory was created, return path to it.
     expected_path: Path = doc_path / "_build" / "html"

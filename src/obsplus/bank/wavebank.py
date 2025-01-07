@@ -1,6 +1,9 @@
 """
 A local database for waveform formats.
 """
+
+from __future__ import annotations
+
 import os
 import time
 from collections import defaultdict
@@ -9,48 +12,53 @@ from contextlib import suppress
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, ClassVar
 
 import numpy as np
 import obspy
 import pandas as pd
 import tables
-from obspy import UTCDateTime, Stream
+from obspy import Stream, UTCDateTime
 
 from obsplus.bank.core import _Bank
 from obsplus.constants import (
+    EMPTYTD64,
     NSLC,
-    availability_type,
-    WAVEFORM_STRUCTURE,
-    WAVEFORM_NAME_STRUCTURE,
-    utc_time_type,
-    get_waveforms_parameters,
-    bar_parameter_description,
     WAVEFORM_DTYPES,
     WAVEFORM_DTYPES_INPUT,
-    EMPTYTD64,
+    WAVEFORM_NAME_STRUCTURE,
+    WAVEFORM_STRUCTURE,
+    availability_type,
     bank_subpaths_type,
-    paths_description,
+    bar_parameter_description,
     bulk_waveform_arg_type,
+    get_waveforms_parameters,
+    paths_description,
     utc_able_type,
+    utc_time_type,
 )
 from obsplus.utils.bank import (
-    _summarize_trace,
     _IndexCache,
+    _remove_base_path,
+    _summarize_trace,
     _summarize_wave_file,
     _try_read_stream,
     summarizing_functions,
-    _remove_base_path,
 )
 from obsplus.utils.docs import compose_docstring
 from obsplus.utils.misc import replace_null_nlsc_codes
-from obsplus.utils.pd import get_seed_id_series, cast_dtypes, convert_bytestrings
-from obsplus.utils.pd import order_columns, filter_index
-from obsplus.utils.time import to_datetime64, make_time_chunks, to_utc, to_timedelta64
+from obsplus.utils.pd import (
+    cast_dtypes,
+    convert_bytestrings,
+    filter_index,
+    get_seed_id_series,
+    order_columns,
+)
+from obsplus.utils.time import make_time_chunks, to_datetime64, to_timedelta64, to_utc
 from obsplus.utils.waveforms import (
-    merge_traces,
-    get_waveform_bulk_df,
     _filter_index_to_bulk,
+    get_waveform_bulk_df,
+    merge_traces,
 )
 
 # No idea why but this needs to be here to avoid problems with pandas
@@ -90,6 +98,9 @@ class WaveBank(_Bank):
         variables but requires a period as the separation character. The
         default extension (.mseed) will be added. The default is {time}
         example : {seedid}.{time}
+    index_path : str
+        The path to the index file containing the contents of the directory.
+        By default it will be created in the top-level of the data directory.
     cache_size : int
         The number of queries to store. Avoids having to read the index of
         the bank multiple times for queries involving the same start and end
@@ -157,13 +168,19 @@ class WaveBank(_Bank):
     index_ints = ("starttime", "endtime", "sampling_period")
     index_columns = tuple(list(index_str) + list(index_ints) + ["path"])
     columns_no_path = index_columns[:-1]
-    _gap_columns = tuple(list(columns_no_path) + ["gap_duration"])
-    _segment_columns = tuple(list(index_str) + ["starttime", "endtime", "duration"])
+    _gap_columns = tuple([*list(columns_no_path), "gap_duration"])
+    _segment_columns = tuple([*index_str, "starttime", "endtime", "duration"])
     namespace = "/waveforms"
     buffer = np.timedelta64(1_000_000_000, "ns")
     # dict defining lengths of str columns (after seed spec)
     # Note: Empty strings get their dtypes caste as S8, which means 8 is the min
-    min_itemsize = {"path": 79, "station": 8, "network": 8, "location": 8, "channel": 8}
+    min_itemsize: ClassVar = {
+        "path": 79,
+        "station": 8,
+        "network": 8,
+        "location": 8,
+        "channel": 8,
+    }
     _min_files_for_bar = 5000  # number of files before progress bar kicks in
     _dtypes_input = WAVEFORM_DTYPES_INPUT
     _dtypes_output = WAVEFORM_DTYPES
@@ -172,13 +189,14 @@ class WaveBank(_Bank):
 
     def __init__(
         self,
-        base_path: Union[str, Path, "WaveBank"] = ".",
-        path_structure: Optional[str] = None,
-        name_structure: Optional[str] = None,
+        base_path: str | Path | WaveBank = ".",
+        path_structure: str | None = None,
+        name_structure: str | None = None,
+        index_path: str | Path | None = None,
         cache_size: int = 5,
         format="mseed",
         ext=None,
-        executor: Optional[Executor] = None,
+        executor: Executor | None = None,
     ):
         if isinstance(base_path, WaveBank):
             self.__dict__.update(base_path.__dict__)
@@ -191,6 +209,7 @@ class WaveBank(_Bank):
             path_structure if path_structure is not None else WAVEFORM_STRUCTURE
         )
         self.name_structure = name_structure or WAVEFORM_NAME_STRUCTURE
+        self._index_path = index_path
         self.executor = executor
         # initialize cache
         self._index_cache = _IndexCache(self, cache_size=cache_size)
@@ -201,7 +220,7 @@ class WaveBank(_Bank):
     # ----------------------- index related stuff
 
     @property
-    def last_updated_timestamp(self) -> Optional[float]:
+    def last_updated_timestamp(self) -> float | None:
         """
         Return the last modified time stored in the index, else None.
         """
@@ -209,7 +228,7 @@ class WaveBank(_Bank):
         node = self._time_node
         try:
             out = pd.read_hdf(self.index_path, node)[0]
-        except (IOError, IndexError, ValueError, KeyError, AttributeError):
+        except (OSError, IndexError, ValueError, KeyError, AttributeError):
             out = None
         return out
 
@@ -227,8 +246,8 @@ class WaveBank(_Bank):
         bar_description=bar_parameter_description, paths_description=paths_description
     )
     def update_index(
-        self, bar: Optional = None, paths: Optional[bank_subpaths_type] = None
-    ) -> "WaveBank":
+        self, bar: Any | None = None, paths: bank_subpaths_type | None = None
+    ) -> WaveBank:
         """
         Iterate files in bank and add any modified since last update to index.
 
@@ -258,7 +277,7 @@ class WaveBank(_Bank):
         return self
 
     def _write_update(self, update_df, update_time):
-        """convert updates to dataframe, then append to index table"""
+        """Convert updates to dataframe, then append to index table"""
         # read in dataframe and prepare for input into hdf5 index
         df = self._prep_write_df(update_df)
         with pd.HDFStore(self.index_path) as store:
@@ -311,12 +330,12 @@ class WaveBank(_Bank):
     @compose_docstring(waveform_params=get_waveforms_parameters)
     def read_index(
         self,
-        network: Optional[str] = None,
-        station: Optional[str] = None,
-        location: Optional[str] = None,
-        channel: Optional[str] = None,
-        starttime: Optional[utc_time_type] = None,
-        endtime: Optional[utc_time_type] = None,
+        network: str | None = None,
+        station: str | None = None,
+        location: str | None = None,
+        channel: str | None = None,
+        starttime: utc_time_type | None = None,
+        endtime: utc_time_type | None = None,
         **kwargs,
     ) -> pd.DataFrame:
         """
@@ -378,10 +397,10 @@ class WaveBank(_Bank):
 
     def availability(
         self,
-        network: str = None,
-        station: str = None,
-        location: str = None,
-        channel: str = None,
+        network: str | None = None,
+        station: str | None = None,
+        location: str | None = None,
+        channel: str | None = None,
     ) -> availability_type:
         """
         Get availability for a given group of instruments.
@@ -408,7 +427,7 @@ class WaveBank(_Bank):
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_gaps_df(
-        self, *args, min_gap: Optional[Union[float, np.timedelta64]] = None, **kwargs
+        self, *args, min_gap: float | np.timedelta64 | None = None, **kwargs
     ) -> pd.DataFrame:
         """
         Return a dataframe containing an entry for every gap in the archive.
@@ -452,8 +471,12 @@ class WaveBank(_Bank):
 
         # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
-        group_names = list(NSLC) + ["sampling_period"]  # include period
-        group = index.groupby(group_names, as_index=False, group_keys=False)
+        group_names = [*NSLC, "sampling_period"]  # include period
+        group = index.groupby(
+            group_names,
+            as_index=False,
+            group_keys=False,
+        )
         out = group.apply(_get_gap_dfs, min_gap=min_gap)
         if out.empty:  # if not gaps return empty dataframe with needed cols
             return pd.DataFrame(columns=self._gap_columns)
@@ -475,7 +498,6 @@ class WaveBank(_Bank):
             The minimum gap to report in seconds or as a timedelta64.
             If None, use 1.5 x sampling rate for each channel.
         """
-
         avail = self.get_availability_df(*args, **kwargs)
         gaps_df = self.get_gaps_df(*args, **kwargs)
 
@@ -542,7 +564,7 @@ class WaveBank(_Bank):
             return uptime
 
         min_gap = kwargs.pop("min_gap", None)
-        
+
         avail = self.get_availability_df(*args, **kwargs)
         gaps_df = self.get_gaps_df(*args, min_gap=min_gap, **kwargs)
         gps = gaps_df.groupby(list(NSLC))
@@ -557,7 +579,7 @@ class WaveBank(_Bank):
     def get_waveforms_bulk(
         self,
         bulk: bulk_waveform_arg_type,
-        index: Optional[pd.DataFrame] = None,
+        index: pd.DataFrame | None = None,
         **kwargs,
     ) -> Stream:
         """
@@ -592,12 +614,12 @@ class WaveBank(_Bank):
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_waveforms(
         self,
-        network: Optional[str] = None,
-        station: Optional[str] = None,
-        location: Optional[str] = None,
-        channel: Optional[str] = None,
-        starttime: Optional[utc_able_type] = None,
-        endtime: Optional[utc_able_type] = None,
+        network: str | None = None,
+        station: str | None = None,
+        location: str | None = None,
+        channel: str | None = None,
+        starttime: utc_able_type | None = None,
+        endtime: utc_able_type | None = None,
     ) -> Stream:
         """
         Get waveforms from the bank.
@@ -625,14 +647,14 @@ class WaveBank(_Bank):
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def yield_waveforms(
         self,
-        network: Optional[str] = None,
-        station: Optional[str] = None,
-        location: Optional[str] = None,
-        channel: Optional[str] = None,
-        starttime: Optional[utc_able_type] = None,
-        endtime: Optional[utc_able_type] = None,
+        network: str | None = None,
+        station: str | None = None,
+        location: str | None = None,
+        channel: str | None = None,
+        starttime: utc_able_type | None = None,
+        endtime: utc_able_type | None = None,
         duration: float = 3600.0,
-        overlap: Optional[float] = None,
+        overlap: float | None = None,
     ) -> Stream:
         """
         Yield time-series segments.
@@ -682,7 +704,7 @@ class WaveBank(_Bank):
     # ----------------------- deposit waveforms methods
 
     def put_waveforms(
-        self, stream: Union[obspy.Stream, obspy.Trace], name=None, update_index=True
+        self, stream: obspy.Stream | obspy.Trace, name=None, update_index=True
     ):
         """
         Add the waveforms in a waveforms to the bank.
@@ -732,7 +754,7 @@ class WaveBank(_Bank):
     # ------------------------ misc methods
 
     def _index2stream(self, index, starttime=None, endtime=None, merge=True) -> Stream:
-        """return the waveforms in the index"""
+        """Return the waveforms in the index"""
         # get abs path to each datafame
         files: pd.Series = (str(self.bank_path) + os.sep + index.path).unique()
         # make sure start and endtimes are in UTCDateTime

@@ -1,22 +1,25 @@
 """
 Functions for validating events according to the obsplus flavor.
 """
-from typing import Union, Optional, Collection
+
+from __future__ import annotations
+
+from collections.abc import Collection
 
 import pandas as pd
-from obspy.core.event import Catalog, Event, ResourceIdentifier, QuantityError
+from obspy.core.event import Catalog, Event, QuantityError, ResourceIdentifier
 
 import obsplus
-from obsplus.constants import ORIGIN_FLOATS, QUANTITY_ERRORS, NSLC
+from obsplus.constants import NSLC, ORIGIN_FLOATS, QUANTITY_ERRORS
 from obsplus.utils import get_seed_id_series
-from obsplus.utils.misc import yield_obj_parent_attr, iterate, replace_null_nlsc_codes
-from obsplus.utils.validate import validator, validate
+from obsplus.utils.misc import iterate, replace_null_nlsc_codes, yield_obj_parent_attr
+from obsplus.utils.validate import validate, validator
 
 CATALOG_VALIDATORS = []
 
 
 def _none_or_type(obj, type_check):
-    """return if obj is None or of type type_check"""
+    """Return if obj is None or of type type_check"""
     if obj is None:
         return True
     else:
@@ -40,7 +43,7 @@ def set_preferred_values(event: Event):
 
 @validator("obsplus", Event)
 def attach_all_resource_ids(event: Event):
-    """recurse all objects in a events and set referred objects"""
+    """Recurse all objects in a events and set referred objects"""
     rid_to_object = {}
     # first pass, bind all resource ids to parent
     for rid, parent, attr in yield_obj_parent_attr(event, ResourceIdentifier):
@@ -78,7 +81,7 @@ def check_arrivals_pick_id(event: Event):
 
 @validator("obsplus", Event)
 def check_origins(event: Event):
-    """check the origins and types"""
+    """Check the origins and types"""
     for ori in event.origins:
         for atr in ORIGIN_FLOATS:
             assert _none_or_type(getattr(ori, atr), float)
@@ -198,15 +201,13 @@ def check_amp_lims(event: Event, amp_lim=None):
                 bad.append(nslc)
         assert len(bad) == 0, (
             "Above limit amplitude found:\n"
-            f"event_id: {str(event.resource_id)}, "
+            f"event_id: {event.resource_id!s}, "
             f"seed_id/s: {bad}"
         )
 
 
 @validator("obsplus", Event)
-def check_amp_filter_ids(
-    event: Event, filter_ids: Optional[Union[str, Collection[str]]] = None
-):
+def check_amp_filter_ids(event: Event, filter_ids: str | Collection[str] | None = None):
     """
     Check that all amplitudes have codes in filter_ids.
     """
@@ -228,7 +229,7 @@ def check_amp_filter_ids(
                 bad_filters.append(amp.filter_id.id)
     assert len(bad) == 0, (
         "Unexpected amplitude filter found:\n"
-        f"event_id: {str(event.resource_id)}, "
+        f"event_id: {event.resource_id!s}, "
         f"seed_id/s: {bad}, "
         f"filters_used: {set(bad_filters)}"
     )
@@ -250,7 +251,7 @@ def check_amps_on_z_component(
     _df = df.loc[con1 & con2 & con3]
     assert len(df) == 0, (
         "Amplitude pick on Z axis found:\n"
-        f"event_id: {str(event.resource_id)}, "
+        f"event_id: {event.resource_id!s}, "
         f"seed_id/s: {_df['seed_id'].tolist()}"
     )
 
@@ -280,7 +281,7 @@ def check_amp_times_contain_pick_time(event: Event):
     )
 
 
-def validate_catalog(events: Union[Catalog, Event], **kwargs) -> Union[Catalog, Event]:
+def validate_catalog(events: Catalog | Event, **kwargs) -> Catalog | Event:
     """
     Perform checks on a events or event object.
 

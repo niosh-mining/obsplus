@@ -2,22 +2,22 @@
 Tests for converting objects into times.
 """
 
-from typing import Sequence
+from collections.abc import Sequence
+from typing import ClassVar
 
 import numpy as np
 import obspy
 import pandas as pd
 import pytest
-from obspy import UTCDateTime, Catalog
-from obspy.core import event as ev
-from obspy.core.event import Origin, Event
-
 from obsplus import get_reference_time
-from obsplus.utils.time import to_datetime64, to_utc, to_timedelta64
+from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
+from obspy import Catalog, UTCDateTime
+from obspy.core import event as ev
+from obspy.core.event import Event, Origin
 
 
 def append_func_name(list_obj):
-    """decorator to append a function name to list_obj"""
+    """Decorator to append a function name to list_obj"""
 
     def wrap(func):
         list_obj.append(func.__name__)
@@ -39,7 +39,7 @@ class TestToNumpyDateTime:
 
     def test_with_nulls(self):
         """Test for handling nulls."""
-        test_input = (np.NaN, None, "", 15)
+        test_input = (np.nan, None, "", 15)
         out = np.array(to_datetime64(test_input))
         # first make sure empty values worked
         assert pd.isnull(out[:3]).all()
@@ -52,7 +52,7 @@ class TestToNumpyDateTime:
         assert dt1.astype(np.int64) == dt2.astype(np.int64) == 0
 
     def test_npdatetime64_as_input(self):
-        """This should also work on np.datetime64."""
+        """Ensure this also works on np.datetime64."""
         test_input = np.array((np.datetime64(1000, "s"), np.datetime64(100, "ns")))
         out = to_datetime64(test_input)
         assert isinstance(out, np.ndarray)
@@ -107,7 +107,7 @@ class TestToNumpyDateTime:
         assert out1 is not None
 
     def test_tuple_and_list(self):
-        """tests for tuples and lists."""
+        """Tests for tuples and lists."""
         input1 = ["2020-01-03", obspy.UTCDateTime("2020-01-01").timestamp]
         out1 = to_datetime64(input1)
         out2 = to_datetime64(tuple(input1))
@@ -118,7 +118,7 @@ class TestTimeDelta:
     """Tests for converting things to timedeltas."""
 
     def test_whole_number(self):
-        """test converting a number to a timedelta."""
+        """Test converting a number to a timedelta."""
         vals = [1, 2, 1000, 23, -122]
         out = [to_timedelta64(x) for x in vals]
         assert all(isinstance(x, np.timedelta64) for x in out)
@@ -133,7 +133,7 @@ class TestTimeDelta:
         """Ensure an entire series can be converted to timedeltas."""
         ser = pd.Series([0, 2.22, 3, 5])
         out = to_timedelta64(ser)
-        assert all([isinstance(x, (np.timedelta64, pd.Timedelta)) for x in out])
+        assert all([isinstance(x, np.timedelta64 | pd.Timedelta) for x in out])
         assert isinstance(out, pd.Series)
 
     def test_array(self):
@@ -161,11 +161,13 @@ class TestTimeDelta:
         deltas = np.timedelta64(10_000_100, "us") * np.arange(10)
         ser = pd.Series(deltas)
         out = to_timedelta64(ser)
-        assert ser.equals(out)
+        # however, after apply to_timedelta64 the precision should always be ns
+        assert np.dtype("timedelta64[ns]") == out.dtype
+        assert ser.astype("timedelta64[ns]").equals(out)
         assert out is not ser
 
     def test_tuple_and_list(self):
-        """tests for tuples and lists."""
+        """Tests for tuples and lists."""
         input1 = [2, -3, 4.5]
         out1 = to_timedelta64(input1)
         out2 = to_timedelta64(tuple(input1))
@@ -183,10 +185,10 @@ class TestToUTC:
 
     # setup for test values
     utc1 = obspy.UTCDateTime("2019-01-10T12-12")
-    utc_list = [utc1, utc1 + 2, utc1 + 3]
+    utc_list: ClassVar = [utc1, utc1 + 2, utc1 + 3]
     dt64 = np.datetime64(1000, "ns")
-    utc_able_list = [1, "2019-02-01", dt64]
-    utc_values = [
+    utc_able_list: ClassVar = [1, "2019-02-01", dt64]
+    utc_values: ClassVar = [
         0,
         1_000_000,
         "2015-12-01",
@@ -203,14 +205,14 @@ class TestToUTC:
     def test_single_value(self, value):
         """Test either a sequence or UTCDateTime"""
         out = to_utc(value)
-        assert isinstance(out, (Sequence, UTCDateTime, np.ndarray))
+        assert isinstance(out, Sequence | UTCDateTime | np.ndarray)
 
 
 class TestGetReferenceTime:
     """tests for getting reference times from various objects"""
 
     time = obspy.UTCDateTime("2009-04-01")
-    fixtures = []
+    fixtures: ClassVar = []
 
     # fixtures
     @pytest.fixture(scope="class")
@@ -252,7 +254,7 @@ class TestGetReferenceTime:
 
     @pytest.fixture(scope="class", params=fixtures)
     def time_outputs(self, request):
-        """meta fixtures to gather up all the input types"""
+        """Meta fixtures to gather up all the input types"""
         fixture_value = request.getfixturevalue(request.param)
         return get_reference_time(fixture_value)
 
@@ -261,21 +263,21 @@ class TestGetReferenceTime:
         """Simply gather aggregated fixtures so they are marked as used."""
 
     def test_is_utc_date(self, time_outputs):
-        """ensure the output is a UTCDateTime"""
+        """Ensure the output is a UTCDateTime"""
         assert isinstance(time_outputs, obspy.UTCDateTime)
 
     def test_time_equals(self, time_outputs):
-        """ensure the outputs are equal to time on self"""
+        """Ensure the outputs are equal to time on self"""
         assert time_outputs == self.time
 
     def test_empty_event_raises(self):
-        """ensure an empty event will raise"""
+        """Ensure an empty event will raise"""
         event = ev.Event()
         with pytest.raises(ValueError):
             get_reference_time(event)
 
     def test_event_with_picks(self, event_only_picks):
-        """test that an event with picks, no origin, uses smallest pick"""
+        """Test that an event with picks, no origin, uses smallest pick"""
         t_expected = UTCDateTime("2015-01-01")
         t_out = get_reference_time(event_only_picks)
         assert t_expected == t_out

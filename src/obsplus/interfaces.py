@@ -4,11 +4,12 @@ Some common interfaces for event/client types.
 Note: These are used instead of the ones in obspy.clients.base so the subclass
 hooks can be used.
 """
+
 from abc import abstractmethod
-from typing_extensions import Protocol, runtime_checkable
 
 import obspy
 import pandas as pd
+from typing_extensions import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -123,9 +124,3 @@ class ProgressBar(Protocol):
     @abstractmethod
     def finish(self, **kwargs):
         """Puts the progress bar in the finished state."""
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()

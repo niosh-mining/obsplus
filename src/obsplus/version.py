@@ -1,10 +1,12 @@
 """Module for reporting the package version."""
+
+from contextlib import suppress
 from importlib.metadata import PackageNotFoundError, version
 
-try:
-    __version__ = version("obsplus")
-except PackageNotFoundError:
-    # package is not installed
-    __version__ = "0.0.0"
+__version__ = "0.0.0"
 
-__last_version__ = ".".join(__version__.split(".")[:3])
+# try to get version from installed metadata
+with suppress(PackageNotFoundError):
+    __version__ = version("obsplus")
+
+__last_version__ = ".".join(__version__.split("dev")[0].split("+")[0].split(".")[:3])

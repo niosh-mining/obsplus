@@ -1,0 +1,65 @@
+[Main]
+question = "What is the final sample rate?"
+
+[80 Hz]
+path = "Centaur_FV1Vpp_FR80.txt"
+
+
+[5 Hz]
+path = "Centaur_FV1Vpp_FR5.txt"
+
+
+[50 Hz]
+path = "Centaur_FV1Vpp_FR50.txt"
+
+
+[500 Hz]
+path = "Centaur_FV1Vpp_FR500.txt"
+
+
+[5000 Hz]
+path = "Centaur_FV1Vpp_FR5000.txt"
+
+
+[40 Hz]
+path = "Centaur_FV1Vpp_FR40.txt"
+
+
+[2 Hz]
+path = "Centaur_FV1Vpp_FR2.txt"
+
+
+[250 Hz]
+path = "Centaur_FV1Vpp_FR250.txt"
+
+
+[20 Hz]
+path = "Centaur_FV1Vpp_FR20.txt"
+
+
+[200 Hz]
+path = "Centaur_FV1Vpp_FR200.txt"
+
+
+[2000 Hz]
+path = "Centaur_FV1Vpp_FR2000.txt"
+
+
+[1 Hz]
+path = "Centaur_FV1Vpp_FR1.txt"
+
+
+[125 Hz]
+path = "Centaur_FV1Vpp_FR125.txt"
+
+
+[10 Hz]
+path = "Centaur_FV1Vpp_FR10.txt"
+
+
+[100 Hz]
+path = "Centaur_FV1Vpp_FR100.txt"
+
+
+[1000 Hz]
+path = "Centaur_FV1Vpp_FR1000.txt"
