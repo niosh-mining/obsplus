@@ -171,9 +171,16 @@ def strip_events(
     -------
     The stripped events
     """
+    # Shouldn't get here
+    raise TypeError("Must pass an obspy Catalog or obspy Event")
+
+
+@strip_events.register(Catalog)
+def _strip_catalog(cat, reject_evaluation_status="rejected") -> Catalog:
+    """Act on a catalog of events"""
     # Make sure this returns a new catalog
     out = Catalog()
-    for eve in events:
+    for eve in cat:
         out.append(strip_events(eve, reject_evaluation_status=reject_evaluation_status))
     return out
 
