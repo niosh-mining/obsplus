@@ -177,7 +177,7 @@ def strip_events(
 
 @strip_events.register(Catalog)
 def _strip_catalog(cat, reject_evaluation_status="rejected") -> Catalog:
-    """ Act on a catalog of events """
+    """Act on a catalog of events"""
     # Make sure this returns a new catalog
     out = Catalog()
     for eve in cat:

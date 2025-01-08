@@ -214,9 +214,7 @@ class TestBankBasics:
         assert isinstance(df, pd.DataFrame)
         assert len(bingham_catalog) == len(df)
 
-    def test_custom_index_path_as_str(
-        self, tmpdir_factory, cust_ebank_index_path
-    ):
+    def test_custom_index_path_as_str(self, tmpdir_factory, cust_ebank_index_path):
         """
         Make sure custom index path works if a str is passed instead of a Path
         (#277)

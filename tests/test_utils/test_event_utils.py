@@ -359,7 +359,7 @@ class TestStripEvents:
         assert out.preferred_magnitude() is None
 
     def test_not_a_catalog(self):
-        """ Addresses #276 """
+        """Addresses #276"""
         with pytest.raises(TypeError, match="Catalog"):
             strip_events("abcdefg")
 
