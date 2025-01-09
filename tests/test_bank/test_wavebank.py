@@ -77,8 +77,7 @@ def ta_bank(tmp_ta_dir):
 @pytest.fixture(scope="function")
 def ta_bank_index(ta_bank):
     """Return the ta bank, but first update index"""
-    ta_bank.update_index()
-    return ta_bank
+    return ta_bank.update_index()
 
 
 @pytest.fixture(scope="function")

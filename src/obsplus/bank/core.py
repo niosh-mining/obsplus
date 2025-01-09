@@ -163,10 +163,10 @@ class _Bank(ABC):
     def _unindexed_iterator(self, paths: bank_subpaths_type | None = None):
         """Return an iterator of potential unindexed files."""
         # get mtime, subtract a bit to avoid odd bugs
-        mtime = None
+        ctime = None
         last_updated = self.last_updated_timestamp  # this needs db so only call once
         if last_updated is not None:
-            mtime = last_updated - 0.001
+            ctime = last_updated - 0.001
         # get paths to iterate
         bank_path = self.bank_path
         if paths is None:
@@ -177,7 +177,7 @@ class _Bank(ABC):
                 for x in iterate(paths)
             ]
         # return file iterator
-        return iter_files(paths, ext=self.ext, mtime=mtime)
+        return iter_files(paths, ext=self.ext, ctime=ctime)
 
     def _measure_iterator(self, iterable: Iterable, bar: ProgressBar | None = None):
         """

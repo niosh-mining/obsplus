@@ -227,7 +227,7 @@ class DataSet(abc.ABC):
         ----------
         destination
             The destination to copy the dataset. It will be created if it
-            doesnt exist. If None is provided use tmpfile to create a temporary
+            doesn't exist. If None is provided use tmpfile to create a temporary
             directory.
 
         Returns
