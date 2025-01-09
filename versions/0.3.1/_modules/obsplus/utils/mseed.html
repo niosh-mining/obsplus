@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.mseed &#8212; ObsPlus  [ 0.3.1 ] 0.3.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.mseed</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.mseed</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Slimmed down bits of obspy&#39;s mseed module.</span>
+
+<span class="sd">Copyrights to ObsPy developers still apply.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.io.mseed.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATATYPES</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">clibmseed</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_lil</span><span class="p">(</span><span class="n">mseed_object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Slimmed down functions for indexing miniseed files.</span>
+
+<span class="sd">    Contains hacked bits from obspy&#39;s mseed module.</span>
+
+<span class="sd">    Copyrights to ObsPy developers still apply.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse the headonly and reclen flags.</span>
+    <span class="n">unpack_data</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">details</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">reclen</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">header_byteorder</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">selections</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">length</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">mseed_object</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="mi">128</span><span class="p">,</span> <span class="s2">&quot;length too small&quot;</span>
+    <span class="k">assert</span> <span class="n">length</span> <span class="o">&lt;</span> <span class="mi">2147483648</span><span class="p">,</span> <span class="s2">&quot;length too big&quot;</span>
+
+    <span class="c1"># Assume a file was passed</span>
+    <span class="n">bfr_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">mseed_object</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+
+    <span class="n">buflen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bfr_np</span><span class="p">)</span>
+    <span class="n">all_data</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Use a callback function to allocate the memory and keep track of the</span>
+    <span class="c1"># data.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">allocate_data</span><span class="p">(</span><span class="n">samplecount</span><span class="p">,</span> <span class="n">sampletype</span><span class="p">):</span>
+        <span class="c1"># Enhanced sanity checking for libmseed 2.10 can result in the</span>
+        <span class="c1"># sampletype not being set. Just return an empty array in this case.</span>
+        <span class="k">if</span> <span class="n">sampletype</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">samplecount</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DATATYPES</span><span class="p">[</span><span class="n">sampletype</span><span class="p">])</span>
+        <span class="n">all_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">alloc_data</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">CFUNCTYPE</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">c_longlong</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">c_char</span><span class="p">)(</span><span class="n">allocate_data</span><span class="p">)</span>
+    <span class="n">clibmseed</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
+    <span class="c1"># note: normally this would be in a try except, but we just fal back to</span>
+    <span class="c1"># obspy read if an exception happens (this only needs to work most the time)</span>
+    <span class="n">lil</span> <span class="o">=</span> <span class="n">clibmseed</span><span class="o">.</span><span class="n">readMSEEDBuffer</span><span class="p">(</span>
+        <span class="n">bfr_np</span><span class="p">,</span>
+        <span class="n">buflen</span><span class="p">,</span>
+        <span class="n">selections</span><span class="p">,</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">c_int8</span><span class="p">(</span><span class="n">unpack_data</span><span class="p">),</span>
+        <span class="n">reclen</span><span class="p">,</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">c_int8</span><span class="p">(</span><span class="n">verbose</span><span class="p">),</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">c_int8</span><span class="p">(</span><span class="n">details</span><span class="p">),</span>
+        <span class="n">header_byteorder</span><span class="p">,</span>
+        <span class="n">alloc_data</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">clibmseed</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">lil</span>
+
+
+<div class="viewcode-block" id="summarize_mseed">
+<a class="viewcode-back" href="../../../api/obsplus.utils.mseed.html#obsplus.utils.mseed.summarize_mseed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">summarize_mseed</span><span class="p">(</span><span class="n">mseed_object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get a summary of an mseed file.</span>
+
+<span class="sd">    Note: we cannot simply use obspy.io.mseed.get_record_information because it</span>
+<span class="sd">    returns info only about the first trace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lil</span> <span class="o">=</span> <span class="n">_get_lil</span><span class="p">(</span><span class="n">mseed_object</span><span class="p">)</span>
+    <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">current_id</span> <span class="o">=</span> <span class="n">lil</span><span class="o">.</span><span class="n">contents</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># Init header with the essential information.</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="n">current_id</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="s2">&quot;station&quot;</span><span class="p">:</span> <span class="n">current_id</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">current_id</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="n">current_id</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">mseed_object</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="c1"># Loop over segments.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">current_segment</span> <span class="o">=</span> <span class="n">current_id</span><span class="o">.</span><span class="n">firstSegment</span><span class="o">.</span><span class="n">contents</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_segment</span><span class="o">.</span><span class="n">starttime</span> <span class="o">*</span> <span class="mi">1_000</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_segment</span><span class="o">.</span><span class="n">endtime</span> <span class="o">*</span> <span class="mi">1_000</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;sampling_period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_segment</span><span class="o">.</span><span class="n">hpdelta</span> <span class="o">*</span> <span class="mi">1_000</span>
+            <span class="n">traces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">header</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">current_segment</span> <span class="o">=</span> <span class="n">current_segment</span><span class="o">.</span><span class="n">next</span><span class="o">.</span><span class="n">contents</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">current_id</span> <span class="o">=</span> <span class="n">current_id</span><span class="o">.</span><span class="n">next</span><span class="o">.</span><span class="n">contents</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">clibmseed</span><span class="o">.</span><span class="n">lil_free</span><span class="p">(</span><span class="n">lil</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">lil</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">traces</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;could not read </span><span class="si">{</span><span class="n">mseed_object</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">traces</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.mseed</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

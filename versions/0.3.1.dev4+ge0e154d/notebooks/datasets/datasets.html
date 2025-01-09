@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Datasets &#8212; ObsPlus  [ 0.3.1.dev4+ge0e154d ] 0.3.1.dev4+ge0e154d documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=dbcc8867"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Datasets</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Datasets">
+<h1>Datasets<a class="headerlink" href="#Datasets" title="Link to this heading">¶</a></h1>
+<p>ObsPlus includes a few interesting datasets which are used for testing purposes, but a <a class="reference external" href="https://github.com/niosh-mining/opsdata">template with instructions</a> is provided if you would like to create and distribute your own.</p>
+<p>The datasets are “lazy” in that all but the most essential information will be downloaded only when some code requests the dataset. This helps keep the size of ObsPlus small, a network connection will be needed the first time each dataset is used. Here are a few examples of things that can be done with datasets:</p>
+<section id="Dataset-basics">
+<h2>Dataset basics<a class="headerlink" href="#Dataset-basics" title="Link to this heading">¶</a></h2>
+<p>Loading a dataset only requires knowing its name (and having installed it, more on that later).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">obspy</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+
+<span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The best way to access the data in a dataset is by using the desired client:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wave_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span>
+<span class="n">station_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">station_client</span>
+<span class="n">event_client</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">event_client</span>
+</pre></div>
+</div>
+</div>
+<p>These clients behave the same as any <code class="docutils literal notranslate"><span class="pre">Client</span></code> in ObsPy:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">wave_client</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+<span class="n">inv</span> <span class="o">=</span> <span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inv</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>A ‘Fetcher’ can be used for “dataset aware” querying.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Each dataset is a just a directory of files whose path is stored as the <code class="docutils literal notranslate"><span class="pre">data_path</span></code> attribute:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span><span class="o">.</span><span class="n">data_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PosixPath(&#39;/home/runner/opsdata/crandall_test&#39;)
+</pre></div></div>
+</div>
+<p>The <em>included</em> data files are found in the <code class="docutils literal notranslate"><span class="pre">source_path</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span><span class="o">.</span><span class="n">source_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PosixPath(&#39;/home/runner/work/obsplus/obsplus/src/obsplus/datasets/crandall_test&#39;)
+</pre></div></div>
+</div>
+<p>Datasets can be copied with the <code class="docutils literal notranslate"><span class="pre">copy_dataset</span></code> function.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;crandall_test&quot;</span>
+<span class="k">assert</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Data-path">
+<h2>Data path<a class="headerlink" href="#Data-path" title="Link to this heading">¶</a></h2>
+<p>By default, all datasets are stored in the user’s home directory in a directory called ‘opsdata’. Each dataset is contained by a subdirectory with the same name as the dataset. The environmental variable <code class="docutils literal notranslate"><span class="pre">OPSDATA_PATH</span></code> can be used to change the default dataset location.</p>
+</section>
+<section id="Included-Test-Datasets">
+<h2>Included Test Datasets<a class="headerlink" href="#Included-Test-Datasets" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>TA_test: A small dataset with two stations from the TA with channels that have very low sampling rates.</p></li>
+<li><p>Crandall_test: Event waveforms for the <a class="reference external" href="https://en.wikipedia.org/wiki/Crandall_Canyon_Mine">Crandall Canyon Mine collapse</a> and associated aftershocks. The dataset also includes a catalog of the events and a station inventory.</p></li>
+<li><p>Bingham_test: Event waveforms associated with the <a class="reference external" href="https://en.wikipedia.org/wiki/Bingham_Canyon_Mine#Landslides">Bingham Canyon Landslide</a>, one of the largest anthropogenic landslides ever recorded. The dataset also includes a catalog of the events and a station inventory.</p></li>
+</ol>
+<p>Each of these data sets is accessed via <code class="docutils literal notranslate"><span class="pre">obsplus.load_dataset</span></code> function which takes the name of the dataset as the only argument and returns a <code class="docutils literal notranslate"><span class="pre">DataSet</span></code> instance. This will take a few minutes if the datasets have not yet been downloaded, otherwise it should be very quick.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># cleanup temporary directory</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev4+ge0e154d ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Datasets</a><ul>
+<li><a class="reference internal" href="#Dataset-basics">Dataset basics</a></li>
+<li><a class="reference internal" href="#Data-path">Data path</a></li>
+<li><a class="reference internal" href="#Included-Test-Datasets">Included Test Datasets</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/datasets/datasets.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Datasets</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

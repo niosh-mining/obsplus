@@ -1,0 +1,37 @@
+﻿obsplus.Fetcher
+===============
+
+.. currentmodule:: obsplus
+
+.. autoclass:: Fetcher
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Fetcher.__init__
+      ~Fetcher.copy
+      ~Fetcher.get_event_waveforms
+      ~Fetcher.get_waveforms
+      ~Fetcher.set_events
+      ~Fetcher.set_stations
+      ~Fetcher.set_waveforms
+      ~Fetcher.yield_event_waveforms
+      ~Fetcher.yield_waveforms
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Fetcher.picks_df
+      ~Fetcher.reference_funcs
+   
+   

@@ -1,0 +1,7 @@
+obsplus.version module
+======================
+
+.. automodule:: obsplus.version
+   :members:
+   :undoc-members:
+   :show-inheritance:

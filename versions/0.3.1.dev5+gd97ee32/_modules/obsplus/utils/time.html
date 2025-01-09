@@ -1,0 +1,533 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.time &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.time</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.time</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Obsplus utilities for working with times.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">singledispatch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">event</span> <span class="k">as</span> <span class="n">ev</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DEFAULT_TIME</span><span class="p">,</span>
+    <span class="n">LARGEDT64</span><span class="p">,</span>
+    <span class="n">SMALLDT64</span><span class="p">,</span>
+    <span class="n">TIME_COLUMNS</span><span class="p">,</span>
+    <span class="n">event_time_type</span><span class="p">,</span>
+    <span class="n">relative_time_types</span><span class="p">,</span>
+    <span class="n">utc_able_type</span><span class="p">,</span>
+    <span class="n">wave_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeOverflowWarning</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.docs</span><span class="w"> </span><span class="kn">import</span> <span class="n">compose_docstring</span>
+
+<span class="n">rtype</span> <span class="o">=</span> <span class="n">relative_time_types</span>
+
+
+<div class="viewcode-block" id="get_reference_time">
+<a class="viewcode-back" href="../../../api/obsplus.utils.time.html#obsplus.utils.time.get_reference_time">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_reference_time</span><span class="p">(</span>
+    <span class="n">obj</span><span class="p">:</span> <span class="n">event_time_type</span> <span class="o">|</span> <span class="n">wave_type</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a reference time inferred from an object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj</span>
+<span class="sd">        The argument that will indicate a start time. Types and corresponding</span>
+<span class="sd">        behavior are as follows:</span>
+<span class="sd">            float:</span>
+<span class="sd">                Convert to UTCDateTime object, interpret as a timestamp.</span>
+<span class="sd">            UTCDateTime:</span>
+<span class="sd">                Return a new UTCDateTime as a copy.</span>
+<span class="sd">            catalog:</span>
+<span class="sd">                Return the earliest reference time of all events.</span>
+<span class="sd">            event:</span>
+<span class="sd">                First check for a preferred origin, if found return its origin</span>
+<span class="sd">                time. If not found, iterate through the events picks and</span>
+<span class="sd">                return the earliest pick time. If None are found raise a</span>
+<span class="sd">                ValueError.</span>
+<span class="sd">            stream:</span>
+<span class="sd">                Return the earliest reference time of all traces.</span>
+<span class="sd">            trace:</span>
+<span class="sd">                Return the starttime in the stats object.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError if the type is not supported.</span>
+<span class="sd">    ValueError if the type is supported but no reference time could be determined.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    obspy.UTCDateTime</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;get_reference_time does not support type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_event_origin_time</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the time from preferred origin from the event&quot;&quot;&quot;</span>
+    <span class="c1"># try to get origin</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">por</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+        <span class="n">por</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">por</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">por</span><span class="o">.</span><span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;no origin time found on </span><span class="si">{</span><span class="n">por</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">get_reference_time</span><span class="p">(</span><span class="n">por</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+    <span class="c1"># else try using picks</span>
+    <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_reference_time</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;could not get reference time for </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_time</span><span class="p">(</span><span class="n">origin</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">get_reference_time</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_first_pick</span><span class="p">(</span><span class="n">pick</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the reference time from a single pick.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_reference_time</span><span class="p">(</span><span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_from_list</span><span class="p">(</span><span class="n">input_list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get reference time as minimum in a list.&quot;&quot;&quot;</span>
+    <span class="n">outs</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">input_list</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">outs</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_first_event</span><span class="p">(</span><span class="n">catalog</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure the events is length one, return event&quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">catalog</span><span class="si">}</span><span class="s2"> has more than one event&quot;</span>
+    <span class="k">return</span> <span class="n">_get_event_origin_time</span><span class="p">(</span><span class="n">catalog</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_stream_time</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the earliest start time for stream.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">([</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">])</span>
+
+
+<span class="nd">@get_reference_time</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_trace_time</span><span class="p">(</span><span class="n">tr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return starttime of trace.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span>
+
+
+<div class="viewcode-block" id="to_datetime64">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.utils.time.to_datetime64.html#obsplus.utils.time.to_datetime64">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_datetime64</span><span class="p">(</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">utc_able_type</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert time value to a numpy datetime64, or array of such.</span>
+
+<span class="sd">    This function essentially uses the same logic as ~:class:`obspy.UTCDateTime`</span>
+<span class="sd">    but also accounts for native numpy types.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value</span>
+<span class="sd">        Any value that can be interpreted as a time. If a sequence is passed</span>
+<span class="sd">        an ndarray of type &quot;datetime64[ns]&quot; is returned.</span>
+<span class="sd">    default</span>
+<span class="sd">        A value for missing data. pandas.NaT is used by default.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+<span class="sd">    &gt;&gt;&gt; import pandas as pd</span>
+<span class="sd">    &gt;&gt;&gt; timestr = &#39;2020-01-03T11:00:00&#39;</span>
+<span class="sd">    &gt;&gt;&gt; inputs = [obspy.UTCDateTime(timestr), None, 2525, np.datetime64(timestr)]</span>
+<span class="sd">    &gt;&gt;&gt; out = to_datetime64(inputs)</span>
+<span class="sd">    &gt;&gt;&gt; for t in out:</span>
+<span class="sd">    ...     assert isinstance(t, np.datetime64) or pd.isnull(t)</span>
+<span class="sd">    &gt;&gt;&gt; assert pd.isnull(out[1])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_warn_too_large</span><span class="p">():</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;time is too large to represent with a int64 with ns precision,&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; downgrading to </span><span class="si">{</span><span class="n">new</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">TimeOverflowWarning</span><span class="p">)</span>
+
+    <span class="c1"># null values return default (usually NaT)</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">default</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">default</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">):</span>
+        <span class="c1"># The &#39;.astype(&#39;datetime64[ns]&#39;) is necessary to make sure it really</span>
+        <span class="c1"># does get converted to nanoseconds</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">)</span>
+        <span class="c1"># NOTE: This should get removed after numpy fixes their datetime issue</span>
+        <span class="c1"># (See #224), but this makes sure that casting to a higher precision</span>
+        <span class="c1"># datetime didn&#39;t cause an int64 overflow</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s2">&quot;M8[ns]&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">new</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;M8[Y]&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">value</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;M8[Y]&quot;</span><span class="p">):</span>
+                <span class="c1"># The year changed, so it has this problem</span>
+                <span class="n">_warn_too_large</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">LARGEDT64</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">new</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">new</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+        <span class="c1"># The &#39;.astype(&#39;datetime64[ns]&#39;) is necessary to make sure it really</span>
+        <span class="c1"># does get converted to nanoseconds</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">to_datetime64</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">utc</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">utc</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">)</span>
+    <span class="c1"># the UTCDateTime is too big or small, use biggest/smallest values instead</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">SystemError</span><span class="p">,</span> <span class="ne">OverflowError</span><span class="p">):</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">LARGEDT64</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">utc</span><span class="o">.</span><span class="n">_ns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">SMALLDT64</span>
+        <span class="n">_warn_too_large</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">new</span></div>
+
+
+
+<span class="nd">@to_datetime64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_from_string</span><span class="p">(</span><span class="n">time_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to a string.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">time_str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">default</span>
+    <span class="k">return</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">time_str</span><span class="p">))</span>
+
+
+<span class="nd">@to_datetime64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_series_to_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a series to datetimes&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">to_datetime64</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span>
+
+
+<span class="nd">@to_datetime64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ndarray_to_datetime64</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert an array to datetimes.&quot;&quot;&quot;</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">to_datetime64</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ns&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+
+<span class="nd">@to_datetime64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="nd">@to_datetime64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_sequence_to_datetime64</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TIME</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_datetime64</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="to_utc">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.utils.time.to_utc.html#obsplus.utils.time.to_utc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_utc</span><span class="p">(</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">utc_able_type</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert an object or sequence to a UTCDateTime object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value</span>
+<span class="sd">        Any value readable by ~:class:`obspy.UTCDateTime`,</span>
+<span class="sd">        ~:class:`numpy.datetime64` or a sequence of such.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+<span class="sd">    &gt;&gt;&gt; inputs = [1, &#39;2017-09-18&#39;, np.datetime64(&#39;2020-01-03&#39;)]</span>
+<span class="sd">    &gt;&gt;&gt; out = to_utc(inputs)</span>
+<span class="sd">    &gt;&gt;&gt; for utc in out:</span>
+<span class="sd">    ...     assert isinstance(utc, obspy.UTCDateTime)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_dt64_to_utc</span><span class="p">(</span><span class="n">dt64</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt64</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+            <span class="n">dt64</span> <span class="o">=</span> <span class="n">dt64</span><span class="o">.</span><span class="n">to_datetime64</span><span class="p">()</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="n">dt64</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">ns</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">ns</span><span class="p">))</span>
+
+    <span class="c1"># just use to_datetime64 for flexible handling of types</span>
+    <span class="n">dt64ish</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="c1"># return</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt64ish</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_dt64_to_utc</span><span class="p">(</span><span class="n">dt64ish</span><span class="p">)</span>
+    <span class="c1"># else assume a sequence of some sort and every element is a dt64</span>
+    <span class="n">seq</span> <span class="o">=</span> <span class="p">[</span><span class="n">_dt64_to_utc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dt64ish</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="to_timedelta64">
+<a class="viewcode-back" href="../../../api/obsplus.utils.time.html#obsplus.utils.time.to_timedelta64">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_timedelta64</span><span class="p">(</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">rtype</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">rtype</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a value to a timedelta[ns].</span>
+
+<span class="sd">    Numpy does not gracefully handle non-ints so we need to do some rounding</span>
+<span class="sd">    first.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value</span>
+<span class="sd">        A float or an int to convert to datetime.</span>
+<span class="sd">    default</span>
+<span class="sd">        The default to return if the input value is not truthy.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; # get array of timedelta64[ns] from various input types</span>
+<span class="sd">    &gt;&gt;&gt; inputs = [1, 2.3232, np.timedelta64(5, &#39;Y&#39;)]</span>
+<span class="sd">    &gt;&gt;&gt; out = to_timedelta64(inputs)</span>
+<span class="sd">    &gt;&gt;&gt; assert isinstance(out, np.ndarray)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">to_timedelta64</span><span class="p">()</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">_ns</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@to_timedelta64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+<span class="nd">@to_timedelta64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_list_tuple_to_timedelta</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert sequences to timedeltas.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_datetime64</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+
+<span class="nd">@to_timedelta64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_series_to_timedelta</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a series to a timedelta.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ser</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;timedelta64[ns]&quot;</span><span class="p">)</span>  <span class="c1"># convert to ns precision</span>
+    <span class="c1"># or iterate all elements of series.</span>
+    <span class="k">return</span> <span class="n">ser</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">to_timedelta64</span><span class="p">)</span>
+
+
+<span class="nd">@to_timedelta64</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_array_to_timedelta</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a series to a timedelta.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">):</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="n">obj</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">to_timedelta64</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;timedelta64[ns]&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">time_keys</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">TIME_COLUMNS</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_dict_times_to_npdatetimes</span><span class="p">(</span>
+    <span class="n">input_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">time_keys</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">TIME_COLUMNS</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ensure time values in input_dict are converted to np.datetime64.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_dict</span>
+<span class="sd">        A dict that may contain time representations.</span>
+<span class="sd">    time_keys</span>
+<span class="sd">        A sequence of keys to search for and convert to np.datetime64.</span>
+<span class="sd">        Defaults are:</span>
+<span class="sd">        {time_keys}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">time_key</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">time_keys</span><span class="p">):</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">time_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">time_key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">time_keys</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">TIME_COLUMNS</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_dict_times_to_ns</span><span class="p">(</span>
+    <span class="n">input_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">time_keys</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">TIME_COLUMNS</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ensure time values in input_dict are converted to ints (ns).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_dict</span>
+<span class="sd">        A dict that may contain time representations.</span>
+<span class="sd">    time_keys</span>
+<span class="sd">        A sequence of keys to search for and convert to np.datetime64.</span>
+<span class="sd">        Defaults are:</span>
+<span class="sd">        {time_keys}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">time_key</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">time_keys</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">time_key</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># assume ints are ns</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">time_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">time_key</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="n">utc_var</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;utc_var&quot;</span><span class="p">,</span> <span class="n">utc_able_type</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">utc_able_type</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="make_time_chunks">
+<a class="viewcode-back" href="../../../api/obsplus.utils.time.html#obsplus.utils.time.make_time_chunks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_time_chunks</span><span class="p">(</span>
+    <span class="n">utc1</span><span class="p">:</span> <span class="n">utc_able_type</span><span class="p">,</span>
+    <span class="n">utc2</span><span class="p">:</span> <span class="n">utc_able_type</span><span class="p">,</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">overlap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Yield time intervals fitting in given datetime range.</span>
+
+<span class="sd">    Function takes two utc date time objects and create a generator to</span>
+<span class="sd">    yield all time in between by intervals of duration. Overlap is number</span>
+<span class="sd">    of seconds segment n will overlap into segment n + 1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    utc1 : obspy.UTCDateTime compatible object</span>
+<span class="sd">        The start time of the entire interval</span>
+<span class="sd">    utc2 : obspy.UTCDateTime compatible object</span>
+<span class="sd">        The end time of the entire interval</span>
+<span class="sd">    duration : float</span>
+<span class="sd">        The duration of each chunk</span>
+<span class="sd">    overlap : float</span>
+<span class="sd">        The overlap each chunk should have (added at end)</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    (time1, time2)</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; t1 = obspy.UTCDateTime(&#39;2016-01-01&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; t2 = t1 + 2 * 3600</span>
+<span class="sd">    &gt;&gt;&gt; out = list(make_time_chunks(t1, t2, 3600))</span>
+<span class="sd">    &gt;&gt;&gt; assert out == [(t1, t1 + 3600), (t1 + 3600, t2)]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">utc1</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">utc1</span><span class="p">)</span>
+    <span class="n">utc2</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">utc2</span><span class="p">)</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap</span> <span class="ow">or</span> <span class="mf">0.0</span>
+    <span class="k">while</span> <span class="n">utc1</span> <span class="o">&lt;</span> <span class="n">utc2</span><span class="p">:</span>
+        <span class="n">t2</span> <span class="o">=</span> <span class="n">utc1</span> <span class="o">+</span> <span class="n">duration</span> <span class="o">+</span> <span class="n">overlap</span>
+        <span class="k">if</span> <span class="n">t2</span> <span class="o">&gt;=</span> <span class="n">utc2</span> <span class="o">+</span> <span class="n">overlap</span><span class="p">:</span>
+            <span class="n">t2</span> <span class="o">=</span> <span class="n">utc2</span> <span class="o">+</span> <span class="n">overlap</span>
+        <span class="k">yield</span> <span class="n">utc1</span><span class="p">,</span> <span class="n">t2</span>
+        <span class="n">utc1</span> <span class="o">+=</span> <span class="n">duration</span>  <span class="c1"># add duration</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.time</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

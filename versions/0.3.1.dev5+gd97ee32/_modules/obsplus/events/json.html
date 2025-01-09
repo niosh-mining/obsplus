@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.json &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.json</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.events.json</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for converting obspy object to json format</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus.events.schema</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">event_schema</span>
+
+<span class="n">JSON_SERIALIZER_VERSION</span> <span class="o">=</span> <span class="s2">&quot;0.0.0&quot;</span>  <span class="c1"># increment when serialization changes</span>
+
+
+<span class="c1"># -------------------- events to json functions</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_events_to_model</span><span class="p">(</span>
+    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">|</span> <span class="n">Event</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">event_schema</span><span class="o">.</span><span class="n">Catalog</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert ObsPy events to Pydantic models.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">Event</span><span class="p">):</span>  <span class="c1"># A single event was passed</span>
+        <span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="p">[</span><span class="n">catalog</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">Catalog</span><span class="p">):</span>  <span class="c1"># sequence was passed</span>
+        <span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="n">catalog</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">event_schema</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">from_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+
+
+<div class="viewcode-block" id="cat_to_json">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.cat_to_json.html#obsplus.events.json.cat_to_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cat_to_json</span><span class="p">(</span><span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">|</span> <span class="n">Event</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert events (catalog or event) to json string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">_events_to_model</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="cat_to_dict">
+<a class="viewcode-back" href="../../../api/obsplus.events.json.html#obsplus.events.json.cat_to_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cat_to_dict</span><span class="p">(</span><span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">|</span> <span class="n">Event</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert an event object to a dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_events_to_model</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="dict_to_cat">
+<a class="viewcode-back" href="../../../api/obsplus.events.json.html#obsplus.events.json.dict_to_cat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_cat</span><span class="p">(</span><span class="n">cjson</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a dictionary to a catalog&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cjson</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">cjson</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cjson</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">event_schema</span><span class="o">.</span><span class="n">Catalog</span><span class="p">(</span><span class="o">**</span><span class="n">cjson</span><span class="p">)</span><span class="o">.</span><span class="n">to_obspy</span><span class="p">()</span></div>
+
+
+
+<span class="n">json_to_cat</span> <span class="o">=</span> <span class="n">dict_to_cat</span>
+
+
+<span class="c1"># ---------------- monkey patch json methods to events</span>
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">to_json</span> <span class="o">=</span> <span class="n">cat_to_json</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.json</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

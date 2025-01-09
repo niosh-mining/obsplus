@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.datasets.ta_test &#8212; ObsPlus  [ 0.3.1 ] 0.3.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.datasets.ta_test</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The test TA dataset.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveBank</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.datasets.dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataSet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_time_chunks</span>
+
+
+<div class="viewcode-block" id="TA">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.ta_test.html#obsplus.datasets.ta_test.TA">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TA</span><span class="p">(</span><span class="n">DataSet</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A small dataset from the TA with low sampling rate channels.</span>
+
+<span class="sd">    Contains about 10 days of data from two stations: M11A and M14A.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ta_test&quot;</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;0.0.0&quot;</span>
+
+    <span class="n">level</span> <span class="o">=</span> <span class="s2">&quot;response&quot;</span>
+    <span class="n">starttime</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-15&quot;</span><span class="p">)</span>
+    <span class="n">endtime</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-25&quot;</span><span class="p">)</span>
+
+    <span class="n">bulk</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;TA&quot;</span><span class="p">,</span> <span class="s2">&quot;M11A&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;VH*&quot;</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;TA&quot;</span><span class="p">,</span> <span class="s2">&quot;M14A&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;VH*&quot;</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">),</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="TA.download_stations">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.ta_test.html#obsplus.datasets.ta_test.TA.download_stations">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download TA stations.&quot;&quot;&quot;</span>
+        <span class="n">inv_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_path</span> <span class="o">/</span> <span class="s2">&quot;stations.xml&quot;</span>
+        <span class="n">inv_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_client</span><span class="o">.</span><span class="n">get_stations_bulk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bulk</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+        <span class="n">inv</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">inv_path</span><span class="p">),</span> <span class="s2">&quot;stationxml&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TA.download_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.ta_test.html#obsplus.datasets.ta_test.TA.download_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download TA waveforms.&quot;&quot;&quot;</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bulk</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_archive</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+        <span class="c1"># update the index</span>
+        <span class="n">WaveBank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="p">)</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TA.build_archive">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.ta_test.html#obsplus.datasets.ta_test.TA.build_archive">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_archive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build the archive.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">starttime</span> <span class="o">=</span> <span class="n">starttime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">starttime</span>
+        <span class="n">endtime</span> <span class="o">=</span> <span class="n">endtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">endtime</span>
+
+        <span class="k">for</span> <span class="n">utc1</span><span class="p">,</span> <span class="n">utc2</span> <span class="ow">in</span> <span class="n">make_time_chunks</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">):</span>
+            <span class="n">stt</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">stt</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">utc1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">utc2</span><span class="p">)</span>
+            <span class="n">channels</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">st</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">:</span>
+                <span class="n">ts</span> <span class="o">=</span> <span class="n">stt</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">stats</span> <span class="o">=</span> <span class="n">ts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span>
+                <span class="n">net</span><span class="p">,</span> <span class="n">sta</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">station</span>
+                <span class="n">loc</span><span class="p">,</span> <span class="n">cha</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">channel</span>
+                <span class="n">utc_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">utc1</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">utc_str</span> <span class="o">+</span> <span class="s2">&quot;.mseed&quot;</span>
+                <span class="n">fpath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span> <span class="o">/</span> <span class="n">net</span> <span class="o">/</span> <span class="n">sta</span> <span class="o">/</span> <span class="n">loc</span> <span class="o">/</span> <span class="n">cha</span> <span class="o">/</span> <span class="n">end</span>
+                <span class="n">fpath</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">ts</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fpath</span><span class="p">),</span> <span class="s2">&quot;mseed&quot;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>
