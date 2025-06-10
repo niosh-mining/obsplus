@@ -1,0 +1,646 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.pd &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.pd</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.pd</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Generic Utilities for Pandas</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas.api.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_string_dtype</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">,</span>
+    <span class="n">LARGEDT64</span><span class="p">,</span>
+    <span class="n">NSLC</span><span class="p">,</span>
+    <span class="n">NULL_SEED_CODES</span><span class="p">,</span>
+    <span class="n">SMALLDT64</span><span class="p">,</span>
+    <span class="n">bulk_waveform_arg_type</span><span class="p">,</span>
+    <span class="n">column_function_map_type</span><span class="p">,</span>
+    <span class="n">utc_time_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrameContentError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.geodetics</span><span class="w"> </span><span class="kn">import</span> <span class="n">map_longitudes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_datetime64</span><span class="p">,</span> <span class="n">to_timedelta64</span><span class="p">,</span> <span class="n">to_utc</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_int_column_to_str</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fillchar</span><span class="o">=</span><span class="s2">&quot;0&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert an int column to a string&quot;&quot;&quot;</span>
+    <span class="c1"># Do nothing if the column is already a string</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_string_dtype</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+        <span class="n">ser</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;Int64&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">fillchar</span><span class="o">=</span><span class="n">fillchar</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;NSLC information cannot contain &#39;.&#39;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ser</span>
+
+
+<span class="c1"># maps obsplus datatypes to functions to apply to columns to obtain dtype</span>
+<span class="n">OPS_DTYPE_FUNCS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;ops_datetime&quot;</span><span class="p">:</span> <span class="n">to_datetime64</span><span class="p">,</span>
+    <span class="s2">&quot;ops_timedelta&quot;</span><span class="p">:</span> <span class="n">to_timedelta64</span><span class="p">,</span>
+    <span class="s2">&quot;utcdatetime&quot;</span><span class="p">:</span> <span class="n">to_utc</span><span class="p">,</span>
+    <span class="s2">&quot;nslc_code&quot;</span><span class="p">:</span> <span class="n">_int_column_to_str</span><span class="p">,</span>
+    <span class="s2">&quot;longitude&quot;</span><span class="p">:</span> <span class="n">map_longitudes</span><span class="p">,</span>
+    <span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">:</span> <span class="n">to_datetime64</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># the dtype of the columns</span>
+<span class="n">OPS_DTYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;ops_datetime&quot;</span><span class="p">:</span> <span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ops_timedelta&quot;</span><span class="p">:</span> <span class="s2">&quot;timedelta64[ns]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;utcdatetime&quot;</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="s2">&quot;nslc_code&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="s2">&quot;longitude&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="convert_bytestrings">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.convert_bytestrings">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_bytestrings</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert byte strings columns to strings.</span>
+
+<span class="sd">    This removes &#39;b&#39; and quotation marks from string columns. For some reason</span>
+<span class="sd">    encode doesn&#39;t work on data returned from hdf5, hence this approach is a</span>
+<span class="sd">    bit hacky.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The input dataframe.</span>
+<span class="sd">    columns</span>
+<span class="sd">        The names of the columns to convert to string types</span>
+<span class="sd">    inplace</span>
+<span class="sd">        If True, perform operation in place.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stringitize</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ser</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">funcs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">stringitize</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">apply_funcs_to_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="n">funcs</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="n">inplace</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="apply_funcs_to_columns">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.apply_funcs_to_columns">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_funcs_to_columns</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">funcs</span><span class="p">:</span> <span class="n">column_function_map_type</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">inplace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply callables to columns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The input dataframe.</span>
+<span class="sd">    funcs</span>
+<span class="sd">        A mapping of {column_name: function_to_apply}.</span>
+<span class="sd">    inplace</span>
+<span class="sd">        If True, perform operation in place.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A new dataframe with the columns replaced with output of the function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">df</span>
+    <span class="k">if</span> <span class="n">funcs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span> <span class="k">if</span> <span class="n">inplace</span> <span class="k">else</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">funcs</span><span class="p">):</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">funcs</span><span class="p">[</span><span class="n">col</span><span class="p">](</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_time_cols_to_ints</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nat_value</span><span class="o">=</span><span class="n">SMALLDT64</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts all datetime columns to ints.</span>
+
+<span class="sd">    Previously NaT were convertible to ints, but now they raise a value error.</span>
+<span class="sd">    We need, therefore, to designate a time that will be used as NaT.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">columns</span> <span class="ow">or</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;datetime64&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">new_cols</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">nat_value</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">new_cols</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ints_to_time_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nat_value</span><span class="o">=</span><span class="n">SMALLDT64</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts ints in columns (or all ints) to datetimes.</span>
+
+<span class="sd">    Needs a fill value for NaT.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO will have to be more specific if we ever add other int cols</span>
+    <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">columns</span> <span class="ow">or</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">ser</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">cols</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ns&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">nat_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="s2">&quot;NaT&quot;</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">),</span> <span class="n">ser</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="cast_dtypes">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.cast_dtypes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cast_dtypes</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cast data types for columns in dataframe, skip columns that doesn&#39;t exist.</span>
+
+<span class="sd">    The following obsplus specific datatypes are supported:</span>
+<span class="sd">        &#39;ops_datetime&#39; - call :func:`obsplus.utils.time.to_datetime64` on column</span>
+<span class="sd">        &#39;ops_timedelta` - call :func:`obsplus.utils.time.to_timedelta64` on column</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is different from pd.astype because it skips columns which</span>
+<span class="sd">    don&#39;t exist and handles custom obsplus dtypes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        Dataframe</span>
+<span class="sd">    dtype</span>
+<span class="sd">        A dict of columns and datatypes.</span>
+<span class="sd">    inplace</span>
+<span class="sd">        If true perform operation in place.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span> <span class="k">else</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># get overlapping columns, column functions, and pandas support dtypes</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">column_funcs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">i</span><span class="p">:</span> <span class="n">OPS_DTYPE_FUNCS</span><span class="p">[</span><span class="n">dtype</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">overlap</span> <span class="k">if</span> <span class="n">dtype</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">OPS_DTYPE_FUNCS</span>
+    <span class="p">}</span>
+    <span class="n">supported_dtypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">OPS_DTYPES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dtype</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">dtype</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">overlap</span><span class="p">}</span>
+    <span class="c1"># apply functions defined with custom dtypes</span>
+    <span class="k">if</span> <span class="n">column_funcs</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">apply_funcs_to_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_funcs</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="n">inplace</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">supported_dtypes</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="order_columns">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.order_columns">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">order_columns</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">required_columns</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">drop_columns</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_missing</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Order a dataframe&#39;s columns and ensure it has required columns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The input dataframe.</span>
+<span class="sd">    required_columns</span>
+<span class="sd">        A sequence that contains the column names.</span>
+<span class="sd">    drop_columns</span>
+<span class="sd">        If True drop columns not in required_columns.</span>
+<span class="sd">    fill_missing</span>
+<span class="sd">        If True, create missing required columns and fill with nullish values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># make sure required columns are there</span>
+    <span class="n">column_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">missing_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">required_columns</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">extra_cols</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">column_set</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">required_columns</span><span class="p">)),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">drop_columns</span><span class="p">:</span>  <span class="c1"># dont include extras if drop_columns</span>
+        <span class="n">extra_cols</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># raise a DataFrameContentError if required columns are not there</span>
+    <span class="k">if</span> <span class="n">missing_cols</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">fill_missing</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;dataframe is missing required columns: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="n">new_cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">required_columns</span><span class="p">)</span> <span class="o">+</span> <span class="n">extra_cols</span>
+    <span class="c1"># add any extra (blank) columns if needed and sort</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">new_cols</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="replace_or_swallow">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.replace_or_swallow">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">replace_or_swallow</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Replace values in a dataframe with new values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The dataframe for which the values will be replaced</span>
+<span class="sd">    replace</span>
+<span class="sd">        A dict of {old_value: new_values}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">replace</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">df</span>
+    <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">replace</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="join_str_columns">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.join_str_columns">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">join_str_columns</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">join_char</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Join string columns on a dataframe together.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The input dataframe with columns listed in columns parameter.</span>
+<span class="sd">    columns</span>
+<span class="sd">        The columns to be joined. Must be part of df.</span>
+<span class="sd">    join_char</span>
+<span class="sd">        The string to join the columns together.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;at least 2 columns are needed to join&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="n">slist</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">join_char</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">slist</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">slist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="get_seed_id_series">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.get_seed_id_series">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_seed_id_series</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">null_codes</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">NULL_SEED_CODES</span><span class="p">,</span>
+    <span class="n">subset</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a series of seed_ids from a dataframe with required columns.</span>
+
+<span class="sd">    The seed id series contains strings of the form:</span>
+<span class="sd">        network.station.location.channel</span>
+
+<span class="sd">    Any &quot;nullish&quot; values (defined by the parameter null_codes) will be</span>
+<span class="sd">    replaced with an empty string.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        Any Dataframe that has columns with str dtype named:</span>
+<span class="sd">            network, station, location, channel</span>
+<span class="sd">    null_codes</span>
+<span class="sd">        Codes which should be replaced with a blank string.</span>
+<span class="sd">    subset</span>
+<span class="sd">        Used to select a subset of the full seed_id. For example,</span>
+<span class="sd">        (&#39;network&#39;, &#39;station&#39;) would return a series of network.station.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A series of concatenated seed_ids codes.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import obsplus</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+<span class="sd">    &gt;&gt;&gt; # Get a dataframe with only network station location channel columns</span>
+<span class="sd">    &gt;&gt;&gt; cat = obspy.read_inventory()</span>
+<span class="sd">    &gt;&gt;&gt; NSLC = [&#39;network&#39;, &#39;station&#39;, &#39;location&#39;, &#39;channel&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; df = obsplus.stations_to_df(cat)[NSLC]</span>
+<span class="sd">    &gt;&gt;&gt; out = get_seed_id_series(df)</span>
+<span class="sd">    &gt;&gt;&gt; # Get a series of network.station</span>
+<span class="sd">    &gt;&gt;&gt; net_sta = get_seed_id_series(df, subset=(&#39;network&#39;, &#39;station&#39;))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># first ensure subset is in standard NSLC codes</span>
+    <span class="k">if</span> <span class="n">subset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;subset must be a subset of </span><span class="si">{</span><span class="n">NSLC</span><span class="si">}</span><span class="s2">, you passed </span><span class="si">{</span><span class="n">subset</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># get requested columns and check for their existence</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">NSLC</span> <span class="k">if</span> <span class="n">subset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;dataframe is missing specified columns: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># replace nullish codes</span>
+    <span class="n">replace_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">null_codes</span><span class="p">}</span>
+    <span class="n">nslc</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">cols</span><span class="p">)]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">replace_dict</span><span class="p">)</span>
+    <span class="c1"># join string columns and return</span>
+    <span class="k">return</span> <span class="n">join_str_columns</span><span class="p">(</span><span class="n">nslc</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">join_char</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="filter_index">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.filter_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_index</span><span class="p">(</span>
+    <span class="n">index</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">starttime</span><span class="p">:</span> <span class="n">utc_time_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">endtime</span><span class="p">:</span> <span class="n">utc_time_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Filter a waveform index dataframe based on nslc codes and start/end times.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    index</span>
+<span class="sd">        A dataframe to filter which should have the corresponding columns</span>
+<span class="sd">        to any non-None parameters used in filter.</span>
+<span class="sd">    network</span>
+<span class="sd">        A network code as defined by seed standards.</span>
+<span class="sd">    station</span>
+<span class="sd">        A station code as defined by seed standards.</span>
+<span class="sd">    location</span>
+<span class="sd">        A location code as defined by seed standards.</span>
+<span class="sd">    channel</span>
+<span class="sd">        A channel code as defined by seed standards.</span>
+<span class="sd">    starttime</span>
+<span class="sd">        The starttime of interest.</span>
+<span class="sd">    endtime</span>
+<span class="sd">        The endtime of interest.</span>
+
+<span class="sd">    Additional kwargs are used as filters.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A numpy array of boolean values indicating if each row met the filter</span>
+<span class="sd">    requirements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># handle non-starttime/endtime queries</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">)</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">i</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">query</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">filter_df</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c1"># handle starttime/endtime queries if needed</span>
+    <span class="k">if</span> <span class="n">starttime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">endtime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">time_out</span> <span class="o">=</span> <span class="n">_filter_starttime_endtime</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">time_out</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="filter_df">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.filter_df">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_df</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if each row of the index meets some filter requirements.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The input dataframe.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Any condition to check against columns of df. Can be a single value</span>
+<span class="sd">        or a collection of values (to check isin on columns). Str arguments</span>
+<span class="sd">        can also use unix style matching.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A boolean array of the same len as df indicating if each row meets the</span>
+<span class="sd">    requirements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ensure the specified kwarg keys have corresponding columns</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;columns: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2"> are not found in df&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># divide queries into flat parameters and collections</span>
+    <span class="n">flat_query</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Collection</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">sequence_query</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">flat_query</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">}</span>
+    <span class="c1"># get a blank index of True for filters</span>
+    <span class="n">bool_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="c1"># filter on non-collection queries</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">flat_query</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">regex</span> <span class="o">=</span> <span class="n">get_regex</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">regex</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">bool_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">bool_index</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">bool_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">bool_index</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+    <span class="c1"># filter on collection queries using isin</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">sequence_query</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">bool_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">bool_index</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">bool_index</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filter_starttime_endtime</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter dataframe on starttime and endtime.&quot;&quot;&quot;</span>
+    <span class="n">bool_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">starttime</span><span class="p">)</span> <span class="k">if</span> <span class="n">starttime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">SMALLDT64</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">endtime</span><span class="p">)</span> <span class="k">if</span> <span class="n">endtime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">LARGEDT64</span>
+    <span class="c1"># get time columns</span>
+    <span class="n">start_col</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;start_date&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="n">end_col</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;end_date&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="n">in_time</span> <span class="o">=</span> <span class="o">~</span><span class="p">((</span><span class="n">end_col</span> <span class="o">&lt;</span> <span class="n">t1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">start_col</span> <span class="o">&gt;</span> <span class="n">t2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">bool_index</span><span class="p">,</span> <span class="n">in_time</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_regex">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.get_regex">[docs]</a>
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">2500</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_regex</span><span class="p">(</span><span class="n">seed_str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compile, and cache regex for str queries.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">seed_str</span><span class="p">)</span>  <span class="c1"># translate to re</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_column_contains</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">str_sequence</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test if a str series contains any values in a sequence&quot;&quot;&quot;</span>
+    <span class="n">safe_matches</span> <span class="o">=</span> <span class="p">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">str_sequence</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">ser</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">safe_matches</span><span class="p">))</span><span class="o">.</span><span class="n">values</span>
+
+
+<div class="viewcode-block" id="get_waveforms_bulk_args">
+<a class="viewcode-back" href="../../../api/obsplus.utils.pd.html#obsplus.utils.pd.get_waveforms_bulk_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_waveforms_bulk_args</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">time_dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;utcdatetime&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bulk_waveform_arg_type</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the inputs to a get_waveforms_bulk from a dataframe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        A dataframe with required columns:</span>
+<span class="sd">            network, station, location, channel, starttime, endtime</span>
+<span class="sd">    time_dtype</span>
+<span class="sd">        Dtype to use for the starttime and endtime</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A list of tuples [(network, station, location, channel, starttime, endtime),]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename_startdate_enddate</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename startdate, enddate to starttime endtime&quot;&quot;&quot;</span>
+        <span class="n">col_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;startdate&quot;</span> <span class="ow">in</span> <span class="n">col_set</span> <span class="ow">and</span> <span class="s2">&quot;starttime&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">col_set</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;startdate&quot;</span><span class="p">:</span> <span class="s2">&quot;starttime&quot;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="s2">&quot;enddate&quot;</span> <span class="ow">in</span> <span class="n">col_set</span> <span class="ow">and</span> <span class="s2">&quot;endtime&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">col_set</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;enddate&quot;</span><span class="p">:</span> <span class="s2">&quot;endtime&quot;</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_times_to_utc</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert time columns to UTCDateTime.&quot;&quot;&quot;</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">])</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_nslc_codes</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure there are no wildcards in NSLC columns.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">:</span>
+            <span class="n">has_qmark</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+            <span class="n">has_star</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">has_qmark</span> <span class="ow">or</span> <span class="n">has_star</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;columns </span><span class="si">{</span><span class="n">NSLC</span><span class="si">}</span><span class="s2"> cannot contain * or ?, column </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> does&quot;</span>
+                <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_starttime_endtime</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure all starttimes are less than endtimes.&quot;&quot;&quot;</span>
+        <span class="c1"># starttimes must be &lt;= endtime</span>
+        <span class="n">invalid_time_range</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">invalid_time_range</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;all values in starttime must be &lt;= endtime&quot;</span>
+            <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_missing_data</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;There should be no missing data in the required columns.&quot;&quot;&quot;</span>
+        <span class="c1"># first check if all required columns exist</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)):</span>
+            <span class="n">missing_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataframe is missing the following columns: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">missing_date</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">)]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+        <span class="n">no_data_cols</span> <span class="o">=</span> <span class="n">missing_date</span><span class="p">[</span><span class="n">missing_date</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">no_data_cols</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;dataframe is missing values in columns: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">no_data_cols</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="n">dtypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="nb">str</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">}</span>
+    <span class="n">dtypes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;starttime&quot;</span><span class="p">:</span> <span class="n">time_dtype</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">:</span> <span class="n">time_dtype</span><span class="p">})</span>
+    <span class="n">order_cols_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">drop_columns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fill_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">rename_startdate_enddate</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">_check_missing_data</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">_times_to_utc</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">order_columns</span><span class="p">,</span> <span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">,</span> <span class="o">**</span><span class="n">order_cols_kwargs</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">_check_nslc_codes</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">_check_starttime_endtime</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">cast_dtypes</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># df = order_columns(df, required_columns=BULK_WAVEFORM_COLUMNS)</span>
+
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">BULK_WAVEFORM_COLUMNS</span><span class="p">)]</span><span class="o">.</span><span class="n">to_records</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.pd</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

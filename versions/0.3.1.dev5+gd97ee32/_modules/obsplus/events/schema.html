@@ -1,0 +1,798 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.schema &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.schema</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.events.schema</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Pydantic schema for ObsPlus event model.</span>
+
+<span class="sd">ObsPlus Event Model is a superset of, and compatible with, ObsPy&#39;s Event</span>
+<span class="sd">model.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ev</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTCDateTime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BaseModel</span><span class="p">,</span>
+    <span class="n">ConfigDict</span><span class="p">,</span>
+    <span class="n">Field</span><span class="p">,</span>
+    <span class="n">PlainValidator</span><span class="p">,</span>
+    <span class="n">model_validator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NSLC</span>
+
+<span class="c1"># ----- Type Literals (enum like)</span>
+
+<span class="n">data_used_wave_type</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;P waves&quot;</span><span class="p">,</span> <span class="s2">&quot;body waves&quot;</span><span class="p">,</span> <span class="s2">&quot;surface waves&quot;</span><span class="p">,</span> <span class="s2">&quot;mantle waves&quot;</span><span class="p">,</span> <span class="s2">&quot;combined&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span>
+<span class="p">]</span>
+
+<span class="n">AmplitudeCategory</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;point&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="s2">&quot;period&quot;</span><span class="p">,</span> <span class="s2">&quot;integral&quot;</span><span class="p">,</span> <span class="s2">&quot;other&quot;</span><span class="p">]</span>
+
+<span class="n">AmplitudeUnit</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;m/s&quot;</span><span class="p">,</span> <span class="s2">&quot;m/(s*s)&quot;</span><span class="p">,</span> <span class="s2">&quot;m*s&quot;</span><span class="p">,</span> <span class="s2">&quot;dimensionless&quot;</span><span class="p">,</span> <span class="s2">&quot;other&quot;</span><span class="p">]</span>
+
+<span class="n">DataUsedWaveType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;P waves&quot;</span><span class="p">,</span> <span class="s2">&quot;body waves&quot;</span><span class="p">,</span> <span class="s2">&quot;surface waves&quot;</span><span class="p">,</span> <span class="s2">&quot;mantle waves&quot;</span><span class="p">,</span> <span class="s2">&quot;combined&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span>
+<span class="p">]</span>
+
+<span class="n">EvaluationMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;manual&quot;</span><span class="p">,</span> <span class="s2">&quot;automatic&quot;</span><span class="p">]</span>
+
+<span class="n">EvaluationStatus</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;preliminary&quot;</span><span class="p">,</span> <span class="s2">&quot;confirmed&quot;</span><span class="p">,</span> <span class="s2">&quot;reviewed&quot;</span><span class="p">,</span> <span class="s2">&quot;final&quot;</span><span class="p">,</span> <span class="s2">&quot;rejected&quot;</span><span class="p">]</span>
+
+<span class="n">EventDescriptionType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;felt report&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Flinn-Engdahl region&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;local time&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tectonic summary&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nearest cities&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;earthquake name&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;region name&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">EventType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;not existing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;not reported&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;earthquake&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;anthropogenic event&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;collapse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cavity collapse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mine collapse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;building collapse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;accidental explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chemical explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;controlled explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;experimental explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;industrial explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mining explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;quarry blast&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;road cut&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blasting levee&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nuclear explosion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;induced or triggered event&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rock burst&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reservoir loading&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fluid injection&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fluid extraction&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;crash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;plane crash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;train crash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;boat crash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;other event&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;atmospheric event&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sonic boom&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sonic blast&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;acoustic noise&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;thunder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;avalanche&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;snow avalanche&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;debris avalanche&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hydroacoustic event&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ice quake&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;slide&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;landslide&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rockslide&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;meteorite&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;volcanic eruption&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">EventTypeCertainty</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;known&quot;</span><span class="p">,</span> <span class="s2">&quot;suspected&quot;</span><span class="p">]</span>
+
+<span class="n">MTInversionType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;general&quot;</span><span class="p">,</span> <span class="s2">&quot;zero trace&quot;</span><span class="p">,</span> <span class="s2">&quot;double couple&quot;</span><span class="p">]</span>
+
+<span class="n">MomentTensorCategory</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;teleseismic&quot;</span><span class="p">,</span> <span class="s2">&quot;regional&quot;</span><span class="p">]</span>
+
+<span class="n">OriginDepthType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;from location&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;from moment tensor inversion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;from modeling of broad-band P waveforms&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;constrained by depth phases&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;constrained by direct phases&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;constrained by depth and direct phases&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;operator assigned&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;other&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">OriginType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;hypocenter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;centroid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;amplitude&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;macroseismic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rupture start&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rupture end&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">OriginUncertaintyDescription</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;horizontal uncertainty&quot;</span><span class="p">,</span> <span class="s2">&quot;uncertainty ellipse&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence ellipsoid&quot;</span>
+<span class="p">]</span>
+
+<span class="n">PickOnset</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;emergent&quot;</span><span class="p">,</span> <span class="s2">&quot;impulsive&quot;</span><span class="p">,</span> <span class="s2">&quot;questionable&quot;</span><span class="p">]</span>
+
+<span class="n">PickPolarity</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">,</span> <span class="s2">&quot;undecidable&quot;</span><span class="p">]</span>
+
+<span class="n">SourceTimeFunctionType</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;box car&quot;</span><span class="p">,</span> <span class="s2">&quot;triangle&quot;</span><span class="p">,</span> <span class="s2">&quot;trapezoid&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="n">UTCDateTime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert object to datatime.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="o">.</span><span class="n">datetime</span>
+
+
+<span class="n">UTCDateTimeFormat</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">PlainValidator</span><span class="p">(</span><span class="n">_to_datetime</span><span class="p">)]</span>
+
+<span class="c1"># ----- Type Models</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ObsPyModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">arbitrary_types_allowed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">from_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># extra: Optional[AttribDictType] = None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_obspy</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert an object to obspy or return value.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;to_obspy&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">to_obspy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_obspy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert to obspy objects.&quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Note: converting to a dict is deprecated, but we don&#39;t want</span>
+        <span class="c1"># to model dump because that is recursive, so we use this</span>
+        <span class="c1"># ugly hack to just get all attributes</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_fields</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_obspy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">val</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_obspy</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">out</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ResourceIdentifier">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.ResourceIdentifier">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResourceIdentifier</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resource ID&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()))</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ModelWithResourceID</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A model which has a resource ID&quot;&quot;&quot;</span>
+
+    <span class="n">resource_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ResourceIdentifier</span><span class="p">()</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="QuantityError">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.QuantityError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QuantityError</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Quantity Error&quot;&quot;&quot;</span>
+
+    <span class="n">uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lower_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">upper_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">confidence_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="CreationInfo">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.CreationInfo">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreationInfo</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creation info&quot;&quot;&quot;</span>
+
+    <span class="n">agency_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">agency_uri</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">author</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">author_uri</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_time</span><span class="p">:</span> <span class="n">UTCDateTimeFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="TimeWindow">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.TimeWindow">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeWindow</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Time Window&quot;&quot;&quot;</span>
+
+    <span class="n">begin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reference</span><span class="p">:</span> <span class="n">UTCDateTimeFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="CompositeTime">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.CompositeTime">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompositeTime</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Composite Time&quot;&quot;&quot;</span>
+
+    <span class="n">year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">year_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">month</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">month_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">day</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">day_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">hour</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">hour_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">minute</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">minute_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">second</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">second_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Comment">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Comment">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Comment</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Comment&quot;&quot;&quot;</span>
+
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="WaveformStreamID">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WaveformStreamID</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Waveform stream ID&quot;&quot;&quot;</span>
+
+    <span class="n">network_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">location_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">channel_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">resource_uri</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">seed_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="WaveformStreamID.parse_seed_id">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.parse_seed_id">[docs]</a>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_seed_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse seed IDs if needed.&quot;&quot;&quot;</span>
+        <span class="n">seed_str</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;seed_string&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># need to add seed_str</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">seed_str</span><span class="p">:</span>
+            <span class="n">seed</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">_code&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">])</span>
+            <span class="n">values</span><span class="p">[</span><span class="s2">&quot;seed_string&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span>
+            <span class="k">return</span> <span class="n">values</span>
+        <span class="c1"># need to get other codes from seed_str</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="n">seed_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">code</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="n">NSLC</span><span class="p">):</span>
+            <span class="n">values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_code&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">code</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConfidenceEllipsoid">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConfidenceEllipsoid</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Confidence Ellipsoid&quot;&quot;&quot;</span>
+
+    <span class="n">semi_major_axis_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">semi_minor_axis_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">semi_intermediate_axis_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">major_axis_plunge</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">major_axis_azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">major_axis_rotation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="DataUsed">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.DataUsed">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataUsed</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Data Used&quot;&quot;&quot;</span>
+
+    <span class="n">wave_type</span><span class="p">:</span> <span class="n">DataUsedWaveType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">component_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">shortest_period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">longest_period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># --- Magnitude classes</span>
+
+
+<div class="viewcode-block" id="StationMagnitude">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.StationMagnitude">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StationMagnitude</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Station Magnitude.&quot;&quot;&quot;</span>
+
+    <span class="n">origin_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mag</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mag_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_magnitude_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">amplitude_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">waveform_id</span><span class="p">:</span> <span class="n">WaveformStreamID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="StationMagnitudeContribution">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StationMagnitudeContribution</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Station Magnitude Contribution&quot;&quot;&quot;</span>
+
+    <span class="n">station_magnitude_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">residual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Amplitude">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Amplitude">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Amplitude</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Amplitude&quot;&quot;&quot;</span>
+
+    <span class="n">generic_amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">generic_amplitude_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">category</span><span class="p">:</span> <span class="n">AmplitudeCategory</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="n">AmplitudeUnit</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">period_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">snr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_window</span><span class="p">:</span> <span class="n">TimeWindow</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pick_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">waveform_id</span><span class="p">:</span> <span class="n">WaveformStreamID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">filter_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scaling_time</span><span class="p">:</span> <span class="n">UTCDateTimeFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scaling_time_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">magnitude_hint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_mode</span><span class="p">:</span> <span class="n">EvaluationMode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_status</span><span class="p">:</span> <span class="n">EvaluationStatus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<span class="c1"># --- Origin classes</span>
+
+
+<div class="viewcode-block" id="OriginUncertainty">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OriginUncertainty</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Origin Uncertainty&quot;&quot;&quot;</span>
+
+    <span class="n">horizontal_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">min_horizontal_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">max_horizontal_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">azimuth_max_horizontal_uncertainty</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">confidence_ellipsoid</span><span class="p">:</span> <span class="n">ConfidenceEllipsoid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preferred_description</span><span class="p">:</span> <span class="n">OriginUncertaintyDescription</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">confidence_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="OriginQuality">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.OriginQuality">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OriginQuality</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Origin Quality&quot;&quot;&quot;</span>
+
+    <span class="n">associated_phase_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">used_phase_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">associated_station_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">used_station_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">depth_phase_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">standard_error</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">azimuthal_gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">secondary_azimuthal_gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ground_truth_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">minimum_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">maximum_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">median_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Pick">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Pick">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pick</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pick&quot;&quot;&quot;</span>
+
+    <span class="n">time</span><span class="p">:</span> <span class="n">UTCDateTimeFormat</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">waveform_id</span><span class="p">:</span> <span class="n">WaveformStreamID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">filter_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">horizontal_slowness</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">horizontal_slowness_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">backazimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">backazimuth_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">slowness_method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">onset</span><span class="p">:</span> <span class="n">PickOnset</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">phase_hint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">polarity</span><span class="p">:</span> <span class="n">PickPolarity</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_mode</span><span class="p">:</span> <span class="n">EvaluationMode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_status</span><span class="p">:</span> <span class="n">EvaluationStatus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="Arrival">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Arrival">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Arrival</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Arrival&quot;&quot;&quot;</span>
+
+    <span class="n">pick_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">phase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_correction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">takeoff_angle</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">takeoff_angle_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_residual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">horizontal_slowness_residual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">backazimuth_residual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">horizontal_slowness_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">backazimuth_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">earth_model_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="Origin">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Origin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Origin</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Origin&quot;&quot;&quot;</span>
+
+    <span class="n">time</span><span class="p">:</span> <span class="n">UTCDateTimeFormat</span>
+    <span class="n">time_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">longitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">longitude_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">latitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">latitude_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">depth_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">depth_type</span><span class="p">:</span> <span class="n">OriginDepthType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">time_fixed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">epicenter_fixed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reference_system_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">earth_model_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="n">OriginQuality</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">origin_type</span><span class="p">:</span> <span class="n">OriginType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">origin_uncertainty</span><span class="p">:</span> <span class="n">OriginUncertainty</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_mode</span><span class="p">:</span> <span class="n">EvaluationMode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_status</span><span class="p">:</span> <span class="n">EvaluationStatus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">arrivals</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Arrival</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">composite_times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">CompositeTime</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="Magnitude">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Magnitude">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Magnitude</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Magnitude&quot;&quot;&quot;</span>
+
+    <span class="n">mag</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mag_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">magnitude_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">origin_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">azimuthal_gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_mode</span><span class="p">:</span> <span class="n">EvaluationMode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_status</span><span class="p">:</span> <span class="n">EvaluationStatus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">station_magnitude_contributions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">StationMagnitudeContribution</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<span class="c1"># --- Source objects</span>
+
+
+<div class="viewcode-block" id="Axis">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Axis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Axis</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Axis&quot;&quot;&quot;</span>
+
+    <span class="n">azimuth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">plunge</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="NodalPlane">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.NodalPlane">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NodalPlane</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nodal Plane&quot;&quot;&quot;</span>
+
+    <span class="n">strike</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">dip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="NodalPlanes">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.NodalPlanes">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NodalPlanes</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nodal Planes&quot;&quot;&quot;</span>
+
+    <span class="n">nodal_plane_1</span><span class="p">:</span> <span class="n">NodalPlane</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">nodal_plane_2</span><span class="p">:</span> <span class="n">NodalPlane</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preferred_plane</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="PrincipalAxes">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PrincipalAxes</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Principal Axes&quot;&quot;&quot;</span>
+
+    <span class="n">t_axis</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">p_axis</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">n_axis</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Tensor">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Tensor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Tensor</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tensor&quot;&quot;&quot;</span>
+
+    <span class="n">m_rr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_rr_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_tt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_tt_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_pp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_pp_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_rt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_rt_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_rp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_rp_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_tp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">m_tp_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="SourceTimeFunction">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SourceTimeFunction</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Source Time Function&quot;&quot;&quot;</span>
+
+    <span class="nb">type</span><span class="p">:</span> <span class="n">SourceTimeFunctionType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rise_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">decay_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="MomentTensor">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.MomentTensor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MomentTensor</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Moment Tensor&quot;&quot;&quot;</span>
+
+    <span class="n">derived_origin_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">moment_magnitude_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scalar_moment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scalar_moment_errors</span><span class="p">:</span> <span class="n">QuantityError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">tensor</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">variance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">variance_reduction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">double_couple</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">clvd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">iso</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">greens_function_id</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">filter_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">source_time_function</span><span class="p">:</span> <span class="n">SourceTimeFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">data_used</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DataUsed</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">category</span><span class="p">:</span> <span class="n">MomentTensorCategory</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">inversion_type</span><span class="p">:</span> <span class="n">MTInversionType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="FocalMechanism">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.FocalMechanism">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FocalMechanism</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Focal Mechanism&quot;&quot;&quot;</span>
+
+    <span class="n">triggering_origin_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">nodal_planes</span><span class="p">:</span> <span class="n">NodalPlanes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">principal_axes</span><span class="p">:</span> <span class="n">PrincipalAxes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">azimuthal_gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_polarity_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">misfit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">station_distribution_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">method_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_mode</span><span class="p">:</span> <span class="n">EvaluationMode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">evaluation_status</span><span class="p">:</span> <span class="n">EvaluationStatus</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">moment_tensor</span><span class="p">:</span> <span class="n">MomentTensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">waveform_id</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">WaveformStreamID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<span class="c1"># --- Event definitions</span>
+
+
+<div class="viewcode-block" id="EventDescription">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.EventDescription">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventDescription</span><span class="p">(</span><span class="n">_ObsPyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event Description&quot;&quot;&quot;</span>
+
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">EventDescriptionType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Event">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Event">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event&quot;&quot;&quot;</span>
+
+    <span class="n">event_type</span><span class="p">:</span> <span class="n">EventType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">event_type_certainty</span><span class="p">:</span> <span class="n">EventTypeCertainty</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preferred_origin_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preferred_magnitude_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preferred_focal_mechanism_id</span><span class="p">:</span> <span class="n">ResourceIdentifier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">event_descriptions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">EventDescription</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">picks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Pick</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">amplitudes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Amplitude</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">focal_mechanisms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FocalMechanism</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">origins</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Origin</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">magnitudes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Magnitude</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">station_magnitudes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">StationMagnitude</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Event.to_obspy">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Event.to_obspy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_obspy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the catalog to obspy form&quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_obspy</span><span class="p">()</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">scope_resource_ids</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Catalog">
+<a class="viewcode-back" href="../../../api/obsplus.events.schema.html#obsplus.events.schema.Catalog">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Catalog</span><span class="p">(</span><span class="n">_ModelWithResourceID</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A collection of events.&quot;&quot;&quot;</span>
+
+    <span class="n">events</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">comments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_info</span><span class="p">:</span> <span class="n">CreationInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.schema</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

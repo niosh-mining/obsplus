@@ -1,0 +1,16 @@
+obsplus.structures package
+==========================
+
+.. automodule:: obsplus.structures
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.structures.dfextractor
+   obsplus.structures.fetcher

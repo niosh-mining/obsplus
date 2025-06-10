@@ -1,0 +1,348 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.geodetics &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
+    
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.geodetics</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.geodetics</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utilities for calculating spatial relationships.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">obspy.geodetics</span> <span class="kn">import</span> <span class="n">gps2dist_azimuth</span>
+<span class="kn">from</span> <span class="nn">obspy.geodetics.base</span> <span class="kn">import</span> <span class="n">WGS84_A</span><span class="p">,</span> <span class="n">WGS84_F</span>
+<span class="kn">from</span> <span class="nn">obspy.taup.taup_geo</span> <span class="kn">import</span> <span class="n">calc_dist</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">event_type</span><span class="p">,</span>
+    <span class="n">inventory_type</span><span class="p">,</span>
+    <span class="n">DISTANCE_COLUMN_DTYPES</span><span class="p">,</span>
+    <span class="n">LOCATION_DTYPE</span><span class="p">,</span>
+    <span class="n">ALT_DISTANCE_COLUMN_DTYPES</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.docs</span> <span class="kn">import</span> <span class="n">compose_docstring</span>
+<span class="kn">from</span> <span class="nn">obsplus.exceptions</span> <span class="kn">import</span> <span class="n">DataFrameContentError</span>
+
+
+<div class="viewcode-block" id="SpatialCalculator">
+<a class="viewcode-back" href="../../../api/obsplus.utils.geodetics.html#obsplus.utils.geodetics.SpatialCalculator">[docs]</a>
+<span class="k">class</span> <span class="nc">SpatialCalculator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for calculating spatial relationships between two entities.</span>
+
+<span class="sd">    The default values are appropriate for Earth.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    radius</span>
+<span class="sd">        The radius of the planetary body in question.</span>
+<span class="sd">    flattening</span>
+<span class="sd">        The flattening coefficient of the planetary body in question.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import obsplus</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+<span class="sd">    &gt;&gt;&gt; from obsplus.utils import SpatialCalculator</span>
+<span class="sd">    &gt;&gt;&gt; calc = SpatialCalculator()  # SpatialCalculator for Earth</span>
+<span class="sd">    &gt;&gt;&gt; # Get the distance and azimuth between two points</span>
+<span class="sd">    &gt;&gt;&gt; p1 = (45.55, -111.21, 1000)  # format is lat, lon, elevation (m asl)</span>
+<span class="sd">    &gt;&gt;&gt; p2 = (40.22, -115, 10)</span>
+<span class="sd">    &gt;&gt;&gt; df = calc(p1, p2)</span>
+
+<span class="sd">    &gt;&gt;&gt; # Get the distance between each event and each station</span>
+<span class="sd">    &gt;&gt;&gt; events = obspy.read_events()</span>
+<span class="sd">    &gt;&gt;&gt; station = obspy.read_inventory()</span>
+<span class="sd">    &gt;&gt;&gt; df = calc(events, station)</span>
+<span class="sd">    &gt;&gt;&gt; # index 1 is the event_id and index 2 is the seed id</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">expected_exceptions</span> <span class="o">=</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">WGS84_A</span><span class="p">,</span> <span class="n">flattening</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">WGS84_F</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flattening</span> <span class="o">=</span> <span class="n">flattening</span>
+
+    <span class="c1"># --- methods for getting input dataframe from various objects</span>
+
+    <span class="k">def</span> <span class="nf">_get_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe with latitude, longitude, elevation, and id.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">)</span>
+        <span class="n">cols1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ALT_DISTANCE_COLUMN_DTYPES</span><span class="p">)</span>
+        <span class="c1"># if a dataframe is used</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols1</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span>
+                    <span class="s2">&quot;SpatialCalculator input dataframe must have the following &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;columns: </span><span class="si">{</span><span class="n">cols</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">cols1</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_dataframe</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>  <span class="c1"># first try events</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df_from_events</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_exceptions</span><span class="p">:</span>  <span class="c1"># then stations</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df_from_stations</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">except</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_exceptions</span><span class="p">:</span>
+                <span class="c1"># and lastly any sequence.</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df_from_sequences</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_df_from_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the needed dataframe from some objects with event data.&quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;elevation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;depth&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span> <span class="nf">_df_from_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the needed dataframe from some object with station data.&quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">stations_to_df</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;seed_id&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span> <span class="nf">_df_from_sequences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the dataframe from generic sequences.&quot;&quot;&quot;</span>
+        <span class="n">ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># need to add index columns</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ar</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">ar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="n">ar</span><span class="p">,</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">ar</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">ar</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;A sequence must have either 3 or 4 elements.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span> <span class="nf">_de_duplicate_df_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove any duplicated indices, raise an exception if any of the</span>
+<span class="sd">        duplicated indices have differing coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># determine if there are any duplicates with different coords</span>
+        <span class="n">duplicate_indices</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()</span>
+        <span class="n">duplicated_data</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">))</span>
+        <span class="c1"># if so raise an exception as this will not produced desired result.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">duplicate_indices</span> <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">duplicated_data</span><span class="p">))</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">dup_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[(</span><span class="n">duplicate_indices</span> <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">duplicated_data</span><span class="p">))])</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;There are multiple coordinates for ids: </span><span class="si">{</span><span class="n">dup_ids</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;cannot reliable calculate distance relationships.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">duplicate_indices</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_validate_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure all the parameters of the dataframe are reasonable.&quot;&quot;&quot;</span>
+        <span class="c1"># first cull out columns that aren&#39;t needed and de-dup index</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;depth&quot;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;elevation&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="c1"># Make sure that the df has an elevation column</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">ALT_DISTANCE_COLUMN_DTYPES</span><span class="p">)]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                <span class="n">ALT_DISTANCE_COLUMN_DTYPES</span>
+            <span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;elevation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;depth&quot;</span><span class="p">]</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;depth&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_de_duplicate_df_index</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">)]</span>
+                <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_de_duplicate_df_index</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="c1"># sanity checks on lat/lon</span>
+        <span class="n">lat_valid</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mf">90.0</span>
+        <span class="n">lons_valid</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mf">180.0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">lat_valid</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">lons_valid</span><span class="o">.</span><span class="n">all</span><span class="p">()):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;invalid lat/lon values found in </span><span class="si">{</span><span class="n">df</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">DataFrameContentError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="c1"># --- methods for calculating spatial relationships</span>
+
+    <span class="k">def</span> <span class="nf">_get_spatial_relations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate distances and azimuths.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO this may be vectorizable, look into it</span>
+        <span class="c1"># get planet radius and flattening</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flattening</span>
+        <span class="n">rad_km</span> <span class="o">=</span> <span class="n">a</span> <span class="o">/</span> <span class="mf">1000.0</span>
+        <span class="c1"># first calculate the great circle distance in m, forward az and back az</span>
+        <span class="n">m_az1_az2</span> <span class="o">=</span> <span class="p">[</span><span class="n">gps2dist_azimuth</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">array</span><span class="p">]</span>
+        <span class="c1"># then calculate distance in degrees</span>
+        <span class="n">dist_degrees</span> <span class="o">=</span> <span class="p">[</span><span class="n">calc_dist</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">rad_km</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">array</span><span class="p">]</span>
+        <span class="c1"># vertical distances</span>
+        <span class="n">vert</span> <span class="o">=</span> <span class="n">array</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">array</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span>
+        <span class="c1"># stack and return</span>
+        <span class="n">out1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">m_az1_az2</span><span class="p">)</span>
+        <span class="n">out2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dist_degrees</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">out1</span><span class="p">,</span> <span class="n">out2</span><span class="p">,</span> <span class="n">vert</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+
+    <span class="nd">@compose_docstring</span><span class="p">(</span>
+        <span class="n">out_columns</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">DISTANCE_COLUMN_DTYPES</span><span class="p">)),</span>
+        <span class="n">in_columns</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">LOCATION_DTYPE</span><span class="p">)),</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">entity_1</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">event_type</span><span class="p">,</span> <span class="n">inventory_type</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">],</span>
+        <span class="n">entity_2</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">event_type</span><span class="p">,</span> <span class="n">inventory_type</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate spatial relationship(s) between two entities.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        entity_1</span>
+<span class="sd">            A variety of obspy/obsplus types which have linked geographic info.</span>
+<span class="sd">        entity_2</span>
+<span class="sd">            A variety of obspy/obsplus types which have linked geographic info.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        If a dataframe is used for input it must have the following columns:</span>
+<span class="sd">        {in_columns}</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A dataframe with rows for each combination of entities with columns:</span>
+<span class="sd">        {out_columns}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># first convert each entity to dataframe with lat, lon, elevation as</span>
+        <span class="c1"># columns and a meaningful id as the index.</span>
+        <span class="n">obj1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataframe</span><span class="p">(</span><span class="n">entity_1</span><span class="p">)</span>
+        <span class="n">obj2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataframe</span><span class="p">(</span><span class="n">entity_2</span><span class="p">)</span>
+        <span class="c1"># first get cartesian product from both indices and make aligned dfs</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">obj1</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">obj2</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">mesh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">df1</span><span class="p">,</span> <span class="n">df2</span> <span class="o">=</span> <span class="n">obj1</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ind1</span><span class="p">],</span> <span class="n">obj2</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ind2</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">df1</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">df2</span><span class="p">)</span>
+        <span class="c1"># create array of lat1, lon1, ele1, lat2, lon2, ele2</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">df2</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">df1</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+        <span class="c1"># get spatial relationships, create index and return df</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_spatial_relations</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">([</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind2</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id1&quot;</span><span class="p">,</span> <span class="s2">&quot;id2&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">DISTANCE_COLUMN_DTYPES</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="map_longitudes">
+<a class="viewcode-back" href="../../../api/obsplus.utils.geodetics.html#obsplus.utils.geodetics.map_longitudes">[docs]</a>
+<span class="k">def</span> <span class="nf">map_longitudes</span><span class="p">(</span><span class="n">angle_array</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Map longitudes to -180 to 180 domain.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    angle_array</span>
+<span class="sd">        An array or series with real numeric values representing angles in</span>
+<span class="sd">        degrees.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import pandas as pd</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; angles = np.array([35, -45, 340, -721])</span>
+<span class="sd">    &gt;&gt;&gt; out = map_longitudes(angles)</span>
+<span class="sd">    &gt;&gt;&gt; expected = np.array([35, -45, -20, -1])</span>
+<span class="sd">    &gt;&gt;&gt; assert np.allclose(out, expected)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">angle_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span>
+    <span class="n">gt_180</span> <span class="o">=</span> <span class="n">out</span> <span class="o">&gt;</span> <span class="mi">180</span>
+    <span class="n">out</span><span class="p">[</span><span class="n">gt_180</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">gt_180</span><span class="p">]</span> <span class="o">-</span> <span class="mi">360</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.geodetics</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+obsplus.utils.docs module
+=========================
+
+.. automodule:: obsplus.utils.docs
+   :members:
+   :undoc-members:
+   :show-inheritance:

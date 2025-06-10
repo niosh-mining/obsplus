@@ -22,6 +22,7 @@ ml_to_df = DataFrameExtractor(
     ev.Magnitude, required_columns=list(dtypes), dtypes=dtypes
 )
 
+
 # first extractor, get basic info from the magnitude object
 @ml_to_df.extractor
 def _get_basic(obj: ev.Magnitude):
@@ -47,5 +48,5 @@ def _get_station_count(obj):
 
 
 # get events and list of magnitudes
-cat = load_dataset("bingham").event_client.get_events()
+cat = load_dataset("bingham_test").event_client.get_events()
 magnitudes = [mag for event in cat for mag in event.magnitudes]

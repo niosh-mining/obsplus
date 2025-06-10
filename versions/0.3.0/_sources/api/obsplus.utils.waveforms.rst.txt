@@ -1,0 +1,7 @@
+obsplus.utils.waveforms module
+==============================
+
+.. automodule:: obsplus.utils.waveforms
+   :members:
+   :undoc-members:
+   :show-inheritance:

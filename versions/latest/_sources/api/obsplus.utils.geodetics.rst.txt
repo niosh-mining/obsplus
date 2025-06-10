@@ -1,0 +1,7 @@
+obsplus.utils.geodetics module
+==============================
+
+.. automodule:: obsplus.utils.geodetics
+   :members:
+   :undoc-members:
+   :show-inheritance:

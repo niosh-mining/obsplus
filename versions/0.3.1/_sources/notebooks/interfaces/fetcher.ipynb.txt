@@ -1,0 +1,410 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Fetcher\n",
+    " \n",
+    "The Fetcher class builds on the unified data request interfaces to provide convenient methods for working with whole datasets.  \n",
+    "\n",
+    "Listed below are the two methods which are currently available:\n",
+    " \n",
+    "    #1 - Get continuous data using channels contained in an inventory (or returned from a station_client).\n",
+    "\n",
+    "\n",
+    "    #2 - Iterate over events and their corresponding waveforms that have channels defined by the station_client. \n",
+    "\n",
+    "\n",
+    "    Note: Additional methods may be implemented in the future.\n",
+    "\n",
+    "\n",
+    "## Setup\n",
+    "In the example below, a Fetcher from the TA and Crandall dataset will be used to demonstrate different aspects of the `Fetcher` functionality."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:00.526663Z",
+     "iopub.status.busy": "2025-01-09T18:06:00.526489Z",
+     "iopub.status.idle": "2025-01-09T18:06:02.666668Z",
+     "shell.execute_reply": "2025-01-09T18:06:02.665977Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import obsplus\n",
+    "\n",
+    "# ta_test dataset contains continuous data\n",
+    "ta_dataset = obsplus.load_dataset(\"ta_test\")\n",
+    "crandall = obsplus.load_dataset(\"crandall_test\")\n",
+    "\n",
+    "# crandall contains only event data\n",
+    "ta_fetcher = ta_dataset.get_fetcher()\n",
+    "crandall_fetcher = crandall.get_fetcher()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The Fetcher can be initialized with any objects that the appropriate client can be obtained from. Commonly it is used with a `WaveBank`, a `Catalog` (or `EventBank`) and an `Inventory`. \n",
+    "\n",
+    "The following example would also be valid:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:02.668991Z",
+     "iopub.status.busy": "2025-01-09T18:06:02.668801Z",
+     "iopub.status.idle": "2025-01-09T18:06:02.775126Z",
+     "shell.execute_reply": "2025-01-09T18:06:02.774515Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "cat = crandall.event_client.get_events()\n",
+    "inv = crandall.station_client.get_stations()\n",
+    "wavebank = crandall.waveform_client\n",
+    "\n",
+    "crandall_fetcher = obsplus.Fetcher(waveforms=wavebank, stations=inv, events=cat)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The WaveFetcher constructor can also take obsplus created csv/dataframes for the [stations](../datastructures/stations_to_pandas.ipynb) and [events](../datastructures/events_to_pandas.ipynb) arguments. However, some of the `Fetcher`'s functionality, like getting a dataframe of picks, will raise an exception unless full station/event clients are used."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Quick fetch\n",
+    "The easiest way to get data out of a data fetcher is to call it. The fetcher takes an argument that will provide it with information about when the stream should start. It can be a variety of types (float, UTCDateTime, Catalog, Event). The time before the reference time, and the time after the reference time must also be provided in the method call or in the `Fetcher` construction. \n",
+    "\n",
+    "The fetcher uses the inventory or `station_client` to know which channels to request from the waveform_client."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:02.777513Z",
+     "iopub.status.busy": "2025-01-09T18:06:02.777046Z",
+     "iopub.status.idle": "2025-01-09T18:06:02.958689Z",
+     "shell.execute_reply": "2025-01-09T18:06:02.958098Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import obspy\n",
+    "\n",
+    "reference_time = obspy.UTCDateTime(\"2007-02-15T06\")\n",
+    "time_before = 1\n",
+    "time_after = 30\n",
+    "stream = ta_fetcher(reference_time, time_before, time_after)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Continuous data\n",
+    "\n",
+    "Continuous data can be requested from the wavefetcher, which uses the `station_client` to know which channels to pull from the waveform_client. This enables users to skip a lot of the boiler-plate associated with the normal `get_waveforms` interface.  \n",
+    "\n",
+    "The example below shows the continuous data being interated over while running a simple STA/LTA detector.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:02.960937Z",
+     "iopub.status.busy": "2025-01-09T18:06:02.960603Z",
+     "iopub.status.idle": "2025-01-09T18:06:03.142704Z",
+     "shell.execute_reply": "2025-01-09T18:06:03.142068Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "from obspy.signal.trigger import classic_sta_lta\n",
+    "\n",
+    "\n",
+    "# first define a function for doing the sta/lta\n",
+    "def print_sta_lta(tr: obspy.Trace):\n",
+    "    \"\"\"Prints the sta/lta\"\"\"\n",
+    "    sr = tr.stats.sampling_rate\n",
+    "    classic_sta_lta(tr.data, int(20 * sr), int(60 * sr))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:03.145216Z",
+     "iopub.status.busy": "2025-01-09T18:06:03.144720Z",
+     "iopub.status.idle": "2025-01-09T18:06:03.779931Z",
+     "shell.execute_reply": "2025-01-09T18:06:03.779274Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# starttime for the continuous data\n",
+    "t1 = obspy.UTCDateTime(\"2007-02-16\")\n",
+    "\n",
+    "# endtime for the continuous data\n",
+    "t2 = t1 + 36000 * 10  # use 10 hours\n",
+    "\n",
+    "# duration of each chunk returned (in seconds)\n",
+    "duration = 72000\n",
+    "\n",
+    "# overlap (added to the end of the duration)\n",
+    "overlap = 60\n",
+    "\n",
+    "# iterate over each chunk\n",
+    "kwargs = dict(starttime=t1, endtime=t2, duration=duration, overlap=overlap)\n",
+    "for st in ta_fetcher.yield_waveforms(**kwargs):\n",
+    "    # select only z component and perform preprocessing\n",
+    "    st = st.select(component=\"Z\")\n",
+    "    st.detrend(\"linear\")\n",
+    "    # do the sta/lta\n",
+    "    for tr in st:\n",
+    "        print_sta_lta(tr)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Stream processors\n",
+    "\n",
+    "It can be useful to define a stream_processing function that will be called on each stream before yielding it. This allows the user to define flexible, custom processing functions without cluttering up the function calls with a lot of processing parameters."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:03.783389Z",
+     "iopub.status.busy": "2025-01-09T18:06:03.782357Z",
+     "iopub.status.idle": "2025-01-09T18:06:04.239787Z",
+     "shell.execute_reply": "2025-01-09T18:06:04.239271Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# define a function that will be called on the stream before returning it.\n",
+    "def stream_processor(st: obspy.Stream) -> obspy.Stream:\n",
+    "    \"\"\"Select the z component, detrend, and filter a stream\"\"\"\n",
+    "    st = st.select(component=\"Z\")\n",
+    "    st.detrend(\"linear\")\n",
+    "    st.filter(\"bandpass\", freqmin=0.005, freqmax=0.04)\n",
+    "    return st\n",
+    "\n",
+    "\n",
+    "# attach stream processor to the wave fetcher\n",
+    "ta_fetcher.stream_processor = stream_processor\n",
+    "\n",
+    "kwargs = dict(starttime=t1, endtime=t2, duration=duration, overlap=overlap)\n",
+    "for st in ta_fetcher.yield_waveforms(**kwargs):\n",
+    "    for tr in st:\n",
+    "        print_sta_lta(tr)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Event data\n",
+    "\n",
+    "When the wavefetcher object is provided with an event client, the event client can be used to iterate through the event waveforms."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:04.242278Z",
+     "iopub.status.busy": "2025-01-09T18:06:04.242074Z",
+     "iopub.status.idle": "2025-01-09T18:06:04.638260Z",
+     "shell.execute_reply": "2025-01-09T18:06:04.637666Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "time_before = 1\n",
+    "time_after = 3\n",
+    "iterrator = crandall_fetcher.yield_event_waveforms(time_before, time_after)\n",
+    "for event_id, st in iterrator:\n",
+    "    pass"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "A dict of {event_id: stream} can be created using the following code."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:04.640374Z",
+     "iopub.status.busy": "2025-01-09T18:06:04.640037Z",
+     "iopub.status.idle": "2025-01-09T18:06:04.980562Z",
+     "shell.execute_reply": "2025-01-09T18:06:04.979937Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "st_dict = dict(crandall_fetcher.yield_event_waveforms(time_before, time_after))\n",
+    "\n",
+    "for event_id, st in st_dict.items():\n",
+    "    pass"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Different events/inventories\n",
+    "The clients can be swapped out on each method call. This may be be useful to get a subset of the events or channels by providing a filtered catalog/inventory.  \n",
+    "\n",
+    "If a single call was needed for a station, the example below will accomplish this task.  In this example station M11A will be used.\n",
+    "\n",
+    "Note: This will not modify the original wavefetcher."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:04.982760Z",
+     "iopub.status.busy": "2025-01-09T18:06:04.982391Z",
+     "iopub.status.idle": "2025-01-09T18:06:43.540323Z",
+     "shell.execute_reply": "2025-01-09T18:06:43.539734Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# get a subset of the original inventory ()\n",
+    "inv = ta_dataset.station_client.get_stations()\n",
+    "inv2 = inv.select(station=\"M11A\")\n",
+    "\n",
+    "# iterate and print\n",
+    "for st in ta_fetcher.yield_waveforms(t1, t2, duration, overlap, stations=inv2):\n",
+    "    for tr in st:\n",
+    "        print_sta_lta(tr)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The same call applies for swapping out events:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T18:06:43.542829Z",
+     "iopub.status.busy": "2025-01-09T18:06:43.542244Z",
+     "iopub.status.idle": "2025-01-09T18:06:43.965569Z",
+     "shell.execute_reply": "2025-01-09T18:06:43.964982Z"
+    },
+    "pycharm": {
+     "is_executing": false
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# read in catalog as and get a subset as a dataframe\n",
+    "cat = crandall.event_client.get_events()\n",
+    "cat_df = obsplus.events_to_df(cat)[:2]\n",
+    "\n",
+    "# iterate the events and print\n",
+    "iterator = crandall_fetcher.yield_event_waveforms(\n",
+    "    time_before, time_after, events=cat_df\n",
+    ")\n",
+    "for event_id, st in iterator:\n",
+    "    pass"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.16"
+  },
+  "pycharm": {
+   "stem_cell": {
+    "cell_type": "raw",
+    "metadata": {
+     "collapsed": false
+    },
+    "source": []
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

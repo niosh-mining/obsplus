@@ -1,0 +1,42 @@
+﻿obsplus.DataFrameExtractor
+==========================
+
+.. currentmodule:: obsplus
+
+.. autoclass:: DataFrameExtractor
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DataFrameExtractor.__init__
+      ~DataFrameExtractor.clear
+      ~DataFrameExtractor.copy
+      ~DataFrameExtractor.extractor
+      ~DataFrameExtractor.fromkeys
+      ~DataFrameExtractor.get
+      ~DataFrameExtractor.items
+      ~DataFrameExtractor.keys
+      ~DataFrameExtractor.pop
+      ~DataFrameExtractor.popitem
+      ~DataFrameExtractor.register
+      ~DataFrameExtractor.setdefault
+      ~DataFrameExtractor.update
+      ~DataFrameExtractor.values
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DataFrameExtractor.dtypes
+      ~DataFrameExtractor.nslc
+   
+   

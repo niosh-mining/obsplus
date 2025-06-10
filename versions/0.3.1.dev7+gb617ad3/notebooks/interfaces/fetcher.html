@@ -1,0 +1,322 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Fetcher &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Fetcher</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Fetcher">
+<h1>Fetcher<a class="headerlink" href="#Fetcher" title="Link to this heading">¶</a></h1>
+<p>The Fetcher class builds on the unified data request interfaces to provide convenient methods for working with whole datasets.</p>
+<p>Listed below are the two methods which are currently available:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#1 - Get continuous data using channels contained in an inventory (or returned from a station_client).
+
+
+#2 - Iterate over events and their corresponding waveforms that have channels defined by the station_client.
+
+
+Note: Additional methods may be implemented in the future.
+</pre></div>
+</div>
+<section id="Setup">
+<h2>Setup<a class="headerlink" href="#Setup" title="Link to this heading">¶</a></h2>
+<p>In the example below, a Fetcher from the TA and Crandall dataset will be used to demonstrate different aspects of the <code class="docutils literal notranslate"><span class="pre">Fetcher</span></code> functionality.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+
+<span class="c1"># ta_test dataset contains continuous data</span>
+<span class="n">ta_dataset</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;ta_test&quot;</span><span class="p">)</span>
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span>
+
+<span class="c1"># crandall contains only event data</span>
+<span class="n">ta_fetcher</span> <span class="o">=</span> <span class="n">ta_dataset</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+<span class="n">crandall_fetcher</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>The Fetcher can be initialized with any objects that the appropriate client can be obtained from. Commonly it is used with a <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code>, a <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> (or <code class="docutils literal notranslate"><span class="pre">EventBank</span></code>) and an <code class="docutils literal notranslate"><span class="pre">Inventory</span></code>.</p>
+<p>The following example would also be valid:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="n">inv</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+<span class="n">wavebank</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">waveform_client</span>
+
+<span class="n">crandall_fetcher</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">(</span><span class="n">waveforms</span><span class="o">=</span><span class="n">wavebank</span><span class="p">,</span> <span class="n">stations</span><span class="o">=</span><span class="n">inv</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">cat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The WaveFetcher constructor can also take obsplus created csv/dataframes for the <a class="reference internal" href="../datastructures/stations_to_pandas.html"><span class="doc">stations</span></a> and <a class="reference internal" href="../datastructures/events_to_pandas.html"><span class="doc">events</span></a> arguments. However, some of the <code class="docutils literal notranslate"><span class="pre">Fetcher</span></code>’s functionality, like getting a dataframe of picks, will raise an exception unless full station/event clients are used.</p>
+</section>
+<section id="Quick-fetch">
+<h2>Quick fetch<a class="headerlink" href="#Quick-fetch" title="Link to this heading">¶</a></h2>
+<p>The easiest way to get data out of a data fetcher is to call it. The fetcher takes an argument that will provide it with information about when the stream should start. It can be a variety of types (float, UTCDateTime, Catalog, Event). The time before the reference time, and the time after the reference time must also be provided in the method call or in the <code class="docutils literal notranslate"><span class="pre">Fetcher</span></code> construction.</p>
+<p>The fetcher uses the inventory or <code class="docutils literal notranslate"><span class="pre">station_client</span></code> to know which channels to request from the waveform_client.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+
+<span class="n">reference_time</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-15T06&quot;</span><span class="p">)</span>
+<span class="n">time_before</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">time_after</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">stream</span> <span class="o">=</span> <span class="n">ta_fetcher</span><span class="p">(</span><span class="n">reference_time</span><span class="p">,</span> <span class="n">time_before</span><span class="p">,</span> <span class="n">time_after</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Continuous-data">
+<h2>Continuous data<a class="headerlink" href="#Continuous-data" title="Link to this heading">¶</a></h2>
+<p>Continuous data can be requested from the wavefetcher, which uses the <code class="docutils literal notranslate"><span class="pre">station_client</span></code> to know which channels to pull from the waveform_client. This enables users to skip a lot of the boiler-plate associated with the normal <code class="docutils literal notranslate"><span class="pre">get_waveforms</span></code> interface.</p>
+<p>The example below shows the continuous data being interated over while running a simple STA/LTA detector.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">obspy.signal.trigger</span><span class="w"> </span><span class="kn">import</span> <span class="n">classic_sta_lta</span>
+
+
+<span class="c1"># first define a function for doing the sta/lta</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">print_sta_lta</span><span class="p">(</span><span class="n">tr</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prints the sta/lta&quot;&quot;&quot;</span>
+    <span class="n">sr</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="n">classic_sta_lta</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mi">20</span> <span class="o">*</span> <span class="n">sr</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mi">60</span> <span class="o">*</span> <span class="n">sr</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># starttime for the continuous data</span>
+<span class="n">t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-16&quot;</span><span class="p">)</span>
+
+<span class="c1"># endtime for the continuous data</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">36000</span> <span class="o">*</span> <span class="mi">10</span>  <span class="c1"># use 10 hours</span>
+
+<span class="c1"># duration of each chunk returned (in seconds)</span>
+<span class="n">duration</span> <span class="o">=</span> <span class="mi">72000</span>
+
+<span class="c1"># overlap (added to the end of the duration)</span>
+<span class="n">overlap</span> <span class="o">=</span> <span class="mi">60</span>
+
+<span class="c1"># iterate over each chunk</span>
+<span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">ta_fetcher</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># select only z component and perform preprocessing</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;Z&quot;</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+    <span class="c1"># do the sta/lta</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">print_sta_lta</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Stream-processors">
+<h2>Stream processors<a class="headerlink" href="#Stream-processors" title="Link to this heading">¶</a></h2>
+<p>It can be useful to define a stream_processing function that will be called on each stream before yielding it. This allows the user to define flexible, custom processing functions without cluttering up the function calls with a lot of processing parameters.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># define a function that will be called on the stream before returning it.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stream_processor</span><span class="p">(</span><span class="n">st</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Select the z component, detrend, and filter a stream&quot;&quot;&quot;</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;Z&quot;</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s2">&quot;bandpass&quot;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">0.04</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">st</span>
+
+
+<span class="c1"># attach stream processor to the wave fetcher</span>
+<span class="n">ta_fetcher</span><span class="o">.</span><span class="n">stream_processor</span> <span class="o">=</span> <span class="n">stream_processor</span>
+
+<span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">ta_fetcher</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">print_sta_lta</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Event-data">
+<h2>Event data<a class="headerlink" href="#Event-data" title="Link to this heading">¶</a></h2>
+<p>When the wavefetcher object is provided with an event client, the event client can be used to iterate through the event waveforms.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">time_before</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">time_after</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">iterrator</span> <span class="o">=</span> <span class="n">crandall_fetcher</span><span class="o">.</span><span class="n">yield_event_waveforms</span><span class="p">(</span><span class="n">time_before</span><span class="p">,</span> <span class="n">time_after</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">iterrator</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<p>A dict of {event_id: stream} can be created using the following code.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">crandall_fetcher</span><span class="o">.</span><span class="n">yield_event_waveforms</span><span class="p">(</span><span class="n">time_before</span><span class="p">,</span> <span class="n">time_after</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">st_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Different-events/inventories">
+<h2>Different events/inventories<a class="headerlink" href="#Different-events/inventories" title="Link to this heading">¶</a></h2>
+<p>The clients can be swapped out on each method call. This may be be useful to get a subset of the events or channels by providing a filtered catalog/inventory.</p>
+<p>If a single call was needed for a station, the example below will accomplish this task. In this example station M11A will be used.</p>
+<p>Note: This will not modify the original wavefetcher.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get a subset of the original inventory ()</span>
+<span class="n">inv</span> <span class="o">=</span> <span class="n">ta_dataset</span><span class="o">.</span><span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+<span class="n">inv2</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s2">&quot;M11A&quot;</span><span class="p">)</span>
+
+<span class="c1"># iterate and print</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">ta_fetcher</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">overlap</span><span class="p">,</span> <span class="n">stations</span><span class="o">=</span><span class="n">inv2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">print_sta_lta</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The same call applies for swapping out events:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># read in catalog as and get a subset as a dataframe</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="n">cat_df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)[:</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c1"># iterate the events and print</span>
+<span class="n">iterator</span> <span class="o">=</span> <span class="n">crandall_fetcher</span><span class="o">.</span><span class="n">yield_event_waveforms</span><span class="p">(</span>
+    <span class="n">time_before</span><span class="p">,</span> <span class="n">time_after</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">cat_df</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Fetcher</a><ul>
+<li><a class="reference internal" href="#Setup">Setup</a></li>
+<li><a class="reference internal" href="#Quick-fetch">Quick fetch</a></li>
+<li><a class="reference internal" href="#Continuous-data">Continuous data</a></li>
+<li><a class="reference internal" href="#Stream-processors">Stream processors</a></li>
+<li><a class="reference internal" href="#Event-data">Event data</a></li>
+<li><a class="reference internal" href="#Different-events/inventories">Different events/inventories</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/interfaces/fetcher.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Fetcher</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

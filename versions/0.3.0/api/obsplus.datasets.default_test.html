@@ -1,0 +1,154 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.datasets.default_test module &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    
+    <script src="../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.default_test module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.datasets.default_test">
+<span id="obsplus-datasets-default-test-module"></span><h1>obsplus.datasets.default_test module<a class="headerlink" href="#module-obsplus.datasets.default_test" title="Link to this heading">¶</a></h1>
+<p>The default test dataset. This consists exclusively of obspy’s default objects
+saved to disk.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.datasets.default_test.</span></span><span class="sig-name descname"><span class="pre">Default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/default_test.html#Default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.default_test.Default" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a></p>
+<p>A dataset from obspy’s default stream, catalog, and inventory.</p>
+<p>Each object is simply saved to the appropriate directory.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default.download_events">
+<span class="sig-name descname"><span class="pre">download_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/default_test.html#Default.download_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.default_test.Default.download_events" title="Link to this definition">¶</a></dt>
+<dd><p>Just copy the events into a directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default.download_stations">
+<span class="sig-name descname"><span class="pre">download_stations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/default_test.html#Default.download_stations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.default_test.Default.download_stations" title="Link to this definition">¶</a></dt>
+<dd><p>Copy the default inventory to a directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default.download_waveforms">
+<span class="sig-name descname"><span class="pre">download_waveforms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/default_test.html#Default.download_waveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.default_test.Default.download_waveforms" title="Link to this definition">¶</a></dt>
+<dd><p>Copy the default Stream into a directory.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'default_test'</span></em><a class="headerlink" href="#obsplus.datasets.default_test.Default.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.default_test.Default.version">
+<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'0.0.0'</span></em><a class="headerlink" href="#obsplus.datasets.default_test.Default.version" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.datasets.default_test module</a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default"><code class="docutils literal notranslate"><span class="pre">Default</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default.download_events"><code class="docutils literal notranslate"><span class="pre">Default.download_events()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default.download_stations"><code class="docutils literal notranslate"><span class="pre">Default.download_stations()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default.download_waveforms"><code class="docutils literal notranslate"><span class="pre">Default.download_waveforms()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default.name"><code class="docutils literal notranslate"><span class="pre">Default.name</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.default_test.Default.version"><code class="docutils literal notranslate"><span class="pre">Default.version</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.datasets.default_test.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.default_test module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

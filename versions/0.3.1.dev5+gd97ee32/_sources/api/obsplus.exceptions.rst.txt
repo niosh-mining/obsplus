@@ -1,0 +1,7 @@
+obsplus.exceptions module
+=========================
+
+.. automodule:: obsplus.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:

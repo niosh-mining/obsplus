@@ -1,0 +1,826 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.datasets.dataset &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.dataset</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.datasets.dataset</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for loading, (and downloading) data sets.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">distutils.dir_util</span><span class="w"> </span><span class="kn">import</span> <span class="n">copy_tree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingProxyType</span> <span class="k">as</span> <span class="n">MapProxy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.clients.fdsn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pkg_resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">iter_entry_points</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus</span><span class="w"> </span><span class="kn">import</span> <span class="n">copy_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_TYPES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataVersionError</span><span class="p">,</span>
+    <span class="n">FileHashChangedError</span><span class="p">,</span>
+    <span class="n">MissingDataFileError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventClient</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">,</span> <span class="n">WaveformClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">_create_opsdata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_event_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_version_tuple</span><span class="p">,</span>
+    <span class="n">hash_directory</span><span class="p">,</span>
+    <span class="n">iterate</span><span class="p">,</span>
+    <span class="n">validate_version_str</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.stations</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_station_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.waveforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_waveform_client</span>
+
+<span class="n">DataSetType</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;DataSetType&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;DataSet&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DataSet">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataSet</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract Base Class for downloading and serving datasets.</span>
+
+<span class="sd">    This is not intended to be used directly, but rather through subclassing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    base_path</span>
+<span class="sd">        The path to which the dataset will be saved.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_path</span>
+<span class="sd">        The path containing the data. By default it is base_path / name.</span>
+<span class="sd">    source_path</span>
+<span class="sd">        The path which contains the original files included in the dataset</span>
+<span class="sd">        before download. By default this is found in the same directory as</span>
+<span class="sd">        the dataset&#39;s code (.py) file in a folder with the same name as the</span>
+<span class="sd">        dataset.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">        Importantly, each dataset references *two* directories, the source_path</span>
+<span class="sd">        and data_path. The source_path contains all data included within the</span>
+<span class="sd">        dataset and should not be altered. The data_path has a copy of</span>
+<span class="sd">        everything in the source_path, plus the files created during the</span>
+<span class="sd">        downloading process.</span>
+
+<span class="sd">        The base_path (the parent of data_path) is resolved for each</span>
+<span class="sd">        dataset using the following priorities:</span>
+
+<span class="sd">            1. The `base_path` provided to `Dataset`&#39;s __init__ method.</span>
+<span class="sd">            2. .data_path.txt file stored in the data source</span>
+<span class="sd">            3. An environmental name OPSDATA_PATH</span>
+<span class="sd">            4. The opsdata_path variable from obsplus.constants</span>
+
+<span class="sd">        By default the data will be downloaded to the user&#39;s home directory</span>
+<span class="sd">        in a folder called &quot;opsdata&quot;, but again, this is easily changed</span>
+<span class="sd">        by setting the OPSDATA_PATH environmental variable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_entry_points</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_datasets</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">data_loaded</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># variables for hashing datafiles and versioning</span>
+    <span class="n">_version_filename</span> <span class="o">=</span> <span class="s2">&quot;dataset_version.txt&quot;</span>
+    <span class="n">_hash_filename</span> <span class="o">=</span> <span class="s2">&quot;dataset_hash.json&quot;</span>
+    <span class="c1"># the name of the file that saves where the data file were downloaded</span>
+    <span class="n">_saved_dataset_path_filename</span> <span class="o">=</span> <span class="s2">&quot;.dataset_data_path.txt&quot;</span>
+    <span class="n">_hash_excludes</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;readme.txt&quot;</span><span class="p">,</span>
+        <span class="n">_version_filename</span><span class="p">,</span>
+        <span class="n">_hash_filename</span><span class="p">,</span>
+        <span class="n">_saved_dataset_path_filename</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="c1"># generic functions for loading data (WaveBank, event, stations)</span>
+    <span class="n">_load_funcs</span> <span class="o">=</span> <span class="n">MapProxy</span><span class="p">(</span>
+        <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">waveform</span><span class="o">=</span><span class="n">get_waveform_client</span><span class="p">,</span>
+            <span class="n">event</span><span class="o">=</span><span class="n">get_event_client</span><span class="p">,</span>
+            <span class="n">station</span><span class="o">=</span><span class="n">get_station_client</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># flags to determine if data should be loaded into memory</span>
+    <span class="n">_load_waveforms</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_load_stations</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">_load_events</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># cache for instantiated datasets</span>
+    <span class="n">_loaded_datasets</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_verbose</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register subclasses of datasets.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;name must be a string&quot;</span>
+        <span class="n">validate_version_str</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+        <span class="c1"># Register the subclass as a dataset.</span>
+        <span class="n">DataSet</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="bp">cls</span>
+
+    <span class="c1"># --- logic for loading and caching data</span>
+
+<div class="viewcode-block" id="DataSet.__init__">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download and load data into memory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_opsdata_path</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span>
+        <span class="c1"># create the dataset&#39;s base directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># run the download logic if needed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_downloads</span><span class="p">()</span>
+        <span class="c1"># cache loaded dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">base_path</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loaded_datasets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_loaded_datasets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_opsdata_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opsdata_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the location where datasets are stored.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A path to the opsdata directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">opsdata_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">opsdata_path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_saved_data_path</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">opsdata_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># next look for env variable</span>
+                <span class="n">opsdata_path_default</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">OPSDATA_PATH</span>
+                <span class="n">opsdata_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPSDATA_PATH&quot;</span><span class="p">,</span> <span class="n">opsdata_path_default</span><span class="p">)</span>
+        <span class="c1"># ensure the data path exists</span>
+        <span class="n">_create_opsdata</span><span class="p">(</span><span class="n">opsdata_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">opsdata_path</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_downloads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate each kind of data and download if needed.&quot;&quot;&quot;</span>
+        <span class="c1"># Make sure the version of the dataset is okay</span>
+        <span class="n">version_ok</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_version</span><span class="p">()</span>
+        <span class="n">downloaded</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">what</span> <span class="ow">in</span> <span class="n">DATA_TYPES</span><span class="p">:</span>
+            <span class="n">needs_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">s_need_downloading&quot;</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">needs_str</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">version_ok</span><span class="p">):</span>
+                <span class="c1"># this is the first type of data to be downloaded, run hook</span>
+                <span class="c1"># and copy data from data source.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">downloaded</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">copy_tree</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pre_download_hook</span><span class="p">()</span>
+                <span class="n">downloaded</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="c1"># download data, test termination criteria</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;downloading </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> data for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> dataset ...&quot;</span><span class="p">)</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;download_&quot;</span> <span class="o">+</span> <span class="n">what</span> <span class="o">+</span> <span class="s2">&quot;s&quot;</span><span class="p">)()</span>
+                <span class="k">assert</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">needs_str</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Download </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> failed&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;finished downloading </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> data for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_readme</span><span class="p">()</span>  <span class="c1"># make sure readme has been written</span>
+        <span class="c1"># some data were downloaded, call post download hook</span>
+        <span class="k">if</span> <span class="n">downloaded</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_hashes</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">post_download_hook</span><span class="p">()</span>
+            <span class="c1"># write a new version file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_version</span><span class="p">()</span>
+            <span class="c1"># write out a new saved datafile path</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_save_data_path</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the client-like objects from disk.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_funcs</span><span class="p">[</span><span class="n">what</span><span class="p">](</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;failed to load </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">, returning None&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># load data into memory (eg load event bank contents into catalog)</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_load_</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;get_</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">client</span>
+
+<div class="viewcode-block" id="DataSet.copy">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">DataSetType</span><span class="p">,</span> <span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataSetType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a copy of the dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        deep</span>
+<span class="sd">            If True deep copy the objects attached to the dataset.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This only copies data in memory, not on disk. If you plan to make</span>
+<span class="sd">        any changes to the dataset&#39;s on disk resources please use</span>
+<span class="sd">        :method:`~obsplus.Dataset.copy_to`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">if</span> <span class="n">deep</span> <span class="k">else</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.copy_to">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.copy_to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_to</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">:</span> <span class="n">DataSetType</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataSetType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy the dataset to a destination.</span>
+
+<span class="sd">        If the destination already exists simply do nothing.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        destination</span>
+<span class="sd">            The destination to copy the dataset. It will be created if it</span>
+<span class="sd">            doesn&#39;t exist. If None is provided use tmpfile to create a temporary</span>
+<span class="sd">            directory.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A new dataset object which refers to the copied files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.get_fetcher">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.get_fetcher">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_fetcher</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a Fetcher from the data.</span>
+
+<span class="sd">        kwargs are passed to :class:`~obsplus.structures.Fetcher`&#39;s constructor.</span>
+<span class="sd">        See its documentation for acceptable kwargs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_loaded</span><span class="p">,</span> <span class="s2">&quot;data have not been loaded into memory&quot;</span>
+        <span class="c1"># get events/waveforms/stations and put into dict for the Fetcher</span>
+        <span class="n">fetch_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;waveforms&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="p">,</span>
+            <span class="s2">&quot;events&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_client</span><span class="p">,</span>
+            <span class="s2">&quot;stations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_client</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">fetch_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">Fetcher</span><span class="p">(</span><span class="o">**</span><span class="n">fetch_kwargs</span><span class="p">)</span></div>
+
+
+    <span class="fm">__call__</span> <span class="o">=</span> <span class="n">get_fetcher</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_readme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;readme.txt&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes the classes docstring to a file.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="n">filename</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+                <span class="n">fi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_data_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the path to where the data where downloaded in source folder.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path_to_saved_path_file</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+            <span class="n">fi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">))</span>
+
+<div class="viewcode-block" id="DataSet.load_dataset">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.load_dataset">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_dataset</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">:</span> <span class="n">DataSetType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">DataSet</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataSetType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a loaded dataset.</span>
+
+<span class="sd">        Will ensure all files are downloaded and the appropriate data are</span>
+<span class="sd">        loaded into memory.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of the dataset to load or a DataSet object. If a DataSet</span>
+<span class="sd">            object is passed a copy of it will be returned.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; # --- Load an example dataset for testing</span>
+<span class="sd">        &gt;&gt;&gt; import obsplus</span>
+<span class="sd">        &gt;&gt;&gt; ds = obsplus.load_dataset(&#39;default_test&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; # If you plan to make changes to the dataset be sure to copy it first</span>
+<span class="sd">        &gt;&gt;&gt; # The following will copy all files in the dataset to a tmpdir</span>
+<span class="sd">        &gt;&gt;&gt; ds2 = obsplus.copy_dataset(&#39;default_test&#39;)</span>
+
+<span class="sd">        &gt;&gt;&gt; # --- Use dataset clients to load waveforms, stations, and events</span>
+<span class="sd">        &gt;&gt;&gt; cat = ds.event_client.get_events()</span>
+<span class="sd">        &gt;&gt;&gt; st = ds.waveform_client.get_waveforms()</span>
+<span class="sd">        &gt;&gt;&gt; inv = ds.station_client.get_stations()</span>
+
+<span class="sd">        &gt;&gt;&gt; # --- get a fetcher for more &quot;dataset aware&quot; querying</span>
+<span class="sd">        &gt;&gt;&gt; fetcher = ds.get_fetcher()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Just copy and return if a dataset is passed.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">DataSet</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_dataset_entry_point</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_datasets</span><span class="p">:</span>
+            <span class="c1"># The dataset has not been discovered; try to load entry points</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not in the known datasets </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_loaded_datasets</span><span class="p">:</span>
+            <span class="c1"># The dataset has already been loaded, simply return a copy</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_loaded_datasets</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># The dataset has been discovered but not loaded; just loaded</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">name</span><span class="p">]()</span></div>
+
+
+<div class="viewcode-block" id="DataSet.delete_data_directory">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.delete_data_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_data_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete the datafiles of a dataset.</span>
+
+<span class="sd">        This will force the data to be re-copied from the source files and</span>
+<span class="sd">        download logic to be run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">DataSet</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_path</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_dataset_entry_point</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load and cache the dataset entry points.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name</span>
+<span class="sd">            A string id of the dataset</span>
+<span class="sd">        load</span>
+<span class="sd">            If True, load the code associated with the entry point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_ep</span><span class="p">(</span><span class="n">ep</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Load the entry point, ignore removed datasets.&quot;&quot;&quot;</span>
+            <span class="c1"># If a plugin was register but no longer exists it can raise.</span>
+            <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">ModuleNotFoundError</span><span class="p">):</span>
+                <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+                <span class="k">assert</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_datasets</span><span class="p">,</span> <span class="s2">&quot;dataset should be registered.&quot;</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_entry_points</span><span class="p">:</span>  <span class="c1"># entry point has been registered</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_datasets</span><span class="p">:</span>  <span class="c1"># and loaded, return</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="n">load</span><span class="p">:</span>  <span class="c1"># it has not been loaded, try loading it.</span>
+                <span class="n">_load_ep</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_entry_points</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="c1"># it has not been found, iterate entry points and update</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">iter_entry_points</span><span class="p">(</span><span class="s2">&quot;obsplus.datasets&quot;</span><span class="p">)}</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_entry_points</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span>
+        <span class="c1"># stop if we don&#39;t need to load</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">load</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># now iterate through all names, or just selected name, and load</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">iterate</span><span class="p">(</span><span class="n">name</span> <span class="ow">or</span> <span class="n">eps</span><span class="p">))</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">eps</span><span class="p">):</span>
+            <span class="n">_load_ep</span><span class="p">(</span><span class="n">eps</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+    <span class="c1"># --- prescribed Paths for data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a path to where the dataset&#39;s data was/will be downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a path to the directory where the data files included with</span>
+<span class="sd">        the dataset live.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">))</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_saved_data_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the saved data source path, else return None.&quot;&quot;&quot;</span>
+        <span class="n">expected_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path_to_saved_path_file</span>
+        <span class="k">if</span> <span class="n">expected_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">loaded_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">expected_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">loaded_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">loaded_path</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_path_to_saved_path_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A path to the file which keeps track of where data are downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_dataset_path_filename</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_version_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A path to the saved version file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_version_filename</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of top-level files associated with the dataset.</span>
+
+<span class="sd">        Hidden files are ignored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">file_iterator</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">x</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">waveform_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the path to the waveforms.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="s2">&quot;waveforms&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the path to the events.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="s2">&quot;events&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">station_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the path to the stations.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="s2">&quot;stations&quot;</span>
+
+    <span class="c1"># --- checks for if each type of data is downloaded</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">waveforms_need_downloading</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if waveform data need to be downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">events_need_downloading</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if event data need to be downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stations_need_downloading</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if station data need to be downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">waveform_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WaveformClient</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A cached property for a waveform client&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="s2">&quot;waveform&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventClient</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A cached property for an event client&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_path</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">station_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StationClient</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A cached property for a station client&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load</span><span class="p">(</span><span class="s2">&quot;station&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_path</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an instance of the IRIS client, subclasses can override</span>
+<span class="sd">        to use different clients.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;IRIS&quot;</span><span class="p">)</span>
+
+    <span class="nd">@_download_client</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Just allow this to be overwritten&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Simple way to customize dataset logging.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DataSet.create_sha256_hash">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.create_sha256_hash">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_sha256_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a sha256 hash of the dataset&#39;s data files.</span>
+
+<span class="sd">        The output is stored in a simple json file. Keys are paths (relative</span>
+<span class="sd">        to dataset base path) and values are files hashes.</span>
+
+<span class="sd">        If you want to update/create the hash file in the dataset&#39;s source</span>
+<span class="sd">        this can be done by passing the dataset&#39;s source_path as the path</span>
+<span class="sd">        argument.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            The path to which the hash data is saved. If None use data_path.</span>
+<span class="sd">        hidden</span>
+<span class="sd">            If True also include hidden files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_excludes</span><span class="p">,</span> <span class="n">hidden</span><span class="o">=</span><span class="n">hidden</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">hash_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># sort dict to mess less with git</span>
+        <span class="n">sort_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="c1"># get path and dump json</span>
+        <span class="n">default_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash_filename</span>
+        <span class="n">_path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">default_path</span>
+        <span class="n">hash_path</span> <span class="o">=</span> <span class="n">_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash_filename</span> <span class="k">if</span> <span class="n">_path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="k">else</span> <span class="n">_path</span>
+        <span class="k">with</span> <span class="n">hash_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sort_dict</span><span class="p">,</span> <span class="n">fi</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="DataSet.check_hashes">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.check_hashes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_hashes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check_hash</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the files are all there and have the correct Hashes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        check_hash</span>
+<span class="sd">            If True check the hash of the files.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        FileHashChangedError</span>
+<span class="sd">            If one of the file hashes is not as expeted.</span>
+<span class="sd">        MissingDataFileError</span>
+<span class="sd">            If one the data files was not downloaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If there is not a pre-existing hash file return</span>
+        <span class="n">hash_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash_filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hash_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="c1"># get old and new hash, and overlaps</span>
+        <span class="n">old_hash</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">hash_path</span><span class="o">.</span><span class="n">open</span><span class="p">())</span>
+        <span class="n">current_hash</span> <span class="o">=</span> <span class="n">hash_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_excludes</span><span class="p">)</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">old_hash</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">current_hash</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_excludes</span><span class="p">)</span>
+        <span class="c1"># get any files with new hashes</span>
+        <span class="n">has_changed</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">overlap</span> <span class="k">if</span> <span class="n">old_hash</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">!=</span> <span class="n">current_hash</span><span class="p">[</span><span class="n">x</span><span class="p">]}</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">old_hash</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">current_hash</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_excludes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">has_changed</span> <span class="ow">and</span> <span class="n">check_hash</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The hash for dataset </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> did not match the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;expected values for the following files:</span><span class="se">\n</span><span class="si">{</span><span class="n">has_changed</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">FileHashChangedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is missing files: </span><span class="se">\n</span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">MissingDataFileError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.check_version">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.check_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the version of the dataset.</span>
+
+<span class="sd">        Verifies the version string in the dataset class definition matches</span>
+<span class="sd">        the one saved on disk. Returns True if all is well else raises a</span>
+<span class="sd">        DataVersionError.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            Expected path of the version file.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        DataVersionError</span>
+<span class="sd">            If any version problems are discovered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">redownload_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Delete the following directory </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data_version</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">DataVersionError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>  <span class="c1"># failed to read version</span>
+            <span class="n">need_dl</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">s_need_downloading&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">DATA_TYPES</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">need_dl</span><span class="p">):</span>  <span class="c1"># Something is a little weird</span>
+                <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Version file is missing. Attempting to re-download the dataset.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Check the version number</span>
+        <span class="k">if</span> <span class="n">get_version_tuple</span><span class="p">(</span><span class="n">version</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">get_version_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataset version is out of date: </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="k">raise</span> <span class="n">DataVersionError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="n">redownload_msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">get_version_tuple</span><span class="p">(</span><span class="n">version</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">get_version_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataset version mismatch: </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2"> &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; It may be necessary to reload the dataset.&quot;</span>
+            <span class="n">warn</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="n">redownload_msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># All is well. Continue.</span></div>
+
+
+<div class="viewcode-block" id="DataSet.write_version">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.write_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the version string to disk.&quot;&quot;&quot;</span>
+        <span class="n">version_path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_version_path</span>
+        <span class="k">with</span> <span class="n">version_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+            <span class="n">fi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.read_data_version">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.read_data_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_data_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read the data version from disk.</span>
+
+<span class="sd">        Return a 3 length tuple from the semantic version string (of the</span>
+<span class="sd">        form xx.yy.zz). Raise a DataVersionError if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">version_path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_version_path</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">version_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">DataVersionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">version_path</span><span class="si">}</span><span class="s2"> does not exist!&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">version_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+            <span class="n">version_str</span> <span class="o">=</span> <span class="n">fi</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">validate_version_str</span><span class="p">(</span><span class="n">version_str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">version_str</span></div>
+
+
+    <span class="c1"># --- Abstract properties subclasses should implement</span>
+    <span class="nd">@property</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Name of the dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dataset version. Should be a str of the form x.y.z</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">version_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a tuple of the version string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">validate_version_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+        <span class="n">vsplit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">vsplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">vsplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">vsplit</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="c1"># --- Abstract methods subclasses should implement</span>
+
+<div class="viewcode-block" id="DataSet.download_events">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.download_events">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to ensure the events have been downloaded.</span>
+
+<span class="sd">        Events should be written in an obspy-readable format to</span>
+<span class="sd">        self.event_path. If not implemented this method will create an empty</span>
+<span class="sd">        directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.download_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.download_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to ensure waveforms have been downloaded.</span>
+
+<span class="sd">        Waveforms should be written in an obspy-readable format to</span>
+<span class="sd">        self.waveform_path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.download_stations">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.download_stations">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to ensure inventories have been downloaded.</span>
+
+<span class="sd">        Station data should be written in an obspy-readable format to</span>
+<span class="sd">        self.station_path. Since there is not yet a functional StationBank,</span>
+<span class="sd">        this method must be implemented by subclass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">station_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataSet.pre_download_hook">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.pre_download_hook">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pre_download_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Code to run before any downloads.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="DataSet.post_download_hook">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.dataset.html#obsplus.datasets.dataset.DataSet.post_download_hook">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_download_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Code to run after any downloads.&quot;&quot;&quot;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Dataset: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">!s}</span><span class="s2"> with description: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<span class="n">load_dataset</span> <span class="o">=</span> <span class="n">DataSet</span><span class="o">.</span><span class="n">load_dataset</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.dataset</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

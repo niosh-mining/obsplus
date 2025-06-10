@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.datasets.bingham_test &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.bingham_test</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.datasets.bingham_test</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The Bingham dataset.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTCDateTime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.clients.fdsn.mass_downloader</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CircularDomain</span><span class="p">,</span>
+    <span class="n">MassDownloader</span><span class="p">,</span>
+    <span class="n">Restrictions</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.geodetics</span><span class="w"> </span><span class="kn">import</span> <span class="n">kilometers2degrees</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveBank</span><span class="p">,</span> <span class="n">events_to_df</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.datasets.dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataSet</span>
+
+
+<div class="viewcode-block" id="Bingham">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.bingham_test.html#obsplus.datasets.bingham_test.Bingham">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Bingham</span><span class="p">(</span><span class="n">DataSet</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The Bingham Canyon dataset includes waveforms recorded during and after</span>
+<span class="sd">    the Manefay Slide, one of the largest anthropogenic landslides ever</span>
+<span class="sd">    recorded (https://bit.ly/2bsRsyR). Fortunately, due to close monitoring,</span>
+<span class="sd">    no one was injured.</span>
+
+<span class="sd">    I have personally modified and added some phase picks to the events.</span>
+<span class="sd">    As such, this dataset should be used for testing and demonstration</span>
+<span class="sd">    purposes only.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bingham_test&quot;</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;0.1.0&quot;</span>
+    <span class="n">time_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)</span>
+    <span class="n">time_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)</span>
+    <span class="c1"># define spatial extents variables (center of pit)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="mf">40.53829</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">112.149_506</span>
+    <span class="n">max_dist</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># distance in km</span>
+
+<div class="viewcode-block" id="Bingham.download_events">
+<a class="viewcode-back" href="../../../api/obsplus.datasets.bingham_test.html#obsplus.datasets.bingham_test.Bingham.download_events">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Simply copy events from base directory.&quot;&quot;&quot;</span>
+        <span class="n">cat</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_path</span> <span class="o">/</span> <span class="s2">&quot;events.xml&quot;</span><span class="p">))</span>
+        <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_path</span><span class="p">)</span><span class="o">.</span><span class="n">put_events</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_bingham</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use obspy&#39;s mass downloader to get station/waveforms data.&quot;&quot;&quot;</span>
+        <span class="n">bank</span> <span class="o">=</span> <span class="n">WaveBank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="p">)</span>
+        <span class="n">domain</span> <span class="o">=</span> <span class="n">CircularDomain</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+            <span class="n">minradius</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">maxradius</span><span class="o">=</span><span class="n">kilometers2degrees</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_dist</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">chan_priorities</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;HH[ZNE]&quot;</span><span class="p">,</span> <span class="s2">&quot;BH[ZNE]&quot;</span><span class="p">,</span> <span class="s2">&quot;EL[ZNE]&quot;</span><span class="p">,</span> <span class="s2">&quot;EN[ZNE]&quot;</span><span class="p">]</span>
+        <span class="n">cat</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_path</span> <span class="o">/</span> <span class="s2">&quot;events.xml&quot;</span><span class="p">))</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">starttime</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_before</span>
+            <span class="n">endtime</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_after</span>
+            <span class="n">restrictions</span> <span class="o">=</span> <span class="n">Restrictions</span><span class="p">(</span>
+                <span class="n">starttime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">starttime</span><span class="p">),</span>
+                <span class="n">endtime</span><span class="o">=</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">endtime</span><span class="p">),</span>
+                <span class="n">minimum_length</span><span class="o">=</span><span class="mf">0.90</span><span class="p">,</span>
+                <span class="n">minimum_interstation_distance_in_m</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                <span class="n">channel_priorities</span><span class="o">=</span><span class="n">chan_priorities</span><span class="p">,</span>
+                <span class="n">location_priorities</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span>
+                <span class="n">restrictions</span><span class="o">=</span><span class="n">restrictions</span><span class="p">,</span>
+                <span class="n">mseed_storage</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="p">),</span>
+                <span class="n">stationxml_storage</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station_path</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">MassDownloader</span><span class="p">(</span><span class="n">providers</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_download_client</span><span class="p">])</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># ensure data were downloaded</span>
+            <span class="n">bank</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="ow">not</span> <span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">endtime</span><span class="p">)</span><span class="o">.</span><span class="n">empty</span>
+
+        <span class="c1"># update wavebank</span>
+        <span class="n">WaveBank</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_path</span><span class="p">)</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+
+    <span class="n">download_stations</span> <span class="o">=</span> <span class="n">_download_bingham</span>
+    <span class="n">download_waveforms</span> <span class="o">=</span> <span class="n">_download_bingham</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.bingham_test</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

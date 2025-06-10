@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Contributing &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Contributing</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Contributing">
+<h1>Contributing<a class="headerlink" href="#Contributing" title="Link to this heading">¶</a></h1>
+<p>Contributions to ObsPlus are welcomed and appreciated. Before proceeding please be aware of our <a class="reference external" href="https://github.com/CDCgov/template/blob/master/code-of-conduct.md">code of conduct</a>.</p>
+<section id="Getting-setup">
+<h2>Getting setup<a class="headerlink" href="#Getting-setup" title="Link to this heading">¶</a></h2>
+<p>The following steps are needed to setup <code class="docutils literal notranslate"><span class="pre">ObsPlus</span></code> for development:</p>
+<section id="1.-Clone-ObsPlus">
+<h3>1. Clone ObsPlus<a class="headerlink" href="#1.-Clone-ObsPlus" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/niosh-mining/obsplus
+</pre></div>
+</div>
+</section>
+<section id="2.-Pull-tags">
+<h3>2. Pull tags<a class="headerlink" href="#2.-Pull-tags" title="Link to this heading">¶</a></h3>
+<p>Make sure to pull all of the latest git tags so the dynamic versioning provided by <a class="reference external" href="https://github.com/warner/python-versioneer">versioneer</a> works.</p>
+<p><strong>NOTE:</strong> This step is important if some time has passed since ObsPlus has been cloned</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>master<span class="w"> </span>--tags
+</pre></div>
+</div>
+</section>
+<section id="3.-Create-a-virtual-environment-(optional)">
+<h3>3. Create a virtual environment (optional)<a class="headerlink" href="#3.-Create-a-virtual-environment-(optional)" title="Link to this heading">¶</a></h3>
+<p>Create and activate a virtual environment so ObsPlus will not mess with the base (or system) python installation.</p>
+<p>If you are using <a class="reference external" href="https://www.anaconda.com/">Anaconda</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>obsplus_dev<span class="w"> </span>obspy<span class="w"> </span>pandas<span class="w"> </span>pre-commit
+conda<span class="w"> </span>activate<span class="w"> </span>obsplus_dev
+<span class="nb">cd</span><span class="w"> </span>obsplus
+</pre></div>
+</div>
+</section>
+<section id="4.-Install-ObsPlus-in-development-mode">
+<h3>4. Install ObsPlus in development mode<a class="headerlink" href="#4.-Install-ObsPlus-in-development-mode" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="5.-Setup-precommit-hooks">
+<h3>5. Setup precommit hooks<a class="headerlink" href="#5.-Setup-precommit-hooks" title="Link to this heading">¶</a></h3>
+<p>ObsPlus uses several <a class="reference external" href="https://pre-commit.com/">pre-commit</a> hooks to ensure the code stays tidy.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pre-commit<span class="w"> </span>install<span class="w"> </span>-f
+</pre></div>
+</div>
+</section>
+</section>
+<section id="Branching-and-versioning">
+<h2>Branching and versioning<a class="headerlink" href="#Branching-and-versioning" title="Link to this heading">¶</a></h2>
+<p>We create new features or bug fixes in their own branches and merge them into master via pull requests. We may switch to a more complex branching model if the need arises.</p>
+<p>If substantial new features have been added since the last release we will bump the minor version. If only bug fixes/minor changes have been made, only the patch version will be bumped. Like most python projects, we loosely follow <a class="reference external" href="https://semver.org/">semantic versioning</a> in terms that we will not bump the major version until ObsPlus is stable.</p>
+</section>
+<section id="Running-the-tests">
+<h2>Running the tests<a class="headerlink" href="#Running-the-tests" title="Link to this heading">¶</a></h2>
+<p>The tests suite is run with <a class="reference external" href="https://docs.pytest.org/en/stable/">pytest</a>. Make sure your current directory is set to the cloned ObsPlus repo and you have followed the development setup instructions listed above. Invoke pytest from the command line:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>tests
+</pre></div>
+</div>
+</section>
+<section id="Building-the-documentation">
+<h2>Building the documentation<a class="headerlink" href="#Building-the-documentation" title="Link to this heading">¶</a></h2>
+<p>The documentation can be built using the script called “make_docs.py” in the scripts directory. If you have followed the instructions above all the required dependencies should be installed.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/make_docs.py
+</pre></div>
+</div>
+<p>The docs can then be accessed by double clicking on the newly created html index at docs/_build/html/index.html.</p>
+</section>
+<section id="General-guidelines">
+<h2>General guidelines<a class="headerlink" href="#General-guidelines" title="Link to this heading">¶</a></h2>
+<p>ObsPlus uses <a class="reference external" href="https://github.com/ambv/black">Black</a> and <a class="reference external" href="http://flake8.pycqa.org/en/latest/">flake8</a> for code linting. If you have properly installed ObsPlus’ pre-commit hooks they will be invoked automatically when you make a git commit. If any complaints are raised simply address them and try again.</p>
+<p>Use <a class="reference external" href="https://docs.scipy.org/doc/numpy/docs/howto_document.html">numpy style docstrings</a>. All public code (doesn’t start with a <code class="docutils literal notranslate"><span class="pre">_</span></code>) should have a “full” docstring but private code (starts with a <code class="docutils literal notranslate"><span class="pre">_</span></code>) can have an abbreviated docstring.</p>
+<p>ObsPlus makes extensive use of Python 3’s <a class="reference external" href="https://docs.python.org/3/library/typing.html">type hints</a>. You are encouraged to annotate any public functions/methods with type hints.</p>
+<p>Prefer <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> to strings when working with paths. However, when dealing with millions of files (e.g., ObsPlus’ indexers) strings may be preferred for efficiency.</p>
+<p>Follow <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/#imports">PEP8’s guidelines for imports</a>.</p>
+<section id="Example-functions">
+<h3>Example functions<a class="headerlink" href="#Example-functions" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<span class="c1"># example public function</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">example_func</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">to_add</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple, one line explanation of what this function does.</span>
+
+<span class="sd">    Additional details which might be useful, and are not limited to one line.</span>
+<span class="sd">    In fact, they might span several lines, especially if the author of the</span>
+<span class="sd">    docstring tends to include more details than needed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        A description of this parameter</span>
+<span class="sd">    to_add</span>
+<span class="sd">        A description of this parameter</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    If needed, more information about what this function returns. You shouldn&#39;t</span>
+<span class="sd">    simply specify the type here since that is already given by the type annotation.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; # Examples are included in the doctest style</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; import pandas as pd</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; df = pd.DataFrame(np.random(10))</span>
+<span class="sd">    &gt;&gt;&gt; out = example_func(df)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">to_add</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">+</span> <span class="n">to_add</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1"># example private function</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_recombobulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A private function can have a simple (multi-line) snippet and doesn&#39;t need as</span>
+<span class="sd">    much detail or type hinting as a public function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="Working-with-dataframes">
+<h2>Working with dataframes<a class="headerlink" href="#Working-with-dataframes" title="Link to this heading">¶</a></h2>
+<p>Column names should be snake_cased whenever possible.</p>
+<p>Always access columns with getitem and not getattr (ie use <code class="docutils literal notranslate"><span class="pre">df['column_name']</span></code> not <code class="docutils literal notranslate"><span class="pre">df.column_name</span></code>).</p>
+<p>Prefer creating a new <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>/<code class="docutils literal notranslate"><span class="pre">Series</span></code> to modifying them inplace. Inplace modifications should require opting in (usually through an <code class="docutils literal notranslate"><span class="pre">inplace</span></code> key word argument).</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Contributing</a><ul>
+<li><a class="reference internal" href="#Getting-setup">Getting setup</a><ul>
+<li><a class="reference internal" href="#1.-Clone-ObsPlus">1. Clone ObsPlus</a></li>
+<li><a class="reference internal" href="#2.-Pull-tags">2. Pull tags</a></li>
+<li><a class="reference internal" href="#3.-Create-a-virtual-environment-(optional)">3. Create a virtual environment (optional)</a></li>
+<li><a class="reference internal" href="#4.-Install-ObsPlus-in-development-mode">4. Install ObsPlus in development mode</a></li>
+<li><a class="reference internal" href="#5.-Setup-precommit-hooks">5. Setup precommit hooks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Branching-and-versioning">Branching and versioning</a></li>
+<li><a class="reference internal" href="#Running-the-tests">Running the tests</a></li>
+<li><a class="reference internal" href="#Building-the-documentation">Building the documentation</a></li>
+<li><a class="reference internal" href="#General-guidelines">General guidelines</a><ul>
+<li><a class="reference internal" href="#Example-functions">Example functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Working-with-dataframes">Working with dataframes</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/notebooks/contributing.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Contributing</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

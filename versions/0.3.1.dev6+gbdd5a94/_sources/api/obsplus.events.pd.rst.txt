@@ -1,0 +1,7 @@
+obsplus.events.pd module
+========================
+
+.. automodule:: obsplus.events.pd
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Validators &#8212; ObsPlus  [ 0.3.1.dev6+gbdd5a94 ] 0.3.1.dev6+gbdd5a94 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=1a73bed8"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Validators</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Validators">
+<h1>Validators<a class="headerlink" href="#Validators" title="Link to this heading">¶</a></h1>
+<p>ObsPlus provides a simple method for declaring and enforcing assumptions about data. You can think of it much like <a class="reference external" href="https://docs.pytest.org/en/latest/">pytest</a> for data validation (i.e. it is enforced at runtime rather than in a test suite). The implementation is specifically geared towards nested tree structures (like obspy’s <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> object), but does work for any type of object.</p>
+<div class="admonition warning">
+<p><strong>Warning</strong>: This is a fairly advanced feature of ObsPlus intended primarily for library authors and users with stringent data requirements. The built-in validators will meet most people’s needs.</p>
+</div>
+<div class="admonition warning">
+<p><strong>Warning</strong>: In the future we may move much of this functionality to ObsPy as described in <a class="reference external" href="https://github.com/obspy/obspy/issues/2154">this proposal</a>, but an appropriate deprecation cycle will be implemented.</p>
+</div>
+<section id="Built-in-Validators">
+<h2>Built-in Validators<a class="headerlink" href="#Built-in-Validators" title="Link to this heading">¶</a></h2>
+<p>Obsplus comes with a few built-in validators. See the <a class="reference external" href="catalog_validation.ipynb">catalog validation</a> page for more details.</p>
+</section>
+<section id="Custom-Validators">
+<h2>Custom Validators<a class="headerlink" href="#Custom-Validators" title="Link to this heading">¶</a></h2>
+<p>The example below creates a custom validator to ensure a group of events have at least four picks and the origins have latitude and longitude defined. Namespace <code class="docutils literal notranslate"><span class="pre">&quot;_silly_test&quot;</span></code> will be used to let obsplus know these validators should be grouped together.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ev</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate</span><span class="p">,</span> <span class="n">validator</span>
+
+<span class="n">namespace</span> <span class="o">=</span> <span class="s2">&quot;_silly_test&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We simply have to decorate a callable with the `validator` decorator</span>
+<span class="c1"># and specify the class it is to act on and its namespace</span>
+<span class="nd">@validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensure_events_have_four_picks</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="n">picks</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span>
+
+
+<span class="nd">@validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensure_origin_have_lat_lon</span><span class="p">(</span><span class="n">origin</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">origin</span><span class="o">.</span><span class="n">latitude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">origin</span><span class="o">.</span><span class="n">longitude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</div>
+<p>An event is created that will violate both conditions and run the <code class="docutils literal notranslate"><span class="pre">validate</span></code> function. it should raise an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">()</span>
+
+<span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
+    <span class="n">origin</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">origin</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">validate</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<p>A report of failures in the form of a dataframe can be created. This allows a way to identify problems with the data without haulting the execution of the code.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">report</span> <span class="o">=</span> <span class="n">validate</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">report</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>validator</th>
+      <th>object</th>
+      <th>message</th>
+      <th>passed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ensure_events_have_four_picks</td>
+      <td>[resource_id, event_type, event_type_certainty...</td>
+      <td>validator ensure_events_have_four_picks failed...</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>ensure_events_have_four_picks</td>
+      <td>[resource_id, event_type, event_type_certainty...</td>
+      <td>validator ensure_events_have_four_picks failed...</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>ensure_events_have_four_picks</td>
+      <td>[resource_id, event_type, event_type_certainty...</td>
+      <td>validator ensure_events_have_four_picks failed...</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>ensure_origin_have_lat_lon</td>
+      <td>[resource_id, time, time_errors, longitude, lo...</td>
+      <td>validator ensure_origin_have_lat_lon failed ob...</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>ensure_origin_have_lat_lon</td>
+      <td>[resource_id, time, time_errors, longitude, lo...</td>
+      <td></td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>ensure_origin_have_lat_lon</td>
+      <td>[resource_id, time, time_errors, longitude, lo...</td>
+      <td></td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>Notice how the <code class="docutils literal notranslate"><span class="pre">object</span></code> column is a reference to the python object which the validator ran on. This makes it very quick to find (and fix) problematic data.</p>
+<section id="Validators-with-optional-arguments">
+<h3>Validators with optional arguments<a class="headerlink" href="#Validators-with-optional-arguments" title="Link to this heading">¶</a></h3>
+<p>Validators that take optional arguments (in the form of key word arguments) can also be created. The <code class="docutils literal notranslate"><span class="pre">validate</span></code> function then knows how to distribute these values to the appropriate validators.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@validator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensure_lat_greater_than</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">min_lat</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">min_lat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">origin</span><span class="o">.</span><span class="n">latitude</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">origin</span><span class="o">.</span><span class="n">latitude</span> <span class="o">&gt;</span> <span class="n">min_lat</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">_</span> <span class="o">=</span> <span class="n">validate</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">min_lat</span><span class="o">=</span><span class="mi">39</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Validators</a><ul>
+<li><a class="reference internal" href="#Built-in-Validators">Built-in Validators</a></li>
+<li><a class="reference internal" href="#Custom-Validators">Custom Validators</a><ul>
+<li><a class="reference internal" href="#Validators-with-optional-arguments">Validators with optional arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/utils/validators.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Validators</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

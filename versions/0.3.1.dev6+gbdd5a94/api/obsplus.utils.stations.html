@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.utils.stations module &#8212; ObsPlus  [ 0.3.1.dev6+gbdd5a94 ] 0.3.1.dev6+gbdd5a94 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=1a73bed8"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.stations module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.utils.stations">
+<span id="obsplus-utils-stations-module"></span><h1>obsplus.utils.stations module<a class="headerlink" href="#module-obsplus.utils.stations" title="Link to this heading">¶</a></h1>
+<p>Utilities for working with inventories.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.stations.df_to_inventory">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.stations.</span></span><span class="sig-name descname"><span class="pre">df_to_inventory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nrl_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/stations.html#df_to_inventory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.stations.df_to_inventory" title="Link to this definition">¶</a></dt>
+<dd><p>Create an inventory from a dataframe.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – <dl class="simple">
+<dt>A dataframe with the same columns and dtypes as the one returned by</dt><dd><dl class="simple">
+<dt><a class="reference internal" href="../quickref/stubs/obsplus.stations_to_df.html#obsplus.stations_to_df" title="obsplus.stations_to_df"><code class="xref py py-func docutils literal notranslate"><span class="pre">obsplus.stations_to_df()</span></code></a>, which are:</dt><dd><p>network: nslc_code
+station: nslc_code
+location: nslc_code
+channel: nslc_code
+seed_id: str
+latitude: float
+longitude: longitude
+elevation: float
+depth: float
+azimuth: float
+dip: float
+sample_rate: float
+start_date: datetime64[ns]
+end_date: datetime64[ns]</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>extra columns, except for those mentioned in the notes, are ignored.</p>
+</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.StationClient" title="obsplus.interfaces.StationClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationClient</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Any client with a <cite>get_stations</cite> method. Only used if the dataframe
+contains special columns for retrieving channel responses.</p></li>
+<li><p><strong>nrl_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The path to a local copy of the Nominal Response Library. Only used
+if the dataframe contains special columns for retrieving channel
+responses.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Inventory</span></code></span></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>There are two ways to include response information:</p>
+<p>1. Using the Nominal Response Library (NRL):
+(<a class="reference external" href="https://docs.obspy.org/master/packages/obspy.clients.nrl.html">https://docs.obspy.org/master/packages/obspy.clients.nrl.html</a>)
+If the dataframe has columns named “sensor_keys” and “datalogger_keys”
+these will indicate the response information should be fetched using
+ObsPy’s NRL client. Each of these columns should either contain lists
+or json-loadable strings.
+For example, to specify sensor keys:
+[“Nanometrics”, “Trillium 120 Horizon”]
+or
+‘[“Nanometrics”, “Trillium 120 Horizon”]’
+are both valid.</p>
+<p>Note that the capability of ObsPy’s NRL client to parse the online NRL has
+been deprecated and it is now necessary to download and use a local copy.</p>
+<p>2. Using a station client:
+If the dataframe contains a column get_stations_kwargs it indicates that
+either a client was passed as the client argument or the fdsn IRIS client
+should be used to download at least <em>some</em> channel response information.
+The contents of this column must be a dictionary or json string of
+acceptable keyword arguments for the client’s <cite>get_stations</cite> method.
+All time values must be provided as iso8601 strings.
+For example,
+{‘network’: ‘UU’, ‘station’: ‘TMU’, ‘location’: ‘01’, ‘channel’: ‘HHZ’,</p>
+<blockquote>
+<div><p>‘starttime’: ‘2017-01-02’,}</p>
+</div></blockquote>
+<p>would be passed to the provided client to download a response for the
+corresponding channel.
+- If more than one channel is returned from the get_stations call an</p>
+<blockquote>
+<div><p>AmbiguousResponseError will be raised and a more specific query will
+be required.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>If not all the required seed_id information is provided it will be
+ascertained from the appropriate column.</p></li>
+<li><p>To simply fetch a response using only the info provided in other columns
+use an empty dict, or json string (eg ‘{}’).</p></li>
+<li><p>No responses will be fetched for any rows with empty strings or null
+values in the get_stations_kwargs column.</p></li>
+<li><p>If both NRL and client methods are indicated by column contents an
+AmbiguousResponseError will be raised.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.stations.get_station_client">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.stations.</span></span><span class="sig-name descname"><span class="pre">get_station_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stations</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/stations.html#get_station_client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.stations.get_station_client" title="Link to this definition">¶</a></dt>
+<dd><p>Extract a station client from various inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stations</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Inventory</span></code></span>) – <dl class="simple">
+<dt>Any of the following:</dt><dd><ul class="simple">
+<li><p>A path to an obspy-readable station file</p></li>
+<li><p>A path to a directory of obspy-readable station files</p></li>
+<li><p>An <cite>obspy.Inventory</cite> instance</p></li>
+<li><p>An instance of <a class="reference internal" href="../quickref/stubs/obsplus.EventBank.html#obsplus.EventBank" title="obsplus.EventBank"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventBank</span></code></a></p></li>
+<li><p>Any other object that has a <cite>get_stations</cite> method</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If a station client cannot be determined from the input.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.StationClient" title="obsplus.interfaces.StationClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationClient</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.utils.stations module</a><ul>
+<li><a class="reference internal" href="#obsplus.utils.stations.df_to_inventory"><code class="docutils literal notranslate"><span class="pre">df_to_inventory()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.stations.get_station_client"><code class="docutils literal notranslate"><span class="pre">get_station_client()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.stations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.stations module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

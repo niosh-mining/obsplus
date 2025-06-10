@@ -1,0 +1,6 @@
+﻿obsplus.json\_to\_cat
+=====================
+
+.. currentmodule:: obsplus
+
+.. autofunction:: json_to_cat

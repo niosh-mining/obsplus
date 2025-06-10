@@ -1,0 +1,765 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# DataFrameExtractor\n",
+    "\n",
+    "\n",
+    "<div class=\"alert alert-warning\">\n",
+    "\n",
+    "**Warning**: This section is a bit technical and many users won't need this functionality. Also, it is a bit experimental and the API may change in future versions. Proceed with caution.\n",
+    "\n",
+    "</div>\n",
+    "\n",
+    "The callables [`picks_to_df`, `events_to_df`](../datastructures/events_to_pandas.ipynb), and [`inventory_to_df`](../datastructures/stations_to_pandas.ipynb) are instances of `DataFrameExtractor`, which provides an extensible and customizable way for creating callables that extract `DataFrames` from arbitrary objects.\n",
+    "\n",
+    "To demonstrate, let's create a new extractor to put arrival objects in the Crandall catalog into a dataframe.  The table can be joined together with the picks table to do some (possibly) interesting things."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:05.615172Z",
+     "iopub.status.busy": "2025-01-09T01:04:05.614791Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.388145Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.387616Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import obspy\n",
+    "\n",
+    "import obsplus\n",
+    "\n",
+    "crandall = obsplus.load_dataset(\"crandall_test\")\n",
+    "cat = crandall.event_client.get_events()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Start by initializing the extractor with a list of expected columns and data types. This is optional, but helps ensure the output dataframe has a consistent shape and data type. The [arrival documentation](https://docs.obspy.org/packages/autogen/obspy.core.event.origin.Arrival.html) may be useful to understand these. Rather than collecting all the data contained in the `Arrival` instances, only a few columns of interest will be created."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.390365Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.390010Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.393197Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.392785Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "from collections import OrderedDict\n",
+    "\n",
+    "import obspy.core.event as ev\n",
+    "\n",
+    "# declare datatypes (order to double as required columns)\n",
+    "dtypes = OrderedDict(\n",
+    "    resource_id=str,\n",
+    "    pick_id=str,\n",
+    "    event_id=str,\n",
+    "    origin_id=str,\n",
+    "    phase=str,\n",
+    "    time_correction=float,\n",
+    "    distance=float,\n",
+    "    time_residual=float,\n",
+    "    time_weight=float,\n",
+    ")\n",
+    "\n",
+    "# init the DataFrameExtractor\n",
+    "arrivals_to_df = obsplus.DataFrameExtractor(\n",
+    "    ev.Arrival, required_columns=list(dtypes), dtypes=dtypes\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The next step it to define some \"extractors\". These are callables that will take an `Arrival` instance and return the desired data. The extractors can return:\n",
+    "\n",
+    "1. A `dict` of values where each key corresponds to a column name and each value is the row value of that column for the current object.\n",
+    "\n",
+    "2. Anything else, which is interpreted as the row value, and the column name is obtained from the function name."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.394857Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.394537Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.397334Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.396945Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# an extractor which returns a dictionary\n",
+    "@arrivals_to_df.extractor\n",
+    "def _get_basic(arrival):\n",
+    "    out = dict(\n",
+    "        resource_id=str(arrival.resource_id),\n",
+    "        pick_id=str(arrival.pick_id),\n",
+    "        time_correction=arrival.time_correction,\n",
+    "        distance=arrival.distance,\n",
+    "        time_residual=arrival.time_residual,\n",
+    "        time_weight=arrival.time_weight,\n",
+    "    )\n",
+    "    return out\n",
+    "\n",
+    "\n",
+    "# an extractor which returns a single value\n",
+    "@arrivals_to_df.extractor\n",
+    "def _get_phase(arrival):\n",
+    "    return arrival.phase"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Notice that there is no way of extracting information from the parent `Origin` or `Event` objects. The extractor also doesn't know how to find the arrivals in a `Catalog` object. Defining the types of data the extractor can operate on, and injecting the event and origin data into arrival rows will accomplish both of these tasks."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.398839Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.398653Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.401709Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.401325Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "@arrivals_to_df.register(obspy.Catalog)\n",
+    "def _get_arrivals_from_catalogs(cat):\n",
+    "    arrivals = []  # a list of arrivals\n",
+    "    extras = {}  # dict of data to inject to arrival level\n",
+    "    for event in cat:\n",
+    "        for origin in event.origins:\n",
+    "            arrivals.extend(origin.arrivals)\n",
+    "            data = dict(event_id=event.resource_id, origin_id=origin.resource_id)\n",
+    "            # use arrival id to inject extra to each arrival row\n",
+    "            extras.update({id(x): data for x in origin.arrivals})\n",
+    "    return arrivals_to_df(arrivals, extras=extras)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The next step is to initiate the extractor."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.403179Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.403016Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.424159Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.423645Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>resource_id</th>\n",
+       "      <th>pick_id</th>\n",
+       "      <th>event_id</th>\n",
+       "      <th>origin_id</th>\n",
+       "      <th>phase</th>\n",
+       "      <th>time_correction</th>\n",
+       "      <th>distance</th>\n",
+       "      <th>time_residual</th>\n",
+       "      <th>time_weight</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>smi:local/6a71667a-1d56-4420-842f-449c35ee2f62</td>\n",
+       "      <td>smi:local/21690511</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.355</td>\n",
+       "      <td>-0.092</td>\n",
+       "      <td>-1.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>smi:local/2038b04e-d5bd-42a8-88ed-cd01f3ee983a</td>\n",
+       "      <td>smi:local/21690512</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.393</td>\n",
+       "      <td>-0.100</td>\n",
+       "      <td>-1.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>smi:local/c856e454-cc2c-4a01-9d55-7a1d96cab052</td>\n",
+       "      <td>smi:local/21690513</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.525</td>\n",
+       "      <td>-0.146</td>\n",
+       "      <td>-1.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>smi:local/edafe686-55d3-4c1c-bfec-aaccda71cf9d</td>\n",
+       "      <td>smi:local/21690514</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.618</td>\n",
+       "      <td>-0.019</td>\n",
+       "      <td>-1.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>smi:local/b2d4defe-b6a0-4989-bf59-705591a4e846</td>\n",
+       "      <td>smi:local/21690515</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>S</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.355</td>\n",
+       "      <td>0.357</td>\n",
+       "      <td>-1.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                      resource_id             pick_id  \\\n",
+       "0  smi:local/6a71667a-1d56-4420-842f-449c35ee2f62  smi:local/21690511   \n",
+       "1  smi:local/2038b04e-d5bd-42a8-88ed-cd01f3ee983a  smi:local/21690512   \n",
+       "2  smi:local/c856e454-cc2c-4a01-9d55-7a1d96cab052  smi:local/21690513   \n",
+       "3  smi:local/edafe686-55d3-4c1c-bfec-aaccda71cf9d  smi:local/21690514   \n",
+       "4  smi:local/b2d4defe-b6a0-4989-bf59-705591a4e846  smi:local/21690515   \n",
+       "\n",
+       "           event_id         origin_id phase  time_correction  distance  \\\n",
+       "0  smi:local/248828  smi:local/404310     P              NaN     0.355   \n",
+       "1  smi:local/248828  smi:local/404310     P              NaN     0.393   \n",
+       "2  smi:local/248828  smi:local/404310     P              NaN     0.525   \n",
+       "3  smi:local/248828  smi:local/404310     P              NaN     0.618   \n",
+       "4  smi:local/248828  smi:local/404310     S              NaN     0.355   \n",
+       "\n",
+       "   time_residual  time_weight  \n",
+       "0         -0.092         -1.0  \n",
+       "1         -0.100         -1.0  \n",
+       "2         -0.146         -1.0  \n",
+       "3         -0.019         -1.0  \n",
+       "4          0.357         -1.0  "
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = arrivals_to_df(cat)\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.451762Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.451352Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.455763Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.455292Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "phase\n",
+       "pPn    238\n",
+       "P      224\n",
+       "Pb     129\n",
+       "Sb      87\n",
+       "Pg      79\n",
+       "S       66\n",
+       "Sg      53\n",
+       "Pn      53\n",
+       "Sn      22\n",
+       "pPb      3\n",
+       "Name: count, dtype: int64"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.phase.value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If only the P phases were needed, the easiest thing to do is filter the dataframe.  For demonstration let's modify our phase extractor so that any row that is not a P phase is skipped. This is done by raising a `SkipRow` exception which is an attribute of the `DataFrameExtractor`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.457387Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.457082Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.460179Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.459693Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/runner/work/obsplus/obsplus/src/obsplus/structures/dfextractor.py:122: UserWarning: _get_phase is already a registered extractor, overwriting\n",
+      "  warnings.warn(msg)\n"
+     ]
+    }
+   ],
+   "source": [
+    "@arrivals_to_df.extractor\n",
+    "def _get_phase(arrival):\n",
+    "    phase = arrival.phase\n",
+    "    if phase.upper() != \"P\":\n",
+    "        raise arrivals_to_df.SkipRow\n",
+    "    return phase"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.461743Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.461445Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.472274Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.471783Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "df = arrivals_to_df(cat)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Get a picks dataframe and perform a left join on the phases:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.474037Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.473871Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.539331Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.538954Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# get picks and filter out non-P phases\n",
+    "picks = obsplus.picks_to_df(cat)\n",
+    "picks = picks[picks.phase_hint.str.upper() == \"P\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.540805Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.540624Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.545111Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.544618Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "df_merged = df.merge(picks, how=\"left\", right_on=\"resource_id\", left_on=\"pick_id\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.546515Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.546357Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.558260Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.557877Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>resource_id_x</th>\n",
+       "      <th>pick_id</th>\n",
+       "      <th>event_id_x</th>\n",
+       "      <th>origin_id</th>\n",
+       "      <th>phase</th>\n",
+       "      <th>time_correction</th>\n",
+       "      <th>distance</th>\n",
+       "      <th>time_residual</th>\n",
+       "      <th>time_weight</th>\n",
+       "      <th>resource_id_y</th>\n",
+       "      <th>...</th>\n",
+       "      <th>agency_id</th>\n",
+       "      <th>event_id_y</th>\n",
+       "      <th>network</th>\n",
+       "      <th>station</th>\n",
+       "      <th>location</th>\n",
+       "      <th>channel</th>\n",
+       "      <th>uncertainty</th>\n",
+       "      <th>lower_uncertainty</th>\n",
+       "      <th>upper_uncertainty</th>\n",
+       "      <th>confidence_level</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>smi:local/6a71667a-1d56-4420-842f-449c35ee2f62</td>\n",
+       "      <td>smi:local/21690511</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.355</td>\n",
+       "      <td>-0.092</td>\n",
+       "      <td>-1.0</td>\n",
+       "      <td>smi:local/21690511</td>\n",
+       "      <td>...</td>\n",
+       "      <td></td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>TA</td>\n",
+       "      <td>P17A</td>\n",
+       "      <td></td>\n",
+       "      <td>BHZ</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>smi:local/2038b04e-d5bd-42a8-88ed-cd01f3ee983a</td>\n",
+       "      <td>smi:local/21690512</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.393</td>\n",
+       "      <td>-0.100</td>\n",
+       "      <td>-1.0</td>\n",
+       "      <td>smi:local/21690512</td>\n",
+       "      <td>...</td>\n",
+       "      <td></td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>TA</td>\n",
+       "      <td>P16A</td>\n",
+       "      <td></td>\n",
+       "      <td>BHZ</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>smi:local/c856e454-cc2c-4a01-9d55-7a1d96cab052</td>\n",
+       "      <td>smi:local/21690513</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.525</td>\n",
+       "      <td>-0.146</td>\n",
+       "      <td>-1.0</td>\n",
+       "      <td>smi:local/21690513</td>\n",
+       "      <td>...</td>\n",
+       "      <td></td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>TA</td>\n",
+       "      <td>Q16A</td>\n",
+       "      <td></td>\n",
+       "      <td>BHZ</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>smi:local/edafe686-55d3-4c1c-bfec-aaccda71cf9d</td>\n",
+       "      <td>smi:local/21690514</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.618</td>\n",
+       "      <td>-0.019</td>\n",
+       "      <td>-1.0</td>\n",
+       "      <td>smi:local/21690514</td>\n",
+       "      <td>...</td>\n",
+       "      <td></td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>UU</td>\n",
+       "      <td>SRU</td>\n",
+       "      <td></td>\n",
+       "      <td>BHZ</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>smi:local/476d69d8-5739-412f-912d-184827b950e3</td>\n",
+       "      <td>smi:local/21690516</td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>smi:local/404310</td>\n",
+       "      <td>P</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.758</td>\n",
+       "      <td>0.056</td>\n",
+       "      <td>-1.0</td>\n",
+       "      <td>smi:local/21690516</td>\n",
+       "      <td>...</td>\n",
+       "      <td></td>\n",
+       "      <td>smi:local/248828</td>\n",
+       "      <td>TA</td>\n",
+       "      <td>P18A</td>\n",
+       "      <td></td>\n",
+       "      <td>BHZ</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 34 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                    resource_id_x             pick_id  \\\n",
+       "0  smi:local/6a71667a-1d56-4420-842f-449c35ee2f62  smi:local/21690511   \n",
+       "1  smi:local/2038b04e-d5bd-42a8-88ed-cd01f3ee983a  smi:local/21690512   \n",
+       "2  smi:local/c856e454-cc2c-4a01-9d55-7a1d96cab052  smi:local/21690513   \n",
+       "3  smi:local/edafe686-55d3-4c1c-bfec-aaccda71cf9d  smi:local/21690514   \n",
+       "4  smi:local/476d69d8-5739-412f-912d-184827b950e3  smi:local/21690516   \n",
+       "\n",
+       "         event_id_x         origin_id phase  time_correction  distance  \\\n",
+       "0  smi:local/248828  smi:local/404310     P              NaN     0.355   \n",
+       "1  smi:local/248828  smi:local/404310     P              NaN     0.393   \n",
+       "2  smi:local/248828  smi:local/404310     P              NaN     0.525   \n",
+       "3  smi:local/248828  smi:local/404310     P              NaN     0.618   \n",
+       "4  smi:local/248828  smi:local/404310     P              NaN     0.758   \n",
+       "\n",
+       "   time_residual  time_weight       resource_id_y  ... agency_id  \\\n",
+       "0         -0.092         -1.0  smi:local/21690511  ...             \n",
+       "1         -0.100         -1.0  smi:local/21690512  ...             \n",
+       "2         -0.146         -1.0  smi:local/21690513  ...             \n",
+       "3         -0.019         -1.0  smi:local/21690514  ...             \n",
+       "4          0.056         -1.0  smi:local/21690516  ...             \n",
+       "\n",
+       "         event_id_y network station  location  channel uncertainty  \\\n",
+       "0  smi:local/248828      TA    P17A                BHZ         NaN   \n",
+       "1  smi:local/248828      TA    P16A                BHZ         NaN   \n",
+       "2  smi:local/248828      TA    Q16A                BHZ         NaN   \n",
+       "3  smi:local/248828      UU     SRU                BHZ         NaN   \n",
+       "4  smi:local/248828      TA    P18A                BHZ         NaN   \n",
+       "\n",
+       "  lower_uncertainty upper_uncertainty confidence_level  \n",
+       "0               NaN               NaN              NaN  \n",
+       "1               NaN               NaN              NaN  \n",
+       "2               NaN               NaN              NaN  \n",
+       "3               NaN               NaN              NaN  \n",
+       "4               NaN               NaN              NaN  \n",
+       "\n",
+       "[5 rows x 34 columns]"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_merged.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.559726Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.559559Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.562988Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.562585Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Index(['resource_id_x', 'pick_id', 'event_id_x', 'origin_id', 'phase',\n",
+       "       'time_correction', 'distance', 'time_residual', 'time_weight',\n",
+       "       'resource_id_y', 'time', 'seed_id', 'filter_id', 'method_id',\n",
+       "       'horizontal_slowness', 'backazimuth', 'onset', 'phase_hint', 'polarity',\n",
+       "       'evaluation_mode', 'event_time', 'evaluation_status', 'creation_time',\n",
+       "       'author', 'agency_id', 'event_id_y', 'network', 'station', 'location',\n",
+       "       'channel', 'uncertainty', 'lower_uncertainty', 'upper_uncertainty',\n",
+       "       'confidence_level'],\n",
+       "      dtype='object')"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_merged.columns"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Calculate how often the `phase` attribute in the arrival is different from the `phase_hint` in the pick, which could indicate a quality issue."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-09T01:04:07.564518Z",
+     "iopub.status.busy": "2025-01-09T01:04:07.564359Z",
+     "iopub.status.idle": "2025-01-09T01:04:07.568054Z",
+     "shell.execute_reply": "2025-01-09T01:04:07.567545Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "1.0"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# calculate fraction of phase_hints that match phase\n",
+    "(df_merged[\"phase\"] == df_merged[\"phase_hint\"]).sum() / len(df_merged)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

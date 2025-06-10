@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.events package &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.events">
+<span id="obsplus-events-package"></span><h1>obsplus.events package<a class="headerlink" href="#module-obsplus.events" title="Link to this heading">¶</a></h1>
+<p>Useful function for dealing with catalogs</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.get_events.html">obsplus.events.get_events module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.get_events.html#obsplus.events.get_events.get_event_summary"><code class="docutils literal notranslate"><span class="pre">get_event_summary()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.get_events.html#obsplus.events.get_events.get_events"><code class="docutils literal notranslate"><span class="pre">get_events()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.json.html">obsplus.events.json module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.json.html#obsplus.events.json.cat_to_dict"><code class="docutils literal notranslate"><span class="pre">cat_to_dict()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.json.html#obsplus.events.json.cat_to_json"><code class="docutils literal notranslate"><span class="pre">cat_to_json()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.json.html#obsplus.events.json.dict_to_cat"><code class="docutils literal notranslate"><span class="pre">dict_to_cat()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.json.html#obsplus.events.json.json_to_cat"><code class="docutils literal notranslate"><span class="pre">json_to_cat()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.merge.html">obsplus.events.merge module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.merge.html#obsplus.events.merge.associate_merge"><code class="docutils literal notranslate"><span class="pre">associate_merge()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.merge.html#obsplus.events.merge.attach_new_origin"><code class="docutils literal notranslate"><span class="pre">attach_new_origin()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.merge.html#obsplus.events.merge.merge_events"><code class="docutils literal notranslate"><span class="pre">merge_events()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.pd.html">obsplus.events.pd module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.amplitudes_to_dataframe"><code class="docutils literal notranslate"><span class="pre">amplitudes_to_dataframe()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.arrivals_to_dataframe"><code class="docutils literal notranslate"><span class="pre">arrivals_to_dataframe()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.event_to_dataframe"><code class="docutils literal notranslate"><span class="pre">event_to_dataframe()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.magnitudes_to_dataframe"><code class="docutils literal notranslate"><span class="pre">magnitudes_to_dataframe()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.picks_to_dataframe"><code class="docutils literal notranslate"><span class="pre">picks_to_dataframe()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.pd.html#obsplus.events.pd.station_magnitudes_to_dataframe"><code class="docutils literal notranslate"><span class="pre">station_magnitudes_to_dataframe()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.schema.html">obsplus.events.schema module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude"><code class="docutils literal notranslate"><span class="pre">Amplitude</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.category"><code class="docutils literal notranslate"><span class="pre">Amplitude.category</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.comments"><code class="docutils literal notranslate"><span class="pre">Amplitude.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.creation_info"><code class="docutils literal notranslate"><span class="pre">Amplitude.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.evaluation_mode"><code class="docutils literal notranslate"><span class="pre">Amplitude.evaluation_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.evaluation_status"><code class="docutils literal notranslate"><span class="pre">Amplitude.evaluation_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.filter_id"><code class="docutils literal notranslate"><span class="pre">Amplitude.filter_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.generic_amplitude"><code class="docutils literal notranslate"><span class="pre">Amplitude.generic_amplitude</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.generic_amplitude_errors"><code class="docutils literal notranslate"><span class="pre">Amplitude.generic_amplitude_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.magnitude_hint"><code class="docutils literal notranslate"><span class="pre">Amplitude.magnitude_hint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.method_id"><code class="docutils literal notranslate"><span class="pre">Amplitude.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.model_config"><code class="docutils literal notranslate"><span class="pre">Amplitude.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.period"><code class="docutils literal notranslate"><span class="pre">Amplitude.period</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.period_errors"><code class="docutils literal notranslate"><span class="pre">Amplitude.period_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.pick_id"><code class="docutils literal notranslate"><span class="pre">Amplitude.pick_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.scaling_time"><code class="docutils literal notranslate"><span class="pre">Amplitude.scaling_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.scaling_time_errors"><code class="docutils literal notranslate"><span class="pre">Amplitude.scaling_time_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.snr"><code class="docutils literal notranslate"><span class="pre">Amplitude.snr</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.time_window"><code class="docutils literal notranslate"><span class="pre">Amplitude.time_window</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.type"><code class="docutils literal notranslate"><span class="pre">Amplitude.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.unit"><code class="docutils literal notranslate"><span class="pre">Amplitude.unit</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Amplitude.waveform_id"><code class="docutils literal notranslate"><span class="pre">Amplitude.waveform_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival"><code class="docutils literal notranslate"><span class="pre">Arrival</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.azimuth"><code class="docutils literal notranslate"><span class="pre">Arrival.azimuth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.backazimuth_residual"><code class="docutils literal notranslate"><span class="pre">Arrival.backazimuth_residual</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.backazimuth_weight"><code class="docutils literal notranslate"><span class="pre">Arrival.backazimuth_weight</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.comments"><code class="docutils literal notranslate"><span class="pre">Arrival.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.creation_info"><code class="docutils literal notranslate"><span class="pre">Arrival.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.distance"><code class="docutils literal notranslate"><span class="pre">Arrival.distance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.earth_model_id"><code class="docutils literal notranslate"><span class="pre">Arrival.earth_model_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.horizontal_slowness_residual"><code class="docutils literal notranslate"><span class="pre">Arrival.horizontal_slowness_residual</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.horizontal_slowness_weight"><code class="docutils literal notranslate"><span class="pre">Arrival.horizontal_slowness_weight</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.model_config"><code class="docutils literal notranslate"><span class="pre">Arrival.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.phase"><code class="docutils literal notranslate"><span class="pre">Arrival.phase</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.pick_id"><code class="docutils literal notranslate"><span class="pre">Arrival.pick_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.takeoff_angle"><code class="docutils literal notranslate"><span class="pre">Arrival.takeoff_angle</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.takeoff_angle_errors"><code class="docutils literal notranslate"><span class="pre">Arrival.takeoff_angle_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.time_correction"><code class="docutils literal notranslate"><span class="pre">Arrival.time_correction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.time_residual"><code class="docutils literal notranslate"><span class="pre">Arrival.time_residual</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Arrival.time_weight"><code class="docutils literal notranslate"><span class="pre">Arrival.time_weight</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Axis"><code class="docutils literal notranslate"><span class="pre">Axis</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Axis.azimuth"><code class="docutils literal notranslate"><span class="pre">Axis.azimuth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Axis.length"><code class="docutils literal notranslate"><span class="pre">Axis.length</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Axis.model_config"><code class="docutils literal notranslate"><span class="pre">Axis.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Axis.plunge"><code class="docutils literal notranslate"><span class="pre">Axis.plunge</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog"><code class="docutils literal notranslate"><span class="pre">Catalog</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog.comments"><code class="docutils literal notranslate"><span class="pre">Catalog.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog.creation_info"><code class="docutils literal notranslate"><span class="pre">Catalog.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog.description"><code class="docutils literal notranslate"><span class="pre">Catalog.description</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog.events"><code class="docutils literal notranslate"><span class="pre">Catalog.events</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog.model_config"><code class="docutils literal notranslate"><span class="pre">Catalog.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Comment"><code class="docutils literal notranslate"><span class="pre">Comment</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Comment.creation_info"><code class="docutils literal notranslate"><span class="pre">Comment.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Comment.model_config"><code class="docutils literal notranslate"><span class="pre">Comment.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Comment.text"><code class="docutils literal notranslate"><span class="pre">Comment.text</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime"><code class="docutils literal notranslate"><span class="pre">CompositeTime</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.day"><code class="docutils literal notranslate"><span class="pre">CompositeTime.day</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.day_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.day_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.hour"><code class="docutils literal notranslate"><span class="pre">CompositeTime.hour</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.hour_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.hour_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.minute"><code class="docutils literal notranslate"><span class="pre">CompositeTime.minute</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.minute_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.minute_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.model_config"><code class="docutils literal notranslate"><span class="pre">CompositeTime.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.month"><code class="docutils literal notranslate"><span class="pre">CompositeTime.month</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.month_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.month_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.second"><code class="docutils literal notranslate"><span class="pre">CompositeTime.second</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.second_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.second_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.year"><code class="docutils literal notranslate"><span class="pre">CompositeTime.year</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CompositeTime.year_errors"><code class="docutils literal notranslate"><span class="pre">CompositeTime.year_errors</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.major_axis_azimuth"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.major_axis_azimuth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.major_axis_plunge"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.major_axis_plunge</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.major_axis_rotation"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.major_axis_rotation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.model_config"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.semi_intermediate_axis_length"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.semi_intermediate_axis_length</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.semi_major_axis_length"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.semi_major_axis_length</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ConfidenceEllipsoid.semi_minor_axis_length"><code class="docutils literal notranslate"><span class="pre">ConfidenceEllipsoid.semi_minor_axis_length</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo"><code class="docutils literal notranslate"><span class="pre">CreationInfo</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.agency_id"><code class="docutils literal notranslate"><span class="pre">CreationInfo.agency_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.agency_uri"><code class="docutils literal notranslate"><span class="pre">CreationInfo.agency_uri</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.author"><code class="docutils literal notranslate"><span class="pre">CreationInfo.author</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.author_uri"><code class="docutils literal notranslate"><span class="pre">CreationInfo.author_uri</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.creation_time"><code class="docutils literal notranslate"><span class="pre">CreationInfo.creation_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.model_config"><code class="docutils literal notranslate"><span class="pre">CreationInfo.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.CreationInfo.version"><code class="docutils literal notranslate"><span class="pre">CreationInfo.version</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed"><code class="docutils literal notranslate"><span class="pre">DataUsed</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.component_count"><code class="docutils literal notranslate"><span class="pre">DataUsed.component_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.longest_period"><code class="docutils literal notranslate"><span class="pre">DataUsed.longest_period</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.model_config"><code class="docutils literal notranslate"><span class="pre">DataUsed.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.shortest_period"><code class="docutils literal notranslate"><span class="pre">DataUsed.shortest_period</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.station_count"><code class="docutils literal notranslate"><span class="pre">DataUsed.station_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.DataUsed.wave_type"><code class="docutils literal notranslate"><span class="pre">DataUsed.wave_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event"><code class="docutils literal notranslate"><span class="pre">Event</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.amplitudes"><code class="docutils literal notranslate"><span class="pre">Event.amplitudes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.comments"><code class="docutils literal notranslate"><span class="pre">Event.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.creation_info"><code class="docutils literal notranslate"><span class="pre">Event.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.event_descriptions"><code class="docutils literal notranslate"><span class="pre">Event.event_descriptions</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.event_type"><code class="docutils literal notranslate"><span class="pre">Event.event_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.event_type_certainty"><code class="docutils literal notranslate"><span class="pre">Event.event_type_certainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.focal_mechanisms"><code class="docutils literal notranslate"><span class="pre">Event.focal_mechanisms</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.magnitudes"><code class="docutils literal notranslate"><span class="pre">Event.magnitudes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.model_config"><code class="docutils literal notranslate"><span class="pre">Event.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.origins"><code class="docutils literal notranslate"><span class="pre">Event.origins</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.picks"><code class="docutils literal notranslate"><span class="pre">Event.picks</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.preferred_focal_mechanism_id"><code class="docutils literal notranslate"><span class="pre">Event.preferred_focal_mechanism_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.preferred_magnitude_id"><code class="docutils literal notranslate"><span class="pre">Event.preferred_magnitude_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.preferred_origin_id"><code class="docutils literal notranslate"><span class="pre">Event.preferred_origin_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.station_magnitudes"><code class="docutils literal notranslate"><span class="pre">Event.station_magnitudes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event.to_obspy"><code class="docutils literal notranslate"><span class="pre">Event.to_obspy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.EventDescription"><code class="docutils literal notranslate"><span class="pre">EventDescription</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.EventDescription.model_config"><code class="docutils literal notranslate"><span class="pre">EventDescription.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.EventDescription.text"><code class="docutils literal notranslate"><span class="pre">EventDescription.text</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.EventDescription.type"><code class="docutils literal notranslate"><span class="pre">EventDescription.type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism"><code class="docutils literal notranslate"><span class="pre">FocalMechanism</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.azimuthal_gap"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.azimuthal_gap</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.comments"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.creation_info"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.evaluation_mode"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.evaluation_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.evaluation_status"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.evaluation_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.method_id"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.misfit"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.misfit</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.model_config"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.moment_tensor"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.moment_tensor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.nodal_planes"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.nodal_planes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.principal_axes"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.principal_axes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.station_distribution_ratio"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.station_distribution_ratio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.station_polarity_count"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.station_polarity_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.triggering_origin_id"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.triggering_origin_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.FocalMechanism.waveform_id"><code class="docutils literal notranslate"><span class="pre">FocalMechanism.waveform_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude"><code class="docutils literal notranslate"><span class="pre">Magnitude</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.azimuthal_gap"><code class="docutils literal notranslate"><span class="pre">Magnitude.azimuthal_gap</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.comments"><code class="docutils literal notranslate"><span class="pre">Magnitude.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.creation_info"><code class="docutils literal notranslate"><span class="pre">Magnitude.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.evaluation_mode"><code class="docutils literal notranslate"><span class="pre">Magnitude.evaluation_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.evaluation_status"><code class="docutils literal notranslate"><span class="pre">Magnitude.evaluation_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.mag"><code class="docutils literal notranslate"><span class="pre">Magnitude.mag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.mag_errors"><code class="docutils literal notranslate"><span class="pre">Magnitude.mag_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.magnitude_type"><code class="docutils literal notranslate"><span class="pre">Magnitude.magnitude_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.method_id"><code class="docutils literal notranslate"><span class="pre">Magnitude.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.model_config"><code class="docutils literal notranslate"><span class="pre">Magnitude.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.origin_id"><code class="docutils literal notranslate"><span class="pre">Magnitude.origin_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.station_count"><code class="docutils literal notranslate"><span class="pre">Magnitude.station_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Magnitude.station_magnitude_contributions"><code class="docutils literal notranslate"><span class="pre">Magnitude.station_magnitude_contributions</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor"><code class="docutils literal notranslate"><span class="pre">MomentTensor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.category"><code class="docutils literal notranslate"><span class="pre">MomentTensor.category</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.clvd"><code class="docutils literal notranslate"><span class="pre">MomentTensor.clvd</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.creation_info"><code class="docutils literal notranslate"><span class="pre">MomentTensor.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.data_used"><code class="docutils literal notranslate"><span class="pre">MomentTensor.data_used</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.derived_origin_id"><code class="docutils literal notranslate"><span class="pre">MomentTensor.derived_origin_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.double_couple"><code class="docutils literal notranslate"><span class="pre">MomentTensor.double_couple</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.filter_id"><code class="docutils literal notranslate"><span class="pre">MomentTensor.filter_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.greens_function_id"><code class="docutils literal notranslate"><span class="pre">MomentTensor.greens_function_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.inversion_type"><code class="docutils literal notranslate"><span class="pre">MomentTensor.inversion_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.iso"><code class="docutils literal notranslate"><span class="pre">MomentTensor.iso</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.method_id"><code class="docutils literal notranslate"><span class="pre">MomentTensor.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.model_config"><code class="docutils literal notranslate"><span class="pre">MomentTensor.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.moment_magnitude_id"><code class="docutils literal notranslate"><span class="pre">MomentTensor.moment_magnitude_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.scalar_moment"><code class="docutils literal notranslate"><span class="pre">MomentTensor.scalar_moment</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.scalar_moment_errors"><code class="docutils literal notranslate"><span class="pre">MomentTensor.scalar_moment_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.source_time_function"><code class="docutils literal notranslate"><span class="pre">MomentTensor.source_time_function</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.tensor"><code class="docutils literal notranslate"><span class="pre">MomentTensor.tensor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.variance"><code class="docutils literal notranslate"><span class="pre">MomentTensor.variance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.MomentTensor.variance_reduction"><code class="docutils literal notranslate"><span class="pre">MomentTensor.variance_reduction</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlane"><code class="docutils literal notranslate"><span class="pre">NodalPlane</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlane.dip"><code class="docutils literal notranslate"><span class="pre">NodalPlane.dip</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlane.model_config"><code class="docutils literal notranslate"><span class="pre">NodalPlane.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlane.rake"><code class="docutils literal notranslate"><span class="pre">NodalPlane.rake</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlane.strike"><code class="docutils literal notranslate"><span class="pre">NodalPlane.strike</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlanes"><code class="docutils literal notranslate"><span class="pre">NodalPlanes</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlanes.model_config"><code class="docutils literal notranslate"><span class="pre">NodalPlanes.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlanes.nodal_plane_1"><code class="docutils literal notranslate"><span class="pre">NodalPlanes.nodal_plane_1</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlanes.nodal_plane_2"><code class="docutils literal notranslate"><span class="pre">NodalPlanes.nodal_plane_2</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.NodalPlanes.preferred_plane"><code class="docutils literal notranslate"><span class="pre">NodalPlanes.preferred_plane</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin"><code class="docutils literal notranslate"><span class="pre">Origin</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.arrivals"><code class="docutils literal notranslate"><span class="pre">Origin.arrivals</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.comments"><code class="docutils literal notranslate"><span class="pre">Origin.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.composite_times"><code class="docutils literal notranslate"><span class="pre">Origin.composite_times</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.creation_info"><code class="docutils literal notranslate"><span class="pre">Origin.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.depth"><code class="docutils literal notranslate"><span class="pre">Origin.depth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.depth_errors"><code class="docutils literal notranslate"><span class="pre">Origin.depth_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.depth_type"><code class="docutils literal notranslate"><span class="pre">Origin.depth_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.earth_model_id"><code class="docutils literal notranslate"><span class="pre">Origin.earth_model_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.epicenter_fixed"><code class="docutils literal notranslate"><span class="pre">Origin.epicenter_fixed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.evaluation_mode"><code class="docutils literal notranslate"><span class="pre">Origin.evaluation_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.evaluation_status"><code class="docutils literal notranslate"><span class="pre">Origin.evaluation_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.latitude"><code class="docutils literal notranslate"><span class="pre">Origin.latitude</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.latitude_errors"><code class="docutils literal notranslate"><span class="pre">Origin.latitude_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.longitude"><code class="docutils literal notranslate"><span class="pre">Origin.longitude</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.longitude_errors"><code class="docutils literal notranslate"><span class="pre">Origin.longitude_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.method_id"><code class="docutils literal notranslate"><span class="pre">Origin.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.model_config"><code class="docutils literal notranslate"><span class="pre">Origin.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.origin_type"><code class="docutils literal notranslate"><span class="pre">Origin.origin_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.origin_uncertainty"><code class="docutils literal notranslate"><span class="pre">Origin.origin_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.quality"><code class="docutils literal notranslate"><span class="pre">Origin.quality</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.reference_system_id"><code class="docutils literal notranslate"><span class="pre">Origin.reference_system_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.region"><code class="docutils literal notranslate"><span class="pre">Origin.region</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.time"><code class="docutils literal notranslate"><span class="pre">Origin.time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.time_errors"><code class="docutils literal notranslate"><span class="pre">Origin.time_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Origin.time_fixed"><code class="docutils literal notranslate"><span class="pre">Origin.time_fixed</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality"><code class="docutils literal notranslate"><span class="pre">OriginQuality</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.associated_phase_count"><code class="docutils literal notranslate"><span class="pre">OriginQuality.associated_phase_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.associated_station_count"><code class="docutils literal notranslate"><span class="pre">OriginQuality.associated_station_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.azimuthal_gap"><code class="docutils literal notranslate"><span class="pre">OriginQuality.azimuthal_gap</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.depth_phase_count"><code class="docutils literal notranslate"><span class="pre">OriginQuality.depth_phase_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.ground_truth_level"><code class="docutils literal notranslate"><span class="pre">OriginQuality.ground_truth_level</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.maximum_distance"><code class="docutils literal notranslate"><span class="pre">OriginQuality.maximum_distance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.median_distance"><code class="docutils literal notranslate"><span class="pre">OriginQuality.median_distance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.minimum_distance"><code class="docutils literal notranslate"><span class="pre">OriginQuality.minimum_distance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.model_config"><code class="docutils literal notranslate"><span class="pre">OriginQuality.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.secondary_azimuthal_gap"><code class="docutils literal notranslate"><span class="pre">OriginQuality.secondary_azimuthal_gap</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.standard_error"><code class="docutils literal notranslate"><span class="pre">OriginQuality.standard_error</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.used_phase_count"><code class="docutils literal notranslate"><span class="pre">OriginQuality.used_phase_count</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginQuality.used_station_count"><code class="docutils literal notranslate"><span class="pre">OriginQuality.used_station_count</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.azimuth_max_horizontal_uncertainty"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.azimuth_max_horizontal_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.confidence_ellipsoid"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.confidence_ellipsoid</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.confidence_level"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.confidence_level</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.horizontal_uncertainty"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.horizontal_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.max_horizontal_uncertainty"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.max_horizontal_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.min_horizontal_uncertainty"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.min_horizontal_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.model_config"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.OriginUncertainty.preferred_description"><code class="docutils literal notranslate"><span class="pre">OriginUncertainty.preferred_description</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick"><code class="docutils literal notranslate"><span class="pre">Pick</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.backazimuth"><code class="docutils literal notranslate"><span class="pre">Pick.backazimuth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.backazimuth_errors"><code class="docutils literal notranslate"><span class="pre">Pick.backazimuth_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.comments"><code class="docutils literal notranslate"><span class="pre">Pick.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.creation_info"><code class="docutils literal notranslate"><span class="pre">Pick.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.evaluation_mode"><code class="docutils literal notranslate"><span class="pre">Pick.evaluation_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.evaluation_status"><code class="docutils literal notranslate"><span class="pre">Pick.evaluation_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.filter_id"><code class="docutils literal notranslate"><span class="pre">Pick.filter_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.horizontal_slowness"><code class="docutils literal notranslate"><span class="pre">Pick.horizontal_slowness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.horizontal_slowness_errors"><code class="docutils literal notranslate"><span class="pre">Pick.horizontal_slowness_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.method_id"><code class="docutils literal notranslate"><span class="pre">Pick.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.model_config"><code class="docutils literal notranslate"><span class="pre">Pick.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.onset"><code class="docutils literal notranslate"><span class="pre">Pick.onset</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.phase_hint"><code class="docutils literal notranslate"><span class="pre">Pick.phase_hint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.polarity"><code class="docutils literal notranslate"><span class="pre">Pick.polarity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.slowness_method_id"><code class="docutils literal notranslate"><span class="pre">Pick.slowness_method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.time"><code class="docutils literal notranslate"><span class="pre">Pick.time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.time_errors"><code class="docutils literal notranslate"><span class="pre">Pick.time_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Pick.waveform_id"><code class="docutils literal notranslate"><span class="pre">Pick.waveform_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes"><code class="docutils literal notranslate"><span class="pre">PrincipalAxes</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes.model_config"><code class="docutils literal notranslate"><span class="pre">PrincipalAxes.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes.n_axis"><code class="docutils literal notranslate"><span class="pre">PrincipalAxes.n_axis</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes.p_axis"><code class="docutils literal notranslate"><span class="pre">PrincipalAxes.p_axis</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.PrincipalAxes.t_axis"><code class="docutils literal notranslate"><span class="pre">PrincipalAxes.t_axis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError"><code class="docutils literal notranslate"><span class="pre">QuantityError</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError.confidence_level"><code class="docutils literal notranslate"><span class="pre">QuantityError.confidence_level</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError.lower_uncertainty"><code class="docutils literal notranslate"><span class="pre">QuantityError.lower_uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError.model_config"><code class="docutils literal notranslate"><span class="pre">QuantityError.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError.uncertainty"><code class="docutils literal notranslate"><span class="pre">QuantityError.uncertainty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.QuantityError.upper_uncertainty"><code class="docutils literal notranslate"><span class="pre">QuantityError.upper_uncertainty</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ResourceIdentifier"><code class="docutils literal notranslate"><span class="pre">ResourceIdentifier</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ResourceIdentifier.id"><code class="docutils literal notranslate"><span class="pre">ResourceIdentifier.id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.ResourceIdentifier.model_config"><code class="docutils literal notranslate"><span class="pre">ResourceIdentifier.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction.decay_time"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction.decay_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction.duration"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction.duration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction.model_config"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction.rise_time"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction.rise_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.SourceTimeFunction.type"><code class="docutils literal notranslate"><span class="pre">SourceTimeFunction.type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude"><code class="docutils literal notranslate"><span class="pre">StationMagnitude</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.amplitude_id"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.amplitude_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.comments"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.comments</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.creation_info"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.creation_info</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.mag"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.mag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.mag_errors"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.mag_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.method_id"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.method_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.model_config"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.origin_id"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.origin_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.station_magnitude_type"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.station_magnitude_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitude.waveform_id"><code class="docutils literal notranslate"><span class="pre">StationMagnitude.waveform_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution"><code class="docutils literal notranslate"><span class="pre">StationMagnitudeContribution</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution.model_config"><code class="docutils literal notranslate"><span class="pre">StationMagnitudeContribution.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution.residual"><code class="docutils literal notranslate"><span class="pre">StationMagnitudeContribution.residual</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution.station_magnitude_id"><code class="docutils literal notranslate"><span class="pre">StationMagnitudeContribution.station_magnitude_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.StationMagnitudeContribution.weight"><code class="docutils literal notranslate"><span class="pre">StationMagnitudeContribution.weight</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor"><code class="docutils literal notranslate"><span class="pre">Tensor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_pp"><code class="docutils literal notranslate"><span class="pre">Tensor.m_pp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_pp_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_pp_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rp"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rp_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rp_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rr"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rr</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rr_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rr_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rt"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_rt_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_rt_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_tp"><code class="docutils literal notranslate"><span class="pre">Tensor.m_tp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_tp_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_tp_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_tt"><code class="docutils literal notranslate"><span class="pre">Tensor.m_tt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.m_tt_errors"><code class="docutils literal notranslate"><span class="pre">Tensor.m_tt_errors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Tensor.model_config"><code class="docutils literal notranslate"><span class="pre">Tensor.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.TimeWindow"><code class="docutils literal notranslate"><span class="pre">TimeWindow</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.TimeWindow.begin"><code class="docutils literal notranslate"><span class="pre">TimeWindow.begin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.TimeWindow.end"><code class="docutils literal notranslate"><span class="pre">TimeWindow.end</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.TimeWindow.model_config"><code class="docutils literal notranslate"><span class="pre">TimeWindow.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.TimeWindow.reference"><code class="docutils literal notranslate"><span class="pre">TimeWindow.reference</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.channel_code"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.channel_code</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.location_code"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.location_code</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.model_config"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.network_code"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.network_code</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.parse_seed_id"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.parse_seed_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.resource_uri"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.resource_uri</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.seed_string"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.seed_string</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.WaveformStreamID.station_code"><code class="docutils literal notranslate"><span class="pre">WaveformStreamID.station_code</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="obsplus.events.validate.html">obsplus.events.validate module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.attach_all_resource_ids"><code class="docutils literal notranslate"><span class="pre">attach_all_resource_ids()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_amp_filter_ids"><code class="docutils literal notranslate"><span class="pre">check_amp_filter_ids()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_amp_lims"><code class="docutils literal notranslate"><span class="pre">check_amp_lims()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_amp_times_contain_pick_time"><code class="docutils literal notranslate"><span class="pre">check_amp_times_contain_pick_time()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_amps_on_z_component"><code class="docutils literal notranslate"><span class="pre">check_amps_on_z_component()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_arrivals_pick_id"><code class="docutils literal notranslate"><span class="pre">check_arrivals_pick_id()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_duplicate_picks"><code class="docutils literal notranslate"><span class="pre">check_duplicate_picks()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_origins"><code class="docutils literal notranslate"><span class="pre">check_origins()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_p_lims"><code class="docutils literal notranslate"><span class="pre">check_p_lims()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.check_pick_order"><code class="docutils literal notranslate"><span class="pre">check_pick_order()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.set_preferred_values"><code class="docutils literal notranslate"><span class="pre">set_preferred_values()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="obsplus.events.validate.html#obsplus.events.validate.validate_catalog"><code class="docutils literal notranslate"><span class="pre">validate_catalog()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.events package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.events.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

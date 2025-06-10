@@ -1,0 +1,761 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.misc &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.misc</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.misc</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Misc. ObsPlus utilities.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">singledispatch</span><span class="p">,</span> <span class="n">wraps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">join</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span><span class="p">,</span> <span class="n">PurePosixPath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tkinter.ttk</span><span class="w"> </span><span class="kn">import</span> <span class="n">Progressbar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">TypeVar</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">event</span> <span class="k">as</span> <span class="n">ev</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core.inventory</span><span class="w"> </span><span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">Station</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.io.mseed.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">_read_mseed</span> <span class="k">as</span> <span class="n">mread</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.io.quakeml.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">_read_quakeml</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NSLC</span><span class="p">,</span> <span class="n">NULL_SEED_CODES</span>
+
+<span class="n">BASIC_NON_SEQUENCE_TYPE</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
+<span class="n">READ_DICT</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mseed</span><span class="o">=</span><span class="n">mread</span><span class="p">,</span> <span class="n">quakeml</span><span class="o">=</span><span class="n">_read_quakeml</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_progressbar</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Suppress ProgressBar&#39;s warning.&quot;&quot;&quot;</span>
+    <span class="c1"># TODO remove this when progress no longer issues warning</span>
+    <span class="k">with</span> <span class="n">suppress_warnings</span><span class="p">():</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">progressbar</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressBar</span>
+    <span class="k">return</span> <span class="n">ProgressBar</span>
+
+
+<div class="viewcode-block" id="deprecated_callable">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.deprecated_callable">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">deprecated_callable</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">replacement_str</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mark a function as deprecated.</span>
+
+<span class="sd">    Whenever it is used a userwarning will be issued. You can optionally</span>
+<span class="sd">    provide a string to indicate which function should be used in its place.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func</span>
+<span class="sd">    replacement_str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="n">func</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_wrap</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s2"> is deprecated and will be removed in a future release.&quot;</span>
+            <span class="k">if</span> <span class="n">replacement_str</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Please use </span><span class="si">{</span><span class="n">replacement_str</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_wrap</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">partial</span><span class="p">(</span><span class="n">deprecated_callable</span><span class="p">,</span> <span class="n">replacement_str</span><span class="o">=</span><span class="n">replacement_str</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="yield_obj_parent_attr">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.utils.yield_obj_parent_attr.html#obsplus.utils.misc.yield_obj_parent_attr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">yield_obj_parent_attr</span><span class="p">(</span>
+    <span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_attr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">has_attr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">basic_types</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recurse an object, yield a tuple of object, parent, attr.</span>
+
+<span class="sd">    Useful when data need to be changed or the provided DataFrame extractors</span>
+<span class="sd">    don&#39;t quite perform the desired task. Can also be used to extract</span>
+<span class="sd">    relationships between entities in object trees to build a connecting graph.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj</span>
+<span class="sd">        The object to recurse through attributes of lists, tuples, and other</span>
+<span class="sd">        instances.</span>
+<span class="sd">    cls</span>
+<span class="sd">        Only return instances of cls if not None, dont filter on types.</span>
+<span class="sd">    is_attr</span>
+<span class="sd">        Only return objects stored as attr_name, if None return all.</span>
+<span class="sd">    has_attr</span>
+<span class="sd">        Only return objects that have attribute has_attr, if None return all.</span>
+<span class="sd">    basic_types</span>
+<span class="sd">        If True, yield non-sequence basic types (int, float, str, bool).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; # --- get all picks from a catalog object</span>
+<span class="sd">    &gt;&gt;&gt; import obsplus</span>
+<span class="sd">    &gt;&gt;&gt; import obspy.core.event as ev</span>
+<span class="sd">    &gt;&gt;&gt; cat = obsplus.load_dataset(&#39;bingham_test&#39;).event_client.get_events()</span>
+<span class="sd">    &gt;&gt;&gt; picks = []  # put all the picks in a list.</span>
+<span class="sd">    &gt;&gt;&gt; for pick, _, _ in yield_obj_parent_attr(cat, cls=ev.Pick):</span>
+<span class="sd">    ...     picks.append(pick)</span>
+<span class="sd">    &gt;&gt;&gt; assert len(picks)</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- yield all objects which have resource identifiers</span>
+<span class="sd">    &gt;&gt;&gt; objects = []  # list of (rid, parent)</span>
+<span class="sd">    &gt;&gt;&gt; RID = ev.ResourceIdentifier</span>
+<span class="sd">    &gt;&gt;&gt; for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):</span>
+<span class="sd">    ...     objects.append((str(rid), parent))</span>
+<span class="sd">    &gt;&gt;&gt; assert len(objects)</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Create a dict of {resource_id: [(attr, parent), ...]}</span>
+<span class="sd">    &gt;&gt;&gt; from collections import defaultdict</span>
+<span class="sd">    &gt;&gt;&gt; rid_mapping = defaultdict(list)</span>
+<span class="sd">    &gt;&gt;&gt; for rid, parent, attr in yield_obj_parent_attr(cat, cls=RID):</span>
+<span class="sd">    ...     rid_mapping[str(rid)].append((attr, parent))</span>
+<span class="sd">    &gt;&gt;&gt; # count how many times each resource_id is referred to</span>
+<span class="sd">    &gt;&gt;&gt; count = {i: len(v) for i, v in rid_mapping.items()}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># id cache to avoid circular references</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">id_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="nb">id</span><span class="p">(</span><span class="n">parent</span><span class="p">))</span>
+
+        <span class="c1"># If object/parent combo have not been yielded continue.</span>
+        <span class="k">if</span> <span class="n">id_tuple</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">id_tuple</span><span class="p">)</span>
+        <span class="c1"># Check if this object is stored as the desired attribute.</span>
+        <span class="n">is_attribute</span> <span class="o">=</span> <span class="n">is_attr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">attr</span> <span class="o">==</span> <span class="n">is_attr</span>
+        <span class="c1"># Check if the object has the desired attribute.</span>
+        <span class="n">has_attribute</span> <span class="o">=</span> <span class="n">has_attr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">has_attr</span><span class="p">)</span>
+        <span class="c1"># Check if isinstance of desired class.</span>
+        <span class="n">is_instance</span> <span class="o">=</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+        <span class="c1"># Check if basic type (dont</span>
+        <span class="n">is_basic</span> <span class="o">=</span> <span class="n">basic_types</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">BASIC_NON_SEQUENCE_TYPE</span><span class="p">)</span>
+        <span class="c1"># Iterate through basic built-in types.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">attr</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+        <span class="c1"># Yield object, parent, and attr if desired conditions are met.</span>
+        <span class="k">elif</span> <span class="n">is_attribute</span> <span class="ow">and</span> <span class="n">has_attribute</span> <span class="ow">and</span> <span class="n">is_instance</span> <span class="ow">and</span> <span class="n">is_basic</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        <span class="c1"># Iterate through non built-in object attributes.</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;__slots__&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">attr</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;__dict__&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_instances_from_tree">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.get_instances_from_tree">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_instances_from_tree</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get all instances in an object tree.</span>
+
+<span class="sd">    Simply uses :func:`~obsplus.utils.misc.yield_obj_parent_attr` under the</span>
+<span class="sd">    hood.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">)]</span></div>
+
+
+
+<div class="viewcode-block" id="try_read_catalog">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.try_read_catalog">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">try_read_catalog</span><span class="p">(</span><span class="n">catalog_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to read a events from file, if it raises return None&quot;&quot;&quot;</span>
+    <span class="n">read</span> <span class="o">=</span> <span class="n">READ_DICT</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cat</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">catalog_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;obspy failed to read </span><span class="si">{</span><span class="n">catalog_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cat</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="read_file">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.read_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">,))</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For a given file_path, try reading it with each function in funcs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file_path</span>
+<span class="sd">        The path to the file to read</span>
+<span class="sd">    funcs</span>
+<span class="sd">        A tuple of functions to try to read the file (starting with first)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;failed to read </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="apply_to_files_or_skip">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.apply_to_files_or_skip">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_to_files_or_skip</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generator for applying func to all files in directory.</span>
+
+<span class="sd">    Skip any files that raise an exception.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func</span>
+<span class="sd">        Any callable that takes a file path as the only input.</span>
+
+<span class="sd">    directory</span>
+<span class="sd">        A directory that exists.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    outputs of func</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2"> is not a directory&quot;</span>
+    <span class="k">for</span> <span class="n">fi</span> <span class="ow">in</span> <span class="n">path</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fi</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">func</span><span class="p">(</span><span class="n">fi</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="get_progressbar">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.get_progressbar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_progressbar</span><span class="p">(</span><span class="n">max_value</span><span class="p">,</span> <span class="n">min_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Progressbar</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a progress bar object using the ProgressBar2 library.</span>
+
+<span class="sd">    Fails gracefully if bar cannot be displayed (eg if no std out).</span>
+<span class="sd">    Args and kwargs are passed to ProgressBar constructor.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_value</span>
+<span class="sd">        The highest number expected</span>
+<span class="sd">    min_value</span>
+<span class="sd">        The minimum number of updates required to show the bar</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_new_update</span><span class="p">(</span><span class="n">bar</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A new update function that swallows attribute and index errors&quot;&quot;&quot;</span>
+        <span class="n">old_update</span> <span class="o">=</span> <span class="n">bar</span><span class="o">.</span><span class="n">update</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">((</span><span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)):</span>
+                <span class="n">old_update</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">update</span>
+
+    <span class="k">if</span> <span class="n">min_value</span> <span class="ow">and</span> <span class="n">max_value</span> <span class="o">&lt;</span> <span class="n">min_value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># no progress bar needed, return None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">_get_progressbar</span><span class="p">()</span>
+        <span class="n">bar</span> <span class="o">=</span> <span class="n">progress_bar</span><span class="p">(</span><span class="n">max_value</span><span class="o">=</span><span class="n">max_value</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">bar</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">bar</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="n">_new_update</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+        <span class="n">bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># this can happen when stdout is being redirected</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># something went wrong, return None</span>
+    <span class="k">return</span> <span class="n">bar</span></div>
+
+
+
+<div class="viewcode-block" id="iterate">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.iterate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">iterate</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an iterable from any object.</span>
+
+<span class="sd">    If string, do not iterate characters, return str in tuple .</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">obj</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="n">obj</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">obj</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="DummyFile">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.DummyFile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyFile</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy class to mock std out interface but go nowhere.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DummyFile.write">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.DummyFile.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Do nothing&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="DummyFile.flush">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.DummyFile.flush">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Do nothing&quot;&quot;&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="getattrs">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.getattrs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">getattrs</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">col_set</span><span class="p">:</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">default_value</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse an object for a collection of attributes, return a dict of values.</span>
+
+<span class="sd">    If obj does not have a requested attribute, or if its value is None, fill</span>
+<span class="sd">    with the default value.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj</span>
+<span class="sd">        Any object.</span>
+<span class="sd">    col_set</span>
+<span class="sd">        A sequence of attributes to extract from obj.</span>
+<span class="sd">    default_value</span>
+<span class="sd">        If not attribute is found fill with this value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># return empty dict if None</span>
+        <span class="k">return</span> <span class="n">out</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">col_set</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">default_value</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">default_value</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="n">any_type</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;any_type&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="replace_null_nlsc_codes">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.replace_null_nlsc_codes">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">replace_null_nlsc_codes</span><span class="p">(</span>
+    <span class="n">obspy_object</span><span class="p">:</span> <span class="n">any_type</span><span class="p">,</span> <span class="n">null_codes</span><span class="o">=</span><span class="n">NULL_SEED_CODES</span><span class="p">,</span> <span class="n">replacement_value</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">any_type</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iterate an obspy object and replace nullish nslc codes with some value.</span>
+
+<span class="sd">    Operates in place, but also returns the original object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obspy_object</span>
+<span class="sd">        An obspy catalog, event, (or any sub element), stream, trace,</span>
+<span class="sd">        inventory, etc.</span>
+<span class="sd">    null_codes</span>
+<span class="sd">        The codes that are considered null values and should be replaced.</span>
+<span class="sd">    replacement_value</span>
+<span class="sd">        The value with which to replace the null_codes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wid_codes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="s2">&quot;_code&quot;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">wid</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">obspy_object</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">WaveformStreamID</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">wid_codes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">wid</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span> <span class="ow">in</span> <span class="n">null_codes</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">wid</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">replacement_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obspy_object</span></div>
+
+
+
+<span class="nd">@replace_null_nlsc_codes</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_replace_null_stream</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">null_codes</span><span class="o">=</span><span class="n">NULL_SEED_CODES</span><span class="p">,</span> <span class="n">replacement_value</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">_replace_null_trace</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">null_codes</span><span class="p">,</span> <span class="n">replacement_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">st</span>
+
+
+<span class="nd">@replace_null_nlsc_codes</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_replace_null_trace</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">null_codes</span><span class="o">=</span><span class="n">NULL_SEED_CODES</span><span class="p">,</span> <span class="n">replacement_value</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">null_codes</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">replacement_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tr</span>
+
+
+<span class="nd">@replace_null_nlsc_codes</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">)</span>
+<span class="nd">@replace_null_nlsc_codes</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Station</span><span class="p">)</span>
+<span class="nd">@replace_null_nlsc_codes</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Channel</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_replace_inv_nulls</span><span class="p">(</span><span class="n">inv</span><span class="p">,</span> <span class="n">null_codes</span><span class="o">=</span><span class="n">NULL_SEED_CODES</span><span class="p">,</span> <span class="n">replacement_value</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;location_code&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">inv</span><span class="p">,</span> <span class="n">has_attr</span><span class="o">=</span><span class="n">code</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span> <span class="ow">in</span> <span class="n">null_codes</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">replacement_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inv</span>
+
+
+<div class="viewcode-block" id="iter_files">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.iter_files">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">iter_files</span><span class="p">(</span>
+    <span class="n">paths</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">ext</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mtime</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">skip_hidden</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    use os.scan dir to iter files, optionally only for those with given</span>
+<span class="sd">    extension (ext) or modified times after mtime</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    paths</span>
+<span class="sd">        The path to the base directory to traverse. Can also use a collection</span>
+<span class="sd">        of paths.</span>
+<span class="sd">    ext : str or None</span>
+<span class="sd">        The extensions to map.</span>
+<span class="sd">    mtime : int or float</span>
+<span class="sd">        Time stamp indicating the minimum mtime.</span>
+<span class="sd">    skip_hidden : bool</span>
+<span class="sd">        If True skip files or folders (they begin with a &#39;.&#39;)</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    Paths, as strings, meeting requirements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>  <span class="c1"># a single path was passed</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ext</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">mtime</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">entry</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span> <span class="o">&gt;=</span> <span class="n">mtime</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">skip_hidden</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="n">entry</span><span class="o">.</span><span class="n">path</span>
+            <span class="k">elif</span> <span class="n">entry</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">skip_hidden</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">):</span>
+                <span class="k">yield from</span> <span class="n">iter_files</span><span class="p">(</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="n">ext</span><span class="p">,</span> <span class="n">mtime</span><span class="o">=</span><span class="n">mtime</span><span class="p">,</span> <span class="n">skip_hidden</span><span class="o">=</span><span class="n">skip_hidden</span>
+                <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># multiple paths were passed</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">iter_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">ext</span><span class="p">,</span> <span class="n">mtime</span><span class="p">,</span> <span class="n">skip_hidden</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">NotADirectoryError</span><span class="p">:</span>  <span class="c1"># a file path was passed, just return it</span>
+        <span class="k">yield</span> <span class="n">paths</span></div>
+
+
+
+<div class="viewcode-block" id="hash_file">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.hash_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hash_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the sha256 hash of a file.</span>
+
+<span class="sd">    Reads the file in chunks to allow using large files. Taken from this stack</span>
+<span class="sd">    overflow answer: http://bit.ly/2Jqb1Jr</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path</span>
+<span class="sd">        The path to the file to read.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A str of hex for file hash</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">hasher</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">),</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="n">hasher</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hasher</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="hash_directory">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.hash_directory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hash_directory</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">match</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">exclude</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">hidden</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the sha256 hash of all files in a directory.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path</span>
+<span class="sd">        The path to the directory</span>
+<span class="sd">    match</span>
+<span class="sd">        A unix-style matching string</span>
+<span class="sd">    exclude</span>
+<span class="sd">        A list of unix style strings to exclude</span>
+<span class="sd">    hidden</span>
+<span class="sd">        If True skip all files starting with a .</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dict containing paths and md5 hashes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">excludes</span> <span class="o">=</span> <span class="n">iterate</span><span class="p">(</span><span class="n">exclude</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">sub_path</span> <span class="ow">in</span> <span class="n">path</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="n">match</span><span class="p">):</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># skip directories</span>
+        <span class="k">if</span> <span class="n">sub_path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="c1"># skip if matches on exclusion</span>
+        <span class="k">for</span> <span class="n">exc</span> <span class="ow">in</span> <span class="n">excludes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">sub_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
+                <span class="n">keep</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hidden</span> <span class="ow">and</span> <span class="n">sub_path</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">):</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
+            <span class="n">relative_path</span> <span class="o">=</span> <span class="n">sub_path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">PurePosixPath</span><span class="p">(</span><span class="n">relative_path</span><span class="p">))]</span> <span class="o">=</span> <span class="n">hash_file</span><span class="p">(</span><span class="n">sub_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_path</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">path_struct</span><span class="p">,</span> <span class="n">name_strcut</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dict with path, and file name&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># if the path needs to be created</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ext&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="c1"># get name</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">name_strcut</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span> <span class="k">else</span> <span class="n">fname</span> <span class="o">+</span> <span class="n">ext</span>  <span class="c1"># add ext</span>
+        <span class="c1"># get structure</span>
+        <span class="n">psplit</span> <span class="o">=</span> <span class="n">path_struct</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">psplit</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+        <span class="n">out_name</span> <span class="o">=</span> <span class="n">fname</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># if the path is already known</span>
+        <span class="n">out_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">out_name</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="suppress_warnings">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.suppress_warnings">[docs]</a>
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">suppress_warnings</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="ne">Warning</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Context manager for suppressing warnings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    category</span>
+<span class="sd">        The types of warnings to suppress. Must be a subclass of Warning.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">yield</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="register_func">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.register_func">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register_func</span><span class="p">(</span><span class="n">list_or_dict</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decorator for registering a function name in a list or dict.</span>
+
+<span class="sd">    If list_or_dict is a list only append the name of the function. If it is</span>
+<span class="sd">    as dict append name (as key) and function as the value.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    list_or_dict</span>
+<span class="sd">        A list or dict to which the wrapped function will be added.</span>
+<span class="sd">    key</span>
+<span class="sd">        The name to use, if different than the name of the function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">list_or_dict</span><span class="p">,</span> <span class="s2">&quot;append&quot;</span><span class="p">):</span>
+            <span class="n">list_or_dict</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">list_or_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+    <span class="k">return</span> <span class="n">wrapper</span></div>
+
+
+
+<div class="viewcode-block" id="validate_version_str">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.validate_version_str">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_version_str</span><span class="p">(</span><span class="n">version_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check the version string is of the form x.y.z.</span>
+
+<span class="sd">    If the version string is not valid raise a ValueError.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">is_str</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">version_str</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="c1"># If version_str is not a str or doesnt have a len of 3</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">is_str</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">version_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;version must be a string of the form x.y.z, not </span><span class="si">{</span><span class="n">version_str</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># this will split out the dev version tags to just get latest version</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">version_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="get_version_tuple">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.get_version_tuple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_version_tuple</span><span class="p">(</span><span class="n">version_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a semantic version string to a tuple.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    version_str</span>
+<span class="sd">        A version of the form &quot;x.y.z&quot;. Google semantic versioning for more</span>
+<span class="sd">        details.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">version_str</span> <span class="o">=</span> <span class="n">validate_version_str</span><span class="p">(</span><span class="n">version_str</span><span class="p">)</span>
+    <span class="n">split</span> <span class="o">=</span> <span class="n">version_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">split</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">split</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">split</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="strip_prefix">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.strip_prefix">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">strip_prefix</span><span class="p">(</span><span class="n">some_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prefixes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip a prefix of a string.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">some_str</span>
+    <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">prefixes</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="ObjectWrapper">
+<a class="viewcode-back" href="../../../api/obsplus.utils.misc.html#obsplus.utils.misc.ObjectWrapper">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ObjectWrapper</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for wrapping objects.</span>
+
+<span class="sd">    This is useful so array-like things can be packaged into numpy arrays</span>
+<span class="sd">    and pandas dataframes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,)</span>  <span class="c1"># this speeds up class creation/memory usage</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.misc</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

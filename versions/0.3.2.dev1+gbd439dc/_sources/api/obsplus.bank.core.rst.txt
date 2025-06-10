@@ -1,0 +1,7 @@
+obsplus.bank.core module
+========================
+
+.. automodule:: obsplus.bank.core
+   :members:
+   :undoc-members:
+   :show-inheritance:

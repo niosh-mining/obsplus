@@ -1,0 +1,445 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.testing &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.testing</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.testing</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Testing utilities for ObsPlus.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">join</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.bank.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">_Bank</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NSLC</span><span class="p">,</span> <span class="n">utc_able_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.bank</span><span class="w"> </span><span class="kn">import</span> <span class="n">_natify_paths</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">iter_files</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_time_chunks</span><span class="p">,</span> <span class="n">to_utc</span>
+
+
+<div class="viewcode-block" id="instrument_methods">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.instrument_methods">[docs]</a>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">instrument_methods</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Temporarily instrument an object&#39;s methods.</span>
+
+<span class="sd">    This allows the calls to each of the objects methods to be counted.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">old_methods</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;_counter&quot;</span><span class="p">,</span> <span class="n">counter</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="c1"># skip dunders</span>
+        <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># skip anything that isnt callable</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="c1"># append old method to old_methods and create new method</span>
+        <span class="n">old_methods</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">__method_name</span><span class="o">=</span><span class="n">attr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">counter</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">__method_name</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+            <span class="k">return</span> <span class="n">old_methods</span><span class="p">[</span><span class="n">__method_name</span><span class="p">](</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+
+    <span class="c1"># yield monkey patched object</span>
+    <span class="k">yield</span> <span class="n">obj</span>
+    <span class="c1"># reset methods</span>
+    <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">old_methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+    <span class="c1"># delete counter</span>
+    <span class="nb">delattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;_counter&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ArchiveDirectory">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.ArchiveDirectory">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArchiveDirectory</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;class for creating a simple archive&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sampling_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+        <span class="n">overlap</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">gaps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">seed_ids</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;TA.M17A..VHZ&quot;</span><span class="p">,</span> <span class="s2">&quot;TA.BOB..VHZ&quot;</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">starttime</span> <span class="o">=</span> <span class="n">starttime</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">endtime</span> <span class="o">=</span> <span class="n">endtime</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">sampling_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed_ids</span> <span class="o">=</span> <span class="n">seed_ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gaps</span> <span class="o">=</span> <span class="n">gaps</span>
+
+<div class="viewcode-block" id="ArchiveDirectory.create_stream">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.ArchiveDirectory.create_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_stream</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="p">:</span> <span class="n">utc_able_type</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="p">:</span> <span class="n">utc_able_type</span><span class="p">,</span>
+        <span class="n">seed_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sampling_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a waveforms from random data&quot;&quot;&quot;</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">starttime</span><span class="p">)</span>
+        <span class="n">t2</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">endtime</span><span class="p">)</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="n">sampling_rate</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="n">ar_len</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">t2</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">t1</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span> <span class="o">*</span> <span class="n">sr</span><span class="p">)</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+        <span class="n">rand_gen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="n">seed_ids</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed_ids</span><span class="p">:</span>
+            <span class="n">net</span><span class="p">,</span> <span class="n">sta</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">cha</span> <span class="o">=</span> <span class="n">seed</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;sampling_rate&quot;</span><span class="p">:</span> <span class="n">sr</span><span class="p">,</span>
+                <span class="s2">&quot;starttime&quot;</span><span class="p">:</span> <span class="n">t1</span><span class="p">,</span>
+                <span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="n">net</span><span class="p">,</span>
+                <span class="s2">&quot;station&quot;</span><span class="p">:</span> <span class="n">sta</span><span class="p">,</span>
+                <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">loc</span><span class="p">,</span>
+                <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="n">cha</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">rand_gen</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">ar_len</span><span class="p">)</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">st</span></div>
+
+
+<div class="viewcode-block" id="ArchiveDirectory.get_gap_stream">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.ArchiveDirectory.get_gap_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_gap_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">gaps</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return streams with gaps in it&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">gaps</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">gap</span> <span class="o">=</span> <span class="n">gaps</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ts1</span><span class="p">,</span> <span class="n">ts2</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">t2</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="c1"># if gap covers time completely</span>
+        <span class="k">if</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">ts1</span> <span class="ow">and</span> <span class="n">gap</span><span class="o">.</span><span class="n">end</span> <span class="o">&gt;=</span> <span class="n">ts2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;gapped out&quot;</span><span class="p">)</span>
+        <span class="c1"># if gap is contained by time frame</span>
+        <span class="k">elif</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">ts1</span> <span class="ow">and</span> <span class="n">gap</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="n">ts2</span><span class="p">:</span>
+            <span class="n">st1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">ts1</span><span class="p">,</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">st2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">gap</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">ts2</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">st1</span> <span class="o">+</span> <span class="n">st2</span>
+        <span class="c1"># if gap only effects endtime</span>
+        <span class="k">elif</span> <span class="n">ts1</span> <span class="o">&lt;</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="n">ts2</span> <span class="o">&lt;=</span> <span class="n">gap</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">ts1</span><span class="p">,</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+        <span class="c1"># if gap only effects starttime</span>
+        <span class="k">elif</span> <span class="n">gap</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">ts1</span> <span class="o">&lt;</span> <span class="n">gap</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="n">ts2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">gap</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">ts2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># should not reach here</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;something went wrong!&quot;</span><span class="p">)</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="ArchiveDirectory.create_directory">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.ArchiveDirectory.create_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the directory with gaps in it&quot;&quot;&quot;</span>
+        <span class="c1"># get a dataframe of the gaps</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gaps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gaps</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">])</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">])</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">starttime</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">endtime</span><span class="p">,</span> <span class="s2">&quot;needs defined times&quot;</span>
+        <span class="k">for</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="ow">in</span> <span class="n">make_time_chunks</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">starttime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">endtime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span>
+        <span class="p">):</span>
+            <span class="c1"># figure out of this time lies in a gap</span>
+            <span class="n">gap</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="p">((</span><span class="n">df</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="n">t2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;=</span> <span class="n">t1</span><span class="p">))]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gap</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gap_stream</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">gap</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span>
+            <span class="n">finame</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">t1</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.mseed&quot;</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">finame</span><span class="p">)</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;mseed&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ArchiveDirectory.create_directory_from_bulk_args">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.ArchiveDirectory.create_directory_from_bulk_args">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_directory_from_bulk_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bulk_args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory from bulk waveform arguments&quot;&quot;&quot;</span>
+        <span class="c1"># ensure directory exists</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">net</span><span class="p">,</span> <span class="n">sta</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="ow">in</span> <span class="n">bulk_args</span><span class="p">:</span>
+            <span class="n">nslc</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">net</span><span class="p">,</span> <span class="n">sta</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">chan</span><span class="p">])</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_stream</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="p">(</span><span class="n">nslc</span><span class="p">,))</span>
+            <span class="n">time_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">t1</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.mseed&quot;</span>
+            <span class="n">save_name</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">net</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">sta</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">time_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">save_name</span><span class="p">),</span> <span class="s2">&quot;mseed&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="assert_streams_almost_equal">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.assert_streams_almost_equal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">assert_streams_almost_equal</span><span class="p">(</span>
+    <span class="n">st1</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">,</span>
+    <span class="n">st2</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">,</span>
+    <span class="n">basic_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-05</span><span class="p">,</span>
+    <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-08</span><span class="p">,</span>
+    <span class="n">equal_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">allow_off_by_one</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assert that two streams are almost equal else raise helpful exceptions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    st1</span>
+<span class="sd">        The first stream</span>
+<span class="sd">    st2</span>
+<span class="sd">        The second stream</span>
+<span class="sd">    basic_stats</span>
+<span class="sd">        If True, only compare basic stats of the streams including:</span>
+<span class="sd">        network, station, location, channel, starttime, endtime</span>
+<span class="sd">    atol</span>
+<span class="sd">        The absolute tolerance parameter</span>
+<span class="sd">    rtol</span>
+<span class="sd">        The relative tolerance parameter</span>
+<span class="sd">    equal_nan</span>
+<span class="sd">        If True evaluate NaNs as equal</span>
+<span class="sd">    allow_off_by_one</span>
+<span class="sd">        If True, allow the arrays and time alignments to be off by one sample.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    See numpy.allclose for description of atol and rtol paramter.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError if streams are not about equal.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">basic_stats</span><span class="o">=</span><span class="n">basic_stats</span><span class="p">,</span>
+        <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span>
+        <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
+        <span class="n">equal_nan</span><span class="o">=</span><span class="n">equal_nan</span><span class="p">,</span>
+        <span class="n">allow_off_by_one</span><span class="o">=</span><span class="n">allow_off_by_one</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_StreamEqualTester</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_StreamEqualTester</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simple class for testing if streams are (almost) equal.</span>
+
+<span class="sd">    This class is not intended to be used directly, instead use</span>
+<span class="sd">    :func:`obsplus.utils.testing.assert_streams_almost_equal`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">skeys</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">),</span> <span class="s2">&quot;sampling_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">basic_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-05</span><span class="p">,</span>
+        <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-08</span><span class="p">,</span>
+        <span class="n">equal_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">allow_off_by_one</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basic_stats</span> <span class="o">=</span> <span class="n">basic_stats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atol</span> <span class="o">=</span> <span class="n">atol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtol</span> <span class="o">=</span> <span class="n">rtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">equal_nan</span> <span class="o">=</span> <span class="n">equal_nan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_off_by_one</span> <span class="o">=</span> <span class="n">allow_off_by_one</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assert_stats_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tr1</span><span class="p">,</span> <span class="n">tr2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assert that the stats dicts are almost equal.&quot;&quot;&quot;</span>
+        <span class="n">skeys</span><span class="p">,</span> <span class="n">basic_stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skeys</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">basic_stats</span>
+        <span class="n">sta1</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">tr1</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">skeys</span><span class="p">}</span> <span class="k">if</span> <span class="n">basic_stats</span> <span class="k">else</span> <span class="n">tr1</span><span class="o">.</span><span class="n">stats</span>
+        <span class="n">sta2</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">tr2</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">skeys</span><span class="p">}</span> <span class="k">if</span> <span class="n">basic_stats</span> <span class="k">else</span> <span class="n">tr2</span><span class="o">.</span><span class="n">stats</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sta1</span> <span class="o">==</span> <span class="n">sta2</span><span class="p">:</span>
+            <span class="n">stats_equal</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="c1"># see if the start and end times are within one sample rate</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_off_by_one</span><span class="p">:</span>
+                <span class="n">times</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">)</span>
+                <span class="n">sta1_new</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sta1</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">times</span><span class="p">}</span>
+                <span class="n">sta2_new</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sta2</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">times</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">sta1</span><span class="p">[</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">sta2</span><span class="p">[</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">]:</span>
+                    <span class="n">sr</span> <span class="o">=</span> <span class="n">sta1</span><span class="p">[</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">]</span>
+                    <span class="n">t1_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sta1</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">sta2</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">])</span>
+                    <span class="n">t2_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sta1</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">sta2</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">t1_diff</span> <span class="o">&lt;</span> <span class="n">sr</span> <span class="ow">and</span> <span class="n">t2_diff</span> <span class="o">&lt;</span> <span class="n">sr</span> <span class="ow">and</span> <span class="n">sta1_new</span> <span class="o">==</span> <span class="n">sta2_new</span><span class="p">:</span>
+                        <span class="n">stats_equal</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">stats_equal</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Stats are not the same for the traces: </span><span class="se">\n</span><span class="si">{</span><span class="n">sta1</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">sta2</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">assert</span> <span class="mi">0</span><span class="p">,</span> <span class="n">msg</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assert_arrays_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tr1</span><span class="p">,</span> <span class="n">tr2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assert that the data arrays of the traces are almost equal.&quot;&quot;&quot;</span>
+        <span class="n">ars</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">tr1</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tr2</span><span class="o">.</span><span class="n">data</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">len1</span><span class="p">,</span> <span class="n">len2</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">len_diff</span> <span class="o">=</span> <span class="n">len2</span> <span class="o">-</span> <span class="n">len1</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">atol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">atol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rtol</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">equal_nan</span><span class="p">)</span>
+        <span class="c1"># check for off by one error</span>
+        <span class="k">if</span> <span class="n">len_diff</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># if they aren&#39;t equal in len</span>
+            <span class="n">close</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">close</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ars</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">close</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_off_by_one</span><span class="p">:</span>
+            <span class="c1"># If the arrays are within 2 samples of each other in length</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">sub_ar</span> <span class="o">=</span> <span class="n">ars</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="c1"># slide the smaller array over the larger, return true if found</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">ars</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">3</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">sub_ar</span><span class="p">,</span> <span class="n">ars</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_ar</span><span class="p">)],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                        <span class="n">close</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+        <span class="k">assert</span> <span class="n">close</span><span class="p">,</span> <span class="s2">&quot;Data of traces are not nearly equal&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assert that two streams are almost equal else raise AssertionError.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        st1</span>
+<span class="sd">            The first stream</span>
+<span class="sd">        st2</span>
+<span class="sd">            The second stream</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">st1</span><span class="o">.</span><span class="n">sort</span><span class="p">(),</span> <span class="n">st2</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">st1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">st2</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;streams do not have the same number of traces&quot;</span>
+        <span class="c1"># iterate each trace and raise if stats and arrays are not almost equal.</span>
+        <span class="k">for</span> <span class="n">tr1</span><span class="p">,</span> <span class="n">tr2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assert_stats_equal</span><span class="p">(</span><span class="n">tr1</span><span class="p">,</span> <span class="n">tr2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assert_arrays_almost_equal</span><span class="p">(</span><span class="n">tr1</span><span class="p">,</span> <span class="n">tr2</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="check_index_paths">
+<a class="viewcode-back" href="../../../api/obsplus.utils.testing.html#obsplus.utils.testing.check_index_paths">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_index_paths</span><span class="p">(</span><span class="n">bank</span><span class="p">:</span> <span class="n">_Bank</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make sure the paths in a bank&#39;s index can be resolved correctly</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bank:</span>
+<span class="sd">        A Bank (either WaveBank or EventBank) to verify</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bank_path</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">bank_path</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span>
+    <span class="n">index_paths</span> <span class="o">=</span> <span class="n">_natify_paths</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">])</span>
+    <span class="n">file_paths</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">bank</span><span class="o">.</span><span class="n">bank_path</span> <span class="o">/</span> <span class="n">pth</span> <span class="k">for</span> <span class="n">pth</span> <span class="ow">in</span> <span class="n">index_paths</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">iter_files</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">bank_path</span><span class="p">),</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;mseed&quot;</span><span class="p">):</span>
+        <span class="c1"># go up two levels to match path reference</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">file_paths</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.testing</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>
