@@ -8,7 +8,7 @@ import obspy
 import pytest
 from obsplus import EventBank, WaveBank
 from obsplus.interfaces import EventClient, ProgressBar, StationClient, WaveformClient
-from obsplus.utils.misc import _get_progressbar
+from obsplus.utils.misc import ProgressBar as BaseProgressBar
 from obspy.clients.fdsn.client import Client, FDSNException
 
 # fixtures
@@ -106,8 +106,7 @@ class TestBar:
 
     def test_progressbar_isinstance(self):
         """Ensure the ProgressBar2 ProgressBar is an instance."""
-        progbar = _get_progressbar()
-        assert issubclass(progbar, ProgressBar)
+        assert issubclass(BaseProgressBar, ProgressBar)
 
     def test_custom_progress_bar(self):
         """Ensure custom progress bar works as well."""

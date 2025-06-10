@@ -13,7 +13,6 @@ from collections.abc import Callable, Collection, Generator, Iterable
 from functools import partial, singledispatch, wraps
 from os.path import join
 from pathlib import Path, PurePosixPath
-from tkinter.ttk import Progressbar
 from typing import (
     Any,
     TypeVar,
@@ -26,20 +25,13 @@ from obspy.core import event as ev
 from obspy.core.inventory import Channel, Station
 from obspy.io.mseed.core import _read_mseed as mread
 from obspy.io.quakeml.core import _read_quakeml
+from progressbar import ProgressBar
 
 import obsplus
 from obsplus.constants import NSLC, NULL_SEED_CODES
 
 BASIC_NON_SEQUENCE_TYPE = (int, float, str, bool, type(None))
 READ_DICT = dict(mseed=mread, quakeml=_read_quakeml)
-
-
-def _get_progressbar():
-    """Suppress ProgressBar's warning."""
-    # TODO remove this when progress no longer issues warning
-    with suppress_warnings():
-        from progressbar import ProgressBar
-    return ProgressBar
 
 
 def deprecated_callable(func=None, replacement_str=None):
@@ -232,7 +224,7 @@ def apply_to_files_or_skip(func: Callable, directory: str | Path):
                 pass
 
 
-def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Progressbar | None:
+def get_progressbar(max_value, min_value=None, *args, **kwargs) -> ProgressBar | None:
     """
     Get a progress bar object using the ProgressBar2 library.
 
@@ -260,8 +252,7 @@ def get_progressbar(max_value, min_value=None, *args, **kwargs) -> Progressbar |
     if min_value and max_value < min_value:
         return None  # no progress bar needed, return None
     try:
-        progress_bar = _get_progressbar()
-        bar = progress_bar(max_value=max_value, *args, **kwargs)
+        bar = ProgressBar(max_value=max_value, *args, **kwargs)
         bar.start()
         bar.update = _new_update(bar)
         bar.update(1)

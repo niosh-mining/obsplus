@@ -260,7 +260,7 @@ class TestProgressBar:
 
     def test_graceful_progress_fail(self, monkeypatch):
         """Ensure a progress bar that cant update returns None"""
-        progress_bar = obsplus.utils.misc._get_progressbar()
+        progress_bar = obsplus.utils.misc.ProgressBar
 
         def raise_exception():
             raise Exception
@@ -270,7 +270,7 @@ class TestProgressBar:
 
     def test_simple_progress_bar(self):
         """Ensure a simple progress bar can be used."""
-        progress_bar = obsplus.utils.misc._get_progressbar()
+        progress_bar = obsplus.utils.misc.ProgressBar
 
         bar = obsplus.utils.misc.get_progressbar(max_value=100, min_value=1)
         assert isinstance(bar, progress_bar)
