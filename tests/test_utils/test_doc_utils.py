@@ -6,7 +6,7 @@ from obsplus.constants import STATION_DTYPES
 from obsplus.utils.docs import compose_docstring, format_dtypes
 
 
-class TestDocsting:
+class TestDocstring:
     """tests for obsplus' simple docstring substitution function."""
 
     def count_white_space(self, some_str):
@@ -19,9 +19,9 @@ class TestDocsting:
             """
         Parameters
         ----------
-        a: int
+        a
             a
-        b int
+        b
             b
         """
         )
@@ -29,13 +29,17 @@ class TestDocsting:
         @compose_docstring(params=params)
         def testfun1():
             """
+            A simple test function.
+
             {params}
             """
 
         assert "Parameters" in testfun1.__doc__
         line = next(x for x in testfun1.__doc__.split("\n") if "Parameters" in x)
         base_spaces = line.split("Parameters")[0]
-        assert len(base_spaces) == 12
+        # py3.13+ automatically strips white space from docstrings so 12
+        # and 0 are valid lengths.
+        assert len(base_spaces) in {12, 0}
 
     def test_list_indent(self):
         """Ensure lists are indented equally."""
