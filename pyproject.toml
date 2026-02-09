@@ -54,6 +54,7 @@ dependencies = [
     "scipy",
     "tables",
     "typing-extensions",
+    "setuptools",  # need this for obspy to work
 ]
 
 [project.optional-dependencies]
