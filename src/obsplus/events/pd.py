@@ -1,5 +1,5 @@
 """
-Module for generating a pandas dataframe from an obspy events.
+Module for generating a pandas DataFrame from ObsPy events.
 """
 
 from __future__ import annotations

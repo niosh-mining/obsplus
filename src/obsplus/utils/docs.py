@@ -25,14 +25,16 @@ def compose_docstring(**kwargs: str | Sequence[str]):
 
     Examples
     --------
-    @compose_docstring(some_value='10')
-    def example_function():
-        '''
-        Some useful description
+    ::
 
-        The following line will be the string '10':
-        {some_value}
-        '''
+        @compose_docstring(some_value='10')
+        def example_function():
+            '''
+            Some useful description
+
+            The following line will be the string '10':
+            {some_value}
+            '''
     """
 
     def _wrap(func):

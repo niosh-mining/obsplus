@@ -87,17 +87,16 @@ class WaveBank(_Bank):
         Define the directory structure of the wavebank that will be used to
         put waveforms into the directory. Characters are separated by /,
         regardless of operating system. The following words can be used in
-        curly braces as data specific variables:
-            year, month, day, julday, hour, minute, second, network,
-            station, location, channel, time
-        example : streams/{year}/{month}/{day}/{network}/{station}
+        curly braces as data specific variables: year, month, day, julday,
+        hour, minute, second, network, station, location, channel, time.
+        Example: ``streams/{year}/{month}/{day}/{network}/{station}``.
         If no structure is provided it will be read from the index, if no
         index exists the default is {net}/{sta}/{chan}/{year}/{month}/{day}
     name_structure : str
         The same as path structure but for the file name. Supports the same
         variables but requires a period as the separation character. The
         default extension (.mseed) will be added. The default is {time}
-        example : {seedid}.{time}
+        Example: ``{seedid}.{time}``.
     index_path : str
         The path to the index file containing the contents of the directory.
         By default it will be created in the top-level of the data directory.

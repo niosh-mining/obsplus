@@ -37,8 +37,10 @@ def make_docs(doc_path=DOC_PATH, timeout=3000) -> str:
         f"--ExecutePreprocessor.timeout={timeout}"
     )
     for note_book_path in doc_path.rglob("*.ipynb"):
-        # skip all ipython notebooks
-        if "ipynb_checkpoints" in str(note_book_path):
+        # Skip generated artifacts and notebook checkpoints.
+        if "_build" in note_book_path.parts or any(
+            "ipynb_checkpoints" in part for part in note_book_path.parts
+        ):
             continue
         result = run(cmd + f" {note_book_path}", shell=True)
         if result.returncode != 0:

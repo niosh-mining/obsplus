@@ -195,7 +195,7 @@ def cast_dtypes(
     # apply functions defined with custom dtypes
     if column_funcs:
         df = apply_funcs_to_columns(df, column_funcs, inplace=inplace)
-    return df.astype(supported_dtypes, copy=False)
+    return df.astype(supported_dtypes)
 
 
 def order_columns(

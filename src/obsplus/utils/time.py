@@ -40,21 +40,14 @@ def get_reference_time(
     obj
         The argument that will indicate a start time. Types and corresponding
         behavior are as follows:
-            float:
-                Convert to UTCDateTime object, interpret as a timestamp.
-            UTCDateTime:
-                Return a new UTCDateTime as a copy.
-            catalog:
-                Return the earliest reference time of all events.
-            event:
-                First check for a preferred origin, if found return its origin
-                time. If not found, iterate through the events picks and
-                return the earliest pick time. If None are found raise a
-                ValueError.
-            stream:
-                Return the earliest reference time of all traces.
-            trace:
-                Return the starttime in the stats object.
+
+        - ``float``: convert to ``UTCDateTime`` and interpret as a timestamp.
+        - ``UTCDateTime``: return a new ``UTCDateTime`` copy.
+        - ``catalog``: return the earliest reference time of all events.
+        - ``event``: use preferred origin time, or earliest pick time if no
+          origin is available.
+        - ``stream``: return the earliest reference time of all traces.
+        - ``trace``: return ``trace.stats.starttime``.
 
     Raises
     ------

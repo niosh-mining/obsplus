@@ -27,17 +27,18 @@ authors = [
     { name="Shawn Boltz", email="sboltz@users.noreply.github.com" }
 ]
 
-description = "An ObsPy exapanson pack"
+description = "An ObsPy expansion pack"
 readme = "README.rst"
 license = { file="LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     "Topic :: Scientific/Engineering",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 keywords = ["geophysics", "Seismology"]
@@ -105,7 +106,10 @@ markers = [
 
 filterwarnings = [
     # Ignore hdf5 warnings from pytables, See pytables #1035
-    'ignore::Warning:tables:'
+    'ignore::Warning:tables:',
+    # Deprecated APIs used by third-party dependencies (ObsPy/Sphinx plugins).
+    'ignore:pkg_resources is deprecated as an API.*:DeprecationWarning',
+    'ignore:Deprecated call to `pkg_resources.declare_namespace.*:DeprecationWarning',
 ]
 
 # --- Ruff configuration
@@ -156,7 +160,7 @@ exclude = [
 ]
 
 # lowest python version supported
-target-version = "py310"
+target-version = "py311"
 
 lint.fixable = ["ALL"]
 

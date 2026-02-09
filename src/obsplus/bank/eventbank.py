@@ -116,7 +116,7 @@ class EventBank(_Bank):
         files.
     executor
         An executor with the same interface as
-        :py:class:`concurrent.futures.Executor, the map method of the executor
+        :py:class:`concurrent.futures.Executor`, the map method of the executor
         will be used for reading files and updating indices.
 
     Attributes

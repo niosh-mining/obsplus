@@ -101,7 +101,7 @@ class DataFrameExtractor(UserDict):
 
         An extractor is a function which extracts values from instances of a
         class. It should either return a dict of {column names: values} or
-        a single value and the name of the function (minus get_ prefix if
+        a single value and the name of the function (minus ``get_`` prefix if
         one exists) will be the column name.
 
         Parameters

@@ -104,22 +104,22 @@ class Fetcher:
     ----------
     waveforms
         Any argument from which a waveform client can be extracted. This
-        includes an obspy waveforms, directory of waveform files, or an object
+        includes an ObsPy Stream, a directory of waveform files, or an object
         with a `get_waveforms` method.
     stations
-        Any argument from which an station client can be extracted. This
-        includes an obspy Inventory, directory of station files, or an object
+        Any argument from which a station client can be extracted. This
+        includes an ObsPy Inventory, a directory of station files, or an object
         with a `get_stations` method.
     events
         Any argument from which an event client can be extracted. This
-        includes an obspy Catalog, directory of event files, or an object with
+        includes an ObsPy Catalog, a directory of event files, or an object with
         a `get_events` method.
     picks
         Data from which picks can be extracted. A dataframe, events, or
         event_client are all acceptable.
     stream_processor
-        A callable that takes an obspy waveforms as input and returns an obspy
-        waveforms.
+        A callable that takes an ObsPy Stream as input and returns an ObsPy
+        Stream.
     time_before
         The default time before an given time to fetch.
     time_after
@@ -272,7 +272,7 @@ class Fetcher:
         """
         Get waveforms for all channels in stations.
 
-        {get_waveform_parameters}
+        {get_waveforms_parameters}
         """
         # get a list of tuples for get_waveforms_bulk call
         nslcs = self._get_bulk_args(*args, **kwargs)
@@ -343,18 +343,17 @@ class Fetcher:
             The time before (in seconds) the reference that will be included
             in the waveforms if possible.
         time_after
-            The Time after (in seconds) the reference that will be included
+            The time after (in seconds) the reference that will be included
             in the waveforms if possible.
         reference
             A str that indicates how the starttime of the trace should be
-            determined. The following are supported:
-                origin - use the origin time of the event
-                p - use the first p time as the start for each station
-                s - use the first s times as the start for each station
+            determined. The following are supported: ``origin`` (use the
+            event origin time), ``p`` (use the first P-pick per station), and
+            ``s`` (use the first S-pick per station).
             If "p" or "s" is used only streams corresponding to stations with
             the appropriate phase pick will be returned.
         raise_on_fail
-            If True, re raise an exception if one is caught during waveform
+            If True, re-raise an exception if one is caught during waveform
             fetching, else continue to next event.
 
         Notes
@@ -423,18 +422,18 @@ class Fetcher:
             The time before (in seconds) the reference that will be included
             in the waveforms if possible.
         time_after
-            The Time after (in seconds) the reference that will be included
+            The time after (in seconds) the reference that will be included
             in the waveforms if possible.
         reference
             A str that indicates how the starttime of the trace should be
-            determined. The following are supported:
-                origin - use the origin time of the event for each channel
-                p - use the first p times as the start of the station traces
-                s - use the first s times as the start of the station traces
+            determined. The following are supported: ``origin`` (use the
+            event origin time for each channel), ``p`` (use the first P-pick
+            for station traces), and ``s`` (use the first S-pick for station
+            traces).
             If a station doesn't have p or s picks and "p" or "s" is used,
-            it's streams will not be returned.
+            its streams will not be returned.
         raise_on_fail
-            If True, re raise and exception if one is caught during waveform
+            If True, re-raise an exception if one is caught during waveform
             fetching, else continue to next event.
 
         Yields
