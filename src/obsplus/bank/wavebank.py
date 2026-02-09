@@ -441,7 +441,7 @@ class WaveBank(_Bank):
         """
 
         def _get_gap_dfs(df, min_gap):
-            """Apply me to each group of seed_id dataframes"""
+            """Get gaps for one NSLC + sampling_period group."""
             if not len(df):
                 return pd.DataFrame(
                     columns=df.columns.union(["starttime", "endtime", "gap_duration"])
@@ -450,7 +450,7 @@ class WaveBank(_Bank):
             if min_gap is None:
                 min_gap = 1.5 * df["sampling_period"].iloc[0]
             else:
-                min_gap = to_timedelta64(min_gap)
+                min_gap = min_gap
             # get df for determining gaps
             dd = (
                 df.drop_duplicates()
@@ -471,16 +471,19 @@ class WaveBank(_Bank):
 
         # get index and group by NSLC and sampling_period
         index = self.read_index(*args, **kwargs)
-        group_names = [*NSLC, "sampling_period"]  # include period
-        group = index.groupby(
-            group_names,
-            as_index=False,
-            group_keys=False,
-        )
-        out = group.apply(_get_gap_dfs, min_gap=min_gap)
-        if out.empty:  # if not gaps return empty dataframe with needed cols
+        out = index
+        if not index.empty:
+            gap_min = None if min_gap is None else to_timedelta64(min_gap)
+            group_names = [*NSLC, "sampling_period"]
+            gap_dfs = [
+                _get_gap_dfs(group_df, min_gap=gap_min)
+                for _, group_df in index.groupby(group_names, sort=False)
+            ]
+            out = pd.concat(gap_dfs, ignore_index=True)
+        # if no gaps return empty dataframe with needed cols
+        if out.empty:
             return pd.DataFrame(columns=self._gap_columns)
-        return out.reset_index(drop=True)
+        return out
 
     @compose_docstring(get_waveforms_params=get_waveforms_parameters)
     def get_uptime_df(
