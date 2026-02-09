@@ -16,7 +16,8 @@ runs:
           powershell
         cache-environment: true
         cache-environment-key: environment-${{ steps.date.outputs.date }}
-        post-cleanup: 'all'
+        # Avoid flaky post-job cleanup failures on macOS runners.
+        post-cleanup: 'none'
         create-args: >-
           python=${{ inputs.python-version }}
 
