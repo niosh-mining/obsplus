@@ -362,7 +362,7 @@ class TestBankBasics:
         bank = EventBank(td).put_events(cat)
         # instrument bank, delete index, create new index
         with instrument_methods(bank) as ibank:
-            os.remove(bank.index_path)
+            try_permission_sleep(os.remove, bank.index_path)
             ibank._max_events_in_memory = 1
             ibank.update_index()
             counter = ibank._counter
