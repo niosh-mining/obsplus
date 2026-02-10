@@ -360,9 +360,9 @@ class TestBankBasics:
         # create temporary directory of event files
         td = Path(tmpdir)
         bank = EventBank(td).put_events(cat)
-        # instrument bank, delete index, create new index
+        # instrument bank and create new index on a fresh sqlite file
         with instrument_methods(bank) as ibank:
-            try_permission_sleep(os.remove, bank.index_path)
+            ibank._index_path = td / ".index_limit_test.db"
             ibank._max_events_in_memory = 1
             ibank.update_index()
             counter = ibank._counter
