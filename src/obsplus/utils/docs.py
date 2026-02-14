@@ -25,23 +25,26 @@ def compose_docstring(**kwargs: str | Sequence[str]):
 
     Examples
     --------
-    @compose_docstring(some_value='10')
-    def example_function():
-        '''
-        Some useful description
+    ::
 
-        The following line will be the string '10':
-        {some_value}
-        '''
+        @compose_docstring(some_value='10')
+        def example_function():
+            '''
+            Some useful description
+
+            The following line will be the string '10':
+            {some_value}
+            '''
     """
 
     def _wrap(func):
         docstring = func.__doc__
+        assert isinstance(docstring, str)
         # iterate each provided value and look for it in the docstring
         for key, value in kwargs.items():
             value = value if isinstance(value, str) else "\n".join(value)
             # strip out first line if needed
-            value = value.lstrip()
+            value = textwrap.dedent(value).lstrip()
             search_value = f"{{{key}}}"
             # find all lines that match values
             lines = [x for x in docstring.split("\n") if search_value in x]
@@ -49,7 +52,7 @@ def compose_docstring(**kwargs: str | Sequence[str]):
                 # determine number of spaces used before matching character
                 spaces = line.split(search_value)[0]
                 # ensure only spaces precede search value
-                assert set(spaces) == {" "}
+                assert set(spaces) == {" "} or not len(spaces)
                 new = textwrap.indent(textwrap.dedent(value), spaces)
                 docstring = docstring.replace(line, new)
 

@@ -32,10 +32,17 @@ from obsplus.utils.time import to_datetime64, to_timedelta64, to_utc
 
 def _int_column_to_str(ser, width=2, fillchar="0"):
     """Convert an int column to a string"""
-    # Do nothing if the column is already a string
-    if not is_string_dtype(ser):
-        ser = ser.astype("Int64").astype(str).str.pad(width=width, fillchar=fillchar)
-    if len(ser.str.split(".", expand=True).columns) > 1:
+    if is_string_dtype(ser):
+        # Preserve already-string location codes but normalize nulls.
+        ser = ser.fillna("").astype(str)
+    else:
+        # Numeric NSLC codes should preserve zero padding (eg 1 -> "01").
+        valid = ser.notna()
+        out = pd.Series("", index=ser.index, dtype=object)
+        cast = ser.loc[valid].astype("Int64").astype(str)
+        out.loc[valid] = cast.str.pad(width=width, fillchar=fillchar)
+        ser = out
+    if len(ser.astype(str).str.split(".", expand=True).columns) > 1:
         raise TypeError("NSLC information cannot contain '.'")
     return ser
 
@@ -175,10 +182,20 @@ def cast_dtypes(
         i: OPS_DTYPE_FUNCS[dtype[i]] for i in overlap if dtype[i] in OPS_DTYPE_FUNCS
     }
     supported_dtypes = {i: OPS_DTYPES.get(dtype[i], dtype[i]) for i in overlap}
+    # Normalize missing values for string outputs before casting. This is needed
+    # To support the Pandas' StringArray.
+    string_cols = [
+        i
+        for i, v in supported_dtypes.items()
+        if v in {str, "str", "string"} and i not in column_funcs
+    ]
+    if string_cols:
+        for col in string_cols:
+            df[col] = df[col].fillna("")
     # apply functions defined with custom dtypes
     if column_funcs:
         df = apply_funcs_to_columns(df, column_funcs, inplace=inplace)
-    return df.astype(supported_dtypes, copy=False)
+    return df.astype(supported_dtypes)
 
 
 def order_columns(

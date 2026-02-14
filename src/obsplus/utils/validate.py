@@ -65,8 +65,9 @@ def decomposer(cls):
     Register a function as a decomposer for a given class.
 
     The decomposer simply splits the object into its constitutive parts
-    that may need to be tested. It should return a dict of the following form:
-        {cls: [instance1, instance2, ...], ... }
+    that may need to be tested. It should return a dict like::
+
+        {cls: [instance1, instance2, ...], ...}
 
     Parameters
     ----------

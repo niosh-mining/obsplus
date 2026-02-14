@@ -337,7 +337,7 @@ def _create_first_pick_origin(first_pick, channel_ser, depth):
 
 def get_seed_id(obj: catalog_component) -> str:
     """
-    Get the NSLC associated with an station-specific object.
+    Get the NSLC associated with a station-specific object.
 
     Parameters
     ----------

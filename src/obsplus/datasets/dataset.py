@@ -14,13 +14,13 @@ from collections import OrderedDict
 from contextlib import suppress
 from distutils.dir_util import copy_tree
 from functools import lru_cache
+from importlib.metadata import entry_points
 from pathlib import Path
 from types import MappingProxyType as MapProxy
 from typing import ClassVar, TypeVar
 from warnings import warn
 
 from obspy.clients.fdsn import Client
-from pkg_resources import iter_entry_points
 
 import obsplus
 from obsplus import copy_dataset
@@ -211,7 +211,7 @@ class DataSet(abc.ABC):
         -----
         This only copies data in memory, not on disk. If you plan to make
         any changes to the dataset's on disk resources please use
-        :method:`~obsplus.Dataset.copy_to`.
+        :meth:`~obsplus.DataSet.copy_to`.
         """
         return copy.deepcopy(self) if deep else copy.copy(self)
 
@@ -353,7 +353,7 @@ class DataSet(abc.ABC):
             elif load:  # it has not been loaded, try loading it.
                 _load_ep(cls._entry_points[name])
         # it has not been found, iterate entry points and update
-        eps = {x.name: x for x in iter_entry_points("obsplus.datasets")}
+        eps = {x.name: x for x in entry_points(group="obsplus.datasets")}
         cls._entry_points.update(eps)
         # stop if we don't need to load
         if not load:

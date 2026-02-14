@@ -691,13 +691,14 @@ degrees: int, default True
 bar_parameter_description = """
 bar
     This parameter controls if a progress bar will be used for this
-    function call. Its behavior is dependent on the `bar` parameter:
-        False - Don't use a progress bar
-        None - Use the default progress bar
-        ProgressBar - a custom implementation of progress bar is used.
+    function call. Its behavior is dependent on the ``bar`` parameter:
 
-    If a custom progress bar is to be used, it must have an `update`
-    and `finish` method.
+    - ``False``: Don't use a progress bar.
+    - ``None``: Use the default progress bar.
+    - ``ProgressBar``: Use a custom progress bar implementation.
+
+    If a custom progress bar is used, it must have ``update`` and ``finish``
+    methods.
 """
 
 paths_description = """

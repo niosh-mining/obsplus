@@ -339,8 +339,10 @@ def df_to_inventory(
     ----------
     df
         A dataframe with the same columns and dtypes as the one returned by
-         :func:`obsplus.stations_to_df`, which are:
-            {station_columns}
+        :func:`obsplus.stations_to_df`, which are:
+
+        {station_columns}
+
         extra columns, except for those mentioned in the notes, are ignored.
     client
         Any client with a `get_stations` method. Only used if the dataframe
@@ -355,7 +357,9 @@ def df_to_inventory(
     There are two ways to include response information:
 
     1. Using the Nominal Response Library (NRL):
-    (https://docs.obspy.org/master/packages/obspy.clients.nrl.html)
+
+    https://docs.obspy.org/master/packages/obspy.clients.nrl.html
+
     If the dataframe has columns named "sensor_keys" and "datalogger_keys"
     these will indicate the response information should be fetched using
     ObsPy's NRL client. Each of these columns should either contain lists
@@ -376,11 +380,14 @@ def df_to_inventory(
     The contents of this column must be a dictionary or json string of
     acceptable keyword arguments for the client's `get_stations` method.
     All time values must be provided as iso8601 strings.
-    For example,
-    {'network': 'UU', 'station': 'TMU', 'location': '01', 'channel': 'HHZ',
-     'starttime': '2017-01-02',}
+    For example::
+
+        {"network": "UU", "station": "TMU", "location": "01",
+         "channel": "HHZ", "starttime": "2017-01-02"}
+
     would be passed to the provided client to download a response for the
     corresponding channel.
+
     - If more than one channel is returned from the get_stations call an
       AmbiguousResponseError will be raised and a more specific query will
       be required.

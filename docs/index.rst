@@ -13,7 +13,7 @@ ObsPlus
 
 `Contributing <notebooks/contributing.ipynb>`_
 
-`Support Bug Reporting <notebooks/support.ipynb>`_
+`Support and Bug Reporting <notebooks/support.ipynb>`_
 
 `Quick Reference <quickref/index.rst>`_
 

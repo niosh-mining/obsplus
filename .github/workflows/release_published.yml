@@ -16,7 +16,7 @@ jobs:
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
 
       - name: git config
         shell: bash -l {0}
@@ -48,7 +48,7 @@ jobs:
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
 
       - name: create dists
         shell: bash -l {0}

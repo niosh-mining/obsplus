@@ -104,7 +104,7 @@ def _trim_stream(df, stream, required_len, trim_tolerance):
         con2 = (df.end.max() - df.start.min()) > trim_tolerance
         if con1 or con2:
             msg = (
-                "the following waveforms did not meed the required trim "
+                "the following waveforms did not meet the required trim "
                 f"tolerance{stream!s}"
             )
             raise ValueError(msg)
@@ -536,9 +536,8 @@ def get_waveform_bulk_df(
     Parameters
     ----------
     bulk
-        A sequence of
-            [network, station, location, channel, starttime, endtime]
-        or a dataframe with columns named the same.
+        A sequence of ``[network, station, location, channel, starttime,
+        endtime]`` values, or a dataframe with columns named the same.
 
     Returns
     -------

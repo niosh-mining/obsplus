@@ -17,7 +17,7 @@ jobs:
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: run test suite
         shell: bash -l {0}
@@ -46,7 +46,7 @@ jobs:
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: git config
         shell: bash -l {0}
