@@ -16,7 +16,7 @@ jobs:
       - name: Install obsplus
         uses: ./.github/actions/install-obsplus
         with:
-          python-version: "3.14"
+          python-version: "3.13"
 
       - name: git config
         shell: bash -l {0}
