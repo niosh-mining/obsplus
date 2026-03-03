@@ -1,0 +1,7 @@
+obsplus.utils.mseed module
+==========================
+
+.. automodule:: obsplus.utils.mseed
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -242,6 +242,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/379b42f6-f2c6-4a55-a041-69f84ec15ab1">
         <time>
@@ -252,6 +253,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/4f56cb31-03de-4e3d-81fb-4ef61bbf75a9">
         <time>
@@ -272,6 +274,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/92789271-22a3-4f5e-8a94-6dff7762ae2c">
         <time>
@@ -282,6 +285,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/a138d505-c047-4bd6-ba01-10c01e17572d">
         <time>
@@ -302,6 +306,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/b22f5403-e800-49cb-b24f-5de5ee47fdc8">
         <time>
@@ -312,6 +317,7 @@
         <phaseHint>P</phaseHint>
         <polarity>positive</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/bf154568-cbc1-4a71-85c3-fe56d63b9602">
         <time>
@@ -322,6 +328,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/47f952f3-62cd-4ac4-b16a-2be950d369e3">
         <time>
@@ -342,6 +349,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/44d93245-999a-4ece-8d02-560dc1442366">
         <time>
@@ -352,6 +360,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/5e9b2f4e-6f9c-41e3-ac99-9068f76377cc">
         <time>
@@ -372,6 +381,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/97dc9e18-052d-43e9-aa57-407a999a504e">
         <time>
@@ -382,6 +392,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/2f0d7f3e-ed59-4e60-ac5a-cc92274633be">
         <time>
@@ -392,6 +403,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/d5b760ce-3ad9-44dd-9264-02123e6fe60a">
         <time>
@@ -412,6 +424,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/302772c2-eaed-4462-bd1f-38031fdfe350">
         <time>
@@ -422,6 +435,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/d7e9c33f-f1d5-4a0a-8c86-067bfb369ad1">
         <time>
@@ -432,6 +446,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/b7906729-4e1b-4d51-b1a4-1125ac68cc37">
         <time>
@@ -452,6 +467,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/8e2931cb-dab3-4697-976d-037a35ff3f00">
         <time>
@@ -472,6 +488,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/5f2247cf-eae3-4716-9026-98bbe955ea24">
         <time>
@@ -482,6 +499,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/6b3fda2a-0b7d-4d04-a97e-042a27e6e593">
         <time>
@@ -492,6 +510,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/aa5d78b7-5636-451f-bbc7-b05c7c44822e">
         <time>
@@ -502,6 +521,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/2999e890-f338-4a93-8ddf-4b6fb100a28a">
         <time>
@@ -522,6 +542,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/29d1ecc9-a923-478d-a6dc-8fa809a353f1">
         <time>
@@ -532,6 +553,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/92635b95-e109-4454-88d4-50dfc4a71d1f">
         <time>
@@ -542,6 +564,7 @@
         <phaseHint>S</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/59c0d8d4-7bf5-42da-8902-bd37d9bae337">
         <time>
@@ -552,6 +575,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/0da998ae-1266-4704-bc5a-3b23a0a0a0e0">
         <time>
@@ -582,6 +606,7 @@
         <phaseHint>IAML</phaseHint>
         <polarity>undecidable</polarity>
         <evaluationMode>automatic</evaluationMode>
+        <evaluationStatus>rejected</evaluationStatus>
       </pick>
       <pick publicID="smi:local/c00a7626-76bc-423f-972f-c758b47294a1">
         <time>

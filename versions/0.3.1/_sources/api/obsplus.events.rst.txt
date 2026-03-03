@@ -1,0 +1,20 @@
+obsplus.events package
+======================
+
+.. automodule:: obsplus.events
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.events.get_events
+   obsplus.events.json
+   obsplus.events.merge
+   obsplus.events.pd
+   obsplus.events.schema
+   obsplus.events.validate

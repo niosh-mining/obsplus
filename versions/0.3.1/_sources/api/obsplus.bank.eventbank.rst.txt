@@ -1,0 +1,7 @@
+obsplus.bank.eventbank module
+=============================
+
+.. automodule:: obsplus.bank.eventbank
+   :members:
+   :undoc-members:
+   :show-inheritance:

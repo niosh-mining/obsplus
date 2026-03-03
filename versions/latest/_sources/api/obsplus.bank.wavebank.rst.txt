@@ -1,0 +1,7 @@
+obsplus.bank.wavebank module
+============================
+
+.. automodule:: obsplus.bank.wavebank
+   :members:
+   :show-inheritance:
+   :undoc-members:

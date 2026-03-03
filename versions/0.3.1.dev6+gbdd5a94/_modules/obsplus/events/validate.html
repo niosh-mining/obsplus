@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.validate &#8212; ObsPlus  [ 0.3.1.dev6+gbdd5a94 ] 0.3.1.dev6+gbdd5a94 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=1a73bed8"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.validate</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.events.validate</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions for validating events according to the obsplus flavor.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Collection</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">QuantityError</span><span class="p">,</span> <span class="n">ResourceIdentifier</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NSLC</span><span class="p">,</span> <span class="n">ORIGIN_FLOATS</span><span class="p">,</span> <span class="n">QUANTITY_ERRORS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_seed_id_series</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">iterate</span><span class="p">,</span> <span class="n">replace_null_nlsc_codes</span><span class="p">,</span> <span class="n">yield_obj_parent_attr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.validate</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate</span><span class="p">,</span> <span class="n">validator</span>
+
+<span class="n">CATALOG_VALIDATORS</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_none_or_type</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">type_check</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return if obj is None or of type type_check&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">type_check</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="set_preferred_values">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.set_preferred_values">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_preferred_values</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validator to set the preferred values to the last in the list if they are</span>
+<span class="sd">    not defined.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">preferred_origin_id</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">):</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">preferred_origin_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">preferred_magnitude_id</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">):</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">preferred_magnitude_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">preferred_focal_mechanism_id</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">focal_mechanisms</span><span class="p">):</span>
+        <span class="n">focal_mech_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">focal_mechanisms</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">preferred_focal_mechanism_id</span> <span class="o">=</span> <span class="n">focal_mech_id</span></div>
+
+
+
+<div class="viewcode-block" id="attach_all_resource_ids">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.attach_all_resource_ids">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">attach_all_resource_ids</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Recurse all objects in a events and set referred objects&quot;&quot;&quot;</span>
+    <span class="n">rid_to_object</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># first pass, bind all resource ids to parent</span>
+    <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s2">&quot;resource_id&quot;</span><span class="p">:</span>
+            <span class="c1"># if the object has already been set and is not unique, raise</span>
+            <span class="n">rid</span><span class="o">.</span><span class="n">set_referred_object</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rid</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">rid_to_object</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">rid</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">()</span> <span class="ow">is</span> <span class="n">rid_to_object</span><span class="p">[</span><span class="n">rid</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+            <span class="c1"># else set referred object</span>
+            <span class="n">rid_to_object</span><span class="p">[</span><span class="n">rid</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent</span>
+    <span class="c1"># second pass, bind all other resource ids to correct resource ids</span>
+    <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">!=</span> <span class="s2">&quot;resource_id&quot;</span> <span class="ow">and</span> <span class="n">rid</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">rid_to_object</span><span class="p">:</span>
+            <span class="n">rid</span><span class="o">.</span><span class="n">set_referred_object</span><span class="p">(</span><span class="n">rid_to_object</span><span class="p">[</span><span class="n">rid</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+    <span class="n">event</span><span class="o">.</span><span class="n">scope_resource_ids</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="check_arrivals_pick_id">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_arrivals_pick_id">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_arrivals_pick_id</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that all arrivals link to a pick object, if they are not</span>
+<span class="sd">    attached set the referred object attr.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pick_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">picks</span><span class="p">:</span>
+        <span class="c1"># make sure pick has wf_id and phase hint</span>
+        <span class="k">assert</span> <span class="n">pick</span><span class="o">.</span><span class="n">waveform_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">pick</span><span class="o">.</span><span class="n">phase_hint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">arrival</span> <span class="ow">in</span> <span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span><span class="p">:</span>
+            <span class="n">rid</span> <span class="o">=</span> <span class="n">arrival</span><span class="o">.</span><span class="n">pick_id</span>
+            <span class="k">assert</span> <span class="n">rid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">rid</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">pick_dict</span></div>
+
+
+
+<div class="viewcode-block" id="check_origins">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_origins">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_origins</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the origins and types&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">ori</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">atr</span> <span class="ow">in</span> <span class="n">ORIGIN_FLOATS</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">ori</span><span class="p">,</span> <span class="n">atr</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># check depth errors</span>
+        <span class="k">for</span> <span class="n">atr</span> <span class="ow">in</span> <span class="n">QUANTITY_ERRORS</span><span class="p">:</span>
+            <span class="n">at</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ori</span><span class="p">,</span> <span class="n">atr</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="n">at</span><span class="p">,</span> <span class="n">QuantityError</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="n">at</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="n">at</span><span class="o">.</span><span class="n">lower_uncertainty</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="n">at</span><span class="o">.</span><span class="n">upper_uncertainty</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">_none_or_type</span><span class="p">(</span><span class="n">at</span><span class="o">.</span><span class="n">confidence_level</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># register the nullish nslc code replacement</span>
+<span class="n">validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)(</span><span class="n">replace_null_nlsc_codes</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="check_duplicate_picks">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_duplicate_picks">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_duplicate_picks</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ensure there are no picks with the same phases on the same channels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">dup_picks</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">phase_hint</span><span class="p">,</span> <span class="n">subset</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function for checking for duplications.&quot;&quot;&quot;</span>
+        <span class="n">seed_id</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">subset</span><span class="p">)</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">seed_id</span><span class="p">[</span><span class="n">seed_id</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Duplicate </span><span class="si">{</span><span class="n">phase_hint</span><span class="si">}</span><span class="s2"> picks found</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># A dict of {phase: column that cant be duplicated}</span>
+    <span class="n">phase_duplicates</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;P&quot;</span><span class="p">:</span> <span class="n">NSLC</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">NSLC</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="n">NSLC</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="n">NSLC</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]}</span>
+    <span class="c1"># first get dataframe of picks, filter out rejected</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">pdf</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">!=</span> <span class="s2">&quot;rejected&quot;</span><span class="p">]</span>
+    <span class="c1"># add column for network.station.location</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+    <span class="c1"># Go through each of phase duplicates and compare against the pick dataframe</span>
+    <span class="n">pick_gb</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ph</span><span class="p">,</span> <span class="n">cols</span> <span class="ow">in</span> <span class="n">phase_duplicates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">ph</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pick_gb</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">dup_picks</span><span class="p">(</span><span class="n">pick_gb</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">ph</span><span class="p">),</span> <span class="n">ph</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">cols</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_pick_order">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_pick_order">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_pick_order</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ensure:</span>
+<span class="sd">        1. There are no S picks before P picks on any station</span>
+<span class="sd">        2. There are no amplitude picks before P picks on any station</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pick_order</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">sp</span><span class="p">,</span> <span class="n">ap</span><span class="p">):</span>
+        <span class="c1"># get sub dfs with phases of interest</span>
+        <span class="n">p_picks</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">]</span>
+        <span class="n">s_picks</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">]</span>
+        <span class="n">amp_picks</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;AML&quot;</span><span class="p">)]</span>
+        <span class="c1"># there should be one P/S pick</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_picks</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_picks</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="c1"># first check that P is less than S, if not append to name of bad</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_picks</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_picks</span><span class="p">):</span>
+            <span class="n">stime</span><span class="p">,</span> <span class="n">ptime</span> <span class="o">=</span> <span class="n">s_picks</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;time&quot;</span><span class="p">],</span> <span class="n">p_picks</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;time&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">stime</span> <span class="o">&lt;</span> <span class="n">ptime</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">ptime</span><span class="p">)</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">stime</span><span class="p">)):</span>
+                <span class="n">sp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># next check all amplitude picks are after P</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_picks</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">amp_picks</span><span class="p">):</span>
+            <span class="n">ptime</span> <span class="o">=</span> <span class="n">p_picks</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;time&quot;</span><span class="p">]</span>
+            <span class="n">bad_amp_picks</span> <span class="o">=</span> <span class="n">amp_picks</span><span class="p">[</span><span class="n">amp_picks</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ptime</span><span class="p">]</span>
+            <span class="n">ap</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">bad_amp_picks</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]))</span>
+
+    <span class="c1"># get dataframe of picks, filter out rejected</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">pdf</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">!=</span> <span class="s2">&quot;rejected&quot;</span><span class="p">]</span>
+    <span class="c1"># get series of network, station</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">NSLC</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="c1"># Checking that picks are in acceptable order</span>
+    <span class="n">gb</span><span class="p">,</span> <span class="n">sp</span><span class="p">,</span> <span class="n">ap</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">group_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">gb</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">pick_order</span><span class="p">,</span> <span class="n">sp</span><span class="p">,</span> <span class="n">ap</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;S pick found before P pick:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;station/s: </span><span class="si">{</span><span class="n">sp</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ap</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;amplitude pick found before P pick:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">ap</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="check_p_lims">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_p_lims">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_p_lims</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">,</span> <span class="n">p_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for P picks that aren&#39;t within p_lim of the median pick (if provided)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">p_lim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">!=</span> <span class="s2">&quot;rejected&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">phase_hint</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">)]</span>
+        <span class="n">med</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">med</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">p_lim</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Outlying P pick found:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">bad</span><span class="o">.</span><span class="n">seed_id</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_amp_lims">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_amp_lims">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_amp_lims</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">,</span> <span class="n">amp_lim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for amplitudes that aren&#39;t below amp_lim (if provided).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">amp_lim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">amp</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">generic_amplitude</span> <span class="o">&gt;</span> <span class="n">amp_lim</span><span class="p">:</span>
+                <span class="n">wid</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">waveform_id</span>
+                <span class="n">nslc</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">network_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">station_code</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">location_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">channel_code</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">bad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nslc</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Above limit amplitude found:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="si">!s}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_amp_filter_ids">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_amp_filter_ids">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_amp_filter_ids</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">,</span> <span class="n">filter_ids</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that all amplitudes have codes in filter_ids.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filter_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">iterate</span><span class="p">(</span><span class="n">filter_ids</span><span class="p">))</span>
+    <span class="c1"># There is no amplitude specified</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filter_ids</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bad_filters</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">amp</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">filter_id</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">filter_ids</span><span class="p">:</span>
+            <span class="n">wid</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">waveform_id</span>
+            <span class="n">nslc</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">network_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">station_code</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">location_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">channel_code</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">bad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nslc</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">filter_id</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bad_filters</span><span class="p">:</span>
+                <span class="n">bad_filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">filter_id</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">&quot;Unexpected amplitude filter found:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="si">!s}</span><span class="s2">, &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;filters_used: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">bad_filters</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_amps_on_z_component">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_amps_on_z_component">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_amps_on_z_component</span><span class="p">(</span>
+    <span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">,</span> <span class="n">no_z_amps</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">phase_hints</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;AML&quot;</span><span class="p">,</span> <span class="s2">&quot;IAML&quot;</span><span class="p">)</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for amplitude picks on Z channels (if no_z_amps is True).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">no_z_amps</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="n">con1</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">!=</span> <span class="s2">&quot;rejected&quot;</span>
+    <span class="n">con2</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">phase_hint</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">phase_hints</span><span class="p">)</span>
+    <span class="n">con3</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;Z&quot;</span><span class="p">)</span>
+    <span class="n">_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">con1</span> <span class="o">&amp;</span> <span class="n">con2</span> <span class="o">&amp;</span> <span class="n">con3</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">&quot;Amplitude pick on Z axis found:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="si">!s}</span><span class="s2">, &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">_df</span><span class="p">[</span><span class="s1">&#39;seed_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_amp_times_contain_pick_time">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.check_amp_times_contain_pick_time">[docs]</a>
+<span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_amp_times_contain_pick_time</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for amplitudes times that don&#39;t match the referenced pick time</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">amp</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">time_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">amp</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">==</span> <span class="s2">&quot;rejected&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># We don&#39;t care about it, skip it.</span>
+        <span class="n">amp_t</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">time_window</span><span class="o">.</span><span class="n">reference</span>
+        <span class="n">pick</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">pick_id</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">amp_t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">amp_t</span> <span class="o">!=</span> <span class="n">pick</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">wid</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">waveform_id</span>
+            <span class="n">nslc</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">network_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">station_code</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">location_code</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">wid</span><span class="o">.</span><span class="n">channel_code</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">bad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nslc</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">&quot;Mismatched amplitude and pick times found:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;event_id: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;seed_id/s: </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">, &quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="validate_catalog">
+<a class="viewcode-back" href="../../../api/obsplus.events.validate.html#obsplus.events.validate.validate_catalog">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_catalog</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">|</span> <span class="n">Event</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span> <span class="o">|</span> <span class="n">Event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform checks on a events or event object.</span>
+
+<span class="sd">    This function will try to fix any issues but will raise if it cannot. It</span>
+<span class="sd">    is a simple wrapper around obsplus.validate.validate for the obsplus</span>
+<span class="sd">    namespace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events</span>
+<span class="sd">        The events or event to check</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">events</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">Catalog</span><span class="p">)</span> <span class="k">else</span> <span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="p">[</span><span class="n">events</span><span class="p">])</span>
+    <span class="n">validate</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="s2">&quot;obsplus&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">events</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.validate</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

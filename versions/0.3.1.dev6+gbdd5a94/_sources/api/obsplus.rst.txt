@@ -1,0 +1,32 @@
+obsplus package
+===============
+
+.. automodule:: obsplus
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.bank
+   obsplus.datasets
+   obsplus.events
+   obsplus.stations
+   obsplus.structures
+   obsplus.utils
+   obsplus.waveforms
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.constants
+   obsplus.exceptions
+   obsplus.interfaces
+   obsplus.version

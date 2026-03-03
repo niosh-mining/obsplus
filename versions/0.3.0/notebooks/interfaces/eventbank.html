@@ -1,0 +1,631 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Event Bank &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    
+    <script src="../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Event Bank</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Event-Bank">
+<h1>Event Bank<a class="headerlink" href="#Event-Bank" title="Link to this heading">¶</a></h1>
+<p>The EventBank class is used to interact with a local directory of event files. The <code class="docutils literal notranslate"><span class="pre">get_events</span></code> method of Event Bank are compatible with the <code class="docutils literal notranslate"><span class="pre">get_events</span></code> method of the FDSN client in obspy. Additionally there are several useful features for managing events on disk.</p>
+<section id="Quickstart">
+<h2>Quickstart<a class="headerlink" href="#Quickstart" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obsplus</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%capture</span>
+<span class="c1"># make sure the dataset is downloaded and supress output.</span>
+<span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># copy the Crandall dataset to a temporary directory</span>
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+
+<span class="c1"># path to directory where events are stored</span>
+<span class="n">event_path</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_path</span>
+
+<span class="c1"># init an EventBank instance</span>
+<span class="n">bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">(</span><span class="n">event_path</span><span class="p">)</span>
+
+<span class="c1"># ensure index is up-to-date</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+EventBank(base_path=/tmp/tmpfpqpe12v/crandall_test/events)
+</pre></div></div>
+</div>
+<section id="Accessing-the-index">
+<h3>Accessing the index<a class="headerlink" href="#Accessing-the-index" title="Link to this heading">¶</a></h3>
+<p>The index can be accessed directly to get a summary of the events contained in the archive. Depending on the task, it may be more natural to work with the index dataframe rather than the obspy catalog objects directly.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">index</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span>
+<span class="n">index</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>time</th>
+      <th>latitude</th>
+      <th>longitude</th>
+      <th>depth</th>
+      <th>magnitude</th>
+      <th>event_description</th>
+      <th>associated_phase_count</th>
+      <th>azimuthal_gap</th>
+      <th>event_id</th>
+      <th>horizontal_uncertainty</th>
+      <th>...</th>
+      <th>standard_error</th>
+      <th>used_phase_count</th>
+      <th>station_count</th>
+      <th>vertical_uncertainty</th>
+      <th>updated</th>
+      <th>author</th>
+      <th>agency_id</th>
+      <th>creation_time</th>
+      <th>version</th>
+      <th>path</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2007-08-06 08:48:40.010</td>
+      <td>39.4635</td>
+      <td>-111.2277</td>
+      <td>410.0</td>
+      <td>4.37</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248839</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>1.7356</td>
+      <td>0.0</td>
+      <td>134.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.794070528</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 20:33:13.618111</td>
+      <td></td>
+      <td>2007/08/06/2007-08-06T08-48-40_48839.xml</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2007-08-07 02:14:24.080</td>
+      <td>39.4632</td>
+      <td>-111.2230</td>
+      <td>4180.0</td>
+      <td>1.26</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248883</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.8834</td>
+      <td>0.0</td>
+      <td>14.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.794070528</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:26.864045</td>
+      <td></td>
+      <td>2007/08/07/2007-08-07T02-14-24_48883.xml</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2007-08-07 03:44:18.470</td>
+      <td>39.4625</td>
+      <td>-111.2152</td>
+      <td>4160.0</td>
+      <td>1.45</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248887</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5716</td>
+      <td>0.0</td>
+      <td>15.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.798070784</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:27.576204</td>
+      <td></td>
+      <td>2007/08/07/2007-08-07T03-44-18_48887.xml</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2007-08-07 07:13:05.760</td>
+      <td>39.4605</td>
+      <td>-111.2242</td>
+      <td>3240.0</td>
+      <td>2.24</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248891</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9901</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.802070528</td>
+      <td></td>
+      <td></td>
+      <td>NaT</td>
+      <td></td>
+      <td>2007/08/07/2007-08-07T07-13-05_48891.xml</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2007-08-07 02:05:04.490</td>
+      <td>39.4648</td>
+      <td>-111.2255</td>
+      <td>1790.0</td>
+      <td>2.08</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248882</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9935</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.806070528</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:15:19.190404</td>
+      <td></td>
+      <td>2007/08/07/2007-08-07T02-05-04_48882.xml</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>2007-08-06 10:47:25.600</td>
+      <td>39.4615</td>
+      <td>-111.2317</td>
+      <td>2050.0</td>
+      <td>1.57</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248843</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.8237</td>
+      <td>0.0</td>
+      <td>29.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.810070528</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 20:33:27.110914</td>
+      <td></td>
+      <td>2007/08/06/2007-08-06T10-47-25_48843.xml</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>2007-08-07 21:42:51.130</td>
+      <td>39.4627</td>
+      <td>-111.2200</td>
+      <td>4620.0</td>
+      <td>1.65</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248925</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5704</td>
+      <td>0.0</td>
+      <td>19.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.814070784</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-11 22:08:54.236916</td>
+      <td></td>
+      <td>2007/08/07/2007-08-07T21-42-51_48925.xml</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>2007-08-06 01:44:48.810</td>
+      <td>39.4617</td>
+      <td>-111.2378</td>
+      <td>6570.0</td>
+      <td>1.78</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248828</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.8936</td>
+      <td>0.0</td>
+      <td>23.0</td>
+      <td>NaN</td>
+      <td>2024-02-28 22:19:00.818070528</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 20:26:49.642650</td>
+      <td></td>
+      <td>2007/08/06/2007-08-06T01-44-48_48828.xml</td>
+    </tr>
+  </tbody>
+</table>
+<p>8 rows × 28 columns</p>
+</div></div>
+</div>
+<p>The index contains the following columns:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Index([&#39;time&#39;, &#39;latitude&#39;, &#39;longitude&#39;, &#39;depth&#39;, &#39;magnitude&#39;,
+       &#39;event_description&#39;, &#39;associated_phase_count&#39;, &#39;azimuthal_gap&#39;,
+       &#39;event_id&#39;, &#39;horizontal_uncertainty&#39;, &#39;local_magnitude&#39;,
+       &#39;moment_magnitude&#39;, &#39;duration_magnitude&#39;, &#39;magnitude_type&#39;,
+       &#39;p_phase_count&#39;, &#39;s_phase_count&#39;, &#39;p_pick_count&#39;, &#39;s_pick_count&#39;,
+       &#39;standard_error&#39;, &#39;used_phase_count&#39;, &#39;station_count&#39;,
+       &#39;vertical_uncertainty&#39;, &#39;updated&#39;, &#39;author&#39;, &#39;agency_id&#39;,
+       &#39;creation_time&#39;, &#39;version&#39;, &#39;path&#39;],
+      dtype=&#39;object&#39;)
+</pre></div></div>
+</div>
+</section>
+<section id="Get-events">
+<h3>Get events<a class="headerlink" href="#Get-events" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">EventBank</span></code> can be used to get obspy event objects based on query parameters.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">catalog</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_events</span><span class="p">(</span><span class="n">minmagnitude</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+3 Event(s) in Catalog:
+2007-08-06T08:48:40.010000Z | +39.464, -111.228 | 4.2  mb
+2007-08-07T07:13:05.760000Z | +39.461, -111.224 | 2.55 ml
+2007-08-07T02:05:04.490000Z | +39.465, -111.225 | 2.44 ml
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Put-events">
+<h2>Put events<a class="headerlink" href="#Put-events" title="Link to this heading">¶</a></h2>
+<p>Events can be saved to disk using the <code class="docutils literal notranslate"><span class="pre">put_events</span></code> method. If an event with the same resource_id already exists in the bank it will be overwritten.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The bank has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">())</span><span class="si">}</span><span class="s1"> events before put_events call.&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The bank has 8 events before put_events call.
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank</span><span class="o">.</span><span class="n">put_events</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The bank has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">())</span><span class="si">}</span><span class="s1"> events after the put_events call.&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The bank has 11 events after the put_events call.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[1333549302300000000 1333549117000000000 1333548526000000000]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[1709158807002143744 1709158807002143744 1709158807002143744]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[1333557650000000000 1333557650000000000 1333557650000000000]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+</pre></div></div>
+</div>
+</section>
+<section id="Organizing-event-directories">
+<h2>Organizing event directories<a class="headerlink" href="#Organizing-event-directories" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">EventBank</span></code> can also be used to (re)organize event directories. The events are saved in the following structure by default: <code class="docutils literal notranslate"><span class="pre">{year/month/day/year-month-dayThour-minute-second-short_id.xml}</span></code> (where “short_id” means the last 5 characters of the event id).</p>
+<p>The structure of the event directories can be reorganized to <code class="docutils literal notranslate"><span class="pre">{year/month/short_id.xml}</span></code>. The following code demonstrates the process used in changing the event directory structure.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">tempfile</span>
+
+<span class="n">temp_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">())</span>
+
+<span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">path_structure</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{year}</span><span class="s2">/</span><span class="si">{month}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">name_structure</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{event_id_short}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">get_events</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+11 Event(s) in Catalog:
+2007-08-06T08:48:40.010000Z | +39.464, -111.228 | 4.2  mb
+2007-08-07T02:14:24.080000Z | +39.463, -111.223 | 1.17 ml
+...
+2012-04-04T14:18:37.000000Z | +39.342,  +41.044 | 4.3  ML | manual
+2012-04-04T14:08:46.000000Z | +38.017,  +37.736 | 3.0  ML | manual
+To see all events call &#39;print(CatalogObject.__str__(print_all=True))&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank2</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">bank2</span><span class="o">.</span><span class="n">put_events</span><span class="p">(</span><span class="n">bank</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">bank2</span><span class="o">.</span><span class="n">read_index</span><span class="p">()[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0     2007/08/48839.xml
+1     2007/08/48883.xml
+2     2007/08/48887.xml
+3     2007/08/48891.xml
+4     2007/08/48882.xml
+5     2007/08/48843.xml
+6     2007/08/48925.xml
+7     2007/08/48828.xml
+8     2012/04/00041.xml
+9     2012/04/00038.xml
+10    2012/04/00039.xml
+Name: path, dtype: object
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[1186390120010000000 1186452864080000000 1186458258470000000
+ 1186470785760000000 1186452304490000000 1186397245600000000
+ 1186522971130000000 1186364688810000000 1333549302300000000
+ 1333549117000000000 1333548526000000000]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[1709158808474145280 1709158808474145280 1709158808478145280
+ 1709158808482145280 1709158808486145280 1709158808490145280
+ 1709158808494145280 1709158808498145280 1709158808502145280
+ 1709158808502145280 1709158808502145280]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+/home/runner/work/obsplus/obsplus/src/obsplus/utils/pd.py:120: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error of pandas. Value &#39;[ 1539203593618111000  1539205826864045000  1539205827576204000
+ -9223372031854775808  1539206119190404000  1539203607110914000
+  1539295734236916000  1539203209642650000  1333557650000000000
+  1333557650000000000  1333557650000000000]&#39; has dtype incompatible with datetime64[ns], please explicitly cast to a compatible dtype first.
+  df.loc[:, cols] = df.loc[:, cols].fillna(nat_value).astype(np.int64)
+</pre></div></div>
+</div>
+</section>
+<section id="Notes">
+<h2>Notes<a class="headerlink" href="#Notes" title="Link to this heading">¶</a></h2>
+<p>Unlike the <a class="reference external" href="wavebank.pynb">WaveBank</a>, which uses HDF5 to index waveforms, EventBank uses a <a class="reference external" href="https://www.sqlite.org/index.html">SQLite</a> which is more suitable for frequent updates and <a class="reference external" href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> usage patterns.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Event Bank</a><ul>
+<li><a class="reference internal" href="#Quickstart">Quickstart</a><ul>
+<li><a class="reference internal" href="#Accessing-the-index">Accessing the index</a></li>
+<li><a class="reference internal" href="#Get-events">Get events</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#Put-events">Put events</a></li>
+<li><a class="reference internal" href="#Organizing-event-directories">Organizing event directories</a></li>
+<li><a class="reference internal" href="#Notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/interfaces/eventbank.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Event Bank</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

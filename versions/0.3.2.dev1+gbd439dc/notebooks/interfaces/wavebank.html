@@ -1,0 +1,839 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>WaveBank &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">WaveBank</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="WaveBank">
+<h1>WaveBank<a class="headerlink" href="#WaveBank" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> is an in-process database for accessing seismic time-series data. Any directory structure containing ObsPy-readable waveforms can be used as the data source. <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> uses a simple indexing scheme and the <a class="reference external" href="https://en.wikipedia.org/wiki/Hierarchical_Data_Format">Hierarchical Data Format</a> to keep track of each <code class="docutils literal notranslate"><span class="pre">Trace</span></code> in the directory. Without <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> (or another similar program) applications have implement their own data organization/access logic which is tedious and
+clutters up application code. <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> provides a better way.</p>
+<section id="Load-Example-Data">
+<h2>Load Example Data<a class="headerlink" href="#Load-Example-Data" title="Link to this heading">¶</a></h2>
+<p>This tutorial will demonstrate the use of <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> on two different <a class="reference internal" href="../datasets/datasets.html"><span class="doc">obsplus datasets</span></a>.</p>
+<p>The first dataset, <a class="reference external" href="https://en.wikipedia.org/wiki/Crandall_Canyon_Mine">crandall canyon</a>, only has event waveform files. The second only has continuous data from two TA stations. We start by loading these datasets, making a temporary copy, and getting a path to their waveform directories.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%capture</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+
+<span class="c1"># make sure datasets are downloaded and copy them to temporary</span>
+<span class="c1"># directories to make sure no accidental changes are made</span>
+<span class="n">crandall_dataset</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">copy_to</span><span class="p">()</span>
+<span class="n">ta_dataset</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;ta_test&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">copy_to</span><span class="p">()</span>
+
+<span class="c1"># get path to waveform directories</span>
+<span class="n">crandall_path</span> <span class="o">=</span> <span class="n">crandall_dataset</span><span class="o">.</span><span class="n">waveform_path</span>
+<span class="n">ta_path</span> <span class="o">=</span> <span class="n">ta_dataset</span><span class="o">.</span><span class="n">waveform_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">crandall_path</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PosixPath(&#39;/tmp/tmpbki2unve/crandall_test/waveforms&#39;)
+</pre></div></div>
+</div>
+</section>
+<section id="Create-a-WaveBank-object">
+<h2>Create a WaveBank object<a class="headerlink" href="#Create-a-WaveBank-object" title="Link to this heading">¶</a></h2>
+<p>To create a <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> instance simply pass the class a path to the waveform directory.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">crandall_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Utilizing the <code class="docutils literal notranslate"><span class="pre">udpate_index</span></code> method on the bank ensures the index is up-to-date. This will iterate through all files that are timestamped later than the last time <code class="docutils literal notranslate"><span class="pre">update_index</span></code> was run.</p>
+<p>Note: If the index has not yet been created or new files have been added, <code class="docutils literal notranslate"><span class="pre">update_index</span></code> needs to be called.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WaveBank(base_path=/tmp/tmpbki2unve/crandall_test/waveforms, index_path=/tmp/tmpbki2unve/crandall_test/waveforms/.index.h5)
+</pre></div></div>
+</div>
+</section>
+<section id="Using-a-custom-index-path">
+<h2>Using a custom index path<a class="headerlink" href="#Using-a-custom-index-path" title="Link to this heading">¶</a></h2>
+<p>If you are working from a data directory that doesn’t have write access, you can specify a custom location for the index path:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">index_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">())</span> <span class="o">/</span> <span class="s2">&quot;index.h5&quot;</span>
+<span class="n">cust_ind_bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">crandall_path</span><span class="p">,</span> <span class="n">index_path</span><span class="o">=</span><span class="n">index_path</span><span class="p">)</span>
+<span class="n">cust_ind_bank</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WaveBank(base_path=/tmp/tmpbki2unve/crandall_test/waveforms, index_path=/tmp/tmpyry362cs/index.h5)
+</pre></div></div>
+</div>
+</section>
+<section id="Get-waveforms">
+<h2>Get waveforms<a class="headerlink" href="#Get-waveforms" title="Link to this heading">¶</a></h2>
+<p>The files can be retrieved from the directory with the <code class="docutils literal notranslate"><span class="pre">get_waveforms</span></code> method. This method has the same signature as the ObsPy client <code class="docutils literal notranslate"><span class="pre">get_waveform</span></code> methods so they can be used interchangeably:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+
+<span class="n">t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-08-06T01-44-48&quot;</span><span class="p">)</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">t1</span> <span class="o">+</span> <span class="mi">60</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> can filter on channels, locations, stations, networks, etc. using linux style search strings or regex.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st2</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">network</span><span class="o">=</span><span class="s2">&quot;UU&quot;</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span>
+
+<span class="c1"># ensure only UU traces were returned</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st2</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span> <span class="o">==</span> <span class="s2">&quot;UU&quot;</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s2">&quot;O1??&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">&quot;BH[NE]&quot;</span><span class="p">)</span>
+
+<span class="c1"># test returned traces</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&gt;=</span> <span class="n">t1</span> <span class="o">-</span> <span class="mf">0.00001</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="o">&lt;=</span> <span class="n">t2</span> <span class="o">+</span> <span class="mf">0.00001</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;O1&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;BH&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">channel</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">}</span>
+<br/></pre></div>
+</div>
+</div>
+<p>WaveBank also has a <code class="docutils literal notranslate"><span class="pre">get_waveforms_bulk</span></code> method for efficiently retrieving a large number of streams.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span>  <span class="c1"># in practice this list may contain hundreds or thousands of requests</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;TA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;O15A&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BHZ&quot;</span><span class="p">,</span>
+        <span class="n">t1</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">t2</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;UU&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SRU&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;HHZ&quot;</span><span class="p">,</span>
+        <span class="n">t1</span><span class="p">,</span>
+        <span class="n">t2</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Yield-waveforms">
+<h2>Yield waveforms<a class="headerlink" href="#Yield-waveforms" title="Link to this heading">¶</a></h2>
+<p>The Bank class also provides a generator for iterating large amounts of continuous waveforms. The following example shows how to get streams of one hour duration with a minute of overlap between the slices.</p>
+<p>The first step is to create a bank on a dataset which has continuous data. The example below will use the TA dataset.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ta_bank</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">(</span><span class="n">ta_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get a few hours of kemmerer data</span>
+<span class="n">ta_t1</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-15&quot;</span><span class="p">)</span>
+<span class="n">ta_t2</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="s2">&quot;2007-02-16&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">ta_bank</span><span class="o">.</span><span class="n">yield_waveforms</span><span class="p">(</span>
+    <span class="n">starttime</span><span class="o">=</span><span class="n">ta_t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">ta_t2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="mi">60</span>
+<span class="p">):</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Put-waveforms">
+<h2>Put waveforms<a class="headerlink" href="#Put-waveforms" title="Link to this heading">¶</a></h2>
+<p>Files can be added to the bank by passing a stream or trace to the <code class="docutils literal notranslate"><span class="pre">bank.put_waveforms</span></code> method. <code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> does not merge files so overlap in data may occur if care is not taken.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># show that no data for RJOB is in the bank</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s2">&quot;RJOB&quot;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># add the default stream to the archive (which contains data for RJOB)</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">put_waveforms</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="n">st_out</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="s2">&quot;RJOB&quot;</span><span class="p">)</span>
+
+<span class="c1"># test output</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">st_out</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st_out</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="s2">&quot;RJOB&quot;</span>
+<br/><br/></pre></div>
+</div>
+</div>
+</section>
+<section id="Availability">
+<h2>Availability<a class="headerlink" href="#Availability" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> can be used to get the availability of data. The outputs can either be a dataframe or as a list of tuples in the form of [(network, station, location, channel, min_starttime, max_endtime)].</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get a dataframe of availability by seed ids and timestamps</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">&quot;BHE&quot;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s2">&quot;[OR]*&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.124998</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>O16A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>O18A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.824998</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>R16A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:04:54.500000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>R17A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:44:38.825000</td>
+      <td>2007-08-07 21:43:51.125000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get list of tuples of availability</span>
+<span class="n">bank</span><span class="o">.</span><span class="n">availability</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">&quot;BHE&quot;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s2">&quot;[OR]*&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[(&#39;TA&#39;,
+  &#39;O15A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.124998Z),
+ (&#39;TA&#39;,
+  &#39;O16A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;O18A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.824998Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;R16A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-07T02:04:54.500000Z,
+  2007-08-07T21:43:51.125000Z),
+ (&#39;TA&#39;,
+  &#39;R17A&#39;,
+  &#39;&#39;,
+  &#39;BHE&#39;,
+  2007-08-06T01:44:38.825000Z,
+  2007-08-07T21:43:51.125000Z)]
+</pre></div></div>
+</div>
+</section>
+<section id="Get-Gaps-and-uptime">
+<h2>Get Gaps and uptime<a class="headerlink" href="#Get-Gaps-and-uptime" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> can return a dataframe of missing data with the <code class="docutils literal notranslate"><span class="pre">get_gaps_df</span></code> method, and a dataframe of reliability statistics with the <code class="docutils literal notranslate"><span class="pre">get_uptime_df</span></code> method. These are useful for assessing the completeness of an archive of contiguous data.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank</span><span class="o">.</span><span class="n">get_gaps_df</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">&quot;BHE&quot;</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="s2">&quot;O*&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>sampling_period</th>
+      <th>path</th>
+      <th>gap_duration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 01:45:48.799998</td>
+      <td>2007-08-06 08:48:30.024998</td>
+      <td>0 days 00:00:00.025000</td>
+      <td>TA.O15A..BHE__20070806T014438Z__20070806T01454...</td>
+      <td>0 days 07:02:41.225000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 08:49:39.999998</td>
+      <td>2007-08-06 10:47:15.624998</td>
+      <td>0 days 00:00:00.025000</td>
+      <td>TA.O15A..BHE__20070806T084830Z__20070806T08494...</td>
+      <td>0 days 01:57:35.625000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-06 10:48:25.599998</td>
+      <td>2007-08-07 02:04:54.499998</td>
+      <td>0 days 00:00:00.025000</td>
+      <td>TA.O15A..BHE__20070806T104715Z__20070806T10482...</td>
+      <td>0 days 15:16:28.900000</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:06:04.474998</td>
+      <td>2007-08-07 02:14:14.100000</td>
+      <td>0 days 00:00:00.025000</td>
+      <td>TA.O15A..BHE__20070807T020454Z__20070807T02060...</td>
+      <td>0 days 00:08:09.625002</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>O15A</td>
+      <td></td>
+      <td>BHE</td>
+      <td>2007-08-07 02:15:24.074998</td>
+      <td>2007-08-07 03:44:08.474998</td>
+      <td>0 days 00:00:00.025000</td>
+      <td>TA.O15A..BHE__20070807T021414Z__20070807T02152...</td>
+      <td>0 days 01:28:44.400000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ta_bank</span><span class="o">.</span><span class="n">get_uptime_df</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>duration</th>
+      <th>gap_duration</th>
+      <th>uptime</th>
+      <th>availability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHE</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-15 00:00:09.999998</td>
+      <td>2007-02-24 23:59:59.999998</td>
+      <td>9 days 23:59:50</td>
+      <td>0 days</td>
+      <td>9 days 23:59:50</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHE</td>
+      <td>2007-02-15 00:00:00.000003</td>
+      <td>2007-02-25 00:00:00.000003</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 00:00:00.000003</td>
+      <td>2007-02-25 00:00:00.000003</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHZ</td>
+      <td>2007-02-15 00:00:00.000004</td>
+      <td>2007-02-25 00:00:00.000004</td>
+      <td>10 days 00:00:00</td>
+      <td>0 days</td>
+      <td>10 days 00:00:00</td>
+      <td>1.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Read-index">
+<h2>Read index<a class="headerlink" href="#Read-index" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> can return a dataframe of the the index with the <code class="docutils literal notranslate"><span class="pre">read_index</span></code> method, although in most cases this shouldn’t be needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ta_bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>station</th>
+      <th>location</th>
+      <th>channel</th>
+      <th>starttime</th>
+      <th>endtime</th>
+      <th>sampling_period</th>
+      <th>path</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-17 09:59:59.999998</td>
+      <td>2007-02-17 10:59:59.999998</td>
+      <td>0 days 00:00:10</td>
+      <td>TA/M11A/VHN/2007-02-17T10-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-17 10:00:00.000003</td>
+      <td>2007-02-17 11:00:00.000003</td>
+      <td>0 days 00:00:10</td>
+      <td>TA/M11A/VHN/2007-02-17T10-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 09:59:59.999998</td>
+      <td>2007-02-15 10:59:59.999998</td>
+      <td>0 days 00:00:10</td>
+      <td>TA/M11A/VHN/2007-02-15T10-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>TA</td>
+      <td>M14A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 10:00:00.000003</td>
+      <td>2007-02-15 11:00:00.000003</td>
+      <td>0 days 00:00:10</td>
+      <td>TA/M11A/VHN/2007-02-15T10-00-00.mseed</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>TA</td>
+      <td>M11A</td>
+      <td></td>
+      <td>VHN</td>
+      <td>2007-02-15 23:59:59.999998</td>
+      <td>2007-02-16 00:59:59.999998</td>
+      <td>0 days 00:00:10</td>
+      <td>TA/M11A/VHN/2007-02-16T00-00-00.mseed</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Similar-Projects">
+<h2>Similar Projects<a class="headerlink" href="#Similar-Projects" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WaveBank</span></code> is a useful tool, but it may not be a good fit for every application. Check out the following items as well:</p>
+<p>Obspy has a way to visualize availability of waveform data in a directory using <a class="reference external" href="https://docs.obspy.org/tutorial/code_snippets/visualize_data_availability_of_local_waveform_archive.html">obspy-scan</a>. If you prefer a graphical option to working with <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s this might be for you.</p>
+<p>Obspy also has <a class="reference external" href="https://docs.obspy.org/master/packages/autogen/obspy.clients.filesystem.sds.Client.html#obspy.clients.filesystem.sds.Client">filesystem client</a> for working with SeisComP structured archives.</p>
+<p><a class="reference external" href="https://www.iris.edu/hq/">IRIS</a> released a mini-seed indexing program called <a class="reference external" href="https://github.com/iris-edu/mseedindex">mseedindex</a> which has an <a class="reference external" href="https://github.com/obspy/obspy/pull/2206">ObsPy API</a>.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">WaveBank</a><ul>
+<li><a class="reference internal" href="#Load-Example-Data">Load Example Data</a></li>
+<li><a class="reference internal" href="#Create-a-WaveBank-object">Create a WaveBank object</a></li>
+<li><a class="reference internal" href="#Using-a-custom-index-path">Using a custom index path</a></li>
+<li><a class="reference internal" href="#Get-waveforms">Get waveforms</a></li>
+<li><a class="reference internal" href="#Yield-waveforms">Yield waveforms</a></li>
+<li><a class="reference internal" href="#Put-waveforms">Put waveforms</a></li>
+<li><a class="reference internal" href="#Availability">Availability</a></li>
+<li><a class="reference internal" href="#Get-Gaps-and-uptime">Get Gaps and uptime</a></li>
+<li><a class="reference internal" href="#Read-index">Read index</a></li>
+<li><a class="reference internal" href="#Similar-Projects">Similar Projects</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/interfaces/wavebank.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">WaveBank</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>
