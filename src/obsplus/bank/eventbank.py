@@ -179,6 +179,7 @@ class EventBank(_Bank):
         self._index = None
         self.format = format
         self.ext = ext
+        self._index_path = Path(index_path) if index_path is not None else None
         # get waveforms structure based on structures of path and filename
         ps = (
             path_structure
@@ -188,7 +189,6 @@ class EventBank(_Bank):
         self.path_structure = ps
         ns = name_structure or self._name_structure or EVENT_NAME_STRUCTURE
         self.name_structure = ns
-        self._index_path = Path(index_path) if index_path is not None else None
         self.executor = executor
         # enforce min version and warn on newer
         self._enforce_min_version()
