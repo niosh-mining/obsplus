@@ -335,6 +335,27 @@ class TestYieldObjectParentAttr:
         assert len(rids) == 1
         assert str(rids[0]) == "bob"
 
+    def test_ignores_unreadable_slots(self):
+        """Unreadable slot attributes should not crash traversal."""
+
+        class Slot:
+            __slots__ = ("hey", "bad")
+
+            def __init__(self, hey):
+                self.hey = hey
+
+            def __getattribute__(self, item):
+                if item == "bad":
+                    msg = "bad slot is intentionally unreadable"
+                    raise AttributeError(msg)
+                return object.__getattribute__(self, item)
+
+        slot = Slot(hey=ev.ResourceIdentifier("bob"))
+
+        rids = [x[0] for x in yield_obj_parent_attr(slot, ev.ResourceIdentifier)]
+        assert len(rids) == 1
+        assert str(rids[0]) == "bob"
+
 
 class TestIterFiles:
     """Tests for iterating directories of files."""

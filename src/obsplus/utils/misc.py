@@ -143,7 +143,12 @@ def yield_obj_parent_attr(
         # Iterate through non built-in object attributes.
         if hasattr(obj, "__slots__"):
             for attr in obj.__slots__:
-                val = getattr(obj, attr)
+                # Apparently, some objects can expose slots that are not
+                # populated which results in an attribute Error. Just skip these.
+                try:
+                    val = getattr(obj, attr)
+                except AttributeError:
+                    continue
                 yield from func(val, attr=attr, parent=obj)
         if hasattr(obj, "__dict__"):
             for item, val in obj.__dict__.items():
