@@ -83,9 +83,8 @@ def ta_bank_index(ta_bank):
 @pytest.fixture(scope="function")
 def ta_bank_no_index(ta_bank):
     """Return the ta bank, but first delete the index"""
-    path = Path(ta_bank.index_path)
-    if path.exists():
-        os.remove(path)
+    with suppress(FileNotFoundError):
+        ta_bank._remove_index()
     return ta_bank
 
 
@@ -134,7 +133,7 @@ class TestBankBasics:
         # monkey patch obsplus version
         monkeypatch.setattr(obsplus, "__last_version__", self.low_version_str)
         # write index with negative version
-        os.remove(default_wbank.index_path)
+        default_wbank._remove_index()
         default_wbank.update_index()
         assert default_wbank._index_version == self.low_version_str
         # restore correct version
@@ -380,7 +379,7 @@ class TestEmptyBank:
     def empty_index_bank(self, empty_bank):
         """Write an unrelated table to index, return bank"""
         if empty_bank.index_path.exists():
-            empty_bank.index_path.unlink()
+            empty_bank._remove_index()
         df = pd.DataFrame([1, 3, 4])
         with pd.HDFStore(empty_bank.index_path, "w") as store:
             store.put(key="weird", value=df)
@@ -1006,7 +1005,7 @@ class TestBadWaveforms:
             fi.write("this is not an mseed file, duh")
         # remove old index if it exists
         if os.path.exists(ta_bank.index_path):
-            os.remove(ta_bank.index_path)
+            ta_bank._remove_index()
         return WaveBank(path)
 
     @pytest.fixture
@@ -1023,7 +1022,7 @@ class TestBadWaveforms:
         # remove old index if it exists
         index_path = new_path / (Path(ta_bank.index_path).name)
         if index_path.exists():
-            os.remove(index_path)
+            WaveBank(new_path)._remove_index()
         bank = WaveBank(old_path)
         bank.update_index()
         return bank
@@ -1210,7 +1209,7 @@ class TestGetGaps:
         bank = WaveBank(gappy_dir)
         # make sure index is updated after gaps are introduced
         if os.path.exists(bank.index_path):
-            os.remove(bank.index_path)
+            bank._remove_index()
         bank.update_index()
         return bank
 
@@ -1474,7 +1473,7 @@ class TestConcurrentReads:
         """Return a wavebank with an instrumented executor."""
         monkeypatch.setattr(ta_bank, "executor", instrumented_executor)
         with suppress(FileNotFoundError):
-            os.remove(ta_bank.index_path)
+            ta_bank._remove_index()
         return ta_bank
 
     def test_concurrent_get_waveforms(self, wbank_executor):

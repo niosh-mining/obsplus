@@ -62,8 +62,8 @@ def ebank(tmpdir, cat_with_descs):
 @pytest.fixture
 def ebank_no_index(ebank):
     """Return an event bank with no index file."""
-    with suppress((FileNotFoundError, PermissionError)):
-        Path(ebank.index_path).unlink()
+    with suppress(FileNotFoundError):
+        ebank._remove_index()
     return ebank
 
 
@@ -260,7 +260,7 @@ class TestBankBasics:
         """The get_service_version method should return obsplus version"""
         # first delete the old index and re-index, in case it is leftover
         # from a previous version.
-        os.remove(bing_ebank.index_path)
+        bing_ebank._remove_index()
         bing_ebank.update_index()
         assert bing_ebank.get_service_version() == obsplus.__last_version__
 
@@ -924,7 +924,7 @@ class TestConcurrency:
         # reasonably skip this test if it fails and the platform is windows.
         try:
             with suppress(FileNotFoundError):
-                os.remove(ebank_executor.index_path)
+                ebank_executor._remove_index()
             ebank_executor.update_index()
             counter = getattr(ebank_executor.executor, "_counter", {})
         except PermissionError:
