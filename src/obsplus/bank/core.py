@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import gc
 import os
 import shutil
+import sys
 import tempfile
+import time
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
@@ -140,7 +143,34 @@ class _Bank(ABC):
                     f"the index will be recreated."
                 )
                 warnings.warn(msg)
+                self._remove_index()
+
+    def _remove_index(self):
+        """
+        Remove the index file, retrying briefly on Windows sqlite locks.
+        """
+        if not self.index_path.exists():
+            return
+        self.clear_cache()
+        gc.collect()
+        if not sys.platform.startswith("win"):
+            os.remove(self.index_path)
+            return
+        deadline = time.monotonic() + 5
+        while True:
+            try:
+                # Windows can keep sqlite files locked for a while after close,
+                # so wait for the handle to be released before giving up.
                 os.remove(self.index_path)
+            except FileNotFoundError:
+                return
+            except PermissionError:
+                if time.monotonic() >= deadline:
+                    raise
+                gc.collect()
+                time.sleep(0.1)
+            else:
+                return
 
     def _warn_on_newer_version(self):
         """

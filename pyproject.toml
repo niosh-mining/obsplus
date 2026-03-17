@@ -54,7 +54,7 @@ dependencies = [
     "scipy",
     "tables",
     "typing-extensions",
-    "setuptools<82.0.0",  # Remove after nex obspy release, see obspy #3681
+    "setuptools",
 ]
 
 [project.optional-dependencies]
