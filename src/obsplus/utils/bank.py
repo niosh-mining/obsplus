@@ -8,6 +8,7 @@ import contextlib
 import os
 import re
 import sqlite3
+import sys
 import time
 import warnings
 from collections.abc import Sequence
@@ -283,6 +284,8 @@ def sql_connection(path, **kwargs):
     with con:
         yield con
     con.close()  # this is needed on windows but not linux, weird...
+    if sys.platform.startswith("win"):
+        time.sleep(0.01)
 
 
 def _get_kernel_query(starttime: int, endtime: int, buffer: int):
