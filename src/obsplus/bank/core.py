@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import os
 import shutil
 import sys
@@ -148,17 +149,28 @@ class _Bank(ABC):
         """
         Remove the index file, retrying briefly on Windows sqlite locks.
         """
-        for attempt in range(21):
+        if not self.index_path.exists():
+            return
+        self.clear_cache()
+        gc.collect()
+        if not sys.platform.startswith("win"):
+            os.remove(self.index_path)
+            return
+        deadline = time.monotonic() + 5
+        while True:
             try:
-                # Windows can keep a recently closed sqlite file locked for a
-                # short time, so retry deletion before failing.
+                # Windows can keep sqlite files locked for a while after close,
+                # so wait for the handle to be released before giving up.
                 os.remove(self.index_path)
+            except FileNotFoundError:
+                return
             except PermissionError:
-                if not sys.platform.startswith("win") or attempt == 20:
+                if time.monotonic() >= deadline:
                     raise
-                time.sleep(0.01)
+                gc.collect()
+                time.sleep(0.1)
             else:
-                break
+                return
 
     def _warn_on_newer_version(self):
         """
