@@ -5,10 +5,9 @@ channels:
 dependencies:
   - numpy
   - scipy
-  - obspy
+  - obspy>=1.5
   - pytables
   - pandas
   - pytest
   - pandoc
   - pydantic
-  - setuptools
