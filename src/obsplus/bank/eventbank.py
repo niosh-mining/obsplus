@@ -261,8 +261,8 @@ class EventBank(_Bank):
         return df
 
     @compose_docstring(
-        bar_description=bar_parameter_description,
-        subpaths_description=paths_description,
+        bar_parameter_description=bar_parameter_description,
+        paths_description=paths_description,
     )
     def update_index(
         self,

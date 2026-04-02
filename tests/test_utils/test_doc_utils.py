@@ -2,7 +2,9 @@
 
 import textwrap
 
+import pytest
 from obsplus.constants import STATION_DTYPES
+from obsplus.exceptions import DocstringCompositionError
 from obsplus.utils.docs import compose_docstring, format_dtypes
 
 
@@ -58,6 +60,60 @@ class TestDocsting:
         white_space_counts = [self.count_white_space(x) for x in list_lines]
         # all whitespace counts should be the same for the list lines.
         assert len(set(white_space_counts)) == 1
+
+    def test_raises_on_unused_key(self):
+        """Unused compose_docstring keys should fail fast."""
+        with pytest.raises(DocstringCompositionError, match="unused keys"):
+
+            @compose_docstring(params="value")
+            def testfun2():
+                """
+                A simple test function.
+                """
+
+    def test_raises_on_unresolved_placeholder(self):
+        """Unresolved identifier placeholders should raise."""
+        with pytest.raises(DocstringCompositionError, match="unresolved placeholders"):
+
+            @compose_docstring(params="value")
+            def testfun3():
+                """
+                A simple test function.
+
+                {params}
+                {missing_value}
+                """
+
+    def test_ignores_literal_non_placeholder_braces(self):
+        """Literal braces that are not placeholders should not raise."""
+
+        @compose_docstring(params="value")
+        def testfun4():
+            """
+            Example dictionary:
+            {"a": 1}
+
+            {params}
+            """
+
+        assert "value" in testfun4.__doc__
+
+    def test_exception_names_function_and_keys(self):
+        """The error should identify the function and bad keys."""
+        with pytest.raises(DocstringCompositionError) as exc:
+
+            @compose_docstring(params="value")
+            def testfun5():
+                """
+                A simple test function.
+
+                {missing_value}
+                """
+
+        msg = str(exc.value)
+        assert "testfun5" in msg
+        assert "params" in msg
+        assert "missing_value" in msg
 
 
 class TestFormatDtypes:

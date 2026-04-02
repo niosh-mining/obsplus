@@ -4,9 +4,14 @@ Obsplus Utilities for documentation.
 
 from __future__ import annotations
 
+import re
 import textwrap
 from collections.abc import Sequence
 from typing import Any
+
+from obsplus.exceptions import DocstringCompositionError
+
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def compose_docstring(**kwargs: str | Sequence[str]):
@@ -40,6 +45,7 @@ def compose_docstring(**kwargs: str | Sequence[str]):
     def _wrap(func):
         docstring = func.__doc__
         assert isinstance(docstring, str)
+        used_keys = set()
         # iterate each provided value and look for it in the docstring
         for key, value in kwargs.items():
             value = value if isinstance(value, str) else "\n".join(value)
@@ -55,6 +61,17 @@ def compose_docstring(**kwargs: str | Sequence[str]):
                 assert set(spaces) == {" "} or not len(spaces)
                 new = textwrap.indent(textwrap.dedent(value), spaces)
                 docstring = docstring.replace(line, new)
+                used_keys.add(key)
+
+        unused_keys = sorted(set(kwargs) - used_keys)
+        unresolved_placeholders = sorted(set(_PLACEHOLDER_RE.findall(docstring)))
+        if unused_keys or unresolved_placeholders:
+            msg = (
+                f"failed to compose docstring for {func.__qualname__}: "
+                f"unused keys={unused_keys}, "
+                f"unresolved placeholders={unresolved_placeholders}"
+            )
+            raise DocstringCompositionError(msg)
 
         func.__doc__ = docstring
         return func

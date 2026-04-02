@@ -169,7 +169,7 @@ def get_events(cat: obspy.Catalog, **kwargs) -> obspy.Catalog:
 
     Parameters
     ----------
-        {get_event_parameters}
+        {get_events_params}
     """
     # If not kwargs are passed just return all events
     if not kwargs:
@@ -193,7 +193,7 @@ def get_event_summary(cat: obspy.Catalog | pd.DataFrame, **kwargs) -> pd.DataFra
 
     Parameters
     ----------
-        {get_event_parameters}
+        {get_events_params}
     """
     df = obsplus.events_to_df(cat)
     event_ids = _get_ids(df, kwargs)
