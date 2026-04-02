@@ -93,7 +93,7 @@ class TestTrimEventStream:
         """Test with streams that are fragmented"""
         with pytest.warns(UserWarning) as w:
             st = trim_event_stream(fragmented_stream)
-        assert "seconds long" in str(w[0].message)
+        assert any("seconds long" in str(warning.message) for warning in w)
         stations = {tr.stats.station for tr in st}
         assert "BOB" not in stations
 

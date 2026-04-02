@@ -31,6 +31,10 @@ class DataFrameContentError(ValueError):
     """Raised when something is unexpected in a dataframe's contents."""
 
 
+class DocstringCompositionError(ValueError):
+    """Raised when docstring placeholder substitution fails."""
+
+
 class AmbiguousResponseError(ValueError):
     """
     Raised when trying to get a response for an inventory but more than

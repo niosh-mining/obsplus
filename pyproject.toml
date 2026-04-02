@@ -70,10 +70,10 @@ docs = [
 
 test = [
     "pytest",
-    # coveralls currently requires coverage < 5.0
-    "coverage < 5.0",
+    # Python 3.14 deprecates code.co_lnotab; older coverage releases still use it.
+    "coverage >= 7",
     "pytest-cov",
-    "coveralls",
+    "coveralls >= 4",
     "nbval",
     "twine",
     "pre-commit",
