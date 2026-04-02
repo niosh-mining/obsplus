@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Key Features and Examples &#8212; ObsPlus  [ 0.3.1.dev6+gbdd5a94 ] 0.3.1.dev6+gbdd5a94 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=1a73bed8"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Key Features and Examples</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p><img alt="image1" src="../_images/obsplus.png" /></p>
+<p><em>“A Pandas-Centric ObsPy Expansion Pack”</em></p>
+<p>ObsPlus is python package that adds functionality to the excellent seismology package <a class="reference external" href="https://github.com/obspy/obspy/wiki">ObsPy</a>.</p>
+<section id="Key-Features-and-Examples">
+<h1>Key Features and Examples<a class="headerlink" href="#Key-Features-and-Examples" title="Link to this heading">¶</a></h1>
+<p>The following sections highlight the key features of ObsPlus and provide examples of their usage.</p>
+<section id="1.-Unifying-Interfaces">
+<h2>1. Unifying Interfaces<a class="headerlink" href="#1.-Unifying-Interfaces" title="Link to this heading">¶</a></h2>
+<p>ObsPlus lets you access each kind of seismic data (events, waveforms, and stations) in the same way regardless of the source, enabling cleaner, more flexible code. This is made possible by:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="interfaces/wavebank.html"><span class="doc">WaveBank</span></a> for working with local archives of waveforms.</p></li>
+<li><p><a class="reference internal" href="interfaces/eventbank.html"><span class="doc">EventBank</span></a> for working with local archives of events.</p></li>
+<li><p><a class="reference internal" href="interfaces/obspy_methods.html"><span class="doc">Added obspy methods</span></a> for treating <code class="docutils literal notranslate"><span class="pre">Stream</span></code>, <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> and <code class="docutils literal notranslate"><span class="pre">Inventory</span></code> instances the same as remote clients.</p></li>
+<li><p><a class="reference internal" href="interfaces/fetcher.html"><span class="doc">Fetcher</span></a> for dataset-aware retrieval by composing waveform, events, and station clients.</p></li>
+</ul>
+</section>
+<section id="2.-Alternative-Data-Structures">
+<h2>2. Alternative Data Structures<a class="headerlink" href="#2.-Alternative-Data-Structures" title="Link to this heading">¶</a></h2>
+<p>ObsPlus provides several conversion functions to transform normal ObsPy data structures into <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html">DataFrames</a>. These can be more convenient/efficient to work with, but come with their own trade-offs.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="datastructures/events_to_pandas.html"><span class="doc">Summarize event data</span></a> as pandas DataFrames.</p></li>
+<li><p><a class="reference internal" href="datastructures/stations_to_pandas.html"><span class="doc">Summarize station data</span></a> as pandas DataFrames.</p></li>
+</ul>
+</section>
+<section id="3.-Utilities">
+<h2>3. Utilities<a class="headerlink" href="#3.-Utilities" title="Link to this heading">¶</a></h2>
+<p>Some utilities that you don’t have to rewrite yourself. Some of these will be moved to ObsPy if their usefulness to a wider audience is established.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="utils/working_with_catalogs.html"><span class="doc">Catalog tools</span></a> to bring a little more sanity to an already chaotic world.</p></li>
+<li><p><a class="reference internal" href="utils/dataframeextractor.html"><span class="doc">DataFrameExtractor</span></a> to develop your own dataframe converters.</p></li>
+<li><p><a class="reference internal" href="utils/json.html"><span class="doc">Catalog to json</span></a> to, well, convert catalogs to json.</p></li>
+<li><p><a class="reference internal" href="utils/misc.html"><span class="doc">Miscellaneous utilities</span></a> for a grab-bag of goodies.</p></li>
+</ul>
+</section>
+<section id="4.-Datasets">
+<h2>4. Datasets<a class="headerlink" href="#4.-Datasets" title="Link to this heading">¶</a></h2>
+<p>Often seismology codes benefit from a complete set of station, event, and waveform data for testing and demonstration. ObsPlus provides a few interesting (at least to the authors) datasets. Moreover, In only a few minutes, you can make your own research datasets pip installable using the <a class="reference external" href="https://github.com/niosh-mining/opsdata">dataset template</a>.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="datasets/datasets.html"><span class="doc">A tour of obsplus datasets</span></a>, used for testing and documentation.</p></li>
+</ul>
+<p>To search pypi for ObsPlus datasets registered by other users you navigate to <a class="reference external" href="https://pypi.org/">PyPI</a> and type opsdata in the search bar.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Key Features and Examples</a><ul>
+<li><a class="reference internal" href="#1.-Unifying-Interfaces">1. Unifying Interfaces</a></li>
+<li><a class="reference internal" href="#2.-Alternative-Data-Structures">2. Alternative Data Structures</a></li>
+<li><a class="reference internal" href="#3.-Utilities">3. Utilities</a></li>
+<li><a class="reference internal" href="#4.-Datasets">4. Datasets</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/notebooks/intro.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Key Features and Examples</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

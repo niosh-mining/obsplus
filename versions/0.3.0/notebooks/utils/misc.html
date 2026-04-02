@@ -1,0 +1,616 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Miscellaneous Utilities &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    
+    <script src="../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Miscellaneous Utilities</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Miscellaneous-Utilities">
+<h1>Miscellaneous Utilities<a class="headerlink" href="#Miscellaneous-Utilities" title="Link to this heading">¶</a></h1>
+<p>The follow demonstrates some miscellaneous utilities included in ObsPlus.</p>
+<section id="Geodetics">
+<h2>Geodetics<a class="headerlink" href="#Geodetics" title="Link to this heading">¶</a></h2>
+<p>It is often necessary to calculate geometric parameters (distance, azimuth, etc.) for pairs of entities in two different groups. For example, distance from each event in a catalog to each receiver in an inventory. ObsPlus provides a simple class for completing this task.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the catalog and inventory from the crandall dataset</span>
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.geodetics</span> <span class="kn">import</span> <span class="n">SpatialCalculator</span>
+
+
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;crandall_test&#39;</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="n">inv</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># init a SpatialCalculator instance (defaults to Earth&#39;s params)</span>
+<span class="n">spatial_calc</span> <span class="o">=</span> <span class="n">SpatialCalculator</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create distance dataframe</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">spatial_calc</span><span class="p">(</span><span class="n">entity_1</span><span class="o">=</span><span class="n">cat</span><span class="p">,</span> <span class="n">entity_2</span><span class="o">=</span><span class="n">inv</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/usr/share/miniconda3/envs/test/lib/python3.10/site-packages/obspy/taup/taup_geo.py:105: UserWarning: Assuming spherical planet when calculating epicentral distance. Install the Python module &#39;geographiclib&#39; to solve this.
+  warnings.warn(msg)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>distance_m</th>
+      <th>azimuth</th>
+      <th>back_azimuth</th>
+      <th>distance_degrees</th>
+      <th>vertical_distance_m</th>
+    </tr>
+    <tr>
+      <th>id1</th>
+      <th>id2</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>smi:local/248839</th>
+      <th>UU.CTU..HHE</th>
+      <td>143559.550849</td>
+      <td>161.740301</td>
+      <td>342.076813</td>
+      <td>1.289617</td>
+      <td>2141.0</td>
+    </tr>
+    <tr>
+      <th>smi:local/248883</th>
+      <th>UU.CTU..HHE</th>
+      <td>143716.194014</td>
+      <td>161.590945</td>
+      <td>341.930482</td>
+      <td>1.291025</td>
+      <td>5911.0</td>
+    </tr>
+    <tr>
+      <th>smi:local/248887</th>
+      <th>UU.CTU..HHE</th>
+      <td>143999.566314</td>
+      <td>161.346595</td>
+      <td>341.691152</td>
+      <td>1.293570</td>
+      <td>5891.0</td>
+    </tr>
+    <tr>
+      <th>smi:local/248891</th>
+      <th>UU.CTU..HHE</th>
+      <td>143969.268983</td>
+      <td>161.667028</td>
+      <td>342.005783</td>
+      <td>1.293298</td>
+      <td>4971.0</td>
+    </tr>
+    <tr>
+      <th>smi:local/248882</th>
+      <th>UU.CTU..HHE</th>
+      <td>143480.660281</td>
+      <td>161.650623</td>
+      <td>341.988556</td>
+      <td>1.288909</td>
+      <td>3521.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>Since a multi-index is used it provides a fairly intuitive way to look up particular event-channel pairs using a tuple of (event_id, seed_id) in conjunction with the <code class="docutils literal notranslate"><span class="pre">.loc</span></code> DataFrame attribute like so:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">event_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+<span class="n">seed_id</span> <span class="o">=</span> <span class="s1">&#39;UU.MPU..HHZ&#39;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">event_id</span><span class="p">,</span> <span class="n">seed_id</span><span class="p">)])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+distance_m             70463.858017
+azimuth                  150.303413
+back_azimuth             330.562735
+distance_degrees           0.632988
+vertical_distance_m     2319.000000
+Name: (smi:local/248839, UU.MPU..HHZ), dtype: float64
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># or just get a particular parameter</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">event_id</span><span class="p">,</span> <span class="n">seed_id</span><span class="p">),</span> <span class="s1">&#39;azimuth&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+150.30341278123922
+</pre></div></div>
+</div>
+<p>The distances can be converted to km and the distrtibutions can be described.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert add km columns and delete m columns</span>
+<span class="n">m_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;_m&#39;</span><span class="p">)]</span>
+<span class="n">km_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_m&#39;</span><span class="p">,</span> <span class="s1">&#39;_km&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">m_columns</span><span class="p">]</span>
+
+<span class="n">df_km</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1000.</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">km_columns</span><span class="p">,</span> <span class="n">m_columns</span><span class="p">)})</span><span class="o">.</span>
+    <span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">m_columns</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Calculate stats for source reseiver distances</span>
+<span class="n">df_km</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>azimuth</th>
+      <th>back_azimuth</th>
+      <th>distance_degrees</th>
+      <th>distance_km</th>
+      <th>vertical_distance_km</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>408.00</td>
+      <td>408.00</td>
+      <td>408.00</td>
+      <td>408.00</td>
+      <td>408.00</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>201.06</td>
+      <td>211.69</td>
+      <td>0.82</td>
+      <td>91.24</td>
+      <td>5.22</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>104.37</td>
+      <td>98.06</td>
+      <td>0.33</td>
+      <td>36.55</td>
+      <td>1.85</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>9.16</td>
+      <td>48.81</td>
+      <td>0.16</td>
+      <td>18.26</td>
+      <td>1.70</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>126.47</td>
+      <td>122.45</td>
+      <td>0.63</td>
+      <td>70.46</td>
+      <td>3.69</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>163.87</td>
+      <td>189.79</td>
+      <td>0.82</td>
+      <td>90.85</td>
+      <td>5.50</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>293.44</td>
+      <td>307.27</td>
+      <td>1.12</td>
+      <td>124.36</td>
+      <td>6.25</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>358.12</td>
+      <td>344.77</td>
+      <td>1.29</td>
+      <td>144.00</td>
+      <td>9.31</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Time">
+<h2>Time<a class="headerlink" href="#Time" title="Link to this heading">¶</a></h2>
+<p>Working with dates/times can be frustrating, especially since (as of 2020) ObsPy, numpy, and pandas all use slightly different methods for working with time. ObsPlus provides some utilities to make things a little easier.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils</span> <span class="kn">import</span> <span class="n">to_datetime64</span><span class="p">,</span> <span class="n">to_timedelta64</span><span class="p">,</span> <span class="n">to_utc</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Note:</strong> All ObsPlus datafames use numpy/pandas datatypes.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0   2012-04-04 14:21:42.300
+1   2012-04-04 14:18:37.000
+2   2012-04-04 14:08:46.000
+Name: time, dtype: datetime64[ns]
+</pre></div></div>
+</div>
+<section id="Numpy-and-ObsPy-time-differences">
+<h3>Numpy and ObsPy time differences<a class="headerlink" href="#Numpy-and-ObsPy-time-differences" title="Link to this heading">¶</a></h3>
+<p>One difference between numpy’s <code class="docutils literal notranslate"><span class="pre">datatime64</span></code> and ObsPy’s <code class="docutils literal notranslate"><span class="pre">UTCDateTime</span></code> is how offsets are applied. For ObsPy, numbers are simply taken as seconds, but numpy requires explicitly using <code class="docutils literal notranslate"><span class="pre">timedeta64</span></code> instances.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">time_str</span> <span class="o">=</span> <span class="s1">&#39;2020-01-03T11:00:00&#39;</span>
+<span class="n">utc</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="p">(</span><span class="n">time_str</span><span class="p">)</span>
+<span class="n">dt64</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">time_str</span><span class="p">,</span> <span class="s1">&#39;ns&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># add 1/2 second to UTCDateTime</span>
+<span class="n">utc2</span> <span class="o">=</span> <span class="n">utc</span> <span class="o">+</span> <span class="mf">0.5</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">utc2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2020-01-03T11:00:00.500000Z
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># however doing the same thing with datetime64 raises a TypeError</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">dt64</span> <span class="o">+</span> <span class="mf">0.5</span>
+<span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+ufunc &#39;add&#39; cannot use operands with types dtype(&#39;&lt;M8[ns]&#39;) and dtype(&#39;float64&#39;)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># so you need to use a timedelta64</span>
+<span class="n">dt64_2</span> <span class="o">=</span> <span class="n">dt64</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;ms&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dt64_2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2020-01-03T11:00:00.500000000
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is, of course, also the case with datetime64 columns</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;ms&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0   2012-04-04 14:21:42.800
+1   2012-04-04 14:18:37.500
+2   2012-04-04 14:08:46.500
+Name: time, dtype: datetime64[ns]
+</pre></div></div>
+</div>
+<p>ObsPlus provides some common converters between ObsPy and Pandas/Numpy time objects.</p>
+</section>
+<section id="Converting-between-ObsPy-and-Numpy-time-datatypes">
+<h3>Converting between ObsPy and Numpy time datatypes<a class="headerlink" href="#Converting-between-ObsPy-and-Numpy-time-datatypes" title="Link to this heading">¶</a></h3>
+<p>Conversion between ObsPy <code class="docutils literal notranslate"><span class="pre">UTCDateTime</span></code> and numpy <code class="docutils literal notranslate"><span class="pre">datetime64</span></code> objects when needed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert a time column to an array of ObsPy UTCDateTime objects</span>
+<span class="n">utc_array</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">utc_array</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[UTCDateTime(2012, 4, 4, 14, 21, 42, 300000)
+ UTCDateTime(2012, 4, 4, 14, 18, 37) UTCDateTime(2012, 4, 4, 14, 8, 46)]
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert back to datetime64</span>
+<span class="n">dt64_array</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">utc_array</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dt64_array</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;2012-04-04T14:21:42.300000000&#39; &#39;2012-04-04T14:18:37.000000000&#39;
+ &#39;2012-04-04T14:08:46.000000000&#39;]
+</pre></div></div>
+</div>
+<div class="admonition warning">
+<p><strong>Note</strong>: <code class="docutils literal notranslate"><span class="pre">datetime64</span></code> arrays are much more efficient in terms of memory usage and computational efficiency than arrays of <code class="docutils literal notranslate"><span class="pre">UTCDateTime</span></code> <em>objects</em>.</p>
+</div>
+<p>If you prefer not to manually define <code class="docutils literal notranslate"><span class="pre">timedelta64</span></code> to perform offsets, <code class="docutils literal notranslate"><span class="pre">to_timedelta64</span></code> simply converts a real number to an offset in seconds.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">to_timedelta64</span><span class="p">(</span><span class="mf">3.255</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+numpy.timedelta64(3255000000,&#39;ns&#39;)
+</pre></div></div>
+</div>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Miscellaneous Utilities</a><ul>
+<li><a class="reference internal" href="#Geodetics">Geodetics</a></li>
+<li><a class="reference internal" href="#Time">Time</a><ul>
+<li><a class="reference internal" href="#Numpy-and-ObsPy-time-differences">Numpy and ObsPy time differences</a></li>
+<li><a class="reference internal" href="#Converting-between-ObsPy-and-Numpy-time-datatypes">Converting between ObsPy and Numpy time datatypes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/utils/misc.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Miscellaneous Utilities</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

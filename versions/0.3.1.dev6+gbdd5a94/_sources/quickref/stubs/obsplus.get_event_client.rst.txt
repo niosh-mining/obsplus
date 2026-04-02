@@ -1,0 +1,6 @@
+﻿obsplus.get\_event\_client
+==========================
+
+.. currentmodule:: obsplus
+
+.. autofunction:: get_event_client

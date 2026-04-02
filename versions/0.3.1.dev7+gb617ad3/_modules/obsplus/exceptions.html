@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.exceptions &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.exceptions</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.exceptions</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;A collection of ObsPlus Exceptions and Warnings.&quot;&quot;&quot;</span>
+
+<span class="c1"># --- Exceptions</span>
+
+
+<div class="viewcode-block" id="BankDoesNotExistError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.BankDoesNotExistError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BankDoesNotExistError</span><span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception raised when the bank directory does not exist.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="FileHashChangedError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.FileHashChangedError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileHashChangedError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the expected md5 hash of a file has changed.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="MissingDataFileError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.MissingDataFileError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingDataFileError</span><span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the expected md5 hash of a file has changed.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="DataVersionError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.DataVersionError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataVersionError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the version of a dataset doesn&#39;t match what is expected.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="ValidationError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.ValidationError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when something goes wrong with object validation.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="ValidationNameError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.ValidationNameError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidationNameError</span><span class="p">(</span><span class="n">ValidationError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a namespace with no validators is used.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="DataFrameContentError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.DataFrameContentError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataFrameContentError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when something is unexpected in a dataframe&#39;s contents.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="AmbiguousResponseError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.AmbiguousResponseError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AmbiguousResponseError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when trying to get a response for an inventory but more than</span>
+<span class="sd">    one response meets the criteria.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="UnsupportedKeywordError">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.UnsupportedKeywordError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnsupportedKeywordError</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when ObsPlus encounters an unexpected keyword.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<span class="c1"># --- Warnings</span>
+
+
+<div class="viewcode-block" id="TimeOverflowWarning">
+<a class="viewcode-back" href="../../api/obsplus.exceptions.html#obsplus.exceptions.TimeOverflowWarning">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeOverflowWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Displayed when a large time value is cast into a 64bit ns time stamp.&quot;&quot;&quot;</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.exceptions</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

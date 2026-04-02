@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.utils.geodetics module &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.geodetics module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.utils.geodetics">
+<span id="obsplus-utils-geodetics-module"></span><h1>obsplus.utils.geodetics module<a class="headerlink" href="#module-obsplus.utils.geodetics" title="Link to this heading">¶</a></h1>
+<p>Utilities for calculating spatial relationships.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.utils.geodetics.SpatialCalculator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.utils.geodetics.</span></span><span class="sig-name descname"><span class="pre">SpatialCalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6378137.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flattening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0033528106647474805</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/geodetics.html#SpatialCalculator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.geodetics.SpatialCalculator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for calculating spatial relationships between two entities.</p>
+<p>The default values are appropriate for Earth.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>radius</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The radius of the planetary body in question.</p></li>
+<li><p><strong>flattening</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The flattening coefficient of the planetary body in question.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpatialCalculator</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">calc</span> <span class="o">=</span> <span class="n">SpatialCalculator</span><span class="p">()</span>  <span class="c1"># SpatialCalculator for Earth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the distance and azimuth between two points</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p1</span> <span class="o">=</span> <span class="p">(</span><span class="mf">45.55</span><span class="p">,</span> <span class="o">-</span><span class="mf">111.21</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># format is lat, lon, elevation (m asl)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p2</span> <span class="o">=</span> <span class="p">(</span><span class="mf">40.22</span><span class="p">,</span> <span class="o">-</span><span class="mi">115</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">calc</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the distance between each event and each station</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">events</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">station</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">calc</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">station</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># index 1 is the event_id and index 2 is the seed id</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.utils.geodetics.SpatialCalculator.expected_exceptions">
+<span class="sig-name descname"><span class="pre">expected_exceptions</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'TypeError'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'ValueError'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'AttributeError'&gt;)</span></em><a class="headerlink" href="#obsplus.utils.geodetics.SpatialCalculator.expected_exceptions" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.geodetics.map_longitudes">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.geodetics.</span></span><span class="sig-name descname"><span class="pre">map_longitudes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle_array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/geodetics.html#map_longitudes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.geodetics.map_longitudes" title="Link to this definition">¶</a></dt>
+<dd><p>Map longitudes to -180 to 180 domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>angle_array</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></span>) – An array or series with real numeric values representing angles in
+degrees.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></span></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">35</span><span class="p">,</span> <span class="o">-</span><span class="mi">45</span><span class="p">,</span> <span class="mi">340</span><span class="p">,</span> <span class="o">-</span><span class="mi">721</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">map_longitudes</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">35</span><span class="p">,</span> <span class="o">-</span><span class="mi">45</span><span class="p">,</span> <span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.utils.geodetics module</a><ul>
+<li><a class="reference internal" href="#obsplus.utils.geodetics.SpatialCalculator"><code class="docutils literal notranslate"><span class="pre">SpatialCalculator</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.utils.geodetics.SpatialCalculator.expected_exceptions"><code class="docutils literal notranslate"><span class="pre">SpatialCalculator.expected_exceptions</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.utils.geodetics.map_longitudes"><code class="docutils literal notranslate"><span class="pre">map_longitudes()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.geodetics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.geodetics module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

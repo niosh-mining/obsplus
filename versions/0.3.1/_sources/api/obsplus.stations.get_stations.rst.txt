@@ -1,0 +1,7 @@
+obsplus.stations.get\_stations module
+=====================================
+
+.. automodule:: obsplus.stations.get_stations
+   :members:
+   :undoc-members:
+   :show-inheritance:

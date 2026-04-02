@@ -1,0 +1,749 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.structures.fetcher &#8212; ObsPlus  [ 0.3.1.dev6+gbdd5a94 ] 0.3.1.dev6+gbdd5a94 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=1a73bed8"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.structures.fetcher</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.structures.fetcher</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Data fetcher class stuff</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Stream</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus</span><span class="w"> </span><span class="kn">import</span> <span class="n">events_to_df</span><span class="p">,</span> <span class="n">picks_to_df</span><span class="p">,</span> <span class="n">stations_to_df</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.bank.wavebank</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveBank</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LARGEDT64</span><span class="p">,</span>
+    <span class="n">NSLC</span><span class="p">,</span>
+    <span class="n">WAVEFETCHER_OVERRIDES</span><span class="p">,</span>
+    <span class="n">bulk_waveform_arg_type</span><span class="p">,</span>
+    <span class="n">event_clientable_type</span><span class="p">,</span>
+    <span class="n">event_time_type</span><span class="p">,</span>
+    <span class="n">get_waveforms_parameters</span><span class="p">,</span>
+    <span class="n">station_clientable_type</span><span class="p">,</span>
+    <span class="n">stream_proc_type</span><span class="p">,</span>
+    <span class="n">waveform_clientable_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeOverflowWarning</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.docs</span><span class="w"> </span><span class="kn">import</span> <span class="n">compose_docstring</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_event_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_func</span><span class="p">,</span> <span class="n">suppress_warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.pd</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_index</span><span class="p">,</span> <span class="n">get_seed_id_series</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.stations</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_station_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_reference_time</span><span class="p">,</span>
+    <span class="n">make_time_chunks</span><span class="p">,</span>
+    <span class="n">to_datetime64</span><span class="p">,</span>
+    <span class="n">to_timedelta64</span><span class="p">,</span>
+    <span class="n">to_utc</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.waveforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_waveform_client</span>
+
+<span class="n">EventStream</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;EventStream&quot;</span><span class="p">,</span> <span class="s2">&quot;event_id stream&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------- fetcher constructor stuff</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_enable_swaps</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enable swapping out events, stations, and picks info on any</span>
+<span class="sd">    function that gets waveforms.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="s2">&quot;waveform&quot;</span> <span class="ow">in</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;__call__&quot;</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">_temporary_override</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+    <span class="k">return</span> <span class="bp">cls</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_temporary_override</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decorator to enable temporary override of various parameters.</span>
+
+<span class="sd">    This is commonly used for events, stations, picks, etc.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">inter</span> <span class="o">=</span> <span class="n">WAVEFETCHER_OVERRIDES</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">inter</span><span class="p">:</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_events</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;events&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_client</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_stations</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stations&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_client</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_waveforms</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;waveforms&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<span class="c1"># ---------------------------------- Wavefetcher class</span>
+
+<span class="n">fetcher_waveform_type</span> <span class="o">=</span> <span class="n">waveform_clientable_type</span> <span class="o">|</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span>
+<span class="n">fetcher_event_type</span> <span class="o">=</span> <span class="n">event_clientable_type</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span>
+<span class="n">fetcher_station_type</span> <span class="o">=</span> <span class="n">station_clientable_type</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+
+
+<div class="viewcode-block" id="Fetcher">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.Fetcher.html#obsplus.structures.fetcher.Fetcher">[docs]</a>
+<span class="nd">@_enable_swaps</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Fetcher</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for serving up data from various sources.</span>
+
+<span class="sd">    Integrates station, event, and waveform clients to enable dataset-aware</span>
+<span class="sd">    querying.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    waveforms</span>
+<span class="sd">        Any argument from which a waveform client can be extracted. This</span>
+<span class="sd">        includes an obspy waveforms, directory of waveform files, or an object</span>
+<span class="sd">        with a `get_waveforms` method.</span>
+<span class="sd">    stations</span>
+<span class="sd">        Any argument from which an station client can be extracted. This</span>
+<span class="sd">        includes an obspy Inventory, directory of station files, or an object</span>
+<span class="sd">        with a `get_stations` method.</span>
+<span class="sd">    events</span>
+<span class="sd">        Any argument from which an event client can be extracted. This</span>
+<span class="sd">        includes an obspy Catalog, directory of event files, or an object with</span>
+<span class="sd">        a `get_events` method.</span>
+<span class="sd">    picks</span>
+<span class="sd">        Data from which picks can be extracted. A dataframe, events, or</span>
+<span class="sd">        event_client are all acceptable.</span>
+<span class="sd">    stream_processor</span>
+<span class="sd">        A callable that takes an obspy waveforms as input and returns an obspy</span>
+<span class="sd">        waveforms.</span>
+<span class="sd">    time_before</span>
+<span class="sd">        The default time before an given time to fetch.</span>
+<span class="sd">    time_after</span>
+<span class="sd">        The default time after a supplied time to fetch.</span>
+<span class="sd">    event_query</span>
+<span class="sd">        A dict of arguments used to filter events.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import obsplus</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+
+<span class="sd">    &gt;&gt;&gt; #--- Init a Fetcher</span>
+<span class="sd">    &gt;&gt;&gt; # from a dataset</span>
+<span class="sd">    &gt;&gt;&gt; ds = obsplus.load_dataset(&#39;bingham_test&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; ds_fetcher = ds.get_fetcher()</span>
+<span class="sd">    &gt;&gt;&gt; assert isinstance(ds_fetcher, obsplus.Fetcher)</span>
+<span class="sd">    &gt;&gt;&gt; # from separate clients (includes Stream, Inventory, Catalog)</span>
+<span class="sd">    &gt;&gt;&gt; waveforms = ds.waveform_client</span>
+<span class="sd">    &gt;&gt;&gt; events = ds.event_client</span>
+<span class="sd">    &gt;&gt;&gt; stations = ds.station_client</span>
+<span class="sd">    &gt;&gt;&gt; kwargs = dict(events=events, waveforms=waveforms, stations=stations)</span>
+<span class="sd">    &gt;&gt;&gt; fetcher = obsplus.Fetcher(**kwargs)</span>
+<span class="sd">    &gt;&gt;&gt; assert isinstance(fetcher, obsplus.Fetcher)</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- get contiguous (not event) waveform data</span>
+<span class="sd">    &gt;&gt;&gt; # simple get_waveform calls are passed to the waveforms client</span>
+<span class="sd">    &gt;&gt;&gt; fetcher = obsplus.load_dataset(&#39;ta_test&#39;).get_fetcher()</span>
+<span class="sd">    &gt;&gt;&gt; t1 = obspy.UTCDateTime(&#39;2007-02-15&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; t2 = t1 + 60</span>
+<span class="sd">    &gt;&gt;&gt; station = &#39;M14A&#39;</span>
+<span class="sd">    &gt;&gt;&gt; st = fetcher.get_waveforms(starttime=t1, endtime=t2, station=station)</span>
+<span class="sd">    &gt;&gt;&gt; print(st)</span>
+<span class="sd">    3 Trace(s) ...</span>
+<span class="sd">    &gt;&gt;&gt; # iterate over a range of times</span>
+<span class="sd">    &gt;&gt;&gt; t1 = obspy.UTCDateTime(&#39;2007-02-16&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; t2 = t1 + (3600 * 24)</span>
+<span class="sd">    &gt;&gt;&gt; for st in fetcher.yield_waveforms(starttime=t1, endtime=t2):</span>
+<span class="sd">    ...     assert len(st)</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- get event waveforms</span>
+<span class="sd">    &gt;&gt;&gt; fetcher = obsplus.load_dataset(&#39;bingham_test&#39;).get_fetcher()</span>
+<span class="sd">    &gt;&gt;&gt; # iterate each event yielding streams 30 seconds after origin</span>
+<span class="sd">    &gt;&gt;&gt; kwargs = dict(time_before=0, time_after=30, reference=&#39;origin&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; for event_id, st in fetcher.yield_event_waveforms(**kwargs):</span>
+<span class="sd">    ...     assert isinstance(event_id, str)</span>
+<span class="sd">    ...     assert isinstance(st, obspy.Stream)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Fetcher.__init__">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.Fetcher.html#obsplus.structures.fetcher.Fetcher.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">waveforms</span><span class="p">:</span> <span class="n">fetcher_waveform_type</span><span class="p">,</span>
+        <span class="n">stations</span><span class="p">:</span> <span class="n">fetcher_event_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">events</span><span class="p">:</span> <span class="n">fetcher_event_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">picks</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stream_processor</span><span class="p">:</span> <span class="n">stream_proc_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_before</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">event_query</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># if fetch_arg is a WaveFetcher just update dict and return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">waveforms</span><span class="p">,</span> <span class="n">Fetcher</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">waveforms</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># get clients for each data types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_waveforms</span><span class="p">(</span><span class="n">waveforms</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_events</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_stations</span><span class="p">(</span><span class="n">stations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_picks_input</span> <span class="o">=</span> <span class="n">picks</span>
+        <span class="c1"># waveforms processor for applying filters and such</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_processor</span> <span class="o">=</span> <span class="n">stream_processor</span>
+        <span class="c1"># set event time/query parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_before</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_before</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_after</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_after</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_query</span> <span class="o">=</span> <span class="n">event_query</span> <span class="ow">or</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="Fetcher.set_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.set_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">waveforms</span><span class="p">:</span> <span class="n">fetcher_waveform_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set waveform state in Fetcher.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        waveforms</span>
+<span class="sd">            Data representing waveforms, from which a wave client can be</span>
+<span class="sd">            inferred.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span> <span class="o">=</span> <span class="n">get_waveform_client</span><span class="p">(</span><span class="n">waveforms</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># if the waveform client is already defined keep it</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;waveform_client&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Fetcher.set_events">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.set_events">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">:</span> <span class="n">fetcher_event_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set event state in fetcher.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        events</span>
+<span class="sd">            Data representing events, from which a client or dataframe can</span>
+<span class="sd">            be obtained.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set event and dataframe</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_client</span> <span class="o">=</span> <span class="n">get_event_client</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_client</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;event_client&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_df</span> <span class="o">=</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_picks_df</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Fetcher.set_stations">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.set_stations">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stations</span><span class="p">:</span> <span class="n">fetcher_station_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the station state in fetcher.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stations</span>
+<span class="sd">            Data representing stations, from which a client or dataframe</span>
+<span class="sd">            can be inferred.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station_client</span> <span class="o">=</span> <span class="n">get_station_client</span><span class="p">(</span><span class="n">stations</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station_client</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;station_client&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># since its common for inventories to have far out enddates this</span>
+            <span class="c1"># can raise a warning. These are safe to ignore.</span>
+            <span class="k">with</span> <span class="n">suppress_warnings</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="n">TimeOverflowWarning</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span> <span class="o">=</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">stations</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c1"># if unable to get station info from stations use waveform client</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span> <span class="o">=</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="c1">#  if no waveforms try events</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span> <span class="o">=</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_client</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># make sure seed_id is set</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station_df</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------ continuous data fetching methods</span>
+
+<div class="viewcode-block" id="Fetcher.get_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.get_waveforms">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_parameters</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get waveforms for all channels in stations.</span>
+
+<span class="sd">        {get_waveform_parameters}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get a list of tuples for get_waveforms_bulk call</span>
+        <span class="n">nslcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bulk_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bulk_wf</span><span class="p">(</span><span class="n">nslcs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Fetcher.yield_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.yield_waveforms">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">yield_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3600.0</span><span class="p">,</span>
+        <span class="n">overlap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Yield time-series segments from the waveform client.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+<span class="sd">        duration : float</span>
+<span class="sd">            The duration of the streams to yield. All channels selected</span>
+<span class="sd">            channels will be included in the waveforms.</span>
+<span class="sd">        overlap : float</span>
+<span class="sd">            If duration is used, the amount of overlap in yielded streams,</span>
+<span class="sd">            added to the end of the waveforms.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        All string parameters can use posix style matching with * and ? chars.</span>
+
+<span class="sd">        Total duration of yielded streams = duration + overlap.</span>
+
+<span class="sd">        If no starttime or endtime is provided the min/max indicated by the</span>
+<span class="sd">        stations will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Note: although WaveBank has a yield waveforms method, we want</span>
+        <span class="c1"># fetcher to work with any client so we don&#39;t use its implementation.</span>
+        <span class="n">starttime</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">starttime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+        <span class="n">endtime</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">endtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="n">time_chunks</span> <span class="o">=</span> <span class="n">make_time_chunks</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">overlap</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="ow">in</span> <span class="n">time_chunks</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span>
+            <span class="p">)</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------ event waveforms fetching methods</span>
+
+    <span class="n">reference_funcs</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># stores funcs for getting event reference times</span>
+
+<div class="viewcode-block" id="Fetcher.yield_event_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.yield_event_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">yield_event_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time_before</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reference</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">&quot;origin&quot;</span><span class="p">,</span>
+        <span class="n">raise_on_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Stream</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Yield event_id and streams for each event.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_before</span>
+<span class="sd">            The time before (in seconds) the reference that will be included</span>
+<span class="sd">            in the waveforms if possible.</span>
+<span class="sd">        time_after</span>
+<span class="sd">            The Time after (in seconds) the reference that will be included</span>
+<span class="sd">            in the waveforms if possible.</span>
+<span class="sd">        reference</span>
+<span class="sd">            A str that indicates how the starttime of the trace should be</span>
+<span class="sd">            determined. The following are supported:</span>
+<span class="sd">                origin - use the origin time of the event</span>
+<span class="sd">                p - use the first p time as the start for each station</span>
+<span class="sd">                s - use the first s times as the start for each station</span>
+<span class="sd">            If &quot;p&quot; or &quot;s&quot; is used only streams corresponding to stations with</span>
+<span class="sd">            the appropriate phase pick will be returned.</span>
+<span class="sd">        raise_on_fail</span>
+<span class="sd">            If True, re raise an exception if one is caught during waveform</span>
+<span class="sd">            fetching, else continue to next event.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Streams will not be yielded for any event for which a reference time</span>
+<span class="sd">        cannot be obtained. For example, if reference=&#39;S&#39; only events with some</span>
+<span class="sd">        S picks will be yielded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_check_yield_event_waveform_</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">ta</span><span class="p">,</span> <span class="n">tb</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">reference</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;reference of </span><span class="si">{</span><span class="n">reference</span><span class="si">}</span><span class="s2"> is not supported. Supported &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;reference arguments are </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ta</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;time_before and/or time_after must be specified in either &quot;</span>
+                    <span class="s2">&quot;Fetcher&#39;s init or the yield_event_Waveforms call&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">tb</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_before</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_before</span><span class="p">)</span>
+        <span class="n">ta</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_after</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_after</span><span class="p">)</span>
+        <span class="n">_check_yield_event_waveform_</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">ta</span><span class="p">,</span> <span class="n">tb</span><span class="p">)</span>
+        <span class="c1"># get reference times</span>
+        <span class="n">ref_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">[</span><span class="n">reference</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="n">reftime_df</span> <span class="o">=</span> <span class="n">ref_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># if using a wavebank preload index over entire time-span for speedup</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="p">,</span> <span class="n">WaveBank</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">reftime_df</span><span class="p">):</span>
+            <span class="n">mt</span> <span class="o">=</span> <span class="n">reftime_df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">-</span> <span class="n">tb</span>
+            <span class="n">mx</span> <span class="o">=</span> <span class="n">reftime_df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="n">ta</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">mt</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">mx</span><span class="p">)</span>
+            <span class="n">get_bulk_wf</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_bulk_wf</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">get_bulk_wf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bulk_wf</span>
+        <span class="c1"># iterate each event in the events and yield the waveform</span>
+        <span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">reftime_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">):</span>
+            <span class="c1"># make sure ser is either a single datetime or a series of datetimes</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span>
+            <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">tb</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">ta</span>
+            <span class="n">bulk_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bulk_args</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t1</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t2</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">EventStream</span><span class="p">(</span><span class="n">event_id</span><span class="p">,</span> <span class="n">get_bulk_wf</span><span class="p">(</span><span class="n">bulk_args</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">raise_on_fail</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Fetcher failed to get waveforms for </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Fetcher.get_event_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.get_event_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_event_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time_before</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reference</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">&quot;origin&quot;</span><span class="p">,</span>
+        <span class="n">raise_on_fail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Stream</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dict of event_ids and waveforms for each event in events.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_before</span>
+<span class="sd">            The time before (in seconds) the reference that will be included</span>
+<span class="sd">            in the waveforms if possible.</span>
+<span class="sd">        time_after</span>
+<span class="sd">            The Time after (in seconds) the reference that will be included</span>
+<span class="sd">            in the waveforms if possible.</span>
+<span class="sd">        reference</span>
+<span class="sd">            A str that indicates how the starttime of the trace should be</span>
+<span class="sd">            determined. The following are supported:</span>
+<span class="sd">                origin - use the origin time of the event for each channel</span>
+<span class="sd">                p - use the first p times as the start of the station traces</span>
+<span class="sd">                s - use the first s times as the start of the station traces</span>
+<span class="sd">            If a station doesn&#39;t have p or s picks and &quot;p&quot; or &quot;s&quot; is used,</span>
+<span class="sd">            it&#39;s streams will not be returned.</span>
+<span class="sd">        raise_on_fail</span>
+<span class="sd">            If True, re raise and exception if one is caught during waveform</span>
+<span class="sd">            fetching, else continue to next event.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        obspy.Stream</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">time_before</span><span class="o">=</span><span class="n">time_before</span><span class="p">,</span>
+            <span class="n">time_after</span><span class="o">=</span><span class="n">time_after</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span>
+            <span class="n">raise_on_fail</span><span class="o">=</span><span class="n">raise_on_fail</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yield_event_waveforms</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time_arg</span><span class="p">:</span> <span class="n">event_time_type</span><span class="p">,</span>
+        <span class="n">time_before</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Using a reference time, return a waveforms that encompasses that time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_arg</span>
+<span class="sd">            The argument that will indicate a start time. Can be a one</span>
+<span class="sd">            length events, and event, a float, or a UTCDatetime object</span>
+<span class="sd">        time_before</span>
+<span class="sd">            The time before time_arg to include in waveforms</span>
+<span class="sd">        time_after</span>
+<span class="sd">            The time after time_arg to include in waveforms</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        obspy.Stream</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tbefore</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_before</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_before</span><span class="p">)</span>
+        <span class="n">tafter</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">time_after</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_after</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">tbefore</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tafter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># get the reference time from the object</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">time_arg</span><span class="p">))</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">tbefore</span>
+        <span class="n">t2</span> <span class="o">=</span> <span class="n">time</span> <span class="o">+</span> <span class="n">tafter</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">t1</span><span class="p">),</span> <span class="n">endtime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">t2</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------- misc</span>
+
+<div class="viewcode-block" id="Fetcher.copy">
+<a class="viewcode-back" href="../../../api/obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Fetcher</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the fetcher.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_bulk_wf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get the wave forms using the client, apply processor if it is defined</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waveform_client</span><span class="o">.</span><span class="n">get_waveforms_bulk</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_processor</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_processor</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="ow">or</span> <span class="n">out</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_bulk_args</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">bulk_waveform_arg_type</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the bulk waveform arguments based on given start/end times.</span>
+
+<span class="sd">        This method also takes into account data availability as contained</span>
+<span class="sd">        in the stations data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        starttime</span>
+<span class="sd">            Start times for query.</span>
+<span class="sd">        endtime</span>
+<span class="sd">            End times for query.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List of tuples of the form:</span>
+<span class="sd">            [(network, station, location, channel, starttime, endtime)]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">station_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">inv</span> <span class="o">=</span> <span class="n">station_df</span><span class="p">[</span><span class="n">filter_index</span><span class="p">(</span><span class="n">station_df</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)]</span>
+        <span class="c1"># replace None/Nan with larger number</span>
+        <span class="n">inv</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">inv</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="s2">&quot;end_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LARGEDT64</span>
+        <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[ns]&quot;</span><span class="p">)</span>
+        <span class="c1"># get start/end of the inventory</span>
+        <span class="n">inv_start</span> <span class="o">=</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">inv_end</span> <span class="o">=</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="c1"># remove station/channels that dont have data for requested time</span>
+        <span class="n">min_time</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">inv_start</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">max_time</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">endtime</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">inv_end</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">con1</span><span class="p">,</span> <span class="n">con2</span> <span class="o">=</span> <span class="p">(</span><span class="n">inv</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_time</span><span class="p">),</span> <span class="p">(</span><span class="n">inv</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_time</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">inv</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">con1</span> <span class="o">|</span> <span class="n">con2</span><span class="p">)]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;seed_id&quot;</span><span class="p">)[</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>  <span class="c1"># return empty list if no data found</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+            <span class="c1"># Have to get clever here to make sure only active stations get used</span>
+            <span class="c1"># and indices are not duplicated.</span>
+            <span class="n">indexer</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">starttime</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+            <span class="n">new_start</span> <span class="o">=</span> <span class="n">starttime</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">indexer</span><span class="p">]</span>
+            <span class="n">new_end</span> <span class="o">=</span> <span class="n">endtime</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">endtime</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">))]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_start</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">new_start</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_end</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">new_end</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starttime</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">endtime</span>
+        <span class="c1"># remove any rows that don&#39;t have defined start/end times</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span> <span class="o">|</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">())]</span>
+        <span class="c1"># ensure we have UTCDateTime objects</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_utc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]]</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_utc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]]</span>
+        <span class="c1"># convert to list of tuples and return</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">to_records</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">picks_df</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a dataframe from the picks (if possible)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_picks_df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">picks_to_df</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_client</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_picks_df</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_picks_df</span> <span class="o">=</span> <span class="n">df</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_picks_df</span>
+
+    <span class="nd">@picks_df</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">picks_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_picks_df&quot;</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ------------------------ functions for getting reference times</span>
+
+
+<span class="nd">@register_func</span><span class="p">(</span><span class="n">Fetcher</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;origin&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_reference_times</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n">Fetcher</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the reference times for origins.&quot;&quot;&quot;</span>
+    <span class="n">event_df</span> <span class="o">=</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">event_df</span><span class="p">[[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;event_id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">)</span>
+    <span class="n">inv_df</span> <span class="o">=</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">station_df</span>
+    <span class="c1"># iterate each event and add rows for each channel in inventory</span>
+    <span class="n">dfs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">eid</span><span class="p">,</span> <span class="n">ser</span> <span class="ow">in</span> <span class="n">event_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">inv</span> <span class="o">=</span> <span class="n">inv_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;event_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">eid</span>
+        <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ser</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span>
+        <span class="n">dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inv</span><span class="p">)</span>
+    <span class="c1"># get output</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">dfs</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;seed_id&quot;</span><span class="p">)[[</span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">]]</span>
+        <span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="nd">@register_func</span><span class="p">(</span><span class="n">Fetcher</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;p&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_p_reference_times</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n">Fetcher</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the reference times for p arrivals.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_phase_reference_time</span><span class="p">(</span><span class="n">fetcher</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@register_func</span><span class="p">(</span><span class="n">Fetcher</span><span class="o">.</span><span class="n">reference_funcs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_s_reference_times</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n">Fetcher</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the reference times for s arrivals.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_phase_reference_time</span><span class="p">(</span><span class="n">fetcher</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_phase_reference_time</span><span class="p">(</span><span class="n">fetcher</span><span class="p">:</span> <span class="n">Fetcher</span><span class="p">,</span> <span class="n">phase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get reference times to specified phases, apply over all channels in a</span>
+<span class="sd">    station.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pha</span> <span class="o">=</span> <span class="n">phase</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="c1"># ensure the pick_df and inventory df exist</span>
+    <span class="n">pick_df</span> <span class="o">=</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">picks_df</span>
+    <span class="n">inv_df</span> <span class="o">=</span> <span class="n">fetcher</span><span class="o">.</span><span class="n">station_df</span>
+    <span class="k">assert</span> <span class="n">pick_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">inv_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="c1"># filter dataframes for phase of interest</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">pick_df</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">pha</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;no </span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2"> picks found&quot;</span>
+    <span class="n">pick_df</span> <span class="o">=</span> <span class="n">pick_df</span><span class="p">[</span><span class="n">pick_df</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">pha</span><span class="p">]</span>
+    <span class="c1"># merge inventory and pick df together, ensure time is datetime64</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;station&quot;</span><span class="p">,</span> <span class="s2">&quot;event_id&quot;</span><span class="p">]</span>
+    <span class="n">merge</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">inv_df</span><span class="p">,</span> <span class="n">pick_df</span><span class="p">[</span><span class="n">columns</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;station&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
+    <span class="n">merge</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">merge</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">merge</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">merge</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;seed_id&quot;</span><span class="p">)[[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;event_id&quot;</span><span class="p">]]</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev6+gbdd5a94 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.structures.fetcher</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,177 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.datasets.ta_test module &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    
+    <script src="../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.datasets.ta_test">
+<span id="obsplus-datasets-ta-test-module"></span><h1>obsplus.datasets.ta_test module<a class="headerlink" href="#module-obsplus.datasets.ta_test" title="Link to this heading">¶</a></h1>
+<p>The test TA dataset.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.datasets.ta_test.</span></span><span class="sig-name descname"><span class="pre">TA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a></p>
+<p>A small dataset from the TA with low sampling rate channels.</p>
+<p>Contains about 10 days of data from two stations: M11A and M14A.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.build_archive">
+<span class="sig-name descname"><span class="pre">build_archive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">st</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starttime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.build_archive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.build_archive" title="Link to this definition">¶</a></dt>
+<dd><p>Build the archive.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.bulk">
+<span class="sig-name descname"><span class="pre">bulk</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[('TA',</span> <span class="pre">'M11A',</span> <span class="pre">'*',</span> <span class="pre">'VH*',</span> <span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">15,</span> <span class="pre">0,</span> <span class="pre">0),</span> <span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">25,</span> <span class="pre">0,</span> <span class="pre">0)),</span> <span class="pre">('TA',</span> <span class="pre">'M14A',</span> <span class="pre">'*',</span> <span class="pre">'VH*',</span> <span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">15,</span> <span class="pre">0,</span> <span class="pre">0),</span> <span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">25,</span> <span class="pre">0,</span> <span class="pre">0))]</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.bulk" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.download_stations">
+<span class="sig-name descname"><span class="pre">download_stations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.download_stations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.download_stations" title="Link to this definition">¶</a></dt>
+<dd><p>Download TA stations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.download_waveforms">
+<span class="sig-name descname"><span class="pre">download_waveforms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/ta_test.html#TA.download_waveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.ta_test.TA.download_waveforms" title="Link to this definition">¶</a></dt>
+<dd><p>Download TA waveforms.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.endtime">
+<span class="sig-name descname"><span class="pre">endtime</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">25,</span> <span class="pre">0,</span> <span class="pre">0)</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.endtime" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.level">
+<span class="sig-name descname"><span class="pre">level</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'response'</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.level" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ta_test'</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.starttime">
+<span class="sig-name descname"><span class="pre">starttime</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">UTCDateTime(2007,</span> <span class="pre">2,</span> <span class="pre">15,</span> <span class="pre">0,</span> <span class="pre">0)</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.starttime" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.ta_test.TA.version">
+<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'0.0.0'</span></em><a class="headerlink" href="#obsplus.datasets.ta_test.TA.version" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.datasets.ta_test module</a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA"><code class="docutils literal notranslate"><span class="pre">TA</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.build_archive"><code class="docutils literal notranslate"><span class="pre">TA.build_archive()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.bulk"><code class="docutils literal notranslate"><span class="pre">TA.bulk</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.download_stations"><code class="docutils literal notranslate"><span class="pre">TA.download_stations()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.download_waveforms"><code class="docutils literal notranslate"><span class="pre">TA.download_waveforms()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.endtime"><code class="docutils literal notranslate"><span class="pre">TA.endtime</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.level"><code class="docutils literal notranslate"><span class="pre">TA.level</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.name"><code class="docutils literal notranslate"><span class="pre">TA.name</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.starttime"><code class="docutils literal notranslate"><span class="pre">TA.starttime</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.ta_test.TA.version"><code class="docutils literal notranslate"><span class="pre">TA.version</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.datasets.ta_test.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.ta_test module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

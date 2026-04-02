@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.interfaces module &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.interfaces module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.interfaces">
+<span id="obsplus-interfaces-module"></span><h1>obsplus.interfaces module<a class="headerlink" href="#module-obsplus.interfaces" title="Link to this heading">¶</a></h1>
+<p>Some common interfaces for event/client types.</p>
+<p>Note: These are used instead of the ones in obspy.clients.base so the subclass
+hooks can be used.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.interfaces.BankType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.interfaces.</span></span><span class="sig-name descname"><span class="pre">BankType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#BankType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.BankType" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>an object that looks like a bank</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.BankType.read_index">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#BankType.read_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.BankType.read_index" title="Link to this definition">¶</a></dt>
+<dd><p>A method which must return a dataframe of index contents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.interfaces.EventClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.interfaces.</span></span><span class="sig-name descname"><span class="pre">EventClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#EventClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.EventClient" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Abstract Base Class defining the event client interface.</p>
+<p>Any object which has a <cite>get_events</cite> method implements the interface
+and is either an instance or subclass of EventClient.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># EventBank is a subclass of EventClient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># A string has no `get_events` so it is not a subclass/instance</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="s1">&#39;string&#39;</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># this works on any class with a get_events method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">NewEventClientThing</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">def</span><span class="w"> </span><span class="nf">get_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">NewEventClientThing</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.EventClient.get_events">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#EventClient.get_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.EventClient.get_events" title="Link to this definition">¶</a></dt>
+<dd><p>A method which must return events as obspy.Catalog object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.interfaces.ProgressBar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.interfaces.</span></span><span class="sig-name descname"><span class="pre">ProgressBar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#ProgressBar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.ProgressBar" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>A class that behaves like the progressbar2.ProgressBar class.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.ProgressBar.finish">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">finish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#ProgressBar.finish"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.ProgressBar.finish" title="Link to this definition">¶</a></dt>
+<dd><p>Puts the progress bar in the finished state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.ProgressBar.update">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#ProgressBar.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.ProgressBar.update" title="Link to this definition">¶</a></dt>
+<dd><p>Called when updating the progress bar.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.interfaces.StationClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.interfaces.</span></span><span class="sig-name descname"><span class="pre">StationClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#StationClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.StationClient" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Abstract Base Class defining the station client interface.</p>
+<p>Any object which has a <cite>get_stations</cite> method implements the interface and is
+either an instance or subclass of StationClient.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Inventory is a subclass of StationClient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(),</span> <span class="n">StationClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># A string has no `get_stations` so it is not a subclass/instance</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="s1">&#39;string&#39;</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># this works on any class with a get_waveforms method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">NewStationClientThing</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">def</span><span class="w"> </span><span class="nf">get_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">NewStationClientThing</span><span class="p">,</span> <span class="n">StationClient</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.StationClient.get_stations">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_stations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#StationClient.get_stations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.StationClient.get_stations" title="Link to this definition">¶</a></dt>
+<dd><p>A method which must return an inventory object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Inventory</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.interfaces.WaveformClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.interfaces.</span></span><span class="sig-name descname"><span class="pre">WaveformClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#WaveformClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.WaveformClient" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Abstract Base Class defining the waveform client interface.</p>
+<p>Any object which has a <cite>get_waveforms</cite> method implements the interface
+and is either an instance or subclass of WaveformClient.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># WaveBank/Stream are subclasses of WaveformClient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">,</span> <span class="n">WaveformClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># A string has no `get_waveforms` so it is not a subclass/instance</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">WaveformClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="s1">&#39;string&#39;</span><span class="p">,</span> <span class="n">WaveformClient</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># this works on any class with a get_waveforms method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">NewWaveformClientThing</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">def</span><span class="w"> </span><span class="nf">get_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">NewWaveformClientThing</span><span class="p">,</span> <span class="n">WaveformClient</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.interfaces.WaveformClient.get_waveforms">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_waveforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">network</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">station</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starttime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endtime</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/interfaces.html#WaveformClient.get_waveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.interfaces.WaveformClient.get_waveforms" title="Link to this definition">¶</a></dt>
+<dd><p>A method which must return waveforms as an obspy.Stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.interfaces module</a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.BankType"><code class="docutils literal notranslate"><span class="pre">BankType</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.BankType.read_index"><code class="docutils literal notranslate"><span class="pre">BankType.read_index()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.interfaces.EventClient"><code class="docutils literal notranslate"><span class="pre">EventClient</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.EventClient.get_events"><code class="docutils literal notranslate"><span class="pre">EventClient.get_events()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.interfaces.ProgressBar"><code class="docutils literal notranslate"><span class="pre">ProgressBar</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.ProgressBar.finish"><code class="docutils literal notranslate"><span class="pre">ProgressBar.finish()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.interfaces.ProgressBar.update"><code class="docutils literal notranslate"><span class="pre">ProgressBar.update()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.interfaces.StationClient"><code class="docutils literal notranslate"><span class="pre">StationClient</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.StationClient.get_stations"><code class="docutils literal notranslate"><span class="pre">StationClient.get_stations()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.interfaces.WaveformClient"><code class="docutils literal notranslate"><span class="pre">WaveformClient</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.interfaces.WaveformClient.get_waveforms"><code class="docutils literal notranslate"><span class="pre">WaveformClient.get_waveforms()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.interfaces.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.interfaces module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

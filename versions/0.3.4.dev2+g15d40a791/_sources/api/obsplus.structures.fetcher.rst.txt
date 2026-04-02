@@ -1,0 +1,7 @@
+obsplus.structures.fetcher module
+=================================
+
+.. automodule:: obsplus.structures.fetcher
+   :members:
+   :show-inheritance:
+   :undoc-members:

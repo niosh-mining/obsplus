@@ -1,0 +1,7 @@
+obsplus.utils.misc module
+=========================
+
+.. automodule:: obsplus.utils.misc
+   :members:
+   :show-inheritance:
+   :undoc-members:
