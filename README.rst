@@ -20,6 +20,8 @@ About_
 
 Code_of_Conduct_
 
+Security_
+
 If you find ObsPlus useful consider citing it:
 
 Chambers, D. J., Boltz, M. S., & Chamberlain, C. J. (2021).
@@ -36,6 +38,7 @@ Journal of Open Source Software, 6(60), 2696.
 .. _License: https://choosealicense.com/licenses/lgpl-3.0/
 .. _Code_of_Conduct: https://github.com/niosh-mining/obsplus/blob/master/.github/CODE_OF_CONDUCT.md
 .. _Contributing: https://niosh-mining.github.io/obsplus/versions/latest/notebooks/contributing.html
+.. _Security: https://github.com/niosh-mining/obsplus/blob/master/SECURITY.md
 
 .. |Coverage| image:: https://codecov.io/gh/niosh-mining/obsplus/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/niosh-mining/obsplus
