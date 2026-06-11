@@ -1,0 +1,96 @@
+
+# --- Build system configuration
+
+[build-system]
+requires = [ "setuptools>=41", "setuptools-scm", ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools_scm]  # this empty section enables the tool
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# --- Project Metadata
+
+[project]
+name = "obsplus"
+dynamic = ["version"]  # version is fetched by setuptools-git-versioning
+
+authors = [
+    { name="Derrick Chambers", email="d-chambers@users.noreply.github.com" },
+    { name="Shawn Boltz", email="sboltz@users.noreply.github.com" }
+]
+
+description = "An ObsPy exapanson pack"
+readme = "README.rst"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+]
+
+keywords = ["geophysics", "Seismology"]
+
+# --- Dependencies
+
+dependencies = [
+    "numpy>=1.13.0",
+    "obspy >= 1.3.0",
+    "pandas >= 1.0",
+    "progressbar2",
+    "pydantic >= 2.0, <3.0",
+    "scipy",
+    "tables",
+    "typing-extensions",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=1.5.1",
+    "ipykernel",
+    "numpydoc",
+    "sphinx_autodoc_typehints",
+    "nbsphinx",
+    "sphinx-automodapi",
+    "jinja2",
+    "typer",
+]
+
+test = [
+    "pytest",
+    # coveralls currently requires coverage < 5.0
+    "coverage < 5.0",
+    "pytest-cov",
+    "coveralls",
+    "nbval",
+    "twine",
+    "pre-commit",
+]
+
+dev = ["obsplus[test]", "obsplus[docs]"]
+
+# --- URLs for project
+
+[project.urls]
+"Bug Tracker" = "https://github.com/niosh-mining/obsplus/issues"
+"Documentation" = "https://github.com/niosh-mining/obsplus"
+"Homepage" = "https://github.com/niosh-mining/obsplus"
+
+# --- Entry Points
+[project.entry-points."obsplus.datasets"]
+bingham_test = "obsplus.datasets.bingham_test"
+crandall_test = "obsplus.datasets.crandall_test"
+ta_test = "obsplus.datasets.ta_test"
+default_test = "obsplus.datasets.default_test"

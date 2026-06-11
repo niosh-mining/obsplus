@@ -1,0 +1,436 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Added Obspy Methods\n",
+    "Obsplus adds methods to existing obspy data structures in order to \"unify\" the data-requesting interfaces (ie the `get_whatever` methods). This is done dynamically upon importing obsplus using a technique known as [monkeypatching](https://stackoverflow.com/a/6647776/3645626). You can then write source-agnostic code; any seismological data source, from in-memory obspy data structures, a directory of files, or a remote resource like IRIS can be treated the same way. If the data sources need to be changed it can be done seamlessly. \n",
+    "\n",
+    "The following figure demonstrates this concept with waveform data. In-memory (`Stream`), on disk (`WaveBank`), or remote (`Client`) all share the `get_waveforms` method. \n",
+    "\n",
+    "![get_waveforms_diagram](../../images/get_waveforms.png)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:53.763396Z",
+     "iopub.status.busy": "2024-02-28T22:19:53.763217Z",
+     "iopub.status.idle": "2024-02-28T22:19:55.996911Z",
+     "shell.execute_reply": "2024-02-28T22:19:55.996362Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# get a catalog, stream, and inventory to play with\n",
+    "import obspy\n",
+    "import obsplus\n",
+    "\n",
+    "cat = obspy.read_events()\n",
+    "st = obspy.read()\n",
+    "inv = obspy.read_inventory()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Catalog "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:55.999882Z",
+     "iopub.status.busy": "2024-02-28T22:19:55.999428Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.003347Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.002769Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "3 Event(s) in Catalog:\n",
+      "2012-04-04T14:21:42.300000Z | +41.818,  +79.689 | 4.4  mb | manual\n",
+      "2012-04-04T14:18:37.000000Z | +39.342,  +41.044 | 4.3  ML | manual\n",
+      "2012-04-04T14:08:46.000000Z | +38.017,  +37.736 | 3.0  ML | manual\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(cat)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.032470Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.032162Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.051107Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.050468Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "2 Event(s) in Catalog:\n",
+      "2012-04-04T14:21:42.300000Z | +41.818,  +79.689 | 4.4  mb | manual\n",
+      "2012-04-04T14:18:37.000000Z | +39.342,  +41.044 | 4.3  ML | manual\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(cat.get_events(minmagnitude=4))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Inventory"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.053670Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.053217Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.056795Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.056185Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Inventory created at 2014-03-03T11:07:06.198000Z\n",
+      "\tCreated by: fdsn-stationxml-converter/1.0.0\n",
+      "\t\t    http://www.iris.edu/fdsnstationconverter\n",
+      "\tSending institution: Erdbebendienst Bayern\n",
+      "\tContains:\n",
+      "\t\tNetworks (2):\n",
+      "\t\t\tBW, GR\n",
+      "\t\tStations (5):\n",
+      "\t\t\tBW.RJOB (Jochberg, Bavaria, BW-Net) (3x)\n",
+      "\t\t\tGR.FUR (Fuerstenfeldbruck, Bavaria, GR-Net)\n",
+      "\t\t\tGR.WET (Wettzell, Bavaria, GR-Net)\n",
+      "\t\tChannels (30):\n",
+      "\t\t\tBW.RJOB..EHZ (3x), BW.RJOB..EHN (3x), BW.RJOB..EHE (3x), \n",
+      "\t\t\tGR.FUR..BHZ, GR.FUR..BHN, GR.FUR..BHE, GR.FUR..HHZ, GR.FUR..HHN, \n",
+      "\t\t\tGR.FUR..HHE, GR.FUR..LHZ, GR.FUR..LHN, GR.FUR..LHE, GR.FUR..VHZ, \n",
+      "\t\t\tGR.FUR..VHN, GR.FUR..VHE, GR.WET..BHZ, GR.WET..BHN, GR.WET..BHE, \n",
+      "\t\t\tGR.WET..HHZ, GR.WET..HHN, GR.WET..HHE, GR.WET..LHZ, GR.WET..LHN, \n",
+      "\t\t\tGR.WET..LHE\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(inv)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.059047Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.058634Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.113862Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.113221Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Inventory created at 2014-03-03T11:07:06.198000Z\n",
+      "\tCreated by: fdsn-stationxml-converter/1.0.0\n",
+      "\t\t    http://www.iris.edu/fdsnstationconverter\n",
+      "\tSending institution: Erdbebendienst Bayern\n",
+      "\tContains:\n",
+      "\t\tNetworks (1):\n",
+      "\t\t\tGR\n",
+      "\t\tStations (1):\n",
+      "\t\t\tGR.WET (Wettzell, Bavaria, GR-Net)\n",
+      "\t\tChannels (9):\n",
+      "\t\t\tGR.WET..BHZ, GR.WET..BHN, GR.WET..BHE, GR.WET..HHZ, GR.WET..HHN, \n",
+      "\t\t\tGR.WET..HHE, GR.WET..LHZ, GR.WET..LHN, GR.WET..LHE\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(inv.get_stations(station='WET'))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Stream"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.116405Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.116043Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.119399Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.118841Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "3 Trace(s) in Stream:\n",
+      "BW.RJOB..EHZ | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples\n",
+      "BW.RJOB..EHN | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples\n",
+      "BW.RJOB..EHE | 2009-08-24T00:20:03.000000Z - 2009-08-24T00:20:32.990000Z | 100.0 Hz, 3000 samples\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(st)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.121695Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.121251Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.142412Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.141879Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "3 Trace(s) in Stream:\n",
+      "BW.RJOB..EHZ | 2009-08-24T00:20:13.000000Z - 2009-08-24T00:20:18.000000Z | 100.0 Hz, 501 samples\n",
+      "BW.RJOB..EHN | 2009-08-24T00:20:13.000000Z - 2009-08-24T00:20:18.000000Z | 100.0 Hz, 501 samples\n",
+      "BW.RJOB..EHE | 2009-08-24T00:20:13.000000Z - 2009-08-24T00:20:18.000000Z | 100.0 Hz, 501 samples\n"
+     ]
+    }
+   ],
+   "source": [
+    "t1 = st[0].stats.starttime + 10\n",
+    "print(st.get_waveforms('BW', 'RJOB', '*', 'EH[NEZ]', starttime=t1, endtime=t1 + 5))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Getting client_like objects\n",
+    "Obsplus has a few convenience functions for getting client-like objects (meaning they implement the appropriate `get_whatever` methods) from various sources. For example, the object returned after calling `get_waveform_client` is guaranteed to have a `get_waveforms` method or the function will raise a `TypeError`. The input could be a single miniseed file, a directory of waveforms files, a `Stream` object, or a valid waveform client. \n",
+    "\n",
+    "For example:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.144855Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.144495Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.323315Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.322783Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import tempfile\n",
+    "from pathlib import Path\n",
+    "\n",
+    "from obspy.clients.fdsn import Client\n",
+    "\n",
+    "from obsplus import get_waveform_client\n",
+    "\n",
+    "cl = Client()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.325905Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.325711Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.329045Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.328453Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'obspy.core.stream.Stream'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "# get waveform client from various sources\n",
+    "print(type(get_waveform_client(st)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.331246Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.330910Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.333897Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.333331Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'obspy.clients.fdsn.client.Client'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(type(get_waveform_client(cl)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.336073Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.335738Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.346455Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.345970Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'obspy.core.stream.Stream'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "# save a single file to disk\n",
+    "p = Path(tempfile.mkdtemp()) / 'stream.mseed'\n",
+    "p.parent.mkdir(exist_ok=True, parents=True)\n",
+    "st.write(str(p), 'mseed')\n",
+    "# get client from a single file\n",
+    "print(type(get_waveform_client(p)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.348708Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.348356Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.354097Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.353616Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'obsplus.bank.wavebank.WaveBank'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "# create a directory of waveforms, get a client\n",
+    "p = Path(tempfile.mkdtemp())\n",
+    "p.mkdir(exist_ok=True, parents=True)\n",
+    "for num, tr in enumerate(st):\n",
+    "    tr.write(str(p / f'{num}.mseed'), 'mseed')\n",
+    "# get client from waveform directory\n",
+    "print(type(get_waveform_client(p)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-02-28T22:19:56.356164Z",
+     "iopub.status.busy": "2024-02-28T22:19:56.355853Z",
+     "iopub.status.idle": "2024-02-28T22:19:56.359190Z",
+     "shell.execute_reply": "2024-02-28T22:19:56.358613Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "a waveform client could not be extracted from 3 Event(s) in Catalog:\n",
+      "2012-04-04T14:21:42.300000Z | +41.818,  +79.689 | 4.4  mb | manual\n",
+      "2012-04-04T14:18:37.000000Z | +39.342,  +41.044 | 4.3  ML | manual\n",
+      "2012-04-04T14:08:46.000000Z | +38.017,  +37.736 | 3.0  ML | manual\n"
+     ]
+    }
+   ],
+   "source": [
+    "# A TypeErorr is raised if get_waveform_client cannot get a waveform_client\n",
+    "try:\n",
+    "    get_waveform_client(cat)\n",
+    "except TypeError as e:\n",
+    "    print(e)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

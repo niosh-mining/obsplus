@@ -1,0 +1,773 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.pd &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.pd</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.events.pd</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for generating a pandas dataframe from an obspy events.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ev</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus.utils.time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AMPLITUDE_COLUMNS</span><span class="p">,</span>
+    <span class="n">AMPLITUDE_DTYPES</span><span class="p">,</span>
+    <span class="n">ARRIVAL_COLUMNS</span><span class="p">,</span>
+    <span class="n">ARRIVAL_DTYPES</span><span class="p">,</span>
+    <span class="n">EVENT_COLUMNS</span><span class="p">,</span>
+    <span class="n">EVENT_DTYPES</span><span class="p">,</span>
+    <span class="n">MAGNITUDE_COLUMN_TYPES</span><span class="p">,</span>
+    <span class="n">MAGNITUDE_COLUMNS</span><span class="p">,</span>
+    <span class="n">MAGNITUDE_DTYPES</span><span class="p">,</span>
+    <span class="n">NSLC</span><span class="p">,</span>
+    <span class="n">PICK_COLUMNS</span><span class="p">,</span>
+    <span class="n">PICK_DTYPES</span><span class="p">,</span>
+    <span class="n">STATION_MAGNITUDE_COLUMNS</span><span class="p">,</span>
+    <span class="n">STATION_MAGNITUDE_DTYPES</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">BankType</span><span class="p">,</span> <span class="n">EventClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.structures.dfextractor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataFrameExtractor</span><span class="p">,</span>
+    <span class="n">standard_column_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_preferred</span><span class="p">,</span> <span class="n">get_seed_id</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_instances_from_tree</span><span class="p">,</span> <span class="n">getattrs</span><span class="p">,</span> <span class="n">read_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_reference_time</span>
+
+<span class="c1"># -------------------- init extractors</span>
+<span class="n">events_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">,</span>
+    <span class="n">required_columns</span><span class="o">=</span><span class="n">EVENT_COLUMNS</span><span class="p">,</span>
+    <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span><span class="p">,</span>
+    <span class="n">dtypes</span><span class="o">=</span><span class="n">EVENT_DTYPES</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">picks_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">,</span> <span class="n">PICK_COLUMNS</span><span class="p">,</span> <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span>
+<span class="p">)</span>
+
+<span class="n">arrivals_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">Arrival</span><span class="p">,</span> <span class="n">ARRIVAL_COLUMNS</span><span class="p">,</span> <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span>
+<span class="p">)</span>
+
+<span class="n">amplitudes_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">Amplitude</span><span class="p">,</span> <span class="n">AMPLITUDE_COLUMNS</span><span class="p">,</span> <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span>
+<span class="p">)</span>
+
+<span class="n">station_magnitudes_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">StationMagnitude</span><span class="p">,</span>
+    <span class="n">STATION_MAGNITUDE_COLUMNS</span><span class="p">,</span>
+    <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">magnitudes_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">ev</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">,</span> <span class="n">MAGNITUDE_COLUMNS</span><span class="p">,</span> <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span>
+<span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_OriginQualityExtractor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class encapsulating logic for getting information about origin quality.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_picks_linked_to_amps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eve</span><span class="p">,</span> <span class="n">arrival_set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make sure the picks exists the amplitudes point to.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pick</span> <span class="ow">in</span> <span class="n">eve</span><span class="o">.</span><span class="n">picks</span><span class="p">:</span>
+            <span class="n">pick</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">set_referred_object</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+        <span class="n">pick_dict</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">resource_id</span><span class="p">):</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">eve</span><span class="o">.</span><span class="n">picks</span><span class="p">}</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">arrival_set</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="n">pick_dict</span><span class="p">)</span>
+        <span class="p">),</span> <span class="s2">&quot;arrivals link to non-existent picks&quot;</span>
+        <span class="k">return</span> <span class="n">pick_dict</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pick_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">pict_dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Count the number of non-rejected picks with given phase&quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pict_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">phase_hint</span> <span class="o">==</span> <span class="n">phase</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">!=</span> <span class="s2">&quot;rejected&quot;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_phase_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ori</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">,</span> <span class="n">phase_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of phases with phase_type found in origin&quot;&quot;&quot;</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">ar</span> <span class="ow">in</span> <span class="n">ori</span><span class="o">.</span><span class="n">arrivals</span><span class="p">:</span>
+            <span class="c1"># if phase is not specified dont count it</span>
+            <span class="k">if</span> <span class="n">ar</span><span class="o">.</span><span class="n">phase</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ar</span><span class="o">.</span><span class="n">phase</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">ar</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="n">phase_type</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">count</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_quality_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information from quality info.&quot;&quot;&quot;</span>
+        <span class="n">quality_attrs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;standard_error&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;associated_phase_count&quot;</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;associated_phase_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;azimuthal_gap&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;used_phase_count&quot;</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;used_phase_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="n">quality</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="s2">&quot;quality&quot;</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">OriginQuality</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">default</span> <span class="ow">in</span> <span class="n">quality_attrs</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">quality</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">default</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information from uncertainty.&quot;&quot;&quot;</span>
+        <span class="n">uncert_attrs</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;horizontal_uncertainty&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),)</span>
+        <span class="n">uncert</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="s2">&quot;origin_uncertainty&quot;</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">OriginUncertainty</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">default</span> <span class="ow">in</span> <span class="n">uncert_attrs</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">uncert</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span> <span class="ow">or</span> <span class="n">default</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_depth_uncertainty_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get info from depth info.&quot;&quot;&quot;</span>
+        <span class="n">depth_uncert</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="n">depth_errors</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;vertical_uncertainty&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">depth_uncert</span><span class="p">,</span> <span class="s2">&quot;uncertainty&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_phase_and_pick_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+        <span class="c1"># get a dict of picks</span>
+        <span class="n">arrivals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">pick_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span><span class="p">}</span>
+        <span class="n">pick_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_picks_linked_to_amps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">arrivals</span><span class="p">)</span>
+        <span class="n">used_picks</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">pid</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pick_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">pid</span> <span class="ow">in</span> <span class="n">arrivals</span><span class="p">]</span>
+        <span class="c1"># get counts of picks</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;p_phase_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_phase_count</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="s2">&quot;P&quot;</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;s_phase_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_phase_count</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;p_pick_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_pick_count</span><span class="p">(</span><span class="s2">&quot;P&quot;</span><span class="p">,</span> <span class="n">pick_dict</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;s_pick_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_pick_count</span><span class="p">(</span><span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="n">pick_dict</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;used_phase_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;p_phase_count&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;s_phase_count&quot;</span><span class="p">]</span>
+        <span class="c1"># get names of station and station count</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">used_picks</span><span class="p">)</span>
+        <span class="n">pset</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">waveform_id</span><span class="o">.</span><span class="n">station_code</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">used_picks</span><span class="p">}</span>
+        <span class="n">sl</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">pset</span><span class="p">))</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;stations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;station_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a dict of origin quality attributes.&quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="n">get_preferred</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;origin&quot;</span><span class="p">,</span> <span class="n">init_empty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># get phase and pick count</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_phase_and_pick_counts</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+        <span class="c1"># now extract information</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_origin_quality_info</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_depth_uncertainty_info</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_origin_uncertainty</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_last_magnitude</span><span class="p">(</span><span class="n">mags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ev</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">],</span> <span class="n">mag_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the value of the last magnitude, optionally of a given type.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">for</span> <span class="n">mag</span> <span class="ow">in</span> <span class="n">mags</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mag_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mtype</span> <span class="o">=</span> <span class="p">(</span><span class="n">mag</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">mag_type</span> <span class="o">==</span> <span class="n">mtype</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">mag</span><span class="o">.</span><span class="n">mag</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return either a path (str) to a function, or an EventBank if path is a directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_event_description</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a string of the first event description.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">event</span><span class="o">.</span><span class="n">event_descriptions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_event_id</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_author</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the name of the analyst as a string, or return empty str&quot;&quot;&quot;</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;creation_info&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="s2">&quot;author&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_eve_creation_info</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pull out information from the event level creation_info&quot;&quot;&quot;</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">,</span> <span class="s2">&quot;agency_id&quot;</span><span class="p">,</span> <span class="s2">&quot;creation_time&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">cinfo</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;creation_info&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cinfo</span><span class="p">,</span> <span class="s2">&quot;__dict__&quot;</span><span class="p">):</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cinfo</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_update_time</span><span class="p">(</span><span class="n">eve</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the most recent time anything was updated in event&quot;&quot;&quot;</span>
+    <span class="n">creations</span> <span class="o">=</span> <span class="n">get_instances_from_tree</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">CreationInfo</span><span class="p">)</span>
+    <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">creation_time</span><span class="p">,</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">creations</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;updated&quot;</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">timestamps</span><span class="p">)</span> <span class="k">if</span> <span class="n">timestamps</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">}</span>
+
+
+<span class="n">loc_dtypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">EVENT_DTYPES</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;depth&quot;</span><span class="p">)}</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">loc_dtypes</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_basic</span><span class="p">(</span><span class="n">eve</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract basic info from origin.&quot;&quot;&quot;</span>
+    <span class="n">ori</span> <span class="o">=</span> <span class="n">get_preferred</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="s2">&quot;origin&quot;</span><span class="p">,</span> <span class="n">init_empty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">getattrs</span><span class="p">(</span><span class="n">ori</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="n">loc_dtypes</span><span class="p">))</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_time</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">event</span><span class="p">)}</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># no valid starttime</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">}</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_origin_quality</span><span class="p">(</span><span class="n">eve</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get information from origin quality&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_OriginQualityExtractor</span><span class="p">(</span><span class="n">eve</span><span class="p">)()</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">extractor</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_magnitude_info</span><span class="p">(</span><span class="n">eve</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract magnitude information. Get base magnitude, as well as various</span>
+<span class="sd">    other magnitude types (where applicable).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">magnitude</span> <span class="o">=</span> <span class="n">get_preferred</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="s2">&quot;magnitude&quot;</span><span class="p">,</span> <span class="n">init_empty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;magnitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">magnitude</span><span class="o">.</span><span class="n">mag</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;magnitude_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">magnitude</span><span class="o">.</span><span class="n">magnitude_type</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">col_name</span><span class="p">,</span> <span class="n">mag_type</span> <span class="ow">in</span> <span class="n">MAGNITUDE_COLUMN_TYPES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_last_magnitude</span><span class="p">(</span><span class="n">eve</span><span class="o">.</span><span class="n">magnitudes</span><span class="p">,</span> <span class="n">mag_type</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1"># ----------------- Alternative constructors</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_str_catalog_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">funcs</span> <span class="o">=</span> <span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">read_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="n">funcs</span><span class="p">))</span>
+
+
+<span class="nd">@events_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_bank_to_catalog</span><span class="p">(</span><span class="n">bank</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bank</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">),</span> <span class="s2">&quot;wrong bank buddy&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">bank</span><span class="o">.</span><span class="n">read_index</span><span class="p">()</span>
+    <span class="c1"># make sure event_id is a column</span>
+    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;event_id&quot;</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+
+<span class="c1"># -------------- Picks to dataframe</span>
+
+
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_picks_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">picks_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">picks_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_picks_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of picks from a pick list&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_objs_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;picks&quot;</span><span class="p">,</span> <span class="n">picks_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_picks_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">picks_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@picks_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">PICK_DTYPES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_pick_extractor</span><span class="p">(</span><span class="n">pick</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_obj_extractor</span><span class="p">(</span><span class="n">pick</span><span class="p">,</span> <span class="n">PICK_DTYPES</span><span class="p">,</span> <span class="n">error_obj</span><span class="o">=</span><span class="s2">&quot;time_errors&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># -------------- Arrivals to dataframe</span>
+
+
+<span class="c1"># still thinking about the best way to go about combining these...</span>
+
+
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_arrivals_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">arrivals_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_arrivals_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of arrivals from an event&quot;&quot;&quot;</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">event</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="k">else</span> <span class="n">event</span>
+    <span class="n">origins</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">cat</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()]</span>
+    <span class="n">arr_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">origins</span><span class="p">:</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">arrivals</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">arrivals</span>
+        <span class="n">event_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">origin_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">resource_id</span><span class="p">),</span> <span class="n">origin_time</span><span class="o">=</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="nb">id</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span> <span class="n">event_dict</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">arrivals</span><span class="p">})</span>
+        <span class="n">arrivals</span> <span class="o">=</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">arrivals</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+        <span class="n">arr_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arrivals</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr_list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">ARRIVAL_COLUMNS</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">arr_list</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_arrivals_from_origin</span><span class="p">(</span><span class="n">origin</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">):</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">arrivals</span> <span class="o">=</span> <span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span>
+    <span class="n">event_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">origin_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">resource_id</span><span class="p">),</span> <span class="n">origin_time</span><span class="o">=</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">origin</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="nb">id</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span> <span class="n">event_dict</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">arrivals</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">origin</span><span class="o">.</span><span class="n">arrivals</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+
+
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_arrivals_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">arrivals_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@arrivals_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">ARRIVAL_DTYPES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_arrivals_extractor</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_obj_extractor</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">ARRIVAL_DTYPES</span><span class="p">)</span>
+
+
+<span class="c1"># -------------- Amplitudes to dataframe</span>
+
+
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_amplitudes_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">amplitudes_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">picks_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_amplitudes_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of amplitudes from an amplitude list&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_objs_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;amplitudes&quot;</span><span class="p">,</span> <span class="n">amplitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_amplitudes_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">amplitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@amplitudes_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">AMPLITUDE_DTYPES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_amplitudes_extractor</span><span class="p">(</span><span class="n">amp</span><span class="p">):</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">_obj_extractor</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">AMPLITUDE_DTYPES</span><span class="p">,</span> <span class="n">error_obj</span><span class="o">=</span><span class="s2">&quot;generic_amplitude_errors&quot;</span><span class="p">)</span>
+    <span class="c1"># get other amplitude info</span>
+    <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">time_window</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">[</span><span class="s2">&quot;reference&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">time_window</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="n">base</span><span class="p">[</span><span class="s2">&quot;time_begin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">time_window</span><span class="o">.</span><span class="n">begin</span>
+        <span class="n">base</span><span class="p">[</span><span class="s2">&quot;time_end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">time_window</span><span class="o">.</span><span class="n">end</span>
+    <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">scaling_time</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">[</span><span class="s2">&quot;scaling_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">scaling_time</span><span class="o">.</span><span class="n">timestamp</span>
+    <span class="k">return</span> <span class="n">base</span>
+
+
+<span class="c1"># -------------- StationMagnitudes to dataframe</span>
+
+
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_station_magnitudes_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">station_magnitudes_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">station_magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_station_magnitudes_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of station_magnitudes from a station_magnitude list&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_objs_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;station_magnitudes&quot;</span><span class="p">,</span> <span class="n">station_magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">)</span>  <span class="c1"># This may not work nicely...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_station_magnitudes_from_magnitude</span><span class="p">(</span><span class="n">mag</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of station magnitudes from a Magnitude&quot;&quot;&quot;</span>
+    <span class="n">sms</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">smc</span> <span class="ow">in</span> <span class="n">mag</span><span class="o">.</span><span class="n">station_magnitude_contributions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">smc</span><span class="o">.</span><span class="n">station_magnitude_id</span><span class="p">:</span>
+            <span class="n">sms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">smc</span><span class="o">.</span><span class="n">station_magnitude_id</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">())</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="nb">id</span><span class="p">(</span><span class="n">sm</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;magnitude_id&quot;</span><span class="p">:</span> <span class="n">mag</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">id</span><span class="p">}</span> <span class="k">for</span> <span class="n">sm</span> <span class="ow">in</span> <span class="n">sms</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">station_magnitudes_to_df</span><span class="p">(</span><span class="n">sms</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+
+
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_station_magnitudes_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">station_magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@station_magnitudes_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">STATION_MAGNITUDE_DTYPES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_station_magnitudes_extractor</span><span class="p">(</span><span class="n">sm</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_obj_extractor</span><span class="p">(</span><span class="n">sm</span><span class="p">,</span> <span class="n">STATION_MAGNITUDE_DTYPES</span><span class="p">,</span> <span class="n">error_obj</span><span class="o">=</span><span class="s2">&quot;mag_errors&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># -------------- Magnitudes to dataframe</span>
+
+
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_magnitudes_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_path_or_event_bank</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">magnitudes_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_magnitudes_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of magnitudes from a magnitude list&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_objs_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;magnitudes&quot;</span><span class="p">,</span> <span class="n">magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_magnitudes_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">magnitudes_to_df</span><span class="p">)</span>
+
+
+<span class="nd">@magnitudes_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="n">MAGNITUDE_DTYPES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_magnitudes_extractor</span><span class="p">(</span><span class="n">mag</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_obj_extractor</span><span class="p">(</span><span class="n">mag</span><span class="p">,</span> <span class="n">MAGNITUDE_DTYPES</span><span class="p">,</span> <span class="n">seed_id</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">error_obj</span><span class="o">=</span><span class="s2">&quot;mag_errors&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># -------------- Internal functions for extracting event info</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">extractor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract info from a file&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">extractor</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># obspy failed to read file, try csv</span>
+        <span class="k">return</span> <span class="n">extractor</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_objs_from_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">extractor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of an obj type from an event&quot;&quot;&quot;</span>
+    <span class="c1"># ensure we have an iterable and flatten station_magnitudes</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">event</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="k">else</span> <span class="n">event</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">cat</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">attr</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">extractor</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">_get_event_info</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_objs_from_event_bank</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">extractor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dataframe of a set obj type from an event bank&quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_bank</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extractor</span><span class="p">(</span><span class="n">event_bank</span><span class="o">.</span><span class="n">get_events</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_obj_extractor</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">,</span> <span class="n">seed_id</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract common information from event object&quot;&quot;&quot;</span>
+    <span class="c1"># extract attributes that are floats/str</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">overlap</span><span class="p">}</span>
+    <span class="c1"># get waveform_id stuff (seed_id, network, station, location, channel)</span>
+    <span class="k">if</span> <span class="n">seed_id</span><span class="p">:</span>
+        <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_seed_id</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+    <span class="c1"># extract error info, if applicable</span>
+    <span class="k">if</span> <span class="n">error_obj</span><span class="p">:</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">error_obj</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+            <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_uncertainty</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span>
+    <span class="c1"># get creation info</span>
+    <span class="n">cio</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">creation_info</span> <span class="ow">or</span> <span class="n">ev</span><span class="o">.</span><span class="n">CreationInfo</span><span class="p">()</span>
+    <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_creation_info</span><span class="p">(</span><span class="n">cio</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">base</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_event_info</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract event_id and time for an extractor&quot;&quot;&quot;</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
+        <span class="n">iterable</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">iterable</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">event_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">event_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">),</span> <span class="n">event_time</span><span class="o">=</span><span class="n">get_reference_time</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="nb">id</span><span class="p">(</span><span class="n">item</span><span class="p">):</span> <span class="n">event_dict</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">extras</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_creation_info</span><span class="p">(</span><span class="n">cio</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip the creation info for an extractor&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;creation_time&quot;</span><span class="p">:</span> <span class="n">cio</span><span class="o">.</span><span class="n">creation_time</span><span class="p">,</span>
+        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">cio</span><span class="o">.</span><span class="n">author</span><span class="p">,</span>
+        <span class="s2">&quot;agency_id&quot;</span><span class="p">:</span> <span class="n">cio</span><span class="o">.</span><span class="n">agency_id</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_uncertainty</span><span class="p">(</span><span class="n">errors</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip uncertainty info for an extractor&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;uncertainty&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">,</span>
+        <span class="s2">&quot;lower_uncertainty&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="o">.</span><span class="n">lower_uncertainty</span><span class="p">,</span>
+        <span class="s2">&quot;upper_uncertainty&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="o">.</span><span class="n">upper_uncertainty</span><span class="p">,</span>
+        <span class="s2">&quot;confidence_level&quot;</span><span class="p">:</span> <span class="n">errors</span><span class="o">.</span><span class="n">confidence_level</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_seed_id</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip nslc info for an extractor&quot;&quot;&quot;</span>
+    <span class="n">seed_id</span> <span class="o">=</span> <span class="n">get_seed_id</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="n">split</span> <span class="o">=</span> <span class="n">seed_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;The seed_id: </span><span class="si">{</span><span class="n">seed_id</span><span class="si">}</span><span class="s2"> is not valid. It was found on </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="n">dd</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">NSLC</span><span class="p">,</span> <span class="n">seed_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;seed_id&quot;</span><span class="p">:</span> <span class="n">seed_id</span><span class="p">,</span> <span class="o">**</span><span class="n">dd</span><span class="p">}</span>
+
+
+<span class="c1"># --- monkey patch events/event classes to have to_df methods.</span>
+
+
+<div class="viewcode-block" id="event_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.event_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">event_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a catalog or event, return a DataFrame summary.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Because of the complexity of obspy catalog and event objects, this extractor</span>
+<span class="sd">    makes some assumptions to determine the appropriate information to include.</span>
+
+<span class="sd">    These assumptions are as follows:</span>
+
+<span class="sd">    The origin information is based on the preferred origin, or the last origin</span>
+<span class="sd">    attached to the event if the preferred origin is not set.</span>
+
+<span class="sd">    The event description uses the first object in the list of event descriptions.</span>
+
+<span class="sd">    The magnitude information is based on the preferred magnitude. Additionally,</span>
+<span class="sd">    it will look for the latest magnitudes with a magnitude of &quot;MD&quot;, &quot;ML&quot;, and</span>
+<span class="sd">    &quot;MW&quot; magnitudes and report those magnitudes.</span>
+
+<span class="sd">    For the origin quality information, specifically the associated and used</span>
+<span class="sd">    phase counts, the information attached to origin&#39;s OriginQuality object.</span>
+<span class="sd">    If this information is not available, it will attempt to estimate this</span>
+<span class="sd">    by counting the number of P and S picks and arrivals attached to the</span>
+<span class="sd">    event/origin.</span>
+
+<span class="sd">    The updated time is the latest of all creation times attached to an</span>
+<span class="sd">    object, while the reported creation time, author, and agency id are all</span>
+<span class="sd">    based on the Event object itself.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">events_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">to_df</span> <span class="o">=</span> <span class="n">event_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">to_df</span> <span class="o">=</span> <span class="n">event_to_dataframe</span>
+
+
+<span class="c1"># picks_to_dataframe</span>
+<div class="viewcode-block" id="picks_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.picks_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">picks_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a catalog or event, return a dataframe of picks&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">picks_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">picks_to_df</span> <span class="o">=</span> <span class="n">picks_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">picks_to_df</span> <span class="o">=</span> <span class="n">picks_to_dataframe</span>
+
+
+<span class="c1"># arrivals_to_dataframe</span>
+<div class="viewcode-block" id="arrivals_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.arrivals_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">arrivals_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a catalog or event, return a dataframe of arrivals&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">arrivals_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">arrivals_to_df</span> <span class="o">=</span> <span class="n">arrivals_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">arrivals_to_df</span> <span class="o">=</span> <span class="n">arrivals_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Origin</span><span class="o">.</span><span class="n">arrivals_to_df</span> <span class="o">=</span> <span class="n">arrivals_to_dataframe</span>
+
+
+<span class="c1"># amplitudes_to_dataframe</span>
+<div class="viewcode-block" id="amplitudes_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.amplitudes_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">amplitudes_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a catalog or event, return a dataframe of amplitudes&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">amplitudes_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">amplitudes_to_df</span> <span class="o">=</span> <span class="n">amplitudes_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">amplitudes_to_df</span> <span class="o">=</span> <span class="n">amplitudes_to_dataframe</span>
+
+
+<span class="c1"># station_magnitudes_to_dataframe</span>
+<div class="viewcode-block" id="station_magnitudes_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.station_magnitudes_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">station_magnitudes_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a catalog or event, return a dataframe of station magnitudes&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">station_magnitudes_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">station_magnitudes_to_df</span> <span class="o">=</span> <span class="n">station_magnitudes_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">station_magnitudes_to_df</span> <span class="o">=</span> <span class="n">station_magnitudes_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Magnitude</span><span class="o">.</span><span class="n">station_magnitudes_to_df</span> <span class="o">=</span> <span class="n">station_magnitudes_to_dataframe</span>
+
+
+<span class="c1"># magnitudes_to_dataframe</span>
+<div class="viewcode-block" id="magnitudes_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.events.pd.html#obsplus.events.pd.magnitudes_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">magnitudes_to_dataframe</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a catalog or event, return a dataframe of magnitudes&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">magnitudes_to_df</span><span class="p">(</span><span class="n">cat_or_event</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">magnitudes_to_df</span> <span class="o">=</span> <span class="n">magnitudes_to_dataframe</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">Event</span><span class="o">.</span><span class="n">magnitudes_to_df</span> <span class="o">=</span> <span class="n">magnitudes_to_dataframe</span>
+
+<span class="c1"># save the default events converter for use by other code (eg EventBank).</span>
+<span class="n">_default_cat_to_df</span> <span class="o">=</span> <span class="n">events_to_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">_default_pick_to_df</span> <span class="o">=</span> <span class="n">picks_to_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.pd</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

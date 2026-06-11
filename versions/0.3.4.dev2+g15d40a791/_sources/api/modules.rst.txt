@@ -1,0 +1,7 @@
+obsplus
+=======
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus

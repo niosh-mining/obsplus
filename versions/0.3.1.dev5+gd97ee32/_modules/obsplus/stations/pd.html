@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.stations.pd &#8212; ObsPlus  [ 0.3.1.dev5+gd97ee32 ] 0.3.1.dev5+gd97ee32 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=55a2247d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.stations.pd</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.stations.pd</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Pandas functionality for stations stuff.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">WaveformStreamID</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy.core.inventory</span><span class="w"> </span><span class="kn">import</span> <span class="n">Channel</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NSLC</span><span class="p">,</span> <span class="n">STATION_COLUMNS</span><span class="p">,</span> <span class="n">STATION_DTYPES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">BankType</span><span class="p">,</span> <span class="n">EventClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.structures.dfextractor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataFrameExtractor</span><span class="p">,</span>
+    <span class="n">standard_column_transforms</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_to_files_or_skip</span><span class="p">,</span> <span class="n">get_instances_from_tree</span>
+
+<span class="c1"># attributes from channel to extract</span>
+
+<span class="n">stations_to_df</span> <span class="o">=</span> <span class="n">DataFrameExtractor</span><span class="p">(</span>
+    <span class="n">Channel</span><span class="p">,</span>
+    <span class="n">STATION_COLUMNS</span><span class="p">,</span>
+    <span class="n">column_funcs</span><span class="o">=</span><span class="n">standard_column_transforms</span><span class="p">,</span>
+    <span class="n">dtypes</span><span class="o">=</span><span class="n">STATION_DTYPES</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">extractor</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_from_channels</span><span class="p">(</span><span class="n">channel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract info from channels.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">STATION_COLUMNS</span><span class="p">[</span><span class="mi">5</span><span class="p">:]}</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_channel</span><span class="p">(</span><span class="n">inventory</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a summary dataframe from the stations object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">chans</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">net</span> <span class="ow">in</span> <span class="n">inventory</span><span class="o">.</span><span class="n">networks</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">sta</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">stations</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">chan</span> <span class="ow">in</span> <span class="n">sta</span><span class="o">.</span><span class="n">channels</span><span class="p">:</span>
+                <span class="n">chan_dict</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">code</span><span class="p">,</span>
+                    <span class="s2">&quot;station&quot;</span><span class="p">:</span> <span class="n">sta</span><span class="o">.</span><span class="n">code</span><span class="p">,</span>
+                    <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="n">chan</span><span class="o">.</span><span class="n">code</span><span class="p">,</span>
+                    <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">chan</span><span class="o">.</span><span class="n">location_code</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">chan_dict</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chan_dict</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">)</span>
+                <span class="n">extras</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">chan</span><span class="p">)]</span> <span class="o">=</span> <span class="n">chan_dict</span>
+                <span class="n">chans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chan</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">chans</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_str_inv_to_df</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read stations object from file or directory structure&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="c1"># if applied to directory, recurse</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">apply_to_files_or_skip</span><span class="p">(</span><span class="n">_str_inv_to_df</span><span class="p">,</span> <span class="n">path</span><span class="p">)))</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+    <span class="c1"># else try to read single file</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span>
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Catalog</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_event_to_inv_df</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pull WaveformStreamIDs out of an event and put it in a dataframe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wids</span> <span class="o">=</span> <span class="n">get_instances_from_tree</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">WaveformStreamID</span><span class="p">)</span>
+    <span class="n">wid_str</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">get_seed_string</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wids</span><span class="p">}</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">wid_str</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">])</span>
+    <span class="n">seed</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;station&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">seed</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">seed</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;start_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;end_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;elevation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">BankType</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_bank_to_df</span><span class="p">(</span><span class="n">bank</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the various bank types to station dataframes.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bank</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">get_events</span><span class="p">())</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bank</span><span class="p">,</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">WaveBank</span><span class="p">):</span>
+        <span class="n">rename</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;starttime&quot;</span><span class="p">:</span> <span class="s2">&quot;start_date&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">:</span> <span class="s2">&quot;end_date&quot;</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">bank</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bank</span><span class="si">}</span><span class="s2"> type not yet supported&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">)</span>
+<span class="nd">@stations_to_df</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_stream_to_station_df</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a stream/trace to station dataframe.&quot;&quot;&quot;</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="p">[</span><span class="n">st</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">)</span> <span class="k">else</span> <span class="n">st</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">),</span> <span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">]</span>
+    <span class="n">stats_summary</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">st</span><span class="p">:</span>
+        <span class="n">stats_summary</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">at</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="n">at</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">})</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">stats_summary</span><span class="p">)</span>
+    <span class="c1"># next groupby stations and get min/max for start_date and end_date</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">))</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;starttime&quot;</span><span class="p">:</span> <span class="s2">&quot;start_date&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">:</span> <span class="s2">&quot;end_date&quot;</span><span class="p">})</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+
+<span class="c1"># monkey patch in to_df method on stations</span>
+
+
+<div class="viewcode-block" id="inventory_to_dataframe">
+<a class="viewcode-back" href="../../../api/obsplus.stations.pd.html#obsplus.stations.pd.inventory_to_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inventory_to_dataframe</span><span class="p">(</span><span class="n">inventory_like</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert an inventory to a dataframe.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">stations_to_df</span><span class="p">(</span><span class="n">inventory_like</span><span class="p">)</span></div>
+
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">Inventory</span><span class="o">.</span><span class="n">to_df</span> <span class="o">=</span> <span class="n">inventory_to_dataframe</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev5+gd97ee32 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev5+gd97ee32 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.stations.pd</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

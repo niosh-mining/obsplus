@@ -1,0 +1,924 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Events to DataFrame &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Events to DataFrame</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Events-to-DataFrame">
+<h1>Events to DataFrame<a class="headerlink" href="#Events-to-DataFrame" title="Link to this heading">¶</a></h1>
+<p>ObsPlus provides a way to extract useful summary information from ObsPy objects in order to create dataframes. This transformation is lossy but very useful when the full complexity of the <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> object isn’t warranted. By default the <code class="docutils literal notranslate"><span class="pre">events_to_df</span></code> function collects information the authors of ObsPlus have found useful, but it is fully extensible/customizable using the functionality of the <a class="reference internal" href="../utils/dataframeextractor.html"><span class="doc">DataFrameExtractor</span></a>.</p>
+<p>To demonstrate how the <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> can be flattened into a table, let’s again use the Crandall catalog.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="n">ev_df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+
+<span class="n">ev_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>time</th>
+      <th>latitude</th>
+      <th>longitude</th>
+      <th>depth</th>
+      <th>magnitude</th>
+      <th>event_description</th>
+      <th>associated_phase_count</th>
+      <th>azimuthal_gap</th>
+      <th>event_id</th>
+      <th>horizontal_uncertainty</th>
+      <th>...</th>
+      <th>standard_error</th>
+      <th>used_phase_count</th>
+      <th>station_count</th>
+      <th>vertical_uncertainty</th>
+      <th>updated</th>
+      <th>author</th>
+      <th>agency_id</th>
+      <th>creation_time</th>
+      <th>version</th>
+      <th>stations</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2007-08-07 07:13:05.760</td>
+      <td>39.4605</td>
+      <td>-111.2242</td>
+      <td>3240.0</td>
+      <td>2.24</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248891</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9901</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2012-04-12 10:19:26.228029952</td>
+      <td></td>
+      <td></td>
+      <td>NaT</td>
+      <td></td>
+      <td>DUG, L15A, M14A, M15A, M16A, N14A, N15A, N16A,...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2007-08-07 02:14:24.080</td>
+      <td>39.4632</td>
+      <td>-111.2230</td>
+      <td>4180.0</td>
+      <td>1.26</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248883</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.8834</td>
+      <td>0.0</td>
+      <td>14.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:10:26.864045056</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:26.864045</td>
+      <td></td>
+      <td>DUG, P14A, P15A, P16A, P18A, Q14A, Q16A, Q18A,...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2007-08-07 03:44:18.470</td>
+      <td>39.4625</td>
+      <td>-111.2152</td>
+      <td>4160.0</td>
+      <td>1.45</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248887</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5716</td>
+      <td>0.0</td>
+      <td>15.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:10:27.576204032</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:27.576204</td>
+      <td></td>
+      <td>DUG, N17A, P14A, P16A, P18A, Q14A, Q16A, Q18A,...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2007-08-07 21:42:51.130</td>
+      <td>39.4627</td>
+      <td>-111.2200</td>
+      <td>4620.0</td>
+      <td>1.65</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248925</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5704</td>
+      <td>0.0</td>
+      <td>19.0</td>
+      <td>NaN</td>
+      <td>2018-10-11 22:08:54.236915968</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-11 22:08:54.236916</td>
+      <td></td>
+      <td>M15A, O15A, P14A, P15A, P16A, P17A, P18A, Q14A...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2007-08-07 02:05:04.490</td>
+      <td>39.4648</td>
+      <td>-111.2255</td>
+      <td>1790.0</td>
+      <td>2.08</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248882</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9935</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:15:19.190404096</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:15:19.190404</td>
+      <td></td>
+      <td>DUG, L15A, M14A, M15A, N14A, N15A, N16A, N17A,...</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 28 columns</p>
+</div></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">events_to_df</span></code> can also operate on other <code class="docutils literal notranslate"><span class="pre">event_client</span></code>s, like the <code class="docutils literal notranslate"><span class="pre">EventBank</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bank</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span>
+<span class="n">ev_df2</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">bank</span><span class="p">)</span>
+<span class="n">ev_df2</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>time</th>
+      <th>latitude</th>
+      <th>longitude</th>
+      <th>depth</th>
+      <th>magnitude</th>
+      <th>event_description</th>
+      <th>associated_phase_count</th>
+      <th>azimuthal_gap</th>
+      <th>event_id</th>
+      <th>horizontal_uncertainty</th>
+      <th>...</th>
+      <th>standard_error</th>
+      <th>used_phase_count</th>
+      <th>station_count</th>
+      <th>vertical_uncertainty</th>
+      <th>updated</th>
+      <th>author</th>
+      <th>agency_id</th>
+      <th>creation_time</th>
+      <th>version</th>
+      <th>stations</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2007-08-07 07:13:05.760</td>
+      <td>39.4605</td>
+      <td>-111.2242</td>
+      <td>3240.0</td>
+      <td>2.24</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248891</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9901</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2012-04-12 10:19:26.228029952</td>
+      <td></td>
+      <td></td>
+      <td>NaT</td>
+      <td></td>
+      <td>DUG, L15A, M14A, M15A, M16A, N14A, N15A, N16A,...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2007-08-07 02:14:24.080</td>
+      <td>39.4632</td>
+      <td>-111.2230</td>
+      <td>4180.0</td>
+      <td>1.26</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248883</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.8834</td>
+      <td>0.0</td>
+      <td>14.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:10:26.864045056</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:26.864045</td>
+      <td></td>
+      <td>DUG, P14A, P15A, P16A, P18A, Q14A, Q16A, Q18A,...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2007-08-07 03:44:18.470</td>
+      <td>39.4625</td>
+      <td>-111.2152</td>
+      <td>4160.0</td>
+      <td>1.45</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248887</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5716</td>
+      <td>0.0</td>
+      <td>15.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:10:27.576204032</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:10:27.576204</td>
+      <td></td>
+      <td>DUG, N17A, P14A, P16A, P18A, Q14A, Q16A, Q18A,...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2007-08-07 21:42:51.130</td>
+      <td>39.4627</td>
+      <td>-111.2200</td>
+      <td>4620.0</td>
+      <td>1.65</td>
+      <td></td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248925</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.5704</td>
+      <td>0.0</td>
+      <td>19.0</td>
+      <td>NaN</td>
+      <td>2018-10-11 22:08:54.236915968</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-11 22:08:54.236916</td>
+      <td></td>
+      <td>M15A, O15A, P14A, P15A, P16A, P17A, P18A, Q14A...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2007-08-07 02:05:04.490</td>
+      <td>39.4648</td>
+      <td>-111.2255</td>
+      <td>1790.0</td>
+      <td>2.08</td>
+      <td>LR</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>smi:local/248882</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>0.9935</td>
+      <td>0.0</td>
+      <td>35.0</td>
+      <td>NaN</td>
+      <td>2018-10-10 21:15:19.190404096</td>
+      <td>DC</td>
+      <td>NIOSH</td>
+      <td>2018-10-10 21:15:19.190404</td>
+      <td></td>
+      <td>DUG, L15A, M14A, M15A, N14A, N15A, N16A, N17A,...</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 28 columns</p>
+</div></div>
+</div>
+<p>Now we have access to all the wonderful Pandas magics. Here are a few contrived examples of things we may want to do:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot a histogram of magnitudes</span>
+<span class="n">ev_df</span><span class="o">.</span><span class="n">magnitude</span><span class="o">.</span><span class="n">hist</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/notebooks_datastructures_events_to_pandas_7_0.png" src="../../_images/notebooks_datastructures_events_to_pandas_7_0.png" />
+</div>
+</div>
+<p>Since there aren’t a lot of events let’s look at the picks to make things slightly more interesting:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get pick info into a dataframe</span>
+<span class="n">picks</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># count the types of phase picks made on all events</span>
+<span class="n">picks</span><span class="o">.</span><span class="n">phase_hint</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+phase_hint
+P     384
+S      85
+Pb     72
+Sb     40
+?      33
+Name: count, dtype: int64
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># calculate the max pick_time for each event</span>
+<span class="n">picks</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">)[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+event_id
+smi:local/248828   2007-08-06 01:46:30.424280
+smi:local/248839   2007-08-06 08:50:18.697470
+smi:local/248843   2007-08-06 10:49:02.491970
+smi:local/248882   2007-08-07 02:06:40.963320
+smi:local/248883   2007-08-07 02:15:24.573490
+smi:local/248887   2007-08-07 03:45:22.084660
+smi:local/248891   2007-08-07 07:14:24.078630
+smi:local/248925   2007-08-07 21:43:54.936950
+Name: time, dtype: datetime64[ns]
+</pre></div></div>
+</div>
+<p>The example below demonstrates how to calculate travel time stats grouped by stations on stations with at least 3 P picks. Since all the events are coming from roughly the same location (within a few km) we might look for stations that have high standard deviations or obvious outliers as on the the first steps in quality control.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get only P picks</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">picks</span><span class="p">[</span><span class="n">picks</span><span class="o">.</span><span class="n">phase_hint</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">]</span>
+
+<span class="c1"># add columns for travel time</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;travel_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;event_time&quot;</span><span class="p">]</span>
+
+<span class="c1"># filter out stations that aren&#39;t used at least 3 times</span>
+<span class="n">station_count</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;station&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+<span class="n">stations_with_three</span> <span class="o">=</span> <span class="n">station_count</span><span class="p">[</span><span class="n">station_count</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">]</span>
+
+<span class="c1"># only include picks that are used on at least 3 stations</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">stations_with_three</span><span class="o">.</span><span class="n">index</span><span class="p">)]</span>
+
+<span class="c1"># get stats of travel times</span>
+<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;station&quot;</span><span class="p">)[</span><span class="s2">&quot;travel_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>count</th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+    <tr>
+      <th>station</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>DUG</th>
+      <td>6</td>
+      <td>0 days 00:00:26.450391666</td>
+      <td>0 days 00:00:00.271624748</td>
+      <td>0 days 00:00:26.071740</td>
+      <td>0 days 00:00:26.329110</td>
+      <td>0 days 00:00:26.405940</td>
+      <td>0 days 00:00:26.613517500</td>
+      <td>0 days 00:00:26.832520</td>
+    </tr>
+    <tr>
+      <th>L15A</th>
+      <td>4</td>
+      <td>0 days 00:00:44.281470</td>
+      <td>0 days 00:00:00.395213333</td>
+      <td>0 days 00:00:43.904210</td>
+      <td>0 days 00:00:43.958120</td>
+      <td>0 days 00:00:44.299440</td>
+      <td>0 days 00:00:44.622790</td>
+      <td>0 days 00:00:44.622790</td>
+    </tr>
+    <tr>
+      <th>M14A</th>
+      <td>3</td>
+      <td>0 days 00:00:42.733800</td>
+      <td>0 days 00:00:00.232198731</td>
+      <td>0 days 00:00:42.465680</td>
+      <td>0 days 00:00:42.666770</td>
+      <td>0 days 00:00:42.867860</td>
+      <td>0 days 00:00:42.867860</td>
+      <td>0 days 00:00:42.867860</td>
+    </tr>
+    <tr>
+      <th>M15A</th>
+      <td>6</td>
+      <td>0 days 00:00:37.389573333</td>
+      <td>0 days 00:00:00.395734547</td>
+      <td>0 days 00:00:36.924550</td>
+      <td>0 days 00:00:37.155292500</td>
+      <td>0 days 00:00:37.276860</td>
+      <td>0 days 00:00:37.723365</td>
+      <td>0 days 00:00:37.872200</td>
+    </tr>
+    <tr>
+      <th>N14A</th>
+      <td>4</td>
+      <td>0 days 00:00:34.753022500</td>
+      <td>0 days 00:00:00.309191321</td>
+      <td>0 days 00:00:34.382170</td>
+      <td>0 days 00:00:34.556087500</td>
+      <td>0 days 00:00:34.810995</td>
+      <td>0 days 00:00:35.007930</td>
+      <td>0 days 00:00:35.007930</td>
+    </tr>
+    <tr>
+      <th>N15A</th>
+      <td>4</td>
+      <td>0 days 00:00:30.787567500</td>
+      <td>0 days 00:00:00.678323974</td>
+      <td>0 days 00:00:30.187990</td>
+      <td>0 days 00:00:30.206282500</td>
+      <td>0 days 00:00:30.793665</td>
+      <td>0 days 00:00:31.374950</td>
+      <td>0 days 00:00:31.374950</td>
+    </tr>
+    <tr>
+      <th>N16A</th>
+      <td>3</td>
+      <td>0 days 00:00:27.035340</td>
+      <td>0 days 00:00:00.319788540</td>
+      <td>0 days 00:00:26.666080</td>
+      <td>0 days 00:00:26.943025</td>
+      <td>0 days 00:00:27.219970</td>
+      <td>0 days 00:00:27.219970</td>
+      <td>0 days 00:00:27.219970</td>
+    </tr>
+    <tr>
+      <th>N17A</th>
+      <td>3</td>
+      <td>0 days 00:00:28.347476666</td>
+      <td>0 days 00:00:00.111948217</td>
+      <td>0 days 00:00:28.218210</td>
+      <td>0 days 00:00:28.315160</td>
+      <td>0 days 00:00:28.412110</td>
+      <td>0 days 00:00:28.412110</td>
+      <td>0 days 00:00:28.412110</td>
+    </tr>
+    <tr>
+      <th>N18A</th>
+      <td>3</td>
+      <td>0 days 00:00:34.095483333</td>
+      <td>0 days 00:00:00.503778524</td>
+      <td>0 days 00:00:33.513770</td>
+      <td>0 days 00:00:33.950055</td>
+      <td>0 days 00:00:34.386340</td>
+      <td>0 days 00:00:34.386340</td>
+      <td>0 days 00:00:34.386340</td>
+    </tr>
+    <tr>
+      <th>O15A</th>
+      <td>5</td>
+      <td>0 days 00:00:24.222288400</td>
+      <td>0 days 00:00:00.158953507</td>
+      <td>0 days 00:00:24.049170</td>
+      <td>0 days 00:00:24.049170</td>
+      <td>0 days 00:00:24.314742</td>
+      <td>0 days 00:00:24.335500</td>
+      <td>0 days 00:00:24.362860</td>
+    </tr>
+    <tr>
+      <th>O16A</th>
+      <td>3</td>
+      <td>0 days 00:00:14.805791333</td>
+      <td>0 days 00:00:00.214392546</td>
+      <td>0 days 00:00:14.558760</td>
+      <td>0 days 00:00:14.737037</td>
+      <td>0 days 00:00:14.915314</td>
+      <td>0 days 00:00:14.929307</td>
+      <td>0 days 00:00:14.943300</td>
+    </tr>
+    <tr>
+      <th>O18A</th>
+      <td>5</td>
+      <td>0 days 00:00:23.389030200</td>
+      <td>0 days 00:00:00.425951696</td>
+      <td>0 days 00:00:22.925160</td>
+      <td>0 days 00:00:23.116750</td>
+      <td>0 days 00:00:23.224960</td>
+      <td>0 days 00:00:23.792720</td>
+      <td>0 days 00:00:23.885561</td>
+    </tr>
+    <tr>
+      <th>P14A</th>
+      <td>8</td>
+      <td>0 days 00:00:26.757380</td>
+      <td>0 days 00:00:00.369050089</td>
+      <td>0 days 00:00:26.272320</td>
+      <td>0 days 00:00:26.410845</td>
+      <td>0 days 00:00:26.791710</td>
+      <td>0 days 00:00:27.140000</td>
+      <td>0 days 00:00:27.143660</td>
+    </tr>
+    <tr>
+      <th>P15A</th>
+      <td>9</td>
+      <td>0 days 00:00:16.204747666</td>
+      <td>0 days 00:00:00.692561976</td>
+      <td>0 days 00:00:15.271110</td>
+      <td>0 days 00:00:15.920450</td>
+      <td>0 days 00:00:16.195300</td>
+      <td>0 days 00:00:16.614280</td>
+      <td>0 days 00:00:17.513850</td>
+    </tr>
+    <tr>
+      <th>P16A</th>
+      <td>11</td>
+      <td>0 days 00:00:07.927102</td>
+      <td>0 days 00:00:00.215584258</td>
+      <td>0 days 00:00:07.682190</td>
+      <td>0 days 00:00:07.795410</td>
+      <td>0 days 00:00:07.859270</td>
+      <td>0 days 00:00:08.034686</td>
+      <td>0 days 00:00:08.397620</td>
+    </tr>
+    <tr>
+      <th>P17A</th>
+      <td>6</td>
+      <td>0 days 00:00:07.174232666</td>
+      <td>0 days 00:00:00.289962934</td>
+      <td>0 days 00:00:06.905530</td>
+      <td>0 days 00:00:06.943467500</td>
+      <td>0 days 00:00:07.091821500</td>
+      <td>0 days 00:00:07.364075500</td>
+      <td>0 days 00:00:07.607380</td>
+    </tr>
+    <tr>
+      <th>P18A</th>
+      <td>11</td>
+      <td>0 days 00:00:14.736734454</td>
+      <td>0 days 00:00:00.293448302</td>
+      <td>0 days 00:00:14.258420</td>
+      <td>0 days 00:00:14.580390</td>
+      <td>0 days 00:00:14.690940</td>
+      <td>0 days 00:00:14.856656</td>
+      <td>0 days 00:00:15.265000</td>
+    </tr>
+    <tr>
+      <th>Q14A</th>
+      <td>6</td>
+      <td>0 days 00:00:30.549576666</td>
+      <td>0 days 00:00:00.335974466</td>
+      <td>0 days 00:00:30.212890</td>
+      <td>0 days 00:00:30.306100</td>
+      <td>0 days 00:00:30.498545</td>
+      <td>0 days 00:00:30.690990</td>
+      <td>0 days 00:00:31.090390</td>
+    </tr>
+    <tr>
+      <th>Q15A</th>
+      <td>7</td>
+      <td>0 days 00:00:18.810036142</td>
+      <td>0 days 00:00:00.297412245</td>
+      <td>0 days 00:00:18.382690</td>
+      <td>0 days 00:00:18.592790</td>
+      <td>0 days 00:00:18.931850</td>
+      <td>0 days 00:00:18.977141500</td>
+      <td>0 days 00:00:19.215850</td>
+    </tr>
+    <tr>
+      <th>Q16A</th>
+      <td>10</td>
+      <td>0 days 00:00:10.165477800</td>
+      <td>0 days 00:00:00.328986240</td>
+      <td>0 days 00:00:09.618000</td>
+      <td>0 days 00:00:10.006930</td>
+      <td>0 days 00:00:10.153105</td>
+      <td>0 days 00:00:10.248371250</td>
+      <td>0 days 00:00:10.690000</td>
+    </tr>
+    <tr>
+      <th>Q18A</th>
+      <td>11</td>
+      <td>0 days 00:00:17.135285636</td>
+      <td>0 days 00:00:00.256429698</td>
+      <td>0 days 00:00:16.894450</td>
+      <td>0 days 00:00:16.975725</td>
+      <td>0 days 00:00:17.010560</td>
+      <td>0 days 00:00:17.186767</td>
+      <td>0 days 00:00:17.665000</td>
+    </tr>
+    <tr>
+      <th>Q19A</th>
+      <td>3</td>
+      <td>0 days 00:00:29.604353333</td>
+      <td>0 days 00:00:00.383435634</td>
+      <td>0 days 00:00:29.161600</td>
+      <td>0 days 00:00:29.493665</td>
+      <td>0 days 00:00:29.825730</td>
+      <td>0 days 00:00:29.825730</td>
+      <td>0 days 00:00:29.825730</td>
+    </tr>
+    <tr>
+      <th>R15A</th>
+      <td>4</td>
+      <td>0 days 00:00:27.445802500</td>
+      <td>0 days 00:00:00.545923743</td>
+      <td>0 days 00:00:26.713610</td>
+      <td>0 days 00:00:27.186507500</td>
+      <td>0 days 00:00:27.603435</td>
+      <td>0 days 00:00:27.862730</td>
+      <td>0 days 00:00:27.862730</td>
+    </tr>
+    <tr>
+      <th>R17A</th>
+      <td>11</td>
+      <td>0 days 00:00:20.501155545</td>
+      <td>0 days 00:00:00.236867827</td>
+      <td>0 days 00:00:20.280000</td>
+      <td>0 days 00:00:20.351515</td>
+      <td>0 days 00:00:20.397810</td>
+      <td>0 days 00:00:20.510261</td>
+      <td>0 days 00:00:20.965000</td>
+    </tr>
+    <tr>
+      <th>R18A</th>
+      <td>8</td>
+      <td>0 days 00:00:27.290727500</td>
+      <td>0 days 00:00:00.298790493</td>
+      <td>0 days 00:00:26.900100</td>
+      <td>0 days 00:00:27.151197500</td>
+      <td>0 days 00:00:27.153725</td>
+      <td>0 days 00:00:27.449397500</td>
+      <td>0 days 00:00:27.732590</td>
+    </tr>
+    <tr>
+      <th>SRU</th>
+      <td>14</td>
+      <td>0 days 00:00:12.069393500</td>
+      <td>0 days 00:00:00.243053585</td>
+      <td>0 days 00:00:11.719920</td>
+      <td>0 days 00:00:11.960260250</td>
+      <td>0 days 00:00:12.020410</td>
+      <td>0 days 00:00:12.112279500</td>
+      <td>0 days 00:00:12.505000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">events_to_df</span></code> and <code class="docutils literal notranslate"><span class="pre">picks_to_df</span></code>, the following extractors are defined:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">arrivals_to_df</span></code> extracts arrival information from an Origin object (or from the preferred origin of each event in a catalog)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">amplitudes_to_df</span></code> extracts amplitude information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">station_magnitudes_to_df</span></code> extracts station magnitude information from a catalog, event, or magnitude</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">magnitudes_to_df</span></code> extracts magnitude information</p></li>
+</ul>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/datastructures/events_to_pandas.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Events to DataFrame</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

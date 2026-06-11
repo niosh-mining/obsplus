@@ -1,0 +1,7 @@
+obsplus.interfaces module
+=========================
+
+.. automodule:: obsplus.interfaces
+   :members:
+   :undoc-members:
+   :show-inheritance:

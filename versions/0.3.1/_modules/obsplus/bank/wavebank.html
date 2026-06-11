@@ -1,0 +1,925 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.bank.wavebank &#8212; ObsPlus  [ 0.3.1 ] 0.3.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=4621528c"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.bank.wavebank</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.bank.wavebank</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A local database for waveform formats.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Executor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tables</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obspy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">UTCDateTime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.bank.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">_Bank</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EMPTYTD64</span><span class="p">,</span>
+    <span class="n">NSLC</span><span class="p">,</span>
+    <span class="n">WAVEFORM_DTYPES</span><span class="p">,</span>
+    <span class="n">WAVEFORM_DTYPES_INPUT</span><span class="p">,</span>
+    <span class="n">WAVEFORM_NAME_STRUCTURE</span><span class="p">,</span>
+    <span class="n">WAVEFORM_STRUCTURE</span><span class="p">,</span>
+    <span class="n">availability_type</span><span class="p">,</span>
+    <span class="n">bank_subpaths_type</span><span class="p">,</span>
+    <span class="n">bar_parameter_description</span><span class="p">,</span>
+    <span class="n">bulk_waveform_arg_type</span><span class="p">,</span>
+    <span class="n">get_waveforms_parameters</span><span class="p">,</span>
+    <span class="n">paths_description</span><span class="p">,</span>
+    <span class="n">utc_able_type</span><span class="p">,</span>
+    <span class="n">utc_time_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.bank</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_IndexCache</span><span class="p">,</span>
+    <span class="n">_remove_base_path</span><span class="p">,</span>
+    <span class="n">_summarize_trace</span><span class="p">,</span>
+    <span class="n">_summarize_wave_file</span><span class="p">,</span>
+    <span class="n">_try_read_stream</span><span class="p">,</span>
+    <span class="n">summarizing_functions</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.docs</span><span class="w"> </span><span class="kn">import</span> <span class="n">compose_docstring</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace_null_nlsc_codes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.pd</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">cast_dtypes</span><span class="p">,</span>
+    <span class="n">convert_bytestrings</span><span class="p">,</span>
+    <span class="n">filter_index</span><span class="p">,</span>
+    <span class="n">get_seed_id_series</span><span class="p">,</span>
+    <span class="n">order_columns</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_time_chunks</span><span class="p">,</span> <span class="n">to_datetime64</span><span class="p">,</span> <span class="n">to_timedelta64</span><span class="p">,</span> <span class="n">to_utc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils.waveforms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_filter_index_to_bulk</span><span class="p">,</span>
+    <span class="n">get_waveform_bulk_df</span><span class="p">,</span>
+    <span class="n">merge_traces</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># No idea why but this needs to be here to avoid problems with pandas</span>
+<span class="k">assert</span> <span class="n">tables</span><span class="o">.</span><span class="n">hdf5_version</span>
+
+
+<span class="c1"># ------------------------ constants</span>
+
+
+<div class="viewcode-block" id="WaveBank">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.WaveBank.html#obsplus.bank.wavebank.WaveBank">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WaveBank</span><span class="p">(</span><span class="n">_Bank</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to interact with a directory of waveform files.</span>
+
+<span class="sd">    WaveBank recursively reads each file in a directory and creates an index</span>
+<span class="sd">    to allow the files to be efficiently queried.</span>
+
+<span class="sd">    Implements a superset of the :class:`~obsplus.interfaces.WaveformClient`</span>
+<span class="sd">    interface.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    base_path : str</span>
+<span class="sd">        The path to the directory containing waveform files. If it does not</span>
+<span class="sd">        exist an empty directory will be created.</span>
+<span class="sd">    path_structure : str</span>
+<span class="sd">        Define the directory structure of the wavebank that will be used to</span>
+<span class="sd">        put waveforms into the directory. Characters are separated by /,</span>
+<span class="sd">        regardless of operating system. The following words can be used in</span>
+<span class="sd">        curly braces as data specific variables:</span>
+<span class="sd">            year, month, day, julday, hour, minute, second, network,</span>
+<span class="sd">            station, location, channel, time</span>
+<span class="sd">        example : streams/{year}/{month}/{day}/{network}/{station}</span>
+<span class="sd">        If no structure is provided it will be read from the index, if no</span>
+<span class="sd">        index exists the default is {net}/{sta}/{chan}/{year}/{month}/{day}</span>
+<span class="sd">    name_structure : str</span>
+<span class="sd">        The same as path structure but for the file name. Supports the same</span>
+<span class="sd">        variables but requires a period as the separation character. The</span>
+<span class="sd">        default extension (.mseed) will be added. The default is {time}</span>
+<span class="sd">        example : {seedid}.{time}</span>
+<span class="sd">    index_path : str</span>
+<span class="sd">        The path to the index file containing the contents of the directory.</span>
+<span class="sd">        By default it will be created in the top-level of the data directory.</span>
+<span class="sd">    cache_size : int</span>
+<span class="sd">        The number of queries to store. Avoids having to read the index of</span>
+<span class="sd">        the bank multiple times for queries involving the same start and end</span>
+<span class="sd">        times.</span>
+<span class="sd">    format : str</span>
+<span class="sd">        The expected format for the waveform files. Any format supported by</span>
+<span class="sd">        obspy.read is permitted. The default is mseed. Other formats will be</span>
+<span class="sd">        tried after the default parser fails.</span>
+<span class="sd">    ext : str or None</span>
+<span class="sd">        The extension of the waveform files. If provided, only files with</span>
+<span class="sd">        this extension will be read.</span>
+<span class="sd">    executor</span>
+<span class="sd">        An executor with the same interface as concurrent.futures.Executor,</span>
+<span class="sd">        the map method of the executor will be used for reading files and</span>
+<span class="sd">        updating indices.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; # --- Create a `WaveBank` from a path to a directory with waveform files.</span>
+<span class="sd">    &gt;&gt;&gt; import obsplus</span>
+<span class="sd">    &gt;&gt;&gt; import obspy</span>
+<span class="sd">    &gt;&gt;&gt; waveform_path = obsplus.copy_dataset(&#39;default_test&#39;).waveform_path</span>
+<span class="sd">    &gt;&gt;&gt; # init a WaveBank and index the files.</span>
+<span class="sd">    &gt;&gt;&gt; wbank = obsplus.WaveBank(waveform_path).update_index()</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Retrieve a stream objects from the bank.</span>
+<span class="sd">    &gt;&gt;&gt; # Load all Z component data (dont do this for large datasets!)</span>
+<span class="sd">    &gt;&gt;&gt; st = wbank.get_waveforms(channel=&#39;*Z&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; assert isinstance(st, obspy.Stream) and len(st) == 1</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Read the index used by WaveBank as a DataFrame.</span>
+<span class="sd">    &gt;&gt;&gt; df = wbank.read_index()</span>
+<span class="sd">    &gt;&gt;&gt; assert len(df) == 3, &#39;there should be 3 traces in the bank.&#39;</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Get availability of archive as dataframe</span>
+<span class="sd">    &gt;&gt;&gt; avail = wbank.get_availability_df()</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Get table of gaps in the archive</span>
+<span class="sd">    &gt;&gt;&gt; gaps_df = wbank.get_gaps_df()</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- yield 5 sec contiguous streams with 1 sec overlap (6 sec total)</span>
+<span class="sd">    &gt;&gt;&gt; # get input parameters</span>
+<span class="sd">    &gt;&gt;&gt; t1, t2 = avail.iloc[0][&#39;starttime&#39;], avail.iloc[0][&#39;endtime&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; kwargs = dict(starttime=t1, endtime=t2, duration=5, overlap=1)</span>
+<span class="sd">    &gt;&gt;&gt; # init list for storing output</span>
+<span class="sd">    &gt;&gt;&gt; out = []</span>
+<span class="sd">    &gt;&gt;&gt; for st in wbank.yield_waveforms(**kwargs):</span>
+<span class="sd">    ...     out.append(st)</span>
+<span class="sd">    &gt;&gt;&gt; assert len(out) == 6</span>
+
+<span class="sd">    &gt;&gt;&gt; # --- Put a new stream and into the bank</span>
+<span class="sd">    &gt;&gt;&gt; # get an event from another dataset, keep track of its id</span>
+<span class="sd">    &gt;&gt;&gt; ds = obsplus.load_dataset(&#39;bingham_test&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; query_kwargs = dict (station=&#39;NOQ&#39;, channel=&#39;*Z&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; new_st = ds.waveform_client.get_waveforms(**query_kwargs)</span>
+<span class="sd">    &gt;&gt;&gt; assert len(new_st)</span>
+<span class="sd">    &gt;&gt;&gt; wbank.put_waveforms(new_st)</span>
+<span class="sd">    &gt;&gt;&gt; st2 = wbank.get_waveforms(channel=&#39;*Z&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; assert len(new_st) + 2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># index columns and types</span>
+    <span class="n">metadata_columns</span> <span class="o">=</span> <span class="s2">&quot;last_updated path_structure name_structure&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">index_str</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)</span>
+    <span class="n">index_ints</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">,</span> <span class="s2">&quot;sampling_period&quot;</span><span class="p">)</span>
+    <span class="n">index_columns</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">index_str</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">index_ints</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">])</span>
+    <span class="n">columns_no_path</span> <span class="o">=</span> <span class="n">index_columns</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">_gap_columns</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">columns_no_path</span><span class="p">),</span> <span class="s2">&quot;gap_duration&quot;</span><span class="p">])</span>
+    <span class="n">_segment_columns</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="o">*</span><span class="n">index_str</span><span class="p">,</span> <span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">])</span>
+    <span class="n">namespace</span> <span class="o">=</span> <span class="s2">&quot;/waveforms&quot;</span>
+    <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1_000_000_000</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">)</span>
+    <span class="c1"># dict defining lengths of str columns (after seed spec)</span>
+    <span class="c1"># Note: Empty strings get their dtypes caste as S8, which means 8 is the min</span>
+    <span class="n">min_itemsize</span><span class="p">:</span> <span class="n">ClassVar</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="mi">79</span><span class="p">,</span>
+        <span class="s2">&quot;station&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="s2">&quot;network&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">_min_files_for_bar</span> <span class="o">=</span> <span class="mi">5000</span>  <span class="c1"># number of files before progress bar kicks in</span>
+    <span class="n">_dtypes_input</span> <span class="o">=</span> <span class="n">WAVEFORM_DTYPES_INPUT</span>
+    <span class="n">_dtypes_output</span> <span class="o">=</span> <span class="n">WAVEFORM_DTYPES</span>
+
+    <span class="c1"># ----------------------------- setup stuff</span>
+
+<div class="viewcode-block" id="WaveBank.__init__">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.WaveBank.html#obsplus.bank.wavebank.WaveBank.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">WaveBank</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">path_structure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name_structure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">index_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cache_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;mseed&quot;</span><span class="p">,</span>
+        <span class="n">ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">executor</span><span class="p">:</span> <span class="n">Executor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">WaveBank</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">base_path</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="nb">format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ext</span> <span class="o">=</span> <span class="n">ext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bank_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">base_path</span><span class="p">)</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>
+        <span class="c1"># get waveforms structure based on structures of path and filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_structure</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">path_structure</span> <span class="k">if</span> <span class="n">path_structure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">WAVEFORM_STRUCTURE</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_structure</span> <span class="o">=</span> <span class="n">name_structure</span> <span class="ow">or</span> <span class="n">WAVEFORM_NAME_STRUCTURE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">index_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">index_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">executor</span>
+        <span class="c1"># initialize cache</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index_cache</span> <span class="o">=</span> <span class="n">_IndexCache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_size</span><span class="o">=</span><span class="n">cache_size</span><span class="p">)</span>
+        <span class="c1"># enforce min version or warn on newer version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enforce_min_version</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warn_on_newer_version</span><span class="p">()</span></div>
+
+
+    <span class="c1"># ----------------------- index related stuff</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_updated_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the last modified time stored in the index, else None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensure_bank_path_exists</span><span class="p">()</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_node</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_hdf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">,</span> <span class="n">node</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hdf_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A dict of hdf_kwargs to pass to PyTables&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">complib</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_complib</span><span class="p">,</span>
+            <span class="n">complevel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_complevel</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;table&quot;</span><span class="p">,</span>
+            <span class="n">data_columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_ints</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WaveBank.update_index">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.update_index">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span>
+        <span class="n">bar_description</span><span class="o">=</span><span class="n">bar_parameter_description</span><span class="p">,</span> <span class="n">paths_description</span><span class="o">=</span><span class="n">paths_description</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_index</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n">bank_subpaths_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WaveBank</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate files in bank and add any modified since last update to index.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {bar_description}</span>
+<span class="sd">        {paths_description}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enforce_min_version</span><span class="p">()</span>  <span class="c1"># delete index if schema has changed</span>
+        <span class="n">update_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># create a function for the mapping and apply</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="n">_summarize_wave_file</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">,</span>
+            <span class="n">summarizer</span><span class="o">=</span><span class="n">summarizing_functions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">file_yielder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unindexed_iterator</span><span class="p">(</span><span class="n">paths</span><span class="o">=</span><span class="n">paths</span><span class="p">)</span>
+        <span class="n">iterable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_measure_iterator</span><span class="p">(</span><span class="n">file_yielder</span><span class="p">,</span> <span class="n">bar</span><span class="p">)</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_map</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">iterable</span><span class="p">))</span>
+        <span class="n">update_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">updates</span><span class="p">))</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">update_list</span><span class="p">)</span>
+        <span class="c1"># push updates to index if any were found</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_update</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">update_time</span><span class="p">)</span>
+            <span class="c1"># clear cache out when new traces are added</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update_df</span><span class="p">,</span> <span class="n">update_time</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert updates to dataframe, then append to index table&quot;&quot;&quot;</span>
+        <span class="c1"># read in dataframe and prepare for input into hdf5 index</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prep_write_df</span><span class="p">(</span><span class="n">update_df</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_node</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">nrows</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_storer</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="o">.</span><span class="n">nrows</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">node</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">min_itemsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_itemsize</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf_kwargs</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">+=</span> <span class="n">nrows</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf_kwargs</span><span class="p">)</span>
+            <span class="c1"># update timestamp</span>
+            <span class="n">update_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">update_time</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">update_time</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_node</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">update_time</span><span class="p">))</span>
+            <span class="c1"># make sure meta table also exists.</span>
+            <span class="c1"># Note this is here to avoid opening the store again.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="p">:</span>
+                <span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_meta_table</span><span class="p">()</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;table&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prep_write_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the dataframe to put it into the HDF5 store.&quot;&quot;&quot;</span>
+        <span class="c1"># ensure the bank path is not in the path column</span>
+        <span class="k">assert</span> <span class="s2">&quot;path&quot;</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">df</span><span class="si">}</span><span class="s2"> has no path column&quot;</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_remove_base_path</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">bank_path</span><span class="p">)</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">WAVEFORM_DTYPES_INPUT</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">order_columns</span><span class="p">,</span> <span class="n">required_columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">cast_dtypes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">convert_bytestrings</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index_str</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># populate index store and update metadata</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="s2">&quot;null values found in index&quot;</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_meta_table_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If the bank path exists ensure it has a meta table, if not create it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+            <span class="c1"># add metadata if not in store</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="p">:</span>
+                <span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_meta_table</span><span class="p">()</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;table&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WaveBank.read_index">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.read_index">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">waveform_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_index</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="p">:</span> <span class="n">utc_time_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="p">:</span> <span class="n">utc_time_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe of the index, optionally applying filters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {waveform_params}</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            kwargs are passed to pandas.read_hdf function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensure_bank_path_exists</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_index</span><span class="p">()</span>
+        <span class="c1"># if no file was created (dealing with empty bank) return empty index</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index_columns</span><span class="p">)</span>
+        <span class="c1"># grab index from cache</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_cache</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># filter and return</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">filter_index</span><span class="p">(</span>
+            <span class="n">index</span><span class="p">,</span> <span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span> <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">index</span><span class="p">[</span><span class="n">filt</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read the metadata table.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span><span class="p">)</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">out</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">UnboundLocalError</span><span class="p">):</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_meta_table_exists</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_hdf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta_node</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------ availability stuff</span>
+
+<div class="viewcode-block" id="WaveBank.get_availability_df">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_availability_df">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveform_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_availability_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe specifying the availability of the archive.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveform_params}</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># no need to read in path, just read needed columns</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">columns_no_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">gro</span> <span class="o">=</span> <span class="n">ind</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">))</span>
+        <span class="n">min_start</span> <span class="o">=</span> <span class="n">gro</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">max_end</span> <span class="o">=</span> <span class="n">gro</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">min_start</span><span class="p">,</span> <span class="n">max_end</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WaveBank.availability">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.availability">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">availability</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">availability_type</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get availability for a given group of instruments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        network</span>
+<span class="sd">            The network code.</span>
+<span class="sd">        station</span>
+<span class="sd">            The station code.</span>
+<span class="sd">        location</span>
+<span class="sd">            The location code</span>
+<span class="sd">        channel</span>
+<span class="sd">            The chanel code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">station</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
+        <span class="c1"># convert timestamps to UTCDateTime objects</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">UTCDateTime</span><span class="p">)</span>
+        <span class="c1"># convert to list of tuples, return</span>
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">to_records</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+
+    <span class="c1"># --------------------------- get gaps stuff</span>
+
+<div class="viewcode-block" id="WaveBank.get_gaps_df">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_gaps_df">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_gaps_df</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">min_gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe containing an entry for every gap in the archive.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+<span class="sd">        min_gap</span>
+<span class="sd">            The minimum gap to report in seconds or as a timedelta64.</span>
+<span class="sd">             If None, use 1.5 x sampling rate for each channel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_gap_dfs</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">min_gap</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Apply me to each group of seed_id dataframes&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">union</span><span class="p">([</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">,</span> <span class="s2">&quot;gap_duration&quot;</span><span class="p">])</span>
+                <span class="p">)</span>
+            <span class="c1"># get the min gap</span>
+            <span class="k">if</span> <span class="n">min_gap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">min_gap</span> <span class="o">=</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;sampling_period&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">min_gap</span> <span class="o">=</span> <span class="n">to_timedelta64</span><span class="p">(</span><span class="n">min_gap</span><span class="p">)</span>
+            <span class="c1"># get df for determining gaps</span>
+            <span class="n">dd</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">shifted_starttimes</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">cum_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="o">.</span><span class="n">accumulate</span><span class="p">(</span>
+                <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">min_gap</span>
+            <span class="p">)</span>  <span class="c1"># Handles data overlaps</span>
+            <span class="n">gap_index</span> <span class="o">=</span> <span class="n">cum_max</span> <span class="o">&lt;</span> <span class="n">shifted_starttimes</span>
+            <span class="c1"># create a dataframe of gaps</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">dd</span><span class="p">[</span><span class="n">gap_index</span><span class="p">]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">endtime</span><span class="p">[</span><span class="n">gap_index</span><span class="p">]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">shifted_starttimes</span><span class="p">[</span><span class="n">gap_index</span><span class="p">]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;gap_duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">df</span>
+
+        <span class="c1"># get index and group by NSLC and sampling_period</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">group_names</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">NSLC</span><span class="p">,</span> <span class="s2">&quot;sampling_period&quot;</span><span class="p">]</span>  <span class="c1"># include period</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+            <span class="n">group_names</span><span class="p">,</span>
+            <span class="n">as_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">group_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_get_gap_dfs</span><span class="p">,</span> <span class="n">min_gap</span><span class="o">=</span><span class="n">min_gap</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>  <span class="c1"># if not gaps return empty dataframe with needed cols</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_gap_columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WaveBank.get_uptime_df">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_uptime_df">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_uptime_df</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe with uptime stats for selected channels.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+<span class="sd">        min_gap</span>
+<span class="sd">            The minimum gap to report in seconds or as a timedelta64.</span>
+<span class="sd">            If None, use 1.5 x sampling rate for each channel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">avail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">gaps_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gaps_df</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># get total number of seconds bank spans for each seed id</span>
+        <span class="n">avail</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">avail</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">avail</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span>
+        <span class="c1"># get total duration of gaps by seed id</span>
+        <span class="k">if</span> <span class="n">gaps_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">gap_total_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">avail</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)])</span>
+            <span class="n">gap_total_df</span><span class="p">[</span><span class="s2">&quot;gap_duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">EMPTYTD64</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gap_totals</span> <span class="o">=</span> <span class="n">gaps_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">))</span><span class="o">.</span><span class="n">gap_duration</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">gap_total_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">gap_totals</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="c1"># merge gap dataframe with availability dataframe, add uptime and %</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">avail</span><span class="p">,</span> <span class="n">gap_total_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;outer&quot;</span><span class="p">)</span>
+        <span class="c1"># fill any Nan in gap_duration with empty timedelta</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;gap_duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;gap_duration&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">EMPTYTD64</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;uptime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;gap_duration&quot;</span><span class="p">]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;availability&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;uptime&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="WaveBank.get_segments_df">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_segments_df">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_segments_df</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dataframe of contiguous segments for the selected channels</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+<span class="sd">        min_gap</span>
+<span class="sd">            The minimum gap to report in seconds or as a timedelta64.</span>
+<span class="sd">            If None, use 1.5 x sampling rate for each channel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_details</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+            <span class="c1"># Get the gap report for the seed id</span>
+            <span class="n">seed_id</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ser</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">seed_id</span> <span class="ow">in</span> <span class="n">gps</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">gps</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">seed_id</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">starttime</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span>
+                    <span class="mi">1</span>
+                <span class="p">)</span>  <span class="c1"># End of the gap is the start of the next data segment</span>
+                <span class="n">starttime</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;starttime&quot;</span>
+                <span class="n">endtime</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span>  <span class="c1"># Start of the gap is end of the data segment</span>
+                <span class="n">endtime</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;endtime&quot;</span>
+                <span class="c1"># Fill in the missing values</span>
+                <span class="n">starttime</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">starttime</span>
+                <span class="n">endtime</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">endtime</span><span class="o">.</span><span class="n">index</span><span class="p">)]</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">endtime</span>
+                <span class="c1"># Build the dataframe</span>
+                <span class="n">uptime</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">gaps_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+                <span class="n">uptime</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="p">[[</span><span class="n">ser</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">],</span> <span class="n">ser</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]]],</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="n">uptime</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uptime</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">uptime</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">NSLC</span><span class="p">:</span>
+                <span class="n">uptime</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">ser</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">uptime</span>
+
+        <span class="n">min_gap</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;min_gap&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">avail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_availability_df</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">gaps_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gaps_df</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">min_gap</span><span class="o">=</span><span class="n">min_gap</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">gps</span> <span class="o">=</span> <span class="n">gaps_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">NSLC</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">avail</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_segment_columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">_get_details</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">avail</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------ get waveform related methods</span>
+
+<div class="viewcode-block" id="WaveBank.get_waveforms_bulk">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_waveforms_bulk">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_waveforms_bulk</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">bulk</span><span class="p">:</span> <span class="n">bulk_waveform_arg_type</span><span class="p">,</span>
+        <span class="n">index</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a large number of waveforms with a bulk request.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bulk</span>
+<span class="sd">            A list of any number of lists containing the following:</span>
+<span class="sd">            (network, station, location, channel, starttime, endtime).</span>
+<span class="sd">        index</span>
+<span class="sd">            A dataframe returned by read_index. Enables calling code to only</span>
+<span class="sd">            read the index from disk once for repetitive calls.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">get_waveform_bulk_df</span><span class="p">(</span><span class="n">bulk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+        <span class="c1"># get index and filter to temporal extents of request.</span>
+        <span class="n">t_min</span><span class="p">,</span> <span class="n">t_max</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;starttime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;endtime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="o">~</span><span class="p">((</span><span class="n">index</span><span class="o">.</span><span class="n">starttime</span> <span class="o">&gt;</span> <span class="n">t_max</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">endtime</span> <span class="o">&lt;</span> <span class="n">t_min</span><span class="p">))]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">t_min</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">t_max</span><span class="p">)</span>
+        <span class="c1"># for each unique time, apply other filtering conditions and get traces</span>
+        <span class="n">unique_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s2">&quot;starttime&quot;</span><span class="p">,</span> <span class="s2">&quot;endtime&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">utime</span> <span class="ow">in</span> <span class="n">unique_times</span><span class="p">:</span>
+            <span class="n">sub</span> <span class="o">=</span> <span class="n">_filter_index_to_bulk</span><span class="p">(</span><span class="n">utime</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+            <span class="n">traces</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index2stream</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">utime</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">utime</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">merge</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">traces</span>
+        <span class="k">return</span> <span class="n">merge_traces</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">traces</span><span class="p">),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WaveBank.get_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.get_waveforms">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get waveforms from the bank.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        All string parameters can use posix style matching with * and ? chars.</span>
+<span class="sd">        All datapoints between selected starttime and endtime will be returned.</span>
+<span class="sd">        Consequently there may be gaps in the returned stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span>
+            <span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span>
+            <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span>
+            <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span>
+            <span class="n">endtime</span><span class="o">=</span><span class="n">endtime</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index2stream</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WaveBank.yield_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.yield_waveforms">[docs]</a>
+    <span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_waveforms_params</span><span class="o">=</span><span class="n">get_waveforms_parameters</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">yield_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">station</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">starttime</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">endtime</span><span class="p">:</span> <span class="n">utc_able_type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3600.0</span><span class="p">,</span>
+        <span class="n">overlap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Yield time-series segments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        {get_waveforms_params}</span>
+<span class="sd">        duration : float</span>
+<span class="sd">            The duration of the streams to yield. All channels selected</span>
+<span class="sd">            channels will be included in the waveforms.</span>
+<span class="sd">        overlap : float</span>
+<span class="sd">            If duration is used, the amount of overlap in yielded streams,</span>
+<span class="sd">            added to the end of the waveforms.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        All string parameters can use posix style matching with * and ? chars.</span>
+
+<span class="sd">        Total duration of yielded streams = duration + overlap.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get times in float format</span>
+        <span class="n">starttime</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">endtime</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">endtime</span><span class="p">,</span> <span class="s2">&quot;2999-01-01&quot;</span><span class="p">)</span>
+        <span class="c1"># read in the whole index df</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">(</span>
+            <span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span>
+            <span class="n">station</span><span class="o">=</span><span class="n">station</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span>
+            <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span>
+            <span class="n">endtime</span><span class="o">=</span><span class="n">endtime</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># adjust start/end times</span>
+        <span class="n">starttime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">index</span><span class="o">.</span><span class="n">starttime</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+        <span class="n">endtime</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">endtime</span><span class="p">,</span> <span class="n">index</span><span class="o">.</span><span class="n">endtime</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="c1"># chunk time and iterate over chunks</span>
+        <span class="n">time_chunks</span> <span class="o">=</span> <span class="n">make_time_chunks</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">overlap</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="ow">in</span> <span class="n">time_chunks</span><span class="p">:</span>
+            <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">t1</span><span class="p">),</span> <span class="n">to_datetime64</span><span class="p">(</span><span class="n">t2</span><span class="p">)</span>
+            <span class="n">con1</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">t2</span>
+            <span class="n">con2</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">endtime</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">t1</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">con1</span> <span class="o">|</span> <span class="n">con2</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index2stream</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ----------------------- deposit waveforms methods</span>
+
+<div class="viewcode-block" id="WaveBank.put_waveforms">
+<a class="viewcode-back" href="../../../api/obsplus.bank.wavebank.html#obsplus.bank.wavebank.WaveBank.put_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">put_waveforms</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span> <span class="o">|</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">update_index</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add the waveforms in a waveforms to the bank.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stream</span>
+<span class="sd">            An obspy waveforms object to add to the bank</span>
+<span class="sd">        name</span>
+<span class="sd">            Name of file, if None it will be determined based on contents</span>
+<span class="sd">        update_index</span>
+<span class="sd">            Flag to indicate whether or not to update the waveform index</span>
+<span class="sd">            after writing the new events. Default is True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensure_bank_path_exists</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">st_dic</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+        <span class="c1"># make sure we have a trace iterable</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="p">[</span><span class="n">stream</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Trace</span><span class="p">)</span> <span class="k">else</span> <span class="n">stream</span>
+        <span class="c1"># iter the waveforms and group by common paths</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">=</span> <span class="n">_summarize_trace</span><span class="p">(</span>
+                <span class="n">tr</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">path_struct</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path_structure</span><span class="p">,</span>
+                <span class="n">name_struct</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name_structure</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bank_path</span> <span class="o">/</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span>
+            <span class="n">st_dic</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+        <span class="c1"># iter all the unique paths and save</span>
+        <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">tr_list</span> <span class="ow">in</span> <span class="n">st_dic</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># make the parent directories if they dont exist</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">stream</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="n">tr_list</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="c1"># load the waveforms if the file already exists</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">st_existing</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                <span class="n">stream</span> <span class="o">+=</span> <span class="n">st_existing</span>
+            <span class="c1"># polish streams and write</span>
+            <span class="n">stream</span> <span class="o">=</span> <span class="n">merge_traces</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;mseed&quot;</span><span class="p">)</span>
+            <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># update the index as the contents have changed</span>
+        <span class="k">if</span> <span class="n">st_dic</span> <span class="ow">and</span> <span class="n">update_index</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_index</span><span class="p">(</span><span class="n">paths</span><span class="o">=</span><span class="n">paths</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------ misc methods</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_index2stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the waveforms in the index&quot;&quot;&quot;</span>
+        <span class="c1"># get abs path to each datafame</span>
+        <span class="n">files</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bank_path</span><span class="p">)</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span> <span class="o">+</span> <span class="n">index</span><span class="o">.</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="c1"># make sure start and endtimes are in UTCDateTime</span>
+        <span class="n">starttime</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">starttime</span><span class="p">)</span> <span class="k">if</span> <span class="n">starttime</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">endtime</span> <span class="o">=</span> <span class="n">to_utc</span><span class="p">(</span><span class="n">endtime</span><span class="p">)</span> <span class="k">if</span> <span class="n">endtime</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="c1"># iterate the files to read and try to load into waveforms</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">endtime</span><span class="p">)</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">_try_read_stream</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">stt</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+        <span class="n">chunksize</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">files</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="n">chunksize</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">st</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">stt</span> <span class="o">+=</span> <span class="n">st</span>
+        <span class="c1"># sort out nullish nslc codes</span>
+        <span class="n">stt</span> <span class="o">=</span> <span class="n">replace_null_nlsc_codes</span><span class="p">(</span><span class="n">stt</span><span class="p">)</span>
+        <span class="c1"># filter out any traces not in index (this can happen when files hold</span>
+        <span class="c1"># multiple traces).</span>
+        <span class="n">nslc</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">stt</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">stt</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">nslc</span><span class="p">]</span>
+        <span class="c1"># trim, merge, attach response</span>
+        <span class="n">stt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prep_output_stream</span><span class="p">(</span><span class="n">stt</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span><span class="n">merge</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">stt</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prep_output_stream</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">starttime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Stream</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepare waveforms object for output by trimming to desired times,</span>
+<span class="sd">        merging channels, and attaching responses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">st</span>
+        <span class="k">if</span> <span class="n">starttime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">endtime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">starttime</span> <span class="o">=</span> <span class="n">starttime</span> <span class="ow">or</span> <span class="nb">min</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">st</span><span class="p">])</span>
+            <span class="n">endtime</span> <span class="o">=</span> <span class="n">endtime</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">st</span><span class="p">])</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">starttime</span><span class="p">),</span> <span class="n">endtime</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">endtime</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">merge</span><span class="p">:</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="n">merge_traces</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1 ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.bank.wavebank</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

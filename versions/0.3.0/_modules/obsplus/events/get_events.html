@@ -1,0 +1,307 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.events.get_events &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
+    
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.get_events</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.events.get_events</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for adding a get_events method to obspy events.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">obspy.clients.fdsn</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">obspy.geodetics</span> <span class="kn">import</span> <span class="n">kilometers2degrees</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">import</span> <span class="nn">obsplus.utils.misc</span>
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_events_parameters</span><span class="p">,</span>
+    <span class="n">CIRCULAR_PARAMS</span><span class="p">,</span>
+    <span class="n">UNSUPPORTED_PARAMS</span><span class="p">,</span>
+    <span class="n">NONCIRCULAR_PARAMS</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">obsplus.exceptions</span> <span class="kn">import</span> <span class="n">UnsupportedKeyword</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.docs</span> <span class="kn">import</span> <span class="n">compose_docstring</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.geodetics</span> <span class="kn">import</span> <span class="n">SpatialCalculator</span><span class="p">,</span> <span class="n">map_longitudes</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.misc</span> <span class="kn">import</span> <span class="n">strip_prefix</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">_dict_times_to_npdatetimes</span>
+
+
+<span class="n">CLIENT_SUPPORTED</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">Client</span><span class="o">.</span><span class="n">get_events</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+<span class="n">SUPPORTED_PARAMS</span> <span class="o">=</span> <span class="p">(</span><span class="n">CLIENT_SUPPORTED</span> <span class="o">|</span> <span class="n">CIRCULAR_PARAMS</span><span class="p">)</span> <span class="o">-</span> <span class="n">UNSUPPORTED_PARAMS</span>
+
+
+<span class="k">def</span> <span class="nf">_validate_get_event_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">()):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise UnsupportedKeyword if any kwargs arent supported by get_events.&quot;&quot;&quot;</span>
+    <span class="n">supported</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">SUPPORTED_PARAMS</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+    <span class="n">bad_kwargs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="n">supported</span>
+    <span class="k">if</span> <span class="n">bad_kwargs</span><span class="p">:</span>
+        <span class="c1"># make sure there aren&#39;t any max/min of supported params.</span>
+        <span class="n">really_bad</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">bad_kwarg</span> <span class="ow">in</span> <span class="n">bad_kwargs</span><span class="p">:</span>
+            <span class="n">stripped</span> <span class="o">=</span> <span class="n">strip_prefix</span><span class="p">(</span><span class="n">bad_kwarg</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">stripped</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported</span><span class="p">:</span>
+                <span class="n">really_bad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stripped</span><span class="p">)</span>
+        <span class="c1"># there there are still bad kwargs raise</span>
+        <span class="k">if</span> <span class="n">really_bad</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">really_bad</span><span class="si">}</span><span class="s2"> are not supported kwargs by get_events.&quot;</span>
+            <span class="k">raise</span> <span class="n">UnsupportedKeyword</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_sanitize_circular_search</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check for clashes between circular-search and box-search kwargs.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Two separate dictionaries of the circular kwargs and everything else.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">CIRCULAR_PARAMS</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">NONCIRCULAR_PARAMS</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> cannot be used with </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">NONCIRCULAR_PARAMS</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">),</span>
+                    <span class="n">CIRCULAR_PARAMS</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">{</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Circular search requires both longitude and latitude&quot;</span><span class="p">)</span>
+        <span class="c1"># If neither minradius not maxradius they just want everything.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">{</span><span class="s2">&quot;minradius&quot;</span><span class="p">,</span> <span class="s2">&quot;maxradius&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="c1"># Split parameters that are supported on sql and those that are not.</span>
+    <span class="n">circular_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">CIRCULAR_PARAMS</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">circular_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">circular_kwargs</span><span class="p">,</span> <span class="n">kwargs</span>
+
+
+<span class="k">def</span> <span class="nf">_get_bounding_box</span><span class="p">(</span><span class="n">circular_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a dict containing the bounding box for circular params.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">circular_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">circular_kwargs</span><span class="p">)</span>  <span class="c1"># we dont want to mutate this dict</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># init empty dict for outputs</span>
+    <span class="k">if</span> <span class="s2">&quot;maxradius&quot;</span> <span class="ow">in</span> <span class="n">circular_kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">maxradius</span> <span class="o">=</span> <span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;maxradius&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">circular_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;degrees&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># If distance is in m we will just assume a spherical earth</span>
+            <span class="n">maxradius</span> <span class="o">=</span> <span class="n">kilometers2degrees</span><span class="p">(</span><span class="n">maxradius</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">)</span>
+        <span class="c1"># Make the approximated box a bit bigger to cope with flattening.</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">minlatitude</span><span class="o">=</span><span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">maxradius</span><span class="p">),</span>
+                <span class="n">maxlatitude</span><span class="o">=</span><span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">maxradius</span><span class="p">),</span>
+                <span class="n">minlongitude</span><span class="o">=</span><span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">maxradius</span><span class="p">),</span>
+                <span class="n">maxlongitude</span><span class="o">=</span><span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">maxradius</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span> <span class="nf">_get_ids</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return a set of event_ids that meet filter requirements&quot;&quot;&quot;</span>
+    <span class="n">filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="c1"># Separate kwargs used in circular searches.</span>
+    <span class="n">circular_kwargs</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_sanitize_circular_search</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">circular_kwargs</span><span class="p">:</span>
+        <span class="c1"># Circular kwargs are used, first apply non-circular query then trim</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_bounding_box</span><span class="p">(</span><span class="n">circular_kwargs</span><span class="p">))</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">get_event_summary</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># If there are no events in the rectangular region.</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="c1"># Trim based on circular kwargs, first get distance dataframe.</span>
+        <span class="nb">input</span> <span class="o">=</span> <span class="p">(</span><span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">],</span> <span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">dist_calc</span> <span class="o">=</span> <span class="n">SpatialCalculator</span><span class="p">()</span>
+        <span class="n">dist_df</span> <span class="o">=</span> <span class="n">dist_calc</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+        <span class="c1"># then get radius and filter if needed</span>
+        <span class="n">degrees</span> <span class="o">=</span> <span class="n">circular_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;distance_degrees&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">dist_df</span><span class="p">[</span><span class="s2">&quot;distance_degrees&quot;</span> <span class="k">if</span> <span class="n">degrees</span> <span class="k">else</span> <span class="s2">&quot;distance_m&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">if</span> <span class="s2">&quot;minradius&quot;</span> <span class="ow">in</span> <span class="n">circular_kwargs</span><span class="p">:</span>
+            <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">radius</span> <span class="o">&gt;</span> <span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;minradius&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;maxradius&quot;</span> <span class="ow">in</span> <span class="n">circular_kwargs</span><span class="p">:</span>
+            <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">radius</span> <span class="o">&lt;</span> <span class="n">circular_kwargs</span><span class="p">[</span><span class="s2">&quot;maxradius&quot;</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">filt</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># No circular kwargs are being used; normal query</span>
+        <span class="n">filt</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_handle_dateline_transversal</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">):</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;max&quot;</span><span class="p">):</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s2">&quot;updatedafter&quot;</span><span class="p">:</span>
+                <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;updated&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s2">&quot;eventid&quot;</span><span class="p">:</span>
+                <span class="n">filt</span> <span class="o">&amp;=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;event_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">filt</span><span class="p">]</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;event_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="n">limit</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">_handle_dateline_transversal</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if dateline should be transversed by query.&quot;&quot;&quot;</span>
+    <span class="c1"># if longitudes aren&#39;t being used bail out</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">{</span><span class="s2">&quot;minlongitude&quot;</span><span class="p">,</span> <span class="s2">&quot;maxlongitude&quot;</span><span class="p">}</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">filt</span><span class="p">,</span> <span class="n">kwargs</span>
+    <span class="c1"># if dateline is not to be transversed by query bail out</span>
+    <span class="n">long_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;minlongitude&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;maxlongitude&quot;</span><span class="p">]])</span>
+    <span class="n">minlong</span><span class="p">,</span> <span class="n">maxlong</span> <span class="o">=</span> <span class="n">map_longitudes</span><span class="p">(</span><span class="n">long_array</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">minlong</span> <span class="o">&gt;</span> <span class="n">maxlong</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">filt</span><span class="p">,</span> <span class="n">kwargs</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span>
+    <span class="c1"># remove min/max long from query dict and reform to two queries.</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;minlongitude&quot;</span><span class="p">),</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;maxlongitude&quot;</span><span class="p">)</span>
+    <span class="n">filt</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">long</span> <span class="o">&gt;=</span> <span class="n">minlong</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">long</span> <span class="o">&lt;=</span> <span class="n">maxlong</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filt</span><span class="p">,</span> <span class="n">kwargs</span>
+
+
+<div class="viewcode-block" id="get_events">
+<a class="viewcode-back" href="../../../api/obsplus.events.get_events.html#obsplus.events.get_events.get_events">[docs]</a>
+<span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_events_params</span><span class="o">=</span><span class="n">get_events_parameters</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_events</span><span class="p">(</span><span class="n">cat</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a subset of a events filtered on input parameters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        {get_event_parameters}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If not kwargs are passed just return all events</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cat</span>
+    <span class="c1"># Make sure all inputs are supported</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">SUPPORTED_PARAMS</span><span class="p">):</span>
+        <span class="n">bad_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="n">SUPPORTED_PARAMS</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bad_params</span><span class="si">}</span><span class="s2"> are not supported get_events parameters&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># Ensure all times are numpy datetimes</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="n">_dict_times_to_npdatetimes</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">event_ids</span> <span class="o">=</span> <span class="n">_get_ids</span><span class="p">(</span><span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">eve</span> <span class="k">for</span> <span class="n">eve</span> <span class="ow">in</span> <span class="n">cat</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">eve</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span> <span class="ow">in</span> <span class="n">event_ids</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_event_summary">
+<a class="viewcode-back" href="../../../api/obsplus.events.get_events.html#obsplus.events.get_events.get_event_summary">[docs]</a>
+<span class="nd">@compose_docstring</span><span class="p">(</span><span class="n">get_events_params</span><span class="o">=</span><span class="n">get_events_parameters</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_event_summary</span><span class="p">(</span>
+    <span class="n">cat</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a dataframe from a events object after applying filters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        {get_event_parameters}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">events_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+    <span class="n">event_ids</span> <span class="o">=</span> <span class="n">_get_ids</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">event_id</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">event_ids</span><span class="p">)]</span></div>
+
+
+
+<span class="c1"># --------------- monkey patch get_events method to events</span>
+
+
+<span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">get_events</span> <span class="o">=</span> <span class="n">get_events</span>
+<span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="o">.</span><span class="n">get_event_summary</span> <span class="o">=</span> <span class="n">get_event_summary</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.get_events</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

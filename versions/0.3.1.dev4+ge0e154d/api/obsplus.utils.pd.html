@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.utils.pd module &#8212; ObsPlus  [ 0.3.1.dev4+ge0e154d ] 0.3.1.dev4+ge0e154d documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=dbcc8867"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.pd module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.utils.pd">
+<span id="obsplus-utils-pd-module"></span><h1>obsplus.utils.pd module<a class="headerlink" href="#module-obsplus.utils.pd" title="Link to this heading">¶</a></h1>
+<p>Generic Utilities for Pandas</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.apply_funcs_to_columns">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">apply_funcs_to_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funcs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#apply_funcs_to_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.apply_funcs_to_columns" title="Link to this definition">¶</a></dt>
+<dd><p>Apply callables to columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The input dataframe.</p></li>
+<li><p><strong>funcs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A mapping of {column_name: function_to_apply}.</p></li>
+<li><p><strong>inplace</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, perform operation in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new dataframe with the columns replaced with output of the function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.cast_dtypes">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">cast_dtypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#cast_dtypes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.cast_dtypes" title="Link to this definition">¶</a></dt>
+<dd><p>Cast data types for columns in dataframe, skip columns that doesn’t exist.</p>
+<dl class="simple">
+<dt>The following obsplus specific datatypes are supported:</dt><dd><p>‘ops_datetime’ - call <a class="reference internal" href="../quickref/stubs/obsplus.utils.time.to_datetime64.html#obsplus.utils.time.to_datetime64" title="obsplus.utils.time.to_datetime64"><code class="xref py py-func docutils literal notranslate"><span class="pre">obsplus.utils.time.to_datetime64()</span></code></a> on column
+‘ops_timedelta` - call <a class="reference internal" href="obsplus.utils.time.html#obsplus.utils.time.to_timedelta64" title="obsplus.utils.time.to_timedelta64"><code class="xref py py-func docutils literal notranslate"><span class="pre">obsplus.utils.time.to_timedelta64()</span></code></a> on column</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function is different from pd.astype because it skips columns which
+don’t exist and handles custom obsplus dtypes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Dataframe</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A dict of columns and datatypes.</p></li>
+<li><p><strong>inplace</strong> – If true perform operation in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.convert_bytestrings">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">convert_bytestrings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#convert_bytestrings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.convert_bytestrings" title="Link to this definition">¶</a></dt>
+<dd><p>Convert byte strings columns to strings.</p>
+<p>This removes ‘b’ and quotation marks from string columns. For some reason
+encode doesn’t work on data returned from hdf5, hence this approach is a
+bit hacky.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – The input dataframe.</p></li>
+<li><p><strong>columns</strong> – The names of the columns to convert to string types</p></li>
+<li><p><strong>inplace</strong> – If True, perform operation in place.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.filter_df">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">filter_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#filter_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.filter_df" title="Link to this definition">¶</a></dt>
+<dd><p>Determine if each row of the index meets some filter requirements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The input dataframe.</p></li>
+<li><p><strong>kwargs</strong> – Any condition to check against columns of df. Can be a single value
+or a collection of values (to check isin on columns). Str arguments
+can also use unix style matching.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">array</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>A boolean array of the same len as df indicating if each row meets the</em></p></li>
+<li><p><em>requirements.</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.filter_index">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">filter_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">station</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starttime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#filter_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.filter_index" title="Link to this definition">¶</a></dt>
+<dd><p>Filter a waveform index dataframe based on nslc codes and start/end times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – A dataframe to filter which should have the corresponding columns
+to any non-None parameters used in filter.</p></li>
+<li><p><strong>network</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A network code as defined by seed standards.</p></li>
+<li><p><strong>station</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A station code as defined by seed standards.</p></li>
+<li><p><strong>location</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A location code as defined by seed standards.</p></li>
+<li><p><strong>channel</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A channel code as defined by seed standards.</p></li>
+<li><p><strong>starttime</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime64</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The starttime of interest.</p></li>
+<li><p><strong>endtime</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">UTCDateTime</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime64</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The endtime of interest.</p></li>
+<li><p><strong>filters.</strong> (<em>Additional kwargs are used as</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">array</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>A numpy array of boolean values indicating if each row met the filter</em></p></li>
+<li><p><em>requirements.</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.get_regex">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">get_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#get_regex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.get_regex" title="Link to this definition">¶</a></dt>
+<dd><p>Compile, and cache regex for str queries.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.get_seed_id_series">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">get_seed_id_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">null_codes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">'--',</span> <span class="pre">'None',</span> <span class="pre">'nan',</span> <span class="pre">'null',</span> <span class="pre">nan)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#get_seed_id_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.get_seed_id_series" title="Link to this definition">¶</a></dt>
+<dd><p>Create a series of seed_ids from a dataframe with required columns.</p>
+<dl class="simple">
+<dt>The seed id series contains strings of the form:</dt><dd><p>network.station.location.channel</p>
+</dd>
+</dl>
+<p>Any “nullish” values (defined by the parameter null_codes) will be
+replaced with an empty string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – <dl class="simple">
+<dt>Any Dataframe that has columns with str dtype named:</dt><dd><p>network, station, location, channel</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>null_codes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Codes which should be replaced with a blank string.</p></li>
+<li><p><strong>subset</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Used to select a subset of the full seed_id. For example,
+(‘network’, ‘station’) would return a series of network.station.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A series of concatenated seed_ids codes.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obspy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get a dataframe with only network station location channel columns</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cat</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">read_inventory</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NSLC</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="s1">&#39;station&#39;</span><span class="p">,</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;channel&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">stations_to_df</span><span class="p">(</span><span class="n">cat</span><span class="p">)[</span><span class="n">NSLC</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get a series of network.station</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">net_sta</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="s1">&#39;station&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.get_waveforms_bulk_args">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">get_waveforms_bulk_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'utcdatetime'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#get_waveforms_bulk_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.get_waveforms_bulk_args" title="Link to this definition">¶</a></dt>
+<dd><p>Get the inputs to a get_waveforms_bulk from a dataframe.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – <dl class="simple">
+<dt>A dataframe with required columns:</dt><dd><p>network, station, location, channel, starttime, endtime</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>time_dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Dtype to use for the starttime and endtime</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of tuples [(network, station, location, channel, starttime, endtime),]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.join_str_columns">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">join_str_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">join_char</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#join_str_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.join_str_columns" title="Link to this definition">¶</a></dt>
+<dd><p>Join string columns on a dataframe together.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The input dataframe with columns listed in columns parameter.</p></li>
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The columns to be joined. Must be part of df.</p></li>
+<li><p><strong>join_char</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The string to join the columns together.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.order_columns">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">order_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required_columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#order_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.order_columns" title="Link to this definition">¶</a></dt>
+<dd><p>Order a dataframe’s columns and ensure it has required columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The input dataframe.</p></li>
+<li><p><strong>required_columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></span>) – A sequence that contains the column names.</p></li>
+<li><p><strong>drop_columns</strong> – If True drop columns not in required_columns.</p></li>
+<li><p><strong>fill_missing</strong> – If True, create missing required columns and fill with nullish values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.pd.replace_or_swallow">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.pd.</span></span><span class="sig-name descname"><span class="pre">replace_or_swallow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/pd.html#replace_or_swallow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.pd.replace_or_swallow" title="Link to this definition">¶</a></dt>
+<dd><p>Replace values in a dataframe with new values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The dataframe for which the values will be replaced</p></li>
+<li><p><strong>replace</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – A dict of {old_value: new_values}</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev4+ge0e154d ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.utils.pd module</a><ul>
+<li><a class="reference internal" href="#obsplus.utils.pd.apply_funcs_to_columns"><code class="docutils literal notranslate"><span class="pre">apply_funcs_to_columns()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.cast_dtypes"><code class="docutils literal notranslate"><span class="pre">cast_dtypes()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.convert_bytestrings"><code class="docutils literal notranslate"><span class="pre">convert_bytestrings()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.filter_df"><code class="docutils literal notranslate"><span class="pre">filter_df()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.filter_index"><code class="docutils literal notranslate"><span class="pre">filter_index()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.get_regex"><code class="docutils literal notranslate"><span class="pre">get_regex()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.get_seed_id_series"><code class="docutils literal notranslate"><span class="pre">get_seed_id_series()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.get_waveforms_bulk_args"><code class="docutils literal notranslate"><span class="pre">get_waveforms_bulk_args()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.join_str_columns"><code class="docutils literal notranslate"><span class="pre">join_str_columns()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.order_columns"><code class="docutils literal notranslate"><span class="pre">order_columns()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.pd.replace_or_swallow"><code class="docutils literal notranslate"><span class="pre">replace_or_swallow()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.pd.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.pd module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

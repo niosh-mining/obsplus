@@ -1,0 +1,7 @@
+obsplus.structures.dfextractor module
+=====================================
+
+.. automodule:: obsplus.structures.dfextractor
+   :members:
+   :undoc-members:
+   :show-inheritance:

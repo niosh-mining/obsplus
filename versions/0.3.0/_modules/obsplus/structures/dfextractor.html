@@ -1,0 +1,346 @@
+
+
+<!doctype html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.structures.dfextractor &#8212; ObsPlus  [ 0.3.0 ] 0.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=532c1bf3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
+    
+    <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.structures.dfextractor</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.structures.dfextractor</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">DataFrameExtractor class and friends.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">UserDict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">singledispatch</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="n">column_function_map_type</span><span class="p">,</span> <span class="n">TIME_COLUMNS</span><span class="p">,</span> <span class="n">NSLC</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">to_datetime64</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.pd</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">apply_funcs_to_columns</span><span class="p">,</span>
+    <span class="n">order_columns</span><span class="p">,</span>
+    <span class="n">cast_dtypes</span><span class="p">,</span>
+    <span class="n">replace_or_swallow</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Create a dictionary of standard column_name: funcs to apply</span>
+<span class="n">standard_column_transforms</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">to_datetime64</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">TIME_COLUMNS</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">_pass_through_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="k">def</span> <span class="nf">_merge_dicts</span><span class="p">(</span><span class="n">dict1</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">dict2</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge two mappings (dict-likes) together.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">dict1</span><span class="p">,</span> <span class="o">**</span><span class="n">dict2</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">_get_output_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return an output dict.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="c1"># a dict was returned, each key, value maps to a column, value</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">out</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># a value that maps to a column was returned</span>
+        <span class="c1"># get rid of get_ or _get_ prefix for naming column</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;get_&quot;</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+        <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_get_&quot;</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">out</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="DataFrameExtractor">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.DataFrameExtractor.html#obsplus.structures.dfextractor.DataFrameExtractor">[docs]</a>
+<span class="k">class</span> <span class="nc">DataFrameExtractor</span><span class="p">(</span><span class="n">UserDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to extract dataframes from nested object trees.</span>
+
+<span class="sd">    Generally used to construct summary dataframes from nested object</span>
+<span class="sd">    structures such as the obspy Catalog.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cls</span>
+<span class="sd">        The top-level class the extractor acts on.</span>
+<span class="sd">    required_columns</span>
+<span class="sd">        If not None, assert required columns are in dataframe, and order</span>
+<span class="sd">        columns the same as required_columns, with extra columns at the end.</span>
+<span class="sd">    dtypes</span>
+<span class="sd">        A dict of {column name: required data type}. Can also be specified</span>
+<span class="sd">        when registering extractors.</span>
+<span class="sd">    pass_dataframe</span>
+<span class="sd">        If True, return dataframes passed to DataFrameExtractor.__call__.</span>
+<span class="sd">        This allows the DataFrameExtractor to be idempotent.</span>
+<span class="sd">    column_funcs</span>
+<span class="sd">        Columns that are UTCDateTime objects. Will correctly handle</span>
+<span class="sd">        UTCDateTime-able objects (like date-time strings, floats, etc).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nslc</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">NSLC</span><span class="p">)</span>
+    <span class="n">nslc</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;seed_id&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataFrameExtractor.__init__">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.DataFrameExtractor.html#obsplus.structures.dfextractor.DataFrameExtractor.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">required_columns</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pass_dataframe</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">column_funcs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">column_function_map_type</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cls</span> <span class="o">=</span> <span class="bp">cls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">singledispatch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_call</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_required_columns</span> <span class="o">=</span> <span class="n">required_columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">dtypes</span><span class="p">]</span> <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_column_funcs</span> <span class="o">=</span> <span class="n">column_funcs</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="k">if</span> <span class="n">pass_dataframe</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)(</span><span class="n">_pass_through_dataframe</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataFrameExtractor.extractor">
+<a class="viewcode-back" href="../../../api/obsplus.structures.dfextractor.html#obsplus.structures.dfextractor.DataFrameExtractor.extractor">[docs]</a>
+    <span class="k">def</span> <span class="nf">extractor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register an extractor.</span>
+
+<span class="sd">        An extractor is a function which extracts values from instances of a</span>
+<span class="sd">        class. It should either return a dict of {column names: values} or</span>
+<span class="sd">        a single value and the name of the function (minus get_ prefix if</span>
+<span class="sd">        one exists) will be the column name.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dtypes</span>
+<span class="sd">            A dict of {column name: dtype} to enforce a schema on the data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># this allows the extractor to be used with or without calling it.</span>
+        <span class="c1"># this case is when the decorator was applied without calling it</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">dtypes</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor</span><span class="p">(</span><span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">)(</span><span class="n">dtypes</span><span class="p">)</span>
+
+        <span class="c1"># case when extractor was called before applying decorator</span>
+        <span class="k">def</span> <span class="nf">register_extractor</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_name</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is already a registered extractor, overwriting&quot;</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span>
+            <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dtypes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">register_extractor</span></div>
+
+
+<div class="viewcode-block" id="DataFrameExtractor.register">
+<a class="viewcode-back" href="../../../api/obsplus.structures.dfextractor.html#obsplus.structures.dfextractor.DataFrameExtractor.register">[docs]</a>
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Registers an alternate constructor.</span>
+
+<span class="sd">        Registers an alternate constructor that is called when the input is</span>
+<span class="sd">        not an instance of the expected class. This is useful, for examples to</span>
+<span class="sd">        make the DataFrameExtractor idempotent or to default to various read</span>
+<span class="sd">        methods in a path/str is passed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cls</span>
+<span class="sd">            The dtype to register</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">register_single_dispatch</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">)(</span><span class="n">func</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="k">return</span> <span class="n">register_single_dispatch</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get the name of a callable.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>  <span class="c1"># if this is an instance</span>
+            <span class="k">return</span> <span class="n">func</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">def</span> <span class="nf">_base_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract information from objects for creating dataframes.</span>
+
+<span class="sd">        The typical call method when the standard datatype is passed.</span>
+<span class="sd">        An iterable of self.cls objects should be passed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        objs</span>
+<span class="sd">            An iterable of self.cls objects</span>
+<span class="sd">        extras</span>
+<span class="sd">            A dict with keys as object identities and values as a dict</span>
+<span class="sd">            to add to object row. Allows injecting additional information</span>
+<span class="sd">            that is not normally found on the object itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="n">extras</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">):</span>  <span class="c1"># ensure and iterable was passed</span>
+            <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">objs</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="n">_get_output_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+            <span class="k">except</span> <span class="bp">self</span><span class="o">.</span><span class="n">SkipRow</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extras</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="p">{}))</span>
+
+            <span class="c1"># add extras injected to call</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">:</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reduce</span><span class="p">(</span><span class="n">_merge_dicts</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataFrameExtractor.copy">
+<a class="viewcode-back" href="../../../api/obsplus.structures.dfextractor.html#obsplus.structures.dfextractor.DataFrameExtractor.copy">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DataFrameExtractor&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the fetcher.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate an object tree and create a dataframe.</span>
+
+<span class="sd">        Finds all instances of targeted class and returns a row for each.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obj</span>
+<span class="sd">            The object to recurse.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s2">&quot;must return a DataFrame instance&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">apply_funcs_to_columns</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_column_funcs</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">order_columns</span><span class="p">,</span> <span class="n">required_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_required_columns</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">cast_dtypes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">replace_or_swallow</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;nan&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;NA&gt;&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">})</span>
+        <span class="p">)</span>
+        <span class="c1"># If the extracted info contains NSLC information, make sure the seed_id matches</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nslc</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">out</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="s2">&quot;.&quot;</span>
+                <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;station&quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="s2">&quot;.&quot;</span>
+                <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span>
+                <span class="o">+</span> <span class="s2">&quot;.&quot;</span>
+                <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;DataFrameExtractor for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="si">}</span><span class="s2"> with &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;registered extractors:</span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;and registered types:</span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span>
+
+<div class="viewcode-block" id="DataFrameExtractor.SkipRow">
+<a class="viewcode-back" href="../../../api/obsplus.structures.dfextractor.html#obsplus.structures.dfextractor.DataFrameExtractor.SkipRow">[docs]</a>
+    <span class="k">class</span> <span class="nc">SkipRow</span><span class="p">(</span><span class="ne">StopIteration</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;exception to raise to skip a row.&quot;&quot;&quot;</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dtypes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;return a dictionary of datatypes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">_merge_dicts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtypes</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.0 ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.structures.dfextractor</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

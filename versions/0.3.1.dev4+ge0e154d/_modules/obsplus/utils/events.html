@@ -1,0 +1,624 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obsplus.utils.events &#8212; ObsPlus  [ 0.3.1.dev4+ge0e154d ] 0.3.1.dev4+ge0e154d documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../../_static/documentation_options.js?v=dbcc8867"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.events</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for obsplus.utils.events</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">General utility functions which are not specific to one data type.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">singledispatch</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">obspy</span>
+<span class="kn">import</span> <span class="nn">obspy.core.event</span> <span class="k">as</span> <span class="nn">ev</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">obspy.core.event</span> <span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">,</span> <span class="n">WaveformStreamID</span>
+
+<span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="kn">from</span> <span class="nn">obsplus.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EVENT_NAME_STRUCTURE</span><span class="p">,</span>
+    <span class="n">EVENT_PATH_STRUCTURE</span><span class="p">,</span>
+    <span class="n">catalog_component</span><span class="p">,</span>
+    <span class="n">catalog_or_event</span><span class="p">,</span>
+    <span class="n">event_clientable_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">obsplus.exceptions</span> <span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">obsplus.interfaces</span> <span class="kn">import</span> <span class="n">EventClient</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.bank</span> <span class="kn">import</span> <span class="n">EVENT_EXT</span><span class="p">,</span> <span class="n">_get_time_values</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.misc</span> <span class="kn">import</span> <span class="n">_get_path</span><span class="p">,</span> <span class="n">yield_obj_parent_attr</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.pd</span> <span class="kn">import</span> <span class="n">get_seed_id_series</span>
+<span class="kn">from</span> <span class="nn">obsplus.utils.time</span> <span class="kn">import</span> <span class="n">_get_event_origin_time</span><span class="p">,</span> <span class="n">to_utc</span>
+
+
+<div class="viewcode-block" id="duplicate_events">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.duplicate_events">[docs]</a>
+<span class="k">def</span> <span class="nf">duplicate_events</span><span class="p">(</span>
+    <span class="n">event</span><span class="p">:</span> <span class="n">catalog_or_event</span><span class="p">,</span> <span class="n">resource_generator</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">catalog_or_event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Duplicate an event.</span>
+
+<span class="sd">    Creates a copy of the event, and assigns new resource IDs to all</span>
+<span class="sd">    internal objects (ie picks, station_magnitudes, etc.). Will not</span>
+<span class="sd">    assign new resource_id to those representing external resources</span>
+<span class="sd">    (eg analyst, velocity models, etc.).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event</span>
+<span class="sd">        The event to duplicate.</span>
+<span class="sd">    resource_generator:</span>
+<span class="sd">        A callable that can be used to generate resource IDs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="n">gen_func</span> <span class="o">=</span> <span class="n">resource_generator</span> <span class="ow">or</span> <span class="n">ResourceIdentifier</span>
+    <span class="n">id_map</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># map old id to new</span>
+    <span class="c1"># first pass through bind resource id to parent if attr is resource_id</span>
+    <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s2">&quot;resource_id&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="n">rid</span><span class="o">.</span><span class="n">prefix</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;smi:local&quot;</span>
+            <span class="n">new_rid</span> <span class="o">=</span> <span class="n">gen_func</span><span class="p">(</span><span class="n">referred_object</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+            <span class="n">id_map</span><span class="p">[</span><span class="n">rid</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_rid</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">new_rid</span><span class="p">)</span>
+    <span class="c1"># second pass, swap out resource ids with the same id as those in id_map</span>
+    <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rid</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">id_map</span> <span class="ow">and</span> <span class="n">attr</span> <span class="o">!=</span> <span class="s2">&quot;resource_id&quot;</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">id_map</span><span class="p">[</span><span class="n">rid</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">new</span></div>
+
+
+
+<div class="viewcode-block" id="prune_events">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.prune_events">[docs]</a>
+<span class="k">def</span> <span class="nf">prune_events</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">catalog_or_event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove all the unreferenced rejected objects from an event or catalog.</span>
+
+<span class="sd">    This function first creates a copy of the event/catalog. Then it looks</span>
+<span class="sd">    all objects with rejected evaluation status&#39;, which are not referred to</span>
+<span class="sd">    by any un-rejected object, and removes them.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events</span>
+<span class="sd">        The events to iterate and modify</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A Catalog with the pruned events.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">obsplus.events.validate</span> <span class="kn">import</span> <span class="n">validate_catalog</span>
+
+    <span class="c1"># ensure we have something iterable</span>
+    <span class="n">events</span> <span class="o">=</span> <span class="p">[</span><span class="n">events</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span> <span class="k">else</span> <span class="n">events</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_get_edges_rids_opa</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of edges (resource_id_parent, resource_id_child),</span>
+<span class="sd">        a set of rejected resource_ids and a dict of</span>
+<span class="sd">        {resource_id: (obj, parent, attr)}.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of tuples (parent, child)</span>
+        <span class="n">rejected_rid</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># {resource_id, }</span>
+        <span class="n">rejected_opa</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {resource_id: [obj, parent, attr]}</span>
+        <span class="c1"># first make a list objects with eval status as well as all other</span>
+        <span class="c1"># objects they refer to, using resource_ids</span>
+        <span class="n">opa_iter</span> <span class="o">=</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">has_attr</span><span class="o">=</span><span class="s2">&quot;evaluation_status&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">opa_iter</span><span class="p">:</span>
+            <span class="n">rid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+            <span class="n">is_rejected</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="o">==</span> <span class="s2">&quot;rejected&quot;</span>
+            <span class="k">if</span> <span class="n">is_rejected</span><span class="p">:</span>
+                <span class="n">rejected_rid</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
+                <span class="n">rejected_opa</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="c1"># now recurse object and find all objects this one refers to</span>
+            <span class="n">opa_iter_2</span> <span class="o">=</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">ResourceIdentifier</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">obj2</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">opa_iter_2</span><span class="p">:</span>
+                <span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">rid</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj2</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">edges</span><span class="p">,</span> <span class="n">rejected_rid</span><span class="p">,</span> <span class="n">rejected_opa</span>
+
+    <span class="k">def</span> <span class="nf">_remove_object</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove the object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">maybe_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        <span class="c1"># if maybe_obj is obj:</span>
+        <span class="c1">#     breakpoint()</span>
+        <span class="c1">#     setattr(parent, attr, None)</span>
+        <span class="c1"># else:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">maybe_obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+        <span class="n">maybe_obj</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="c1"># iterate events, find and destroy rejected orphans (that sounds bad...)</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">validate_catalog</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">edges</span><span class="p">,</span> <span class="n">rejected_rid</span><span class="p">,</span> <span class="n">rejected_opa</span> <span class="o">=</span> <span class="n">_get_edges_rids_opa</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parent&quot;</span><span class="p">,</span> <span class="s2">&quot;child&quot;</span><span class="p">])</span>
+        <span class="c1"># filter out non rejected children</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">rejected_opa</span><span class="p">)]</span>
+        <span class="c1"># iterate rejected children IDs and search for any non-rejected parent</span>
+        <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">dff</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;child&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">dff</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">rejected_rid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="n">_remove_object</span><span class="p">(</span><span class="o">*</span><span class="n">rejected_opa</span><span class="p">[</span><span class="n">rid</span><span class="p">])</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Catalog</span><span class="p">(</span><span class="n">out</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="strip_events">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.strip_events">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span> <span class="nf">strip_events</span><span class="p">(</span>
+    <span class="n">events</span><span class="p">:</span> <span class="n">catalog_or_event</span><span class="p">,</span> <span class="n">reject_evaluation_status</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="s2">&quot;rejected&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">catalog_or_event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Removes all derivative data and rejected objects from an event or catalog</span>
+
+<span class="sd">    This is a nuclear option for when processing goes horribly wrong. It will</span>
+<span class="sd">    only keep picks and amplitudes that are not rejected in addition to the</span>
+<span class="sd">    first event description for the event.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events</span>
+<span class="sd">        The events to strip</span>
+<span class="sd">    reject_evaluation_status</span>
+<span class="sd">        Reject picks and amplitudes that have this as an evaluation status</span>
+<span class="sd">        (accepts either a single value or a list)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The stripped events</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make sure this returns a new catalog</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">eve</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strip_events</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="n">reject_evaluation_status</span><span class="o">=</span><span class="n">reject_evaluation_status</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="nd">@strip_events</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_strip_event</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="n">reject_evaluation_status</span><span class="o">=</span><span class="s2">&quot;rejected&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip down a single event&quot;&quot;&quot;</span>
+    <span class="c1"># Make sure this returns a copy of the events</span>
+    <span class="n">eve</span> <span class="o">=</span> <span class="n">eve</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># Remove derivative data</span>
+    <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;origins&quot;</span><span class="p">,</span> <span class="s2">&quot;magnitudes&quot;</span><span class="p">,</span> <span class="s2">&quot;station_magnitudes&quot;</span><span class="p">,</span> <span class="s2">&quot;focal_mechanisms&quot;</span><span class="p">]:</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="n">att</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="c1"># Unset preferred anything</span>
+    <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;origin&quot;</span><span class="p">,</span> <span class="s2">&quot;magnitude&quot;</span><span class="p">,</span> <span class="s2">&quot;focal_mechanism&quot;</span><span class="p">]:</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">eve</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;preferred_</span><span class="si">{</span><span class="n">att</span><span class="si">}</span><span class="s2">_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="c1"># Filter the picks</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reject_evaluation_status</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">reject_evaluation_status</span> <span class="o">=</span> <span class="p">[</span><span class="n">reject_evaluation_status</span><span class="p">]</span>
+    <span class="n">eve</span><span class="o">.</span><span class="n">picks</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">eve</span><span class="o">.</span><span class="n">picks</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reject_evaluation_status</span>
+    <span class="p">]</span>
+    <span class="c1"># Filter the amplitudes</span>
+    <span class="n">amps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">amp</span> <span class="ow">in</span> <span class="n">eve</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">:</span>
+        <span class="c1"># Reject if the evaluation status is in the reject list</span>
+        <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="ow">in</span> <span class="n">reject_evaluation_status</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">amp</span><span class="o">.</span><span class="n">pick_id</span><span class="p">:</span>
+            <span class="n">pick</span> <span class="o">=</span> <span class="n">amp</span><span class="o">.</span><span class="n">pick_id</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">()</span>
+            <span class="c1"># Reject if the evaluation status of the pick tied to the amplitude is in</span>
+            <span class="c1"># the reject list</span>
+            <span class="k">if</span> <span class="n">pick</span> <span class="ow">and</span> <span class="n">pick</span><span class="o">.</span><span class="n">evaluation_status</span> <span class="ow">in</span> <span class="n">reject_evaluation_status</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="n">amps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">amp</span><span class="p">)</span>
+    <span class="n">eve</span><span class="o">.</span><span class="n">amplitudes</span> <span class="o">=</span> <span class="n">amps</span>
+    <span class="c1"># Filter the event descriptions</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eve</span><span class="o">.</span><span class="n">event_descriptions</span><span class="p">):</span>
+        <span class="n">eve</span><span class="o">.</span><span class="n">event_descriptions</span> <span class="o">=</span> <span class="p">[</span><span class="n">eve</span><span class="o">.</span><span class="n">event_descriptions</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">eve</span>
+
+
+<div class="viewcode-block" id="bump_creation_version">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.bump_creation_version">[docs]</a>
+<span class="k">def</span> <span class="nf">bump_creation_version</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Bump the version in an object&#39;s CreationInfo and add creation time.</span>
+
+<span class="sd">    Take an obspy object and try to bump creation info. This is done</span>
+<span class="sd">    by first creating info if obj.creation_info is None, then addition</span>
+<span class="sd">    creation_time and bumping the version by one</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;creation_info&quot;</span><span class="p">):</span>  <span class="c1"># nothing to do if no CI</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2"> has no creation_info attribute&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="c1"># get creation info</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">UTCDateTime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">creation_info</span>
+    <span class="k">if</span> <span class="n">ci</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ci</span> <span class="o">=</span> <span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">CreationInfo</span><span class="p">()</span>
+    <span class="n">ci</span><span class="o">.</span><span class="n">creation_time</span> <span class="o">=</span> <span class="n">now</span>
+    <span class="n">ci</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">_bump_version</span><span class="p">(</span><span class="n">ci</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">creation_info</span> <span class="o">=</span> <span class="n">ci</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_bump_version</span><span class="p">(</span><span class="n">version</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bump the version in the creation info&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">version</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)]</span>
+        <span class="n">split</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">split</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;0.0.0&quot;</span>
+    <span class="k">return</span> <span class="n">version</span>
+
+
+<div class="viewcode-block" id="make_origins">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.make_origins">[docs]</a>
+<span class="k">def</span> <span class="nf">make_origins</span><span class="p">(</span>
+    <span class="n">events</span><span class="p">:</span> <span class="n">catalog_or_event</span><span class="p">,</span>
+    <span class="n">inventory</span><span class="p">:</span> <span class="n">obspy</span><span class="o">.</span><span class="n">Inventory</span><span class="p">,</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">phase_hints</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;P&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">catalog_or_event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iterate a catalog or single events and ensure each has an origin.</span>
+
+<span class="sd">    If no origins are found for an event, create one with the time set to</span>
+<span class="sd">    the earliest pick and the location set to the location of the first hit</span>
+<span class="sd">    station. Events are modified in place.</span>
+
+<span class="sd">    This may be useful for location codes that need a starting location.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events</span>
+<span class="sd">        The events to scan and add origins were necessary.</span>
+<span class="sd">    inventory</span>
+<span class="sd">        An inventory object which contains all the stations referenced in</span>
+<span class="sd">        quakeml elements of events.</span>
+<span class="sd">    depth</span>
+<span class="sd">        The default depth for created origins. Should be in meters. See the</span>
+<span class="sd">        obspy docs for Origin or the quakeml standard for more details.</span>
+<span class="sd">    phase_hints</span>
+<span class="sd">        List of acceptable phase hints to use for identifying the earliest</span>
+<span class="sd">        pick. By default will only search for &quot;P&quot; or &quot;p&quot; phase hints.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Either a Catalog or Event object (same as input).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ensure input is an iterable of events</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">events</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span> <span class="k">else</span> <span class="n">events</span>
+    <span class="c1"># load inv dataframe and make sure it has a seed_id column</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">stations_to_df</span><span class="p">(</span><span class="n">inventory</span><span class="p">)</span>
+    <span class="n">nslc_series</span> <span class="o">=</span> <span class="n">get_seed_id_series</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">:</span>  <span class="c1"># make new origin</span>
+            <span class="n">picks</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">picks_to_df</span><span class="p">()</span>
+            <span class="n">picks</span> <span class="o">=</span> <span class="n">picks</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="p">(</span><span class="o">~</span><span class="p">(</span><span class="n">picks</span><span class="p">[</span><span class="s2">&quot;evaluation_status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;rejected&quot;</span><span class="p">))</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">picks</span><span class="p">[</span><span class="s2">&quot;phase_hint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">phase_hints</span><span class="p">))</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2"> has no acceptable picks to create origin&quot;</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="c1"># get first pick, determine time/station used</span>
+            <span class="n">first_pick</span> <span class="o">=</span> <span class="n">picks</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">picks</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()]</span>
+            <span class="n">seed_id</span> <span class="o">=</span> <span class="n">first_pick</span><span class="p">[</span><span class="s2">&quot;seed_id&quot;</span><span class="p">]</span>
+            <span class="c1"># find channel corresponding to pick</span>
+            <span class="n">df_chan</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">nslc_series</span> <span class="o">==</span> <span class="n">seed_id</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_chan</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seed_id</span><span class="si">}</span><span class="s2"> not found in inventory&quot;</span><span class="p">)</span>
+            <span class="n">ser</span> <span class="o">=</span> <span class="n">df_chan</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># create origin</span>
+            <span class="n">ori</span> <span class="o">=</span> <span class="n">_create_first_pick_origin</span><span class="p">(</span><span class="n">first_pick</span><span class="p">,</span> <span class="n">ser</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">)</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ori</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">events</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_create_first_pick_origin</span><span class="p">(</span><span class="n">first_pick</span><span class="p">,</span> <span class="n">channel_ser</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an origin based on first pick and a channel series.&quot;&quot;&quot;</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;origin fixed to location and time of earliest pick by &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;obsplus version </span><span class="si">{</span><span class="n">obsplus</span><span class="o">.</span><span class="n">__last_version__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">comment</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">Comment</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+    <span class="n">odict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">time</span><span class="o">=</span><span class="n">to_utc</span><span class="p">(</span><span class="n">first_pick</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]),</span>
+        <span class="n">latitude</span><span class="o">=</span><span class="n">channel_ser</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">],</span>
+        <span class="n">longitude</span><span class="o">=</span><span class="n">channel_ser</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">],</span>
+        <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
+        <span class="n">time_fixed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">comments</span><span class="o">=</span><span class="p">[</span><span class="n">comment</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">(</span><span class="o">**</span><span class="n">odict</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_seed_id">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.get_seed_id">[docs]</a>
+<span class="k">def</span> <span class="nf">get_seed_id</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">catalog_component</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the NSLC associated with an station-specific object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obj</span>
+<span class="sd">        The object for which to retrieve the seed id. Can be anything that</span>
+<span class="sd">        has a waveform_id attribute or refers to an object with a</span>
+<span class="sd">        waveform_id attribute.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str :</span>
+<span class="sd">        The seed_id in the form of &quot;network.station.location.channel&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">WaveformStreamID</span><span class="p">):</span>
+        <span class="c1"># Get the seed id</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_seed_string</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ResourceIdentifier</span><span class="p">):</span>
+        <span class="c1"># Get the next nested object</span>
+        <span class="k">return</span> <span class="n">get_seed_id</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get_referred_object</span><span class="p">())</span>
+    <span class="c1"># The order of this list matters! It should first try waveform_id and then</span>
+    <span class="c1"># go from the shallowest nested attribute to the deepest</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;waveform_id&quot;</span><span class="p">,</span> <span class="s2">&quot;station_magnitude_id&quot;</span><span class="p">,</span> <span class="s2">&quot;amplitude_id&quot;</span><span class="p">,</span> <span class="s2">&quot;pick_id&quot;</span><span class="p">]</span>
+    <span class="c1"># Make sure the object has at least one of the required attributes</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)))):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cannot retrieve seed id for objects of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Loop over each of the attributes, if it exists and is not None,</span>
+    <span class="c1"># go down a level until it finds a seed id</span>
+    <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">att</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">suppress</span><span class="p">((</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="n">get_seed_id</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+    <span class="c1"># If it makes it this far, it could not find a non-None attribute</span>
+    <span class="c1"># raise assertion error so this still works in validators</span>
+    <span class="k">assert</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unable to fetch a seed id for </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="get_event_client">
+<a class="viewcode-back" href="../../../quickref/stubs/obsplus.get_event_client.html#obsplus.utils.events.get_event_client">[docs]</a>
+<span class="nd">@singledispatch</span>
+<span class="k">def</span> <span class="nf">get_event_client</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">event_clientable_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract an event client from various inputs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events</span>
+<span class="sd">        Any of the following:</span>
+<span class="sd">            * A path to an obspy-readable event file</span>
+<span class="sd">            * A path to a directory of obspy-readable event files</span>
+<span class="sd">            * An `obspy.Catalog` instance</span>
+<span class="sd">            * An instance of :class:`~obsplus.EventBank`</span>
+<span class="sd">            * Any other object that has a `get_events` method</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If an event client cannot be determined from the input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">EventClient</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;an event client could not be extracted from </span><span class="si">{</span><span class="n">events</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">events</span></div>
+
+
+
+<span class="nd">@get_event_client</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="nd">@get_event_client</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Path</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_catalog_to_client</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Turn a str or directory into a client.</span>
+
+<span class="sd">    If a single file, try to read as events, if directory init event bank.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># ensure we are working with a path</span>
+    <span class="k">assert</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">get_event_client</span><span class="p">(</span><span class="n">obsplus</span><span class="o">.</span><span class="n">EventBank</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_event_client</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">read_events</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)))</span>
+
+
+<span class="nd">@get_event_client</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_event_to_catalog</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">get_event_client</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">Catalog</span><span class="p">(</span><span class="n">events</span><span class="o">=</span><span class="p">[</span><span class="n">event</span><span class="p">]))</span>
+
+
+<div class="viewcode-block" id="get_preferred">
+<a class="viewcode-back" href="../../../api/obsplus.utils.events.html#obsplus.utils.events.get_preferred">[docs]</a>
+<span class="k">def</span> <span class="nf">get_preferred</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">,</span> <span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">init_empty</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get the preferred object (eg origin, magnitude) from the event.</span>
+
+<span class="sd">    If not defined use the last in the list. If list is empty init empty</span>
+<span class="sd">    object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event: obspy.core.event.Event</span>
+<span class="sd">        The instance for which the preferred should be sought.</span>
+<span class="sd">    what: the preferred item to get</span>
+<span class="sd">        Can either be &quot;magnitude&quot;, &quot;origin&quot;, or &quot;focal_mechanism&quot;.</span>
+<span class="sd">    init_empty</span>
+<span class="sd">        If True, rather than return None when no preferred object is found</span>
+<span class="sd">        create an empty object of the appropriate class and return it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_none_or_empty</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return None or an empty object of correct type.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">init_empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obspy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">what</span><span class="o">.</span><span class="n">capitalize</span><span class="p">())()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">pref_type</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;magnitude&quot;</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Magnitude</span><span class="p">,</span>
+        <span class="s2">&quot;origin&quot;</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Origin</span><span class="p">,</span>
+        <span class="s2">&quot;focal_mechanism&quot;</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">FocalMechanism</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">prefname</span> <span class="o">=</span> <span class="s2">&quot;preferred_&quot;</span> <span class="o">+</span> <span class="n">what</span>
+    <span class="n">whats</span> <span class="o">=</span> <span class="n">what</span> <span class="o">+</span> <span class="s2">&quot;s&quot;</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">prefname</span><span class="p">)()</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># get end of list</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">prefname</span> <span class="o">+</span> <span class="s2">&quot;_id&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># no preferred id set, return last in list</span>
+            <span class="k">try</span><span class="p">:</span>  <span class="c1"># if there is None return an empty one</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">whats</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>  <span class="c1"># object has no whats (eg magnitude)</span>
+                <span class="c1"># TODO why not return None here?</span>
+                <span class="k">return</span> <span class="n">_none_or_empty</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># there is an id, it has just come detached, try to find it</span>
+            <span class="n">potentials</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">resource_id</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">whats</span><span class="p">)}</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">potentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># it wasn&#39;t found in the potentials.</span>
+                <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">pid</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">whats</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;cannot find </span><span class="si">{}</span><span class="s2"> in </span><span class="si">{}</span><span class="s2"> for event </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">var</span><span class="p">))</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">whats</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>  <span class="c1"># there are no &quot;whats&quot;, return None</span>
+                    <span class="k">return</span> <span class="n">_none_or_empty</span><span class="p">()</span>
+    <span class="c1"># make sure the correct output type is returned</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="n">pref_type</span><span class="p">[</span><span class="n">what</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not a </span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">, wrong type returned&quot;</span>
+    <span class="k">return</span> <span class="n">obj</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_summarize_event</span><span class="p">(</span>
+    <span class="n">event</span><span class="p">:</span> <span class="n">ev</span><span class="o">.</span><span class="n">Event</span><span class="p">,</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">path_struct</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name_struct</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to extract info from events for indexing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event</span>
+<span class="sd">        The event object</span>
+<span class="sd">    path</span>
+<span class="sd">        Other Parameters to the file</span>
+<span class="sd">    name</span>
+<span class="sd">        Name of the file</span>
+<span class="sd">    path_struct</span>
+<span class="sd">        directory structure to create</span>
+<span class="sd">    name_struct</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">res_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;ext&quot;</span><span class="p">:</span> <span class="n">EVENT_EXT</span><span class="p">,</span>
+        <span class="s2">&quot;event_id&quot;</span><span class="p">:</span> <span class="n">res_id</span><span class="p">,</span>
+        <span class="s2">&quot;event_id_short&quot;</span><span class="p">:</span> <span class="n">res_id</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:],</span>
+        <span class="s2">&quot;event_id_end&quot;</span><span class="p">:</span> <span class="n">res_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+    <span class="p">}</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">_get_event_origin_time</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_time_values</span><span class="p">(</span><span class="n">t1</span><span class="p">))</span>
+    <span class="n">path_struct</span> <span class="o">=</span> <span class="n">path_struct</span> <span class="k">if</span> <span class="n">path_struct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">EVENT_PATH_STRUCTURE</span>
+    <span class="n">name_struct</span> <span class="o">=</span> <span class="n">name_struct</span> <span class="ow">or</span> <span class="n">EVENT_NAME_STRUCTURE</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_get_path</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">path_struct</span><span class="p">,</span> <span class="n">name_struct</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev4+ge0e154d ]"/>
+            </a></p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.events</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

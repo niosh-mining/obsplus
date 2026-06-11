@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.utils.yield_obj_parent_attr &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.yield_obj_parent_attr</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="obsplus-utils-yield-obj-parent-attr">
+<h1>obsplus.utils.yield_obj_parent_attr<a class="headerlink" href="#obsplus-utils-yield-obj-parent-attr" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.yield_obj_parent_attr">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.</span></span><span class="sig-name descname"><span class="pre">yield_obj_parent_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basic_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/obsplus/utils/misc.html#yield_obj_parent_attr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.yield_obj_parent_attr" title="Link to this definition">¶</a></dt>
+<dd><p>Recurse an object, yield a tuple of object, parent, attr.</p>
+<p>Useful when data need to be changed or the provided DataFrame extractors
+don’t quite perform the desired task. Can also be used to extract
+relationships between entities in object trees to build a connecting graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – The object to recurse through attributes of lists, tuples, and other
+instances.</p></li>
+<li><p><strong>cls</strong> – Only return instances of cls if not None, dont filter on types.</p></li>
+<li><p><strong>is_attr</strong> – Only return objects stored as attr_name, if None return all.</p></li>
+<li><p><strong>has_attr</strong> – Only return objects that have attribute has_attr, if None return all.</p></li>
+<li><p><strong>basic_types</strong> – If True, yield non-sequence basic types (int, float, str, bool).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get all picks from a catalog object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ev</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cat</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;bingham_test&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">picks</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># put all the picks in a list.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">pick</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">Pick</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">picks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">picks</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- yield all objects which have resource identifiers</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">objects</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of (rid, parent)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RID</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">ResourceIdentifier</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RID</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">objects</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">rid</span><span class="p">),</span> <span class="n">parent</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Create a dict of {resource_id: [(attr, parent), ...]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rid_mapping</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RID</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">rid_mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">rid</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">attr</span><span class="p">,</span> <span class="n">parent</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># count how many times each resource_id is referred to</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">count</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rid_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.utils.yield_obj_parent_attr</a><ul>
+<li><a class="reference internal" href="#obsplus.utils.yield_obj_parent_attr"><code class="docutils literal notranslate"><span class="pre">yield_obj_parent_attr()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/quickref/stubs/obsplus.utils.yield_obj_parent_attr.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.yield_obj_parent_attr</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

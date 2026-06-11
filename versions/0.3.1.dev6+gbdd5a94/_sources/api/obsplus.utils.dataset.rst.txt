@@ -1,0 +1,7 @@
+obsplus.utils.dataset module
+============================
+
+.. automodule:: obsplus.utils.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:

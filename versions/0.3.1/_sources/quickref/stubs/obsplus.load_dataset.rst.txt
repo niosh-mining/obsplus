@@ -1,0 +1,6 @@
+﻿obsplus.load\_dataset
+=====================
+
+.. currentmodule:: obsplus
+
+.. autofunction:: load_dataset

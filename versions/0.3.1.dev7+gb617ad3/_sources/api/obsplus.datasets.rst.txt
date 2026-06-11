@@ -1,0 +1,19 @@
+obsplus.datasets package
+========================
+
+.. automodule:: obsplus.datasets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.datasets.bingham_test
+   obsplus.datasets.crandall_test
+   obsplus.datasets.dataset
+   obsplus.datasets.default_test
+   obsplus.datasets.ta_test

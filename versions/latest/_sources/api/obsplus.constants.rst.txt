@@ -1,0 +1,7 @@
+obsplus.constants module
+========================
+
+.. automodule:: obsplus.constants
+   :members:
+   :show-inheritance:
+   :undoc-members:

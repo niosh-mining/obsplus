@@ -1,0 +1,7 @@
+obsplus.events.merge module
+===========================
+
+.. automodule:: obsplus.events.merge
+   :members:
+   :undoc-members:
+   :show-inheritance:

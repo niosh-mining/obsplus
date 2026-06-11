@@ -1,0 +1,6 @@
+﻿obsplus.utils.time.to\_datetime64
+=================================
+
+.. currentmodule:: obsplus.utils.time
+
+.. autofunction:: to_datetime64

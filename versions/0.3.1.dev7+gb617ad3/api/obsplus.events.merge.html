@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.events.merge module &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.merge module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.events.merge">
+<span id="obsplus-events-merge-module"></span><h1>obsplus.events.merge module<a class="headerlink" href="#module-obsplus.events.merge" title="Link to this heading">¶</a></h1>
+<p>functions for merging catalogs together</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.events.merge.associate_merge">
+<span class="sig-prename descclassname"><span class="pre">obsplus.events.merge.</span></span><span class="sig-name descname"><span class="pre">associate_merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_catalog</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">median_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/merge.html#associate_merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.merge.associate_merge" title="Link to this definition">¶</a></dt>
+<dd><p>Merge the “closest” event in a catalog into an existing event.</p>
+<p>Finds the closest event in new_catalog to event using median pick
+times, then calls <a class="reference internal" href="#obsplus.events.merge.merge_events" title="obsplus.events.merge.merge_events"><code class="xref py py-func docutils literal notranslate"><span class="pre">obsplus.events.merge.merge_events()</span></code></a> to merge
+the events together.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></span>) – The base event which will be modified in place.</p></li>
+<li><p><strong>new_catalog</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Catalog</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></span>) – A new catalog or event which contains picks.</p></li>
+<li><p><strong>median_tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The tolerance, in seconds, of the median pick for associating
+events in new_catalog into event.</p></li>
+<li><p><strong>reject_old</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Reject any picks/amplitudes in old event if not found in new
+event.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.events.merge.attach_new_origin">
+<span class="sig-prename descclassname"><span class="pre">obsplus.events.merge.</span></span><span class="sig-name descname"><span class="pre">attach_new_origin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_origin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preferred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/merge.html#attach_new_origin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.merge.attach_new_origin" title="Link to this definition">¶</a></dt>
+<dd><p>Attach a new origin to an existing events object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old_event</strong> (<em>obspy.core.event.Event</em>) – The old event that will receive the new origin</p></li>
+<li><p><strong>new_event</strong> (<em>obspy.core.event.Event</em>) – The new event that contains the origin, needed for merging picks
+that may not exist in old_event</p></li>
+<li><p><strong>new_origin</strong> (<em>obspy.core.event.Origin</em>) – The new origin that will be attached to old_event</p></li>
+<li><p><strong>preferred</strong> (<em>bool</em>) – If True mark the new origin as the preferred_origin</p></li>
+<li><p><strong>index</strong> (<em>int</em><em> or </em><em>None</em>) – The origin index of old_cat that new_origin will overwrite, if None
+append the new_origin to old_cat.origins</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>modifies old_cat in-place, returns old_catalog</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>obspy.Catalog</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.events.merge.merge_events">
+<span class="sig-prename descclassname"><span class="pre">obsplus.events.merge.</span></span><span class="sig-name descname"><span class="pre">merge_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eve1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eve2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/events/merge.html#merge_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.events.merge.merge_events" title="Link to this definition">¶</a></dt>
+<dd><p>Merge picks and amplitudes of two events together.</p>
+<p>This function attempts to merge picks and amplitudes of two events
+together that may have different resource_ids in some attributes. The
+second event is imposed on the first which is modified in place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eve1</strong> (<a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog" title="obsplus.events.schema.Catalog"><em>Catalog</em></a>) – The first (former) event</p></li>
+<li><p><strong>eve2</strong> (<a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Catalog" title="obsplus.events.schema.Catalog"><em>Catalog</em></a>) – The second (new) event</p></li>
+<li><p><strong>reject_old</strong> (<em>bool</em>) – If True, reject anything in eve1 not in eve2</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The merged events</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="obsplus.events.schema.html#obsplus.events.schema.Event" title="obsplus.events.schema.Event">Event</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.events.merge module</a><ul>
+<li><a class="reference internal" href="#obsplus.events.merge.associate_merge"><code class="docutils literal notranslate"><span class="pre">associate_merge()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.events.merge.attach_new_origin"><code class="docutils literal notranslate"><span class="pre">attach_new_origin()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.events.merge.merge_events"><code class="docutils literal notranslate"><span class="pre">merge_events()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.events.merge.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.events.merge module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

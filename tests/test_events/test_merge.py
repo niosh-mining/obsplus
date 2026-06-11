@@ -1,30 +1,34 @@
 """
-
+Tests for merging catalogs together.
 """
-import glob
 from glob import glob
 from os.path import join
 
+import numpy as np
 import obspy
+import obspy.core.event as ev
 import pytest
-from obspy.core.event import ResourceIdentifier
 
 from obsplus import validate_catalog
-from obsplus.events.merge import merge_events, attach_new_origin
+from obsplus.events.merge import (
+    merge_events,
+    attach_new_origin,
+    associate_merge,
+    _hash_wids,
+)
+from obsplus.utils import yield_obj_parent_attr, get_reference_time
 
 CAT = obspy.read_events()
 ORIGINS = [ori for eve in CAT for ori in eve.origins]
 MAGNITUDES = [mag for eve in CAT for mag in eve.magnitudes]
 ALLSORTS = ORIGINS + MAGNITUDES
-QMLS2MERGE = glob(join(pytest.test_data_path, "qml2merge", "*"))
-BASICMERGE = [x for x in QMLS2MERGE if x.endswith("2017-01-06T16-15-14")][0]
 
 
 # -------------------------- helper functions ----------------------- #
 
 
 def extract_merge_catalogs(merge_directory):
-    """ given a directory with two qmls, read in the qmls and return """
+    """given a directory with two qmls, read in the qmls and return"""
     files = glob(join(merge_directory, "*"))
     cat_path1 = [x for x in files if x.endswith("1.xml")]
     cat_path2 = [x for x in files if x.endswith("2.xml")]
@@ -38,22 +42,16 @@ def extract_merge_catalogs(merge_directory):
 # --------------------------- module fixtures ----------------------- #
 
 
-@pytest.fixture(scope="class", params=QMLS2MERGE)
-def merge_catalogs(request):
-    """ return a pair of catalogs for merge testing"""
-    return extract_merge_catalogs(request.param)
-
-
-@pytest.fixture(scope="function", params=QMLS2MERGE)
-def merge_catalogs_function(request):
-    """ return a pair of catalogs for merge testing"""
-    return extract_merge_catalogs(request.param)
+@pytest.fixture(scope="function")
+def merge_catalogs_function(qml_to_merge_paths):
+    """return a pair of catalogs for merge testing"""
+    return extract_merge_catalogs(qml_to_merge_paths)
 
 
 @pytest.fixture(scope="class")
-def merge_catalog_basic():
-    """ return just the basic events used to test merging"""
-    return extract_merge_catalogs(BASICMERGE)
+def merge_catalog_basic(qml_to_merge_basic):
+    """return just the basic events used to test merging"""
+    return extract_merge_catalogs(qml_to_merge_basic)
 
 
 # ------------------------------- tests ------------------------------ #
@@ -61,15 +59,17 @@ def merge_catalog_basic():
 
 class TestMergePicks:
     """
-    test that the picks and amplitudes of two catalogs can be cleanly merged
-    together on the specified level
+    Test that the picks and amplitudes of two catalogs can be cleanly merged
+    together on the specified level.
     """
 
     # fixtures
     @pytest.fixture(scope="class")
     def two_catalogs(self, merge_catalog_basic):
-        """ read the test seisan file twice, add .1 seconds to each of the
-        picks and add some to generic amplitudes then return both catalogs"""
+        """
+        Read the test seisan file twice, add .1 seconds to each of the
+        picks and add some to generic amplitudes then return both catalogs.
+        """
         cat1, cat2 = merge_catalog_basic
         for pick in cat2[0].picks:
             pick.time += 0.1
@@ -80,39 +80,46 @@ class TestMergePicks:
 
     @pytest.fixture(scope="class")
     def pick_resource_ids(self, merge_catalog_basic):
-        """ return list of pick ids from the first events """
+        """return list of pick ids from the first events"""
         cat1, _ = merge_catalog_basic
         pick_ids = [x.resource_id.id for x in cat1[0].picks]
         return pick_ids
 
     @pytest.fixture(scope="class")
     def amplitude_resource_ids(self, merge_catalog_basic):
-        """ return list of pick ids from the first events """
+        """return list of pick ids from the first events"""
         cat1, _ = merge_catalog_basic
         amplitude_ids = [x.resource_id.id for x in cat1[0].amplitudes]
         return amplitude_ids
 
     @pytest.fixture()
     def merged_catalogs(self, two_catalogs):
+        """Merge two catalogs together."""
         cat1, cat2 = two_catalogs
         merge_events(cat1[0], cat2[0])
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_delete_pick(self):
-        """ delete a pick and amplitude from the new cat_name, merge
-         with old """
-
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
-        cat2[0].picks.pop(0)
+    def merge_catalogs_delete_pick(self, qml_to_merge_basic):
+        """Delete a pick and amplitude from the new cat, merge with old."""
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
+        # Get rid of the first arrival and its associated pick
+        arrivals = cat2[0].preferred_origin().arrivals
+        pick_id = arrivals[0].pick_id
+        assert not pick_id.get_referred_object().evaluation_status == "rejected"
+        cat2[0].picks = [x for x in cat2[0].picks if not x.resource_id == pick_id]
+        arrivals.pop(0)
+        # Get rid of the first amplitude
         cat2[0].amplitudes.pop(0)
+        validate_catalog(cat1)
+        validate_catalog(cat2)
         merge_events(cat1[0], cat2[0])
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_add_pick(self):
-        """ add a pick and amplitude to the new cat_name, merge with old """
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
+    def merge_catalogs_add_pick(self, qml_to_merge_basic):
+        """add a pick and amplitude to the new cat_name, merge with old"""
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         # add new pick
         pick1 = cat2[0].picks[0]
         time = obspy.UTCDateTime.now()
@@ -127,10 +134,12 @@ class TestMergePicks:
         return cat1, cat2
 
     @pytest.fixture()
-    def merge_catalogs_add_bad_amplitude(self):
-        """ add an amplitude that has no pick reference. It should not get
-         merged into the events """
-        cat1, cat2 = extract_merge_catalogs(BASICMERGE)
+    def merge_catalogs_add_bad_amplitude(self, qml_to_merge_basic):
+        """
+        Add an amplitude that has no pick reference. It should not get
+        merged into the events.
+        """
+        cat1, cat2 = extract_merge_catalogs(qml_to_merge_basic)
         # add new amplitude
         amp = obspy.core.event.Amplitude()
         cat2[0].amplitudes.append(amp)
@@ -139,7 +148,7 @@ class TestMergePicks:
 
     # tests
     def test_pick_times(self, merged_catalogs):
-        """ test that the times are the same in the picks """
+        """test that the times are the merged_catalogssame in the picks"""
         cat1, cat2 = merged_catalogs
         assert len(cat1[0].picks) == len(cat2[0].picks)
         for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
@@ -149,7 +158,7 @@ class TestMergePicks:
         validate_catalog(cat2)
 
     def test_amplitudes(self, merged_catalogs):
-        """ ensure the amplitudes are the same """
+        """ensure the amplitudes are the same"""
         cat1, cat2 = merged_catalogs
         assert len(cat1[0].amplitudes) == len(cat2[0].amplitudes)
         for amp1, amp2 in zip(cat1[0].amplitudes, cat2[0].amplitudes):
@@ -158,8 +167,10 @@ class TestMergePicks:
             assert amp1.resource_id != amp2.resource_id
 
     def test_cat1_pick_ids_unchanged(self, merged_catalogs, pick_resource_ids):
-        """ ensure the resource_ids of the first events are unchanged
-        despite merge """
+        """
+        Ensure the resource_ids of the first events are unchanged despite
+        merge.
+        """
         cat1, _ = merged_catalogs
         new_pick_ids = [x.resource_id.id for x in cat1[0].picks]
         assert new_pick_ids == pick_resource_ids
@@ -167,25 +178,42 @@ class TestMergePicks:
     def test_cat1_amplitude_ids_unchanged(
         self, merged_catalogs, amplitude_resource_ids
     ):
-        """ ensure the resource IDs on the amplitudes havent changed """
+        """ensure the resource IDs on the amplitudes haven't changed"""
         cat1, _ = merged_catalogs
         new_amplitude_ids = [x.resource_id.id for x in cat1[0].amplitudes]
         assert amplitude_resource_ids == new_amplitude_ids
 
-    def test_deleted_pick(self, merge_catalogs_delete_pick):
-        """ test that when a pick is deleted from the new cat_name and the
-        CATALOG_PATH are merged it is also deleted from the old """
+    def test_reject_old(self, merge_catalogs_delete_pick):
+        """
+        Test that when a pick is deleted from the new cat_name and the
+        CATALOG_PATH are merged it is also rejected on the old.
+        """
         cat1, cat2 = merge_catalogs_delete_pick
-        assert len(cat1[0].picks) == len(cat2[0].picks)
-        for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
-            assert pick1.time == pick2.time
-        assert len(cat1[0].amplitudes) == len(cat2[0].amplitudes)
-        for amp1, amp2 in zip(cat1[0].amplitudes, cat2[0].amplitudes):
-            assert amp1.generic_amplitude == amp2.generic_amplitude
+        # Make sure both events are still valid
+        validate_catalog(cat1)
+        validate_catalog(cat2)
+
+        def _check_vals(attr, val, hash_attr):
+            assert len(cat1[0].picks) == len(cat2[0].picks) + 1
+            eve1_wids = _hash_wids(getattr(cat1[0], attr), hash_attr)
+            eve2_wids = _hash_wids(getattr(cat1[0], attr), hash_attr)
+            assert set(eve2_wids).issubset(set(eve1_wids))
+            for key, obj in eve1_wids.items():
+                if key in eve2_wids:
+                    assert getattr(obj, val) == getattr(eve2_wids[key], val)
+                else:
+                    assert obj.evaluation_status == "rejected"
+
+        # Check the picks
+        _check_vals("picks", "time", "phase_hint")
+        # Check the amplitudes
+        _check_vals("amplitudes", "generic_amplitude", "magnitude_hint")
 
     def test_add_pick(self, merge_catalogs_add_pick):
-        """ test that when a pick is added to the new cat_name it shows up
-        in the old cat_name """
+        """
+        Test that when a pick is added to the new cat_name it shows up
+        in the old cat_name.
+        """
         cat1, cat2 = merge_catalogs_add_pick
         assert len(cat1[0].picks) == len(cat2[0].picks)
         for pick1, pick2 in zip(cat1[0].picks, cat2[0].picks):
@@ -197,35 +225,36 @@ class TestMergePicks:
         validate_catalog(cat2)
 
     def test_bad_amplitude(self, merge_catalogs_add_bad_amplitude):
-        """ ensure an amplitude with no pick id doesnt get merged """
+        """ensure an amplitude with no pick id doesnt get merged"""
         cat1, cat2 = merge_catalogs_add_bad_amplitude
         assert len(cat1[0].amplitudes) == (len(cat2[0].amplitudes) - 1)
 
 
 class TestAttachNewOrigin:
-    """ tests for attaching a new origin to a events """
+    """tests for attaching a new origin to a events"""
 
     # functions
     def origin_is_preferred(self, cat, origin):
-        """ ensure the origin is preferred """
+        """Ensure the origin is preferred."""
         por = cat[0].preferred_origin()
         assert por is not None
         assert por == origin
 
     def ensure_common_arrivals(self, ori1, ori2):
-        # ensure origin is a modified version of cat2's first origin
+        """Ensure origin is a modified version of cat2's first origin."""
         origin_pick_dict = {x.pick_id.id for x in ori1.arrivals}
         cat2_pick_dict = {x.pick_id.id for x in ori2.arrivals}
         assert set(origin_pick_dict) == set(cat2_pick_dict)
 
     # fixtures
-    @pytest.fixture("function")
+    @pytest.fixture(scope="function")
     def origin_pack(self, merge_catalogs_function):
-        """ using the second events from the merge set, create an origin
-        object that will be attached to the first events """
+        """
+        Using the second events from the merge set, create an origin
+        object that will be attached to the first events.
+        """
         cat1 = merge_catalogs_function[0].copy()
         cat2 = merge_catalogs_function[1].copy()
-        validate_catalog(cat2)
         origin = cat2[0].preferred_origin() or cat2[0].origins[-1]
         origin.time += 1.0
         origin.latitude *= 1.05
@@ -237,49 +266,46 @@ class TestAttachNewOrigin:
         origin_pick_id = {x.pick_id.id for x in origin.arrivals}
         pick_ids = {x.resource_id.id for x in cat2[0].picks}
         assert origin_pick_id.issubset(pick_ids)
+        # ensure there is nothing invalid about the catalogs
+        validate_catalog(cat1)
+        validate_catalog(cat2)
 
         return cat1, cat2, origin
 
     @pytest.fixture(scope="function")
     def append_origin_catalog(self, origin_pack):
-        """ attach the new origin to the first event without index """
+        """attach the new origin to the first event without index"""
         cat1, cat2, origin = origin_pack
-        # cat1 = cat1.copy()
-        # cat2 = cat2.copy()
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True)
-        # validate_catalog(cat1)
         return cat1
 
     @pytest.fixture(scope="function")
     def insert_origin_catalog(self, origin_pack):
-        """ insert the origin to overwrite old origin """
+        """insert the origin to overwrite old origin"""
         cat1, cat2, origin = origin_pack
-
         # ensure origin is a modified version of cat2's first origin
         self.ensure_common_arrivals(origin, cat2[0].origins[0])
-
         attach_new_origin(cat1[0], cat2[0], origin, preferred=True, index=0)
         validate_catalog(cat1)
         return cat1
 
     # tests
     def test_append_origin(self, append_origin_catalog, origin_pack):
-        """ make sure the origins was attached and is preferred and comes
-         last """
+        """Ensure the origins was attached and is preferred and comes last."""
         _, _, origin = origin_pack
         self.origin_is_preferred(append_origin_catalog, origin)
         assert origin == append_origin_catalog[0].origins[-1]
 
     def test_insert_origins(self, insert_origin_catalog, origin_pack):
-        """ ensure the origin is now the first in the list """
+        """ensure the origin is now the first in the list"""
         _, _, origin = origin_pack
 
         self.origin_is_preferred(insert_origin_catalog, origin)
         assert origin == insert_origin_catalog[0].origins[0]
 
     def test_insert_origin_out_of_bounds(self, origin_pack):
-        """ ensure the origin is still found even if bogus index was used """
+        """ensure the origin is still found even if bogus index was used"""
         cat1, cat2, origin = origin_pack
 
         # ensure origin is a modified version of cat2's first origin
@@ -295,3 +321,57 @@ class TestAttachNewOrigin:
         self.origin_is_preferred(cat1, origin)
         assert origin in cat1[0].origins
         assert cat1[0].origins[-1] == origin
+
+
+class TestMergeNewPicks:
+    """Tests for merging new picks into old catalogs."""
+
+    @pytest.fixture()
+    def merge_base_event(self, bingham_catalog):
+        """The base event for merging."""
+        events = sorted(bingham_catalog, key=get_reference_time)
+        return events[0].copy()
+
+    @pytest.fixture()
+    def simple_catalog_to_merge(self, bingham_catalog):
+        """
+        Create a simple catalog to merge into bingham_cat using only two event.
+        """
+        events = sorted(bingham_catalog, key=get_reference_time)
+        cat = obspy.Catalog(events=events[:2]).copy()
+        # drop first pick
+        cat[0].picks = cat[0].picks[1:]
+        # modify the picks to whole seconds, reset pick IDS
+        for pick, _, _ in yield_obj_parent_attr(cat, ev.Pick):
+            nearest_second = np.round(pick.time.timestamp)
+            pick.time = obspy.UTCDateTime(nearest_second)
+            # pick.resource_id = ev.ResourceIdentifier(referred_object=pick)
+        return cat
+
+    @pytest.fixture()
+    def miss_merge_catalog(self, bingham_catalog):
+        """
+        Create a catalog whose events are too far in time to be merged.
+        """
+        cat = obspy.Catalog(events=bingham_catalog[2:]).copy()
+        return cat
+
+    def test_picks_merged(self, simple_catalog_to_merge, merge_base_event):
+        """Test merging."""
+        merged = associate_merge(
+            merge_base_event, simple_catalog_to_merge, reject_old=True
+        )
+        # iterate and test each pick
+        first_pick = merged.picks[0]
+        assert (first_pick).time.timestamp % 1 != 0
+        for pick in merged.picks[1:]:
+            remain = pick.time.timestamp % 1
+            close_to_1 = np.isclose(remain, 1, atol=1e-05)
+            close_to_0 = np.isclose(remain, 0, atol=1e-05)
+            assert close_to_0 or close_to_1
+
+    def test_miss_merge(self, merge_base_event, miss_merge_catalog):
+        """Ensure a catalog which is far away from the base does nothing."""
+        original = merge_base_event.copy()
+        cat = associate_merge(merge_base_event, miss_merge_catalog)
+        assert cat == original

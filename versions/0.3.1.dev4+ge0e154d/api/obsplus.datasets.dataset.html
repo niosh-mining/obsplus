@@ -1,0 +1,548 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.datasets.dataset module &#8212; ObsPlus  [ 0.3.1.dev4+ge0e154d ] 0.3.1.dev4+ge0e154d documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=dbcc8867"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.dataset module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.datasets.dataset">
+<span id="obsplus-datasets-dataset-module"></span><h1>obsplus.datasets.dataset module<a class="headerlink" href="#module-obsplus.datasets.dataset" title="Link to this heading">¶</a></h1>
+<p>Module for loading, (and downloading) data sets.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.datasets.dataset.</span></span><span class="sig-name descname"><span class="pre">DataSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract Base Class for downloading and serving datasets.</p>
+<p>This is not intended to be used directly, but rather through subclassing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>base_path</strong> – The path to which the dataset will be saved.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.data_path">
+<span class="sig-name descname"><span class="pre">data_path</span></span><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.data_path" title="Link to this definition">¶</a></dt>
+<dd><p>The path containing the data. By default it is base_path / name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.source_path">
+<span class="sig-name descname"><span class="pre">source_path</span></span><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.source_path" title="Link to this definition">¶</a></dt>
+<dd><p>The path which contains the original files included in the dataset
+before download. By default this is found in the same directory as
+the dataset’s code (.py) file in a folder with the same name as the
+dataset.</p>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>Importantly, each dataset references <em>two</em> directories, the source_path
+and data_path. The source_path contains all data included within the
+dataset and should not be altered. The data_path has a copy of
+everything in the source_path, plus the files created during the
+downloading process.</p>
+<p>The base_path (the parent of data_path) is resolved for each
+dataset using the following priorities:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>The <cite>base_path</cite> provided to <cite>Dataset</cite>’s __init__ method.</p></li>
+<li><p>.data_path.txt file stored in the data source</p></li>
+<li><p>An environmental name OPSDATA_PATH</p></li>
+<li><p>The opsdata_path variable from obsplus.constants</p></li>
+</ol>
+</div></blockquote>
+<p>By default the data will be downloaded to the user’s home directory
+in a folder called “opsdata”, but again, this is easily changed
+by setting the OPSDATA_PATH environmental variable.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.check_hashes">
+<span class="sig-name descname"><span class="pre">check_hashes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_hash</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.check_hashes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.check_hashes" title="Link to this definition">¶</a></dt>
+<dd><p>Check that the files are all there and have the correct Hashes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>check_hash</strong> – If True check the hash of the files.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="obsplus.exceptions.html#obsplus.exceptions.FileHashChangedError" title="obsplus.exceptions.FileHashChangedError"><strong>FileHashChangedError</strong></a> – If one of the file hashes is not as expeted.</p></li>
+<li><p><a class="reference internal" href="obsplus.exceptions.html#obsplus.exceptions.MissingDataFileError" title="obsplus.exceptions.MissingDataFileError"><strong>MissingDataFileError</strong></a> – If one the data files was not downloaded.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.check_version">
+<span class="sig-name descname"><span class="pre">check_version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.check_version"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.check_version" title="Link to this definition">¶</a></dt>
+<dd><p>Check the version of the dataset.</p>
+<p>Verifies the version string in the dataset class definition matches
+the one saved on disk. Returns True if all is well else raises a
+DataVersionError.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Expected path of the version file.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="obsplus.exceptions.html#obsplus.exceptions.DataVersionError" title="obsplus.exceptions.DataVersionError"><strong>DataVersionError</strong></a> – If any version problems are discovered.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Return a copy of the dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>deep</strong> – If True deep copy the objects attached to the dataset.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">DataSetType</span></code>, bound= DataSet)</span></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This only copies data in memory, not on disk. If you plan to make
+any changes to the dataset’s on disk resources please use
+<a href="#id1"><span class="problematic" id="id2">:method:`~obsplus.Dataset.copy_to`</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.copy_to">
+<span class="sig-name descname"><span class="pre">copy_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">destination</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.copy_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.copy_to" title="Link to this definition">¶</a></dt>
+<dd><p>Copy the dataset to a destination.</p>
+<p>If the destination already exists simply do nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>destination</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The destination to copy the dataset. It will be created if it
+doesnt exist. If None is provided use tmpfile to create a temporary
+directory.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new dataset object which refers to the copied files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.create_sha256_hash">
+<span class="sig-name descname"><span class="pre">create_sha256_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.create_sha256_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.create_sha256_hash" title="Link to this definition">¶</a></dt>
+<dd><p>Create a sha256 hash of the dataset’s data files.</p>
+<p>The output is stored in a simple json file. Keys are paths (relative
+to dataset base path) and values are files hashes.</p>
+<p>If you want to update/create the hash file in the dataset’s source
+this can be done by passing the dataset’s source_path as the path
+argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The path to which the hash data is saved. If None use data_path.</p></li>
+<li><p><strong>hidden</strong> – If True also include hidden files.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.data_files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data_files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.data_files" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of top-level files associated with the dataset.</p>
+<p>Hidden files are ignored.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.data_loaded">
+<span class="sig-name descname"><span class="pre">data_loaded</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.data_loaded" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id0">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>Return a path to where the dataset’s data was/will be downloaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.delete_data_directory">
+<span class="sig-name descname"><span class="pre">delete_data_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.delete_data_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.delete_data_directory" title="Link to this definition">¶</a></dt>
+<dd><p>Delete the datafiles of a dataset.</p>
+<p>This will force the data to be re-copied from the source files and
+download logic to be run.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.download_events">
+<span class="sig-name descname"><span class="pre">download_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.download_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.download_events" title="Link to this definition">¶</a></dt>
+<dd><p>Method to ensure the events have been downloaded.</p>
+<p>Events should be written in an obspy-readable format to
+self.event_path. If not implemented this method will create an empty
+directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.download_stations">
+<span class="sig-name descname"><span class="pre">download_stations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.download_stations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.download_stations" title="Link to this definition">¶</a></dt>
+<dd><p>Method to ensure inventories have been downloaded.</p>
+<p>Station data should be written in an obspy-readable format to
+self.station_path. Since there is not yet a functional StationBank,
+this method must be implemented by subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.download_waveforms">
+<span class="sig-name descname"><span class="pre">download_waveforms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.download_waveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.download_waveforms" title="Link to this definition">¶</a></dt>
+<dd><p>Method to ensure waveforms have been downloaded.</p>
+<p>Waveforms should be written in an obspy-readable format to
+self.waveform_path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.event_client">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">event_client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.EventClient" title="obsplus.interfaces.EventClient"><span class="pre">EventClient</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.event_client" title="Link to this definition">¶</a></dt>
+<dd><p>A cached property for an event client</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.event_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">event_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.event_path" title="Link to this definition">¶</a></dt>
+<dd><p>Return the path to the events.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.events_need_downloading">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">events_need_downloading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.events_need_downloading" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if event data need to be downloaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.get_fetcher">
+<span class="sig-name descname"><span class="pre">get_fetcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.get_fetcher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.get_fetcher" title="Link to this definition">¶</a></dt>
+<dd><p>Return a Fetcher from the data.</p>
+<p>kwargs are passed to <code class="xref py py-class docutils literal notranslate"><span class="pre">Fetcher</span></code>’s constructor.
+See its documentation for acceptable kwargs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="obsplus.structures.fetcher.html#obsplus.structures.fetcher.Fetcher" title="obsplus.structures.fetcher.Fetcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fetcher</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.load_dataset">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.load_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.load_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Get a loaded dataset.</p>
+<p>Will ensure all files are downloaded and the appropriate data are
+loaded into memory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a></span>) – The name of the dataset to load or a DataSet object. If a DataSet
+object is passed a copy of it will be returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">DataSetType</span></code>, bound= DataSet)</span></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Load an example dataset for testing</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;default_test&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># If you plan to make changes to the dataset be sure to copy it first</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># The following will copy all files in the dataset to a tmpdir</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds2</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;default_test&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Use dataset clients to load waveforms, stations, and events</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cat</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inv</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get a fetcher for more &quot;dataset aware&quot; querying</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.name">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.name" title="Link to this definition">¶</a></dt>
+<dd><p>Name of the dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.post_download_hook">
+<span class="sig-name descname"><span class="pre">post_download_hook</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.post_download_hook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.post_download_hook" title="Link to this definition">¶</a></dt>
+<dd><p>Code to run after any downloads.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.pre_download_hook">
+<span class="sig-name descname"><span class="pre">pre_download_hook</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.pre_download_hook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.pre_download_hook" title="Link to this definition">¶</a></dt>
+<dd><p>Code to run before any downloads.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.read_data_version">
+<span class="sig-name descname"><span class="pre">read_data_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.read_data_version"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.read_data_version" title="Link to this definition">¶</a></dt>
+<dd><p>Read the data version from disk.</p>
+<p>Return a 3 length tuple from the semantic version string (of the
+form xx.yy.zz). Raise a DataVersionError if not found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id3">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#id3" title="Link to this definition">¶</a></dt>
+<dd><p>Return a path to the directory where the data files included with
+the dataset live.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.station_client">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">station_client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.StationClient" title="obsplus.interfaces.StationClient"><span class="pre">StationClient</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.station_client" title="Link to this definition">¶</a></dt>
+<dd><p>A cached property for a station client</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.station_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">station_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.station_path" title="Link to this definition">¶</a></dt>
+<dd><p>Return the path to the stations.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.stations_need_downloading">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stations_need_downloading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.stations_need_downloading" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if station data need to be downloaded.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.version">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.version" title="Link to this definition">¶</a></dt>
+<dd><p>Dataset version. Should be a str of the form x.y.z</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.version_tuple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_tuple</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.version_tuple" title="Link to this definition">¶</a></dt>
+<dd><p>Return a tuple of the version string.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.waveform_client">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">waveform_client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="obsplus.interfaces.html#obsplus.interfaces.WaveformClient" title="obsplus.interfaces.WaveformClient"><span class="pre">WaveformClient</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.waveform_client" title="Link to this definition">¶</a></dt>
+<dd><p>A cached property for a waveform client</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.waveform_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">waveform_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.waveform_path" title="Link to this definition">¶</a></dt>
+<dd><p>Return the path to the waveforms.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.waveforms_need_downloading">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">waveforms_need_downloading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.waveforms_need_downloading" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if waveform data need to be downloaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.DataSet.write_version">
+<span class="sig-name descname"><span class="pre">write_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/datasets/dataset.html#DataSet.write_version"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.datasets.dataset.DataSet.write_version" title="Link to this definition">¶</a></dt>
+<dd><p>Write the version string to disk.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.datasets.dataset.load_dataset">
+<span class="sig-prename descclassname"><span class="pre">obsplus.datasets.dataset.</span></span><span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">silent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#obsplus.datasets.dataset.load_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Get a loaded dataset.</p>
+<p>Will ensure all files are downloaded and the appropriate data are
+loaded into memory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <a class="reference internal" href="../quickref/stubs/obsplus.datasets.dataset.DataSet.html#obsplus.datasets.dataset.DataSet" title="obsplus.datasets.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a></span>) – The name of the dataset to load or a DataSet object. If a DataSet
+object is passed a copy of it will be returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">DataSetType</span></code>, bound= DataSet)</span></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Load an example dataset for testing</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">obsplus</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s1">&#39;default_test&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># If you plan to make changes to the dataset be sure to copy it first</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># The following will copy all files in the dataset to a tmpdir</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds2</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">copy_dataset</span><span class="p">(</span><span class="s1">&#39;default_test&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- Use dataset clients to load waveforms, stations, and events</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cat</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">waveform_client</span><span class="o">.</span><span class="n">get_waveforms</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inv</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">station_client</span><span class="o">.</span><span class="n">get_stations</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># --- get a fetcher for more &quot;dataset aware&quot; querying</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fetcher</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_fetcher</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev4+ge0e154d ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.datasets.dataset module</a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet"><code class="docutils literal notranslate"><span class="pre">DataSet</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.data_path"><code class="docutils literal notranslate"><span class="pre">DataSet.data_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.source_path"><code class="docutils literal notranslate"><span class="pre">DataSet.source_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.check_hashes"><code class="docutils literal notranslate"><span class="pre">DataSet.check_hashes()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.check_version"><code class="docutils literal notranslate"><span class="pre">DataSet.check_version()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.copy"><code class="docutils literal notranslate"><span class="pre">DataSet.copy()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.copy_to"><code class="docutils literal notranslate"><span class="pre">DataSet.copy_to()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.create_sha256_hash"><code class="docutils literal notranslate"><span class="pre">DataSet.create_sha256_hash()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.data_files"><code class="docutils literal notranslate"><span class="pre">DataSet.data_files</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.data_loaded"><code class="docutils literal notranslate"><span class="pre">DataSet.data_loaded</span></code></a></li>
+<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">DataSet.data_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.delete_data_directory"><code class="docutils literal notranslate"><span class="pre">DataSet.delete_data_directory()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.download_events"><code class="docutils literal notranslate"><span class="pre">DataSet.download_events()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.download_stations"><code class="docutils literal notranslate"><span class="pre">DataSet.download_stations()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.download_waveforms"><code class="docutils literal notranslate"><span class="pre">DataSet.download_waveforms()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.event_client"><code class="docutils literal notranslate"><span class="pre">DataSet.event_client</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.event_path"><code class="docutils literal notranslate"><span class="pre">DataSet.event_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.events_need_downloading"><code class="docutils literal notranslate"><span class="pre">DataSet.events_need_downloading</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.get_fetcher"><code class="docutils literal notranslate"><span class="pre">DataSet.get_fetcher()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.load_dataset"><code class="docutils literal notranslate"><span class="pre">DataSet.load_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.name"><code class="docutils literal notranslate"><span class="pre">DataSet.name</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.post_download_hook"><code class="docutils literal notranslate"><span class="pre">DataSet.post_download_hook()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.pre_download_hook"><code class="docutils literal notranslate"><span class="pre">DataSet.pre_download_hook()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.read_data_version"><code class="docutils literal notranslate"><span class="pre">DataSet.read_data_version()</span></code></a></li>
+<li><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">DataSet.source_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.station_client"><code class="docutils literal notranslate"><span class="pre">DataSet.station_client</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.station_path"><code class="docutils literal notranslate"><span class="pre">DataSet.station_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.stations_need_downloading"><code class="docutils literal notranslate"><span class="pre">DataSet.stations_need_downloading</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.version"><code class="docutils literal notranslate"><span class="pre">DataSet.version</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.version_tuple"><code class="docutils literal notranslate"><span class="pre">DataSet.version_tuple</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.waveform_client"><code class="docutils literal notranslate"><span class="pre">DataSet.waveform_client</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.waveform_path"><code class="docutils literal notranslate"><span class="pre">DataSet.waveform_path</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.waveforms_need_downloading"><code class="docutils literal notranslate"><span class="pre">DataSet.waveforms_need_downloading</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.DataSet.write_version"><code class="docutils literal notranslate"><span class="pre">DataSet.write_version()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.datasets.dataset.load_dataset"><code class="docutils literal notranslate"><span class="pre">load_dataset()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.datasets.dataset.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev4+ge0e154d ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.datasets.dataset module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

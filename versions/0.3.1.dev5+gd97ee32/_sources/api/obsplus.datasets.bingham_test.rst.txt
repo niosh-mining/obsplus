@@ -1,0 +1,7 @@
+obsplus.datasets.bingham\_test module
+=====================================
+
+.. automodule:: obsplus.datasets.bingham_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

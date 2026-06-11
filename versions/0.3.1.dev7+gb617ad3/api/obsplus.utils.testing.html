@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>obsplus.utils.testing module &#8212; ObsPlus  [ 0.3.1.dev7+gb617ad3 ] 0.3.1.dev7+gb617ad3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    
+    <script src="../_static/documentation_options.js?v=922d4540"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.testing module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-obsplus.utils.testing">
+<span id="obsplus-utils-testing-module"></span><h1>obsplus.utils.testing module<a class="headerlink" href="#module-obsplus.utils.testing" title="Link to this heading">¶</a></h1>
+<p>Testing utilities for ObsPlus.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="obsplus.utils.testing.ArchiveDirectory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">obsplus.utils.testing.</span></span><span class="sig-name descname"><span class="pre">ArchiveDirectory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starttime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gaps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('TA.M17A..VHZ',</span> <span class="pre">'TA.BOB..VHZ')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#ArchiveDirectory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.ArchiveDirectory" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class for creating a simple archive</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.utils.testing.ArchiveDirectory.create_directory">
+<span class="sig-name descname"><span class="pre">create_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#ArchiveDirectory.create_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.ArchiveDirectory.create_directory" title="Link to this definition">¶</a></dt>
+<dd><p>Create the directory with gaps in it</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.utils.testing.ArchiveDirectory.create_directory_from_bulk_args">
+<span class="sig-name descname"><span class="pre">create_directory_from_bulk_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bulk_args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#ArchiveDirectory.create_directory_from_bulk_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.ArchiveDirectory.create_directory_from_bulk_args" title="Link to this definition">¶</a></dt>
+<dd><p>Create a directory from bulk waveform arguments</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.utils.testing.ArchiveDirectory.create_stream">
+<span class="sig-name descname"><span class="pre">create_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starttime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endtime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#ArchiveDirectory.create_stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.ArchiveDirectory.create_stream" title="Link to this definition">¶</a></dt>
+<dd><p>Create a waveforms from random data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="obsplus.utils.testing.ArchiveDirectory.get_gap_stream">
+<span class="sig-name descname"><span class="pre">get_gap_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gaps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#ArchiveDirectory.get_gap_stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.ArchiveDirectory.get_gap_stream" title="Link to this definition">¶</a></dt>
+<dd><p>Return streams with gaps in it</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.testing.assert_streams_almost_equal">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.testing.</span></span><span class="sig-name descname"><span class="pre">assert_streams_almost_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">st1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">st2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basic_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equal_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_off_by_one</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#assert_streams_almost_equal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.assert_streams_almost_equal" title="Link to this definition">¶</a></dt>
+<dd><p>Assert that two streams are almost equal else raise helpful exceptions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>st1</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></span>) – The first stream</p></li>
+<li><p><strong>st2</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stream</span></code></span>) – The second stream</p></li>
+<li><p><strong>basic_stats</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, only compare basic stats of the streams including:
+network, station, location, channel, starttime, endtime</p></li>
+<li><p><strong>atol</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The absolute tolerance parameter</p></li>
+<li><p><strong>rtol</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The relative tolerance parameter</p></li>
+<li><p><strong>equal_nan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True evaluate NaNs as equal</p></li>
+<li><p><strong>allow_off_by_one</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, allow the arrays and time alignments to be off by one sample.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>See numpy.allclose for description of atol and rtol paramter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError if streams are not about equal.</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.testing.check_index_paths">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.testing.</span></span><span class="sig-name descname"><span class="pre">check_index_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bank</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#check_index_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.check_index_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Make sure the paths in a bank’s index can be resolved correctly</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bank</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">_Bank</span></code></span>) – A Bank (either WaveBank or EventBank) to verify</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="obsplus.utils.testing.instrument_methods">
+<span class="sig-prename descclassname"><span class="pre">obsplus.utils.testing.</span></span><span class="sig-name descname"><span class="pre">instrument_methods</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obsplus/utils/testing.html#instrument_methods"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#obsplus.utils.testing.instrument_methods" title="Link to this definition">¶</a></dt>
+<dd><p>Temporarily instrument an object’s methods.</p>
+<p>This allows the calls to each of the objects methods to be counted.</p>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.1.dev7+gb617ad3 ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">obsplus.utils.testing module</a><ul>
+<li><a class="reference internal" href="#obsplus.utils.testing.ArchiveDirectory"><code class="docutils literal notranslate"><span class="pre">ArchiveDirectory</span></code></a><ul>
+<li><a class="reference internal" href="#obsplus.utils.testing.ArchiveDirectory.create_directory"><code class="docutils literal notranslate"><span class="pre">ArchiveDirectory.create_directory()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.testing.ArchiveDirectory.create_directory_from_bulk_args"><code class="docutils literal notranslate"><span class="pre">ArchiveDirectory.create_directory_from_bulk_args()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.testing.ArchiveDirectory.create_stream"><code class="docutils literal notranslate"><span class="pre">ArchiveDirectory.create_stream()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.testing.ArchiveDirectory.get_gap_stream"><code class="docutils literal notranslate"><span class="pre">ArchiveDirectory.get_gap_stream()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#obsplus.utils.testing.assert_streams_almost_equal"><code class="docutils literal notranslate"><span class="pre">assert_streams_almost_equal()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.testing.check_index_paths"><code class="docutils literal notranslate"><span class="pre">check_index_paths()</span></code></a></li>
+<li><a class="reference internal" href="#obsplus.utils.testing.instrument_methods"><code class="docutils literal notranslate"><span class="pre">instrument_methods()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/obsplus.utils.testing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ObsPlus  [ 0.3.1.dev7+gb617ad3 ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">obsplus.utils.testing module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>QuakeML to json &#8212; ObsPlus  [ 0.3.2.dev1+gbd439dc ] 0.3.2.dev1+gbd439dc documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bizstyle.css?v=5283bb3d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    
+    <script src="../../_static/documentation_options.js?v=ce8927c4"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">QuakeML to json</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="QuakeML-to-json">
+<h1>QuakeML to json<a class="headerlink" href="#QuakeML-to-json" title="Link to this heading">¶</a></h1>
+<div class="admonition warning">
+<p><strong>Warning</strong>: Much of this functionality will eventually be moved to obspy, see <a class="reference external" href="https://github.com/obspy/obspy/pull/2210">this PR</a>.</p>
+</div>
+<p>The following demonstrates obsplus’ ability to serialize obspy catalog objects into json. All such conversions should be lossless.</p>
+<section id="Get-a-catalog">
+<h2>Get a catalog<a class="headerlink" href="#Get-a-catalog" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+
+<span class="n">crandall</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;crandall_test&quot;</span><span class="p">)</span>
+
+<span class="n">cat</span> <span class="o">=</span> <span class="n">crandall</span><span class="o">.</span><span class="n">event_client</span><span class="o">.</span><span class="n">get_events</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+</section>
+<section id="json-conversions">
+<h2>json conversions<a class="headerlink" href="#json-conversions" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">obsplus</span>
+
+<span class="c1"># convert to json str</span>
+<span class="n">json_str</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">cat_to_json</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+
+<span class="c1"># print sample</span>
+
+<span class="c1"># convert back</span>
+<span class="n">cat2</span> <span class="o">=</span> <span class="n">obsplus</span><span class="o">.</span><span class="n">json_to_cat</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/home/runner/micromamba/envs/test/lib/python3.12/site-packages/obspy/core/util/attribdict.py:119: UserWarning: Setting attribute &#34;seed_string&#34; which is not a default attribute (&#34;network_code&#34;, &#34;station_code&#34;, &#34;channel_code&#34;, &#34;location_code&#34;, &#34;resource_uri&#34;).
+  warnings.warn(msg)
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># json serialization should be lossless after handling Quantity Errors</span>
+<span class="c1"># this won&#39;t be needed once obspy 1.2.0 is released.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">obspy.core.event</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ev</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">obsplus.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">yield_obj_parent_attr</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_remove_empty_quantity_errors</span><span class="p">(</span><span class="n">catalog</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Copy the catalog and set all empty QunatityErrors to None.</span>
+<span class="sd">    This is needed to check equality of catalogs that may have</span>
+<span class="sd">    None or empty QuantityErrors.</span>
+
+<span class="sd">    Fixed in https://github.com/obspy/obspy/pull/2185</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">yield_obj_parent_attr</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">ev</span><span class="o">.</span><span class="n">QuantityError</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cat</span>
+
+
+<span class="n">cat1</span> <span class="o">=</span> <span class="n">_remove_empty_quantity_errors</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+
+<span class="n">cat2</span> <span class="o">=</span> <span class="n">_remove_empty_quantity_errors</span><span class="p">(</span><span class="n">cat2</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">cat1</span> <span class="o">==</span> <span class="n">cat2</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/obsplus_panda.png" alt="Logo of ObsPlus  [ 0.3.2.dev1+gbd439dc ]"/>
+            </a></p>
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">QuakeML to json</a><ul>
+<li><a class="reference internal" href="#Get-a-catalog">Get a catalog</a></li>
+<li><a class="reference internal" href="#json-conversions">json conversions</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/notebooks/utils/json.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ObsPlus  [ 0.3.2.dev1+gbd439dc ]</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">QuakeML to json</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Derrick Chambers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

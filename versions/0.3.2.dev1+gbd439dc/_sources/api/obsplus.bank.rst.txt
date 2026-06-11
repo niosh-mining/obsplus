@@ -1,0 +1,18 @@
+obsplus.bank package
+====================
+
+.. automodule:: obsplus.bank
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.bank.core
+   obsplus.bank.eventbank
+   obsplus.bank.stationbank
+   obsplus.bank.wavebank

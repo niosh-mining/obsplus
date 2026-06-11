@@ -1,0 +1,16 @@
+obsplus.stations package
+========================
+
+.. automodule:: obsplus.stations
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   obsplus.stations.get_stations
+   obsplus.stations.pd

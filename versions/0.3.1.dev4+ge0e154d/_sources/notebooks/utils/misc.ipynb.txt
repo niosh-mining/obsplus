@@ -1,0 +1,702 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Miscellaneous Utilities\n",
+    "The follow demonstrates some miscellaneous utilities included in ObsPlus.\n",
+    "\n",
+    "## Geodetics\n",
+    "It is often necessary to calculate geometric parameters (distance, azimuth, etc.) for pairs of entities in two different groups. For example, distance from each event in a catalog to each receiver in an inventory. ObsPlus provides a simple class for completing this task."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:54.158574Z",
+     "iopub.status.busy": "2025-01-03T23:11:54.158414Z",
+     "iopub.status.idle": "2025-01-03T23:11:55.999428Z",
+     "shell.execute_reply": "2025-01-03T23:11:55.998905Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Load the catalog and inventory from the crandall dataset\n",
+    "import obsplus\n",
+    "from obsplus.utils.geodetics import SpatialCalculator\n",
+    "\n",
+    "crandall = obsplus.load_dataset(\"crandall_test\")\n",
+    "cat = crandall.event_client.get_events()\n",
+    "inv = crandall.station_client.get_stations()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.001515Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.001121Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.003755Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.003259Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# init a SpatialCalculator instance (defaults to Earth's params)\n",
+    "spatial_calc = SpatialCalculator()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.005417Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.005098Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.127848Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.127337Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/runner/micromamba/envs/test/lib/python3.12/site-packages/obspy/taup/taup_geo.py:105: UserWarning: Assuming spherical planet when calculating epicentral distance. Install the Python module 'geographiclib' to solve this.\n",
+      "  warnings.warn(msg)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th>distance_m</th>\n",
+       "      <th>azimuth</th>\n",
+       "      <th>back_azimuth</th>\n",
+       "      <th>distance_degrees</th>\n",
+       "      <th>vertical_distance_m</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>id1</th>\n",
+       "      <th>id2</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>smi:local/248828</th>\n",
+       "      <th>UU.SRU..HHE</th>\n",
+       "      <td>72882.074942</td>\n",
+       "      <td>302.534256</td>\n",
+       "      <td>122.082166</td>\n",
+       "      <td>0.654711</td>\n",
+       "      <td>8374.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>smi:local/248843</th>\n",
+       "      <th>UU.SRU..HHE</th>\n",
+       "      <td>72425.955953</td>\n",
+       "      <td>302.739971</td>\n",
+       "      <td>122.291744</td>\n",
+       "      <td>0.650613</td>\n",
+       "      <td>3854.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>smi:local/248839</th>\n",
+       "      <th>UU.SRU..HHE</th>\n",
+       "      <td>72254.546800</td>\n",
+       "      <td>303.034657</td>\n",
+       "      <td>122.588954</td>\n",
+       "      <td>0.649074</td>\n",
+       "      <td>2214.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>smi:local/248925</th>\n",
+       "      <th>UU.SRU..HHE</th>\n",
+       "      <td>71648.952510</td>\n",
+       "      <td>303.260251</td>\n",
+       "      <td>122.819428</td>\n",
+       "      <td>0.643633</td>\n",
+       "      <td>6424.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>smi:local/248891</th>\n",
+       "      <th>UU.SRU..HHE</th>\n",
+       "      <td>71821.459138</td>\n",
+       "      <td>302.940209</td>\n",
+       "      <td>122.496737</td>\n",
+       "      <td>0.645183</td>\n",
+       "      <td>5044.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                distance_m     azimuth  back_azimuth  \\\n",
+       "id1              id2                                                   \n",
+       "smi:local/248828 UU.SRU..HHE  72882.074942  302.534256    122.082166   \n",
+       "smi:local/248843 UU.SRU..HHE  72425.955953  302.739971    122.291744   \n",
+       "smi:local/248839 UU.SRU..HHE  72254.546800  303.034657    122.588954   \n",
+       "smi:local/248925 UU.SRU..HHE  71648.952510  303.260251    122.819428   \n",
+       "smi:local/248891 UU.SRU..HHE  71821.459138  302.940209    122.496737   \n",
+       "\n",
+       "                              distance_degrees  vertical_distance_m  \n",
+       "id1              id2                                                 \n",
+       "smi:local/248828 UU.SRU..HHE          0.654711               8374.0  \n",
+       "smi:local/248843 UU.SRU..HHE          0.650613               3854.0  \n",
+       "smi:local/248839 UU.SRU..HHE          0.649074               2214.0  \n",
+       "smi:local/248925 UU.SRU..HHE          0.643633               6424.0  \n",
+       "smi:local/248891 UU.SRU..HHE          0.645183               5044.0  "
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# create distance dataframe\n",
+    "df = spatial_calc(entity_1=cat, entity_2=inv)\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Since a multi-index is used it provides a fairly intuitive way to look up particular event-channel pairs using a tuple of (event_id, seed_id) in conjunction with the `.loc` DataFrame attribute like so:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.156073Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.155670Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.158433Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.157990Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "event_id = str(cat[0].resource_id)\n",
+    "seed_id = \"UU.MPU..HHZ\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.160008Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.159701Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.162174Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.161673Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# or just get a particular parameter"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The distances can be converted to km and the distrtibutions can be described."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.163703Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.163533Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.179534Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.179016Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>azimuth</th>\n",
+       "      <th>back_azimuth</th>\n",
+       "      <th>distance_degrees</th>\n",
+       "      <th>distance_km</th>\n",
+       "      <th>vertical_distance_km</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>count</th>\n",
+       "      <td>408.00</td>\n",
+       "      <td>408.00</td>\n",
+       "      <td>408.00</td>\n",
+       "      <td>408.00</td>\n",
+       "      <td>408.00</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>mean</th>\n",
+       "      <td>201.06</td>\n",
+       "      <td>211.69</td>\n",
+       "      <td>0.82</td>\n",
+       "      <td>91.24</td>\n",
+       "      <td>5.22</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>std</th>\n",
+       "      <td>104.37</td>\n",
+       "      <td>98.06</td>\n",
+       "      <td>0.33</td>\n",
+       "      <td>36.55</td>\n",
+       "      <td>1.85</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>min</th>\n",
+       "      <td>9.16</td>\n",
+       "      <td>48.81</td>\n",
+       "      <td>0.16</td>\n",
+       "      <td>18.26</td>\n",
+       "      <td>1.70</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>25%</th>\n",
+       "      <td>126.47</td>\n",
+       "      <td>122.45</td>\n",
+       "      <td>0.63</td>\n",
+       "      <td>70.46</td>\n",
+       "      <td>3.69</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>50%</th>\n",
+       "      <td>163.87</td>\n",
+       "      <td>189.79</td>\n",
+       "      <td>0.82</td>\n",
+       "      <td>90.85</td>\n",
+       "      <td>5.50</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>75%</th>\n",
+       "      <td>293.44</td>\n",
+       "      <td>307.27</td>\n",
+       "      <td>1.12</td>\n",
+       "      <td>124.36</td>\n",
+       "      <td>6.25</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>max</th>\n",
+       "      <td>358.12</td>\n",
+       "      <td>344.77</td>\n",
+       "      <td>1.29</td>\n",
+       "      <td>144.00</td>\n",
+       "      <td>9.31</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       azimuth  back_azimuth  distance_degrees  distance_km  \\\n",
+       "count   408.00        408.00            408.00       408.00   \n",
+       "mean    201.06        211.69              0.82        91.24   \n",
+       "std     104.37         98.06              0.33        36.55   \n",
+       "min       9.16         48.81              0.16        18.26   \n",
+       "25%     126.47        122.45              0.63        70.46   \n",
+       "50%     163.87        189.79              0.82        90.85   \n",
+       "75%     293.44        307.27              1.12       124.36   \n",
+       "max     358.12        344.77              1.29       144.00   \n",
+       "\n",
+       "       vertical_distance_km  \n",
+       "count                408.00  \n",
+       "mean                   5.22  \n",
+       "std                    1.85  \n",
+       "min                    1.70  \n",
+       "25%                    3.69  \n",
+       "50%                    5.50  \n",
+       "75%                    6.25  \n",
+       "max                    9.31  "
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Convert add km columns and delete m columns\n",
+    "m_columns = [x for x in df.columns if x.endswith(\"_m\")]\n",
+    "km_columns = [x.replace(\"_m\", \"_km\") for x in m_columns]\n",
+    "\n",
+    "df_km = df.assign(**{x: df[y] / 1000.0 for x, y in zip(km_columns, m_columns)}).drop(\n",
+    "    columns=m_columns\n",
+    ")\n",
+    "\n",
+    "# Calculate stats for source reseiver distances\n",
+    "df_km.describe().round(decimals=2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Time\n",
+    "\n",
+    "Working with dates/times can be frustrating, especially since (as of 2020) ObsPy, numpy, and pandas all use slightly different methods for working with time. ObsPlus provides some utilities to make things a little easier."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.181139Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.180950Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.183536Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.183043Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "import numpy as np\n",
+    "import obspy\n",
+    "\n",
+    "import obsplus\n",
+    "from obsplus.utils import to_datetime64, to_timedelta64, to_utc"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Note:**  All ObsPlus datafames use numpy/pandas datatypes. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.185079Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.184890Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.207442Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.207038Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "df = obsplus.events_to_df(obspy.read_events())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.209086Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.208744Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.212321Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.211923Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0   2012-04-04 14:21:42.300\n",
+       "1   2012-04-04 14:18:37.000\n",
+       "2   2012-04-04 14:08:46.000\n",
+       "Name: time, dtype: datetime64[ns]"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df[\"time\"]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Numpy and ObsPy time differences"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "One difference between numpy's `datatime64` and ObsPy's `UTCDateTime` is how offsets are applied. For ObsPy, numbers are simply taken as seconds, but numpy requires explicitly using `timedeta64` instances."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.213996Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.213681Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.216295Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.215795Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "time_str = \"2020-01-03T11:00:00\"\n",
+    "utc = obspy.UTCDateTime(time_str)\n",
+    "dt64 = np.datetime64(time_str, \"ns\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.217854Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.217546Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.219954Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.219536Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# add 1/2 second to UTCDateTime\n",
+    "utc2 = utc + 0.5"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.221536Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.221277Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.223743Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.223343Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# however doing the same thing with datetime64 raises a TypeError\n",
+    "try:\n",
+    "    dt64 + 0.5\n",
+    "except TypeError:\n",
+    "    pass"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.225182Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.225000Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.227466Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.227045Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# so you need to use a timedelta64\n",
+    "dt64_2 = dt64 + np.timedelta64(500, \"ms\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.228915Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.228754Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.232644Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.232239Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0   2012-04-04 14:21:42.800\n",
+       "1   2012-04-04 14:18:37.500\n",
+       "2   2012-04-04 14:08:46.500\n",
+       "Name: time, dtype: datetime64[ns]"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# This is, of course, also the case with datetime64 columns\n",
+    "df[\"time\"] + np.timedelta64(500, \"ms\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "ObsPlus provides some common converters between ObsPy and Pandas/Numpy time objects."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Converting between ObsPy and Numpy time datatypes\n",
+    "Conversion between ObsPy `UTCDateTime` and numpy `datetime64` objects when needed."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.234364Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.234006Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.236754Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.236377Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Convert a time column to an array of ObsPy UTCDateTime objects\n",
+    "utc_array = to_utc(df[\"time\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.238174Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.237996Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.240513Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.240137Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Convert back to datetime64\n",
+    "dt64_array = to_datetime64(utc_array)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<div class=\"alert alert-warning\">\n",
+    "\n",
+    "**Note**: `datetime64` arrays are much more efficient in terms of memory usage and computational efficiency than arrays of `UTCDateTime` *objects*.\n",
+    "\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If you prefer not to manually define `timedelta64` to perform offsets, `to_timedelta64` simply converts a real number to an offset in seconds."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-01-03T23:11:56.241978Z",
+     "iopub.status.busy": "2025-01-03T23:11:56.241821Z",
+     "iopub.status.idle": "2025-01-03T23:11:56.245166Z",
+     "shell.execute_reply": "2025-01-03T23:11:56.244660Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "numpy.timedelta64(3255000000,'ns')"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "to_timedelta64(3.255)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
